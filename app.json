@@ -1,0 +1,24 @@
+{
+  "expo": {
+    "name": "두더지 잡기",
+    "slug": "mole-blitz",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "backgroundColor": "#7bc043"
+    },
+    "assetBundlePatterns": ["**/*"],
+    "ios": {
+      "supportsTablet": true
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#7bc043"
+      }
+    },
+    "web": {
+      "bundler": "metro"
+    }
+  }
+}
