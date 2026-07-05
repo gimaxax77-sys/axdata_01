@@ -1,0 +1,32 @@
+// ─────────────────────────────────────────────────────────────
+// 밸런스 상수 단일 소스 — 게임의 "숫자 감각"이 전부 여기 모인다.
+// progression/stats/units/enhance/gear 가 모두 이 값을 참조한다.
+// 밸런스 시뮬레이터가 이 값을 바꿔가며 성장 곡선을 실험한다.
+// (기본값을 바꾸지 않는 한 게임 동작은 그대로다.)
+//
+// 값을 평면(flat)으로 두어 오버라이드/스냅샷이 단순하도록 했다.
+// ─────────────────────────────────────────────────────────────
+
+export const BALANCE = {
+  // 적 스탯 (스테이지 곡선)
+  enemyBase: { hp: 900, atk: 70, def: 30 },
+  enemyGrowth: 1.14, // 스테이지당 적 강화율
+
+  // 스테이지 보상 (수입 곡선)
+  rewardBase: { currency: 20, growth: 8 },
+  rewardGrowth: 1.12, // 스테이지당 보상 증가율
+
+  // 유닛 성장 (스탯 곡선)
+  statPerLevel: 0.08, // 레벨당 스탯 +8%
+  statPerRank: 0.25, // 랭크당 스탯 +25%
+  spdPerLevel: 0.01, // 레벨당 속도 +1%
+
+  // 성장 비용 (지출 곡선) — 시뮬레이터가 밝혀낸 핵심 튜닝 포인트
+  levelCostBase: 50, levelCostGrowth: 1.15, // 레벨업 (growth)
+  enhanceCostBase: 40, enhanceCostGrowth: 1.25, // 각인 (currency)
+  gearCostBase: 60, gearCostGrowth: 1.3, // 장비 강화 (currency)
+
+  // 환생(prestige) 영구 보너스 — 지수적 벽을 넘는 곱셈형 루프.
+  // 환생 포인트 1당 방치 수입 +50%.
+  prestigeIncomeBonus: 0.5,
+};

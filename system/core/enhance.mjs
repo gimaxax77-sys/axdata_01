@@ -7,6 +7,8 @@
 // 비용은 소프트 재화(currency)를 쓴다 → 레벨업(growth)과 자원 분리.
 // ─────────────────────────────────────────────────────────────
 
+import { BALANCE } from './balance.mjs';
+
 export const ENHANCE_NODES = {
   atk: { kind: 'statPct', stat: 'atk', per: 0.04, label: '공격 각인' },
   hp: { kind: 'statPct', stat: 'hp', per: 0.04, label: '체력 각인' },
@@ -24,7 +26,11 @@ export function getEnhanceNode(stat) {
 
 // 다음 강화 비용(currency). 레벨이 오를수록 급증.
 export function enhanceCost(currentLevel) {
-  return { currency: Math.round(40 * Math.pow(1.25, currentLevel)) };
+  return {
+    currency: Math.round(
+      BALANCE.enhanceCostBase * Math.pow(BALANCE.enhanceCostGrowth, currentLevel)
+    ),
+  };
 }
 
 // 유닛의 빈 강화 상태 생성.

@@ -175,6 +175,7 @@ collectUnitModifiers(unit)  →
 ```
 system/
 ├── core/            # IP — 고정 자산 (장르/컨셉 무관)
+│   ├── balance.mjs      # 밸런스 상수 단일 소스 (시뮬레이터가 튜닝)
 │   ├── archetypes.mjs
 │   ├── stats.mjs        # 성장 공식 + 모디파이어 반영
 │   ├── modifiers.mjs    # 성장요소 합산 파이프라인
@@ -189,13 +190,12 @@ system/
 │   ├── progression.mjs
 │   ├── economy.mjs
 │   └── gameState.mjs
-├── genres/          # Driver — 스왑
-│   ├── rpg.mjs
-│   └── idle.mjs
-├── concepts/        # Skin — 스왑
-│   ├── fantasy.mjs
-│   ├── scifi.mjs
-│   └── index.mjs
+├── genres/          # Driver — 스왑 (rpg / idle)
+├── concepts/        # Skin — 스왑 (fantasy / scifi / index)
+├── sim/             # 밸런스 시뮬레이터
+│   ├── autoplayer.mjs   # 합리적 유저 투자 전략
+│   ├── balance.mjs      # 7일 시뮬레이션 + 병목/게이트/튜닝 실험
+│   └── report.mjs       # 곡선 시각화 HTML 리포트 생성
 ├── demo.mjs         # 장르·컨셉 스왑 데모
 ├── demo-build.mjs   # 캐릭터 성장 분화 데모
 └── demo-gacha.mjs   # 소환 + 장비 데모
@@ -207,7 +207,34 @@ system/
 
 - [x] ~~유닛 소환(가차) 시스템 — `summon` 자원 소비, 확률 테이블~~ (완료)
 - [x] ~~장비 시스템 — 슬롯별 장착/강화~~ (완료)
+- [x] ~~밸런스 시뮬레이터: 성장 곡선·병목·튜닝 실험~~ (완료, §8)
+- [ ] 시뮬레이터 후속: 레벨 상한·소환 수급 구조 재설계로 벽 해소
 - [ ] 세이브 직렬화(JSON) + 로드 → 오프라인 정산 연결
 - [ ] Expo(모바일) UI 레이어를 이 core 위에 얹기 (genre/concept를 런타임 토글)
-- [ ] 밸런스 시뮬레이터: 스테이지별 요구 전투력 곡선 자동 리포트
 - [ ] 3번째 장르(실시간/PvP) 또는 3번째 컨셉으로 재사용성 재검증
+
+---
+
+## 8. 밸런스 시뮬레이터 (`system/sim/`)
+
+문서가 "미정"으로 남긴 **숫자 감각**을 코드로 검증한다. 합리적 오토플레이어(자원을
+벌어 재투자하는 가상 유저)를 7일간 돌려 성장 곡선·병목·해금 페이싱을 리포트한다.
+
+- **`node system/sim/balance.mjs`** — 7일 곡선 + 병목 검출 + 해금 게이트 페이싱 +
+  튜닝 실험(밸런스 상수를 바꿔 재시뮬레이션 비교)
+- **`node system/sim/report.mjs`** — 곡선을 자체완결 HTML(인라인 SVG)로 시각화
+
+### 이 시뮬레이터가 잡아낸 것
+
+1. **지수적 벽**: Day1에 ~30층 폭발 후 하루 +1. 적 성장(1.14ⁿ) > 보상(1.12ⁿ) +
+   강화비용 폭증이 겹침.
+2. 곡선 상수만 조정해선 안 풀림 → 진짜 원인은 **지출 곡선 + 곱셈형 루프 부재**.
+3. **환생이 장식용이었다**: `state.prestige`가 포인트만 쌓고 보너스 미적용.
+   → 수입 배수로 수정하니 곡선 개선(§`balance.mjs` prestigeIncomeBonus).
+4. 더 깊은 병목: 파워가 **레벨 상한(랭크×20)**에 묶여 소환(희소)에 의존.
+
+### 설계 산물: `core/balance.mjs`
+
+모든 밸런스 상수(적/보상/성장/비용/환생)를 **단일 소스**로 모았다. 시뮬레이터가
+`withBalance(override, fn)`로 값을 바꿔가며 실험하고, 게임 코드는 이 값을 참조만 한다.
+새 성장·비용 곡선을 붙여도 한 곳만 수정하면 전 시스템에 반영된다.

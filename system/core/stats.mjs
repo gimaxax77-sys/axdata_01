@@ -1,5 +1,6 @@
 import { getArchetype } from './archetypes.mjs';
 import { collectUnitModifiers } from './modifiers.mjs';
+import { BALANCE } from './balance.mjs';
 
 // ─────────────────────────────────────────────────────────────
 // 스탯 성장 공식 — 장르/컨셉 무관.
@@ -13,17 +14,13 @@ import { collectUnitModifiers } from './modifiers.mjs';
 //   속도(spd): 성장 완만 +1%/레벨
 // ─────────────────────────────────────────────────────────────
 
-const PER_LEVEL = 0.08;
-const PER_RANK = 0.25;
-const SPD_PER_LEVEL = 0.01;
-
 // 성장 요소를 반영하지 않은 "원형 성장"만 계산.
 function baseGrownStats(unit) {
   const { base } = getArchetype(unit.archetype);
-  const levelMult = 1 + (unit.level - 1) * PER_LEVEL;
-  const rankMult = 1 + (unit.rank - 1) * PER_RANK;
+  const levelMult = 1 + (unit.level - 1) * BALANCE.statPerLevel;
+  const rankMult = 1 + (unit.rank - 1) * BALANCE.statPerRank;
   const growth = levelMult * rankMult;
-  const spdMult = 1 + (unit.level - 1) * SPD_PER_LEVEL;
+  const spdMult = 1 + (unit.level - 1) * BALANCE.spdPerLevel;
   return {
     hp: base.hp * growth,
     atk: base.atk * growth,

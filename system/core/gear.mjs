@@ -1,4 +1,5 @@
 import { spend } from './economy.mjs';
+import { BALANCE } from './balance.mjs';
 
 // ─────────────────────────────────────────────────────────────
 // 장비 시스템 — 슬롯별 장착 + 강화로 유닛을 추가 성장시킨다.
@@ -46,7 +47,9 @@ export function gearContribution(gearItem) {
 
 // 장비 강화 비용 (currency).
 export function gearEnhanceCost(level) {
-  return { currency: Math.round(60 * Math.pow(1.3, level - 1)) };
+  return {
+    currency: Math.round(BALANCE.gearCostBase * Math.pow(BALANCE.gearCostGrowth, level - 1)),
+  };
 }
 
 // ── 액션 (장르 무관) ──────────────────────────────────────────

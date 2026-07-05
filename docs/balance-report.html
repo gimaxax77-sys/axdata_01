@@ -1,0 +1,97 @@
+<title>밸런스 시뮬레이터 리포트</title>
+<style>
+  .viz-root{--surface-1:#fcfcfb;--plane:#f9f9f7;--text-primary:#0b0b0b;--text-secondary:#52514e;--muted:#898781;--grid:#e1e0d9;--axis:#c3c2b7;--border:rgba(11,11,11,.10);--good:#006300;--crit:#d03b3b;
+    font-family:system-ui,-apple-system,"Segoe UI",sans-serif;color:var(--text-primary);background:var(--plane);max-width:860px;margin:0 auto;padding:28px 20px 56px;line-height:1.5;}
+  @media (prefers-color-scheme:dark){.viz-root{--surface-1:#1a1a19;--plane:#0d0d0d;--text-primary:#fff;--text-secondary:#c3c2b7;--muted:#898781;--grid:#2c2c2a;--axis:#383835;--border:rgba(255,255,255,.10);--good:#0ca30c;--crit:#e66767;}}
+  :root[data-theme="dark"] .viz-root{--surface-1:#1a1a19;--plane:#0d0d0d;--text-primary:#fff;--text-secondary:#c3c2b7;--grid:#2c2c2a;--axis:#383835;--border:rgba(255,255,255,.10);--good:#0ca30c;--crit:#e66767;}
+  :root[data-theme="light"] .viz-root{--surface-1:#fcfcfb;--plane:#f9f9f7;--text-primary:#0b0b0b;--text-secondary:#52514e;--grid:#e1e0d9;--axis:#c3c2b7;--border:rgba(11,11,11,.10);--good:#006300;--crit:#d03b3b;}
+  .viz-root h1{font-size:24px;margin:0 0 6px;}
+  .viz-root .sub{color:var(--text-secondary);margin:0 0 24px;font-size:15px;}
+  .tiles{display:flex;flex-wrap:wrap;gap:12px;margin-bottom:28px;}
+  .tile{flex:1;min-width:150px;background:var(--surface-1);border:1px solid var(--border);border-radius:12px;padding:16px 18px;}
+  .tile .k{font-size:13px;color:var(--muted);margin-bottom:6px;}
+  .tile .v{font-size:30px;font-weight:800;letter-spacing:-.02em;}
+  .tile .v small{font-size:15px;font-weight:600;color:var(--text-secondary);}
+  .card{background:var(--surface-1);border:1px solid var(--border);border-radius:12px;padding:18px 18px 12px;margin-bottom:22px;overflow-x:auto;}
+  .card h2{font-size:16px;margin:0 0 4px;}
+  .card p.note{font-size:13px;color:var(--text-secondary);margin:0 0 12px;}
+  .chart{width:100%;height:auto;min-width:520px;display:block;}
+  .grid{stroke:var(--grid);stroke-width:1;}
+  .axis{stroke:var(--axis);stroke-width:1;}
+  .tick{fill:var(--muted);font-size:11px;font-variant-numeric:tabular-nums;}
+  .endlabel{font-size:12px;font-weight:700;}
+  .barval{fill:var(--text-primary);font-size:12px;font-weight:700;font-variant-numeric:tabular-nums;}
+  .legend{display:flex;gap:16px;flex-wrap:wrap;font-size:13px;color:var(--text-secondary);margin:4px 2px 0;}
+  .legend span{display:inline-flex;align-items:center;gap:6px;}
+  .dot{width:10px;height:10px;border-radius:3px;display:inline-block;}
+  .findings{background:var(--surface-1);border:1px solid var(--border);border-radius:12px;padding:18px 20px;}
+  .findings h2{font-size:16px;margin:0 0 10px;}
+  .findings li{margin:6px 0;}
+  .crit{color:var(--crit);font-weight:700;}
+  .good{color:var(--good);font-weight:700;}
+  details{margin-top:18px;}summary{cursor:pointer;color:var(--text-secondary);font-size:14px;}
+  .dtable{border-collapse:collapse;width:100%;margin-top:12px;font-size:13px;font-variant-numeric:tabular-nums;}
+  .dtable th,.dtable td{border:1px solid var(--border);padding:6px 10px;text-align:right;}
+  .dtable th{background:var(--plane);color:var(--text-secondary);font-weight:600;}
+</style>
+<div class="viz-root">
+  <h1>🎮 밸런스 시뮬레이터 리포트</h1>
+  <p class="sub">합리적 오토플레이어를 7일간 시뮬레이션 — Core 엔진이 실제로 돌린 성장 곡선. 문서가 "미정"으로 남긴 수치를 코드로 검증.</p>
+
+  <div class="tiles">
+    <div class="tile"><div class="k">Day 1 도달 (벽 시작)</div><div class="v">30<small>층</small></div></div>
+    <div class="tile"><div class="k">기본 7일차</div><div class="v crit">37<small>층</small></div></div>
+    <div class="tile"><div class="k">종합안 7일차</div><div class="v good">50<small>층</small></div></div>
+    <div class="tile"><div class="k">환생 OFF 7일차</div><div class="v">36<small>층</small></div></div>
+  </div>
+
+  <div class="card">
+    <h2>① 전투력 격차 — 플레이어가 뒤처진다</h2>
+    <p class="note">요구 전투력(적)이 보유 전투력보다 빠르게 벌어짐 = 초반 러시 후 콘크리트 벽. 이게 방치형의 대표 실패 모드.</p>
+    <svg viewBox="0 0 680 300" class="chart" role="img" aria-label="보유 vs 요구 전투력">
+    <line x1="52" y1="266" x2="584" y2="266" class="grid"/><text x="44" y="270" class="tick" text-anchor="end">0</text><line x1="52" y1="204" x2="584" y2="204" class="grid"/><text x="44" y="208" class="tick" text-anchor="end">7k</text><line x1="52" y1="142" x2="584" y2="142" class="grid"/><text x="44" y="146" class="tick" text-anchor="end">15k</text><line x1="52" y1="79.99999999999997" x2="584" y2="79.99999999999997" class="grid"/><text x="44" y="83.99999999999997" class="tick" text-anchor="end">22k</text><line x1="52" y1="18" x2="584" y2="18" class="grid"/><text x="44" y="22" class="tick" text-anchor="end">29k</text><line x1="52" y1="266" x2="584" y2="266" class="axis"/>
+    <text x="52" y="286" class="tick" text-anchor="middle">1일</text><text x="140.66666666666666" y="286" class="tick" text-anchor="middle">2일</text><text x="229.33333333333331" y="286" class="tick" text-anchor="middle">3일</text><text x="318" y="286" class="tick" text-anchor="middle">4일</text><text x="406.66666666666663" y="286" class="tick" text-anchor="middle">5일</text><text x="495.33333333333337" y="286" class="tick" text-anchor="middle">6일</text><text x="584" y="286" class="tick" text-anchor="middle">7일</text><polyline points="52,211.49076640232693 140.66666666666666,201.6147957083665 229.33333333333331,179.45553329857586 318,172.43772466591665 406.66666666666663,165.1987487308948 495.33333333333337,161.80468128309963 584,145.30219795296767" fill="none" stroke="#2a78d6" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/><circle cx="52" cy="211.49076640232693" r="3.5" fill="#2a78d6" stroke="var(--surface-1)" stroke-width="2"><title>보유 · 1일: 6k</title></circle><circle cx="140.66666666666666" cy="201.6147957083665" r="3.5" fill="#2a78d6" stroke="var(--surface-1)" stroke-width="2"><title>보유 · 2일: 8k</title></circle><circle cx="229.33333333333331" cy="179.45553329857586" r="3.5" fill="#2a78d6" stroke="var(--surface-1)" stroke-width="2"><title>보유 · 3일: 10k</title></circle><circle cx="318" cy="172.43772466591665" r="3.5" fill="#2a78d6" stroke="var(--surface-1)" stroke-width="2"><title>보유 · 4일: 11k</title></circle><circle cx="406.66666666666663" cy="165.1987487308948" r="3.5" fill="#2a78d6" stroke="var(--surface-1)" stroke-width="2"><title>보유 · 5일: 12k</title></circle><circle cx="495.33333333333337" cy="161.80468128309963" r="3.5" fill="#2a78d6" stroke="var(--surface-1)" stroke-width="2"><title>보유 · 6일: 12k</title></circle><circle cx="584" cy="145.30219795296767" r="3.5" fill="#2a78d6" stroke="var(--surface-1)" stroke-width="2"><title>보유 · 7일: 14k</title></circle><text x="592" y="149.30219795296767" class="endlabel" fill="#2a78d6">보유</text><polyline points="52,175.8913371566556 140.66666666666666,163.27629448728152 229.33333333333331,132.50852015476224 318,113.8198831051231 406.66666666666663,68.22539307960378 495.33333333333337,68.22539307960378 584,40.54545454545456" fill="none" stroke="#e34948" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/><circle cx="52" cy="175.8913371566556" r="3.5" fill="#e34948" stroke="var(--surface-1)" stroke-width="2"><title>요구 · 1일: 11k</title></circle><circle cx="140.66666666666666" cy="163.27629448728152" r="3.5" fill="#e34948" stroke="var(--surface-1)" stroke-width="2"><title>요구 · 2일: 12k</title></circle><circle cx="229.33333333333331" cy="132.50852015476224" r="3.5" fill="#e34948" stroke="var(--surface-1)" stroke-width="2"><title>요구 · 3일: 16k</title></circle><circle cx="318" cy="113.8198831051231" r="3.5" fill="#e34948" stroke="var(--surface-1)" stroke-width="2"><title>요구 · 4일: 18k</title></circle><circle cx="406.66666666666663" cy="68.22539307960378" r="3.5" fill="#e34948" stroke="var(--surface-1)" stroke-width="2"><title>요구 · 5일: 23k</title></circle><circle cx="495.33333333333337" cy="68.22539307960378" r="3.5" fill="#e34948" stroke="var(--surface-1)" stroke-width="2"><title>요구 · 6일: 23k</title></circle><circle cx="584" cy="40.54545454545456" r="3.5" fill="#e34948" stroke="var(--surface-1)" stroke-width="2"><title>요구 · 7일: 27k</title></circle><text x="592" y="44.54545454545456" class="endlabel" fill="#e34948">요구</text></svg>
+    <div class="legend"><span><i class="dot" style="background:#2a78d6"></i>보유 전투력</span><span><i class="dot" style="background:#e34948"></i>요구 전투력</span></div>
+  </div>
+
+  <div class="card">
+    <h2>② 스테이지 도달 곡선 — 튜닝 시나리오 비교</h2>
+    <p class="note">환생(곱셈형 루프)을 실제 보너스로 고치고 곡선 상수를 완화한 "종합안"이 가장 깊이 도달.</p>
+    <svg viewBox="0 0 680 300" class="chart" role="img" aria-label="튜닝 시나리오별 스테이지 도달">
+    <line x1="52" y1="266" x2="584" y2="266" class="grid"/><text x="44" y="270" class="tick" text-anchor="end">0</text><line x1="52" y1="204" x2="584" y2="204" class="grid"/><text x="44" y="208" class="tick" text-anchor="end">14</text><line x1="52" y1="142" x2="584" y2="142" class="grid"/><text x="44" y="146" class="tick" text-anchor="end">28</text><line x1="52" y1="80" x2="584" y2="80" class="grid"/><text x="44" y="84" class="tick" text-anchor="end">41</text><line x1="52" y1="18" x2="584" y2="18" class="grid"/><text x="44" y="22" class="tick" text-anchor="end">55</text><line x1="52" y1="266" x2="584" y2="266" class="axis"/>
+    <text x="52" y="286" class="tick" text-anchor="middle">1일</text><text x="140.66666666666666" y="286" class="tick" text-anchor="middle">2일</text><text x="229.33333333333331" y="286" class="tick" text-anchor="middle">3일</text><text x="318" y="286" class="tick" text-anchor="middle">4일</text><text x="406.66666666666663" y="286" class="tick" text-anchor="middle">5일</text><text x="495.33333333333337" y="286" class="tick" text-anchor="middle">6일</text><text x="584" y="286" class="tick" text-anchor="middle">7일</text><polyline points="52,130.72727272727275 140.66666666666666,126.21818181818182 229.33333333333331,121.70909090909092 318,117.20000000000002 406.66666666666663,112.69090909090912 495.33333333333337,108.18181818181822 584,103.67272727272731" fill="none" stroke="#2a78d6" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/><circle cx="52" cy="130.72727272727275" r="3.5" fill="#2a78d6" stroke="var(--surface-1)" stroke-width="2"><title>환생OFF · 1일: 30</title></circle><circle cx="140.66666666666666" cy="126.21818181818182" r="3.5" fill="#2a78d6" stroke="var(--surface-1)" stroke-width="2"><title>환생OFF · 2일: 31</title></circle><circle cx="229.33333333333331" cy="121.70909090909092" r="3.5" fill="#2a78d6" stroke="var(--surface-1)" stroke-width="2"><title>환생OFF · 3일: 32</title></circle><circle cx="318" cy="117.20000000000002" r="3.5" fill="#2a78d6" stroke="var(--surface-1)" stroke-width="2"><title>환생OFF · 4일: 33</title></circle><circle cx="406.66666666666663" cy="112.69090909090912" r="3.5" fill="#2a78d6" stroke="var(--surface-1)" stroke-width="2"><title>환생OFF · 5일: 34</title></circle><circle cx="495.33333333333337" cy="108.18181818181822" r="3.5" fill="#2a78d6" stroke="var(--surface-1)" stroke-width="2"><title>환생OFF · 6일: 35</title></circle><circle cx="584" cy="103.67272727272731" r="3.5" fill="#2a78d6" stroke="var(--surface-1)" stroke-width="2"><title>환생OFF · 7일: 36</title></circle><text x="592" y="107.67272727272731" class="endlabel" fill="#2a78d6">환생OFF</text><polyline points="52,130.72727272727275 140.66666666666666,126.21818181818182 229.33333333333331,117.20000000000002 318,112.69090909090912 406.66666666666663,103.67272727272731 495.33333333333337,103.67272727272731 584,99.16363636363639" fill="none" stroke="#1baf7a" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/><circle cx="52" cy="130.72727272727275" r="3.5" fill="#1baf7a" stroke="var(--surface-1)" stroke-width="2"><title>기본 · 1일: 30</title></circle><circle cx="140.66666666666666" cy="126.21818181818182" r="3.5" fill="#1baf7a" stroke="var(--surface-1)" stroke-width="2"><title>기본 · 2일: 31</title></circle><circle cx="229.33333333333331" cy="117.20000000000002" r="3.5" fill="#1baf7a" stroke="var(--surface-1)" stroke-width="2"><title>기본 · 3일: 33</title></circle><circle cx="318" cy="112.69090909090912" r="3.5" fill="#1baf7a" stroke="var(--surface-1)" stroke-width="2"><title>기본 · 4일: 34</title></circle><circle cx="406.66666666666663" cy="103.67272727272731" r="3.5" fill="#1baf7a" stroke="var(--surface-1)" stroke-width="2"><title>기본 · 5일: 36</title></circle><circle cx="495.33333333333337" cy="103.67272727272731" r="3.5" fill="#1baf7a" stroke="var(--surface-1)" stroke-width="2"><title>기본 · 6일: 36</title></circle><circle cx="584" cy="99.16363636363639" r="3.5" fill="#1baf7a" stroke="var(--surface-1)" stroke-width="2"><title>기본 · 7일: 37</title></circle><text x="592" y="103.16363636363639" class="endlabel" fill="#1baf7a">기본</text><polyline points="52,85.63636363636365 140.66666666666666,72.10909090909092 229.33333333333331,63.09090909090909 318,58.58181818181819 406.66666666666663,49.56363636363639 495.33333333333337,45.05454545454549 584,40.54545454545459" fill="none" stroke="#eda100" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/><circle cx="52" cy="85.63636363636365" r="3.5" fill="#eda100" stroke="var(--surface-1)" stroke-width="2"><title>종합안 · 1일: 40</title></circle><circle cx="140.66666666666666" cy="72.10909090909092" r="3.5" fill="#eda100" stroke="var(--surface-1)" stroke-width="2"><title>종합안 · 2일: 43</title></circle><circle cx="229.33333333333331" cy="63.09090909090909" r="3.5" fill="#eda100" stroke="var(--surface-1)" stroke-width="2"><title>종합안 · 3일: 45</title></circle><circle cx="318" cy="58.58181818181819" r="3.5" fill="#eda100" stroke="var(--surface-1)" stroke-width="2"><title>종합안 · 4일: 46</title></circle><circle cx="406.66666666666663" cy="49.56363636363639" r="3.5" fill="#eda100" stroke="var(--surface-1)" stroke-width="2"><title>종합안 · 5일: 48</title></circle><circle cx="495.33333333333337" cy="45.05454545454549" r="3.5" fill="#eda100" stroke="var(--surface-1)" stroke-width="2"><title>종합안 · 6일: 49</title></circle><circle cx="584" cy="40.54545454545459" r="3.5" fill="#eda100" stroke="var(--surface-1)" stroke-width="2"><title>종합안 · 7일: 50</title></circle><text x="592" y="44.54545454545459" class="endlabel" fill="#eda100">종합안</text></svg>
+    <div class="legend"><span><i class="dot" style="background:#2a78d6"></i>환생 OFF</span><span><i class="dot" style="background:#1baf7a"></i>기본</span><span><i class="dot" style="background:#eda100"></i>종합안</span></div>
+  </div>
+
+  <div class="card">
+    <h2>③ 튜닝안별 7일차 도달 스테이지</h2>
+    <p class="note">레버를 겹칠수록 도달 깊이가 커짐. 환생 루프가 단일 최대 레버.</p>
+    <svg viewBox="0 0 680 260" class="chart" role="img" aria-label="튜닝안별 7일차 도달 스테이지">
+    <line x1="52" y1="212" x2="660" y2="212" class="grid"/><text x="44" y="216" class="tick" text-anchor="end">0</text><line x1="52" y1="163.5" x2="660" y2="163.5" class="grid"/><text x="44" y="167.5" class="tick" text-anchor="end">14</text><line x1="52" y1="115" x2="660" y2="115" class="grid"/><text x="44" y="119" class="tick" text-anchor="end">29</text><line x1="52" y1="66.5" x2="660" y2="66.5" class="grid"/><text x="44" y="70.5" class="tick" text-anchor="end">43</text><line x1="52" y1="18" x2="660" y2="18" class="grid"/><text x="44" y="22" class="tick" text-anchor="end">57</text><line x1="52" y1="212" x2="660" y2="212" class="axis"/><rect x="76.32" y="90.53913043478259" width="72.96" height="121.46086956521741" rx="4" fill="#2a78d6"><title>환생 OFF: 36층</title></rect>
+      <text x="112.79999999999998" y="84.53913043478259" class="barval" text-anchor="middle">36</text>
+      <text x="112.79999999999998" y="230" class="tick" text-anchor="middle">환생 OFF</text><rect x="197.92" y="87.16521739130434" width="72.96" height="124.83478260869566" rx="4" fill="#2a78d6"><title>기본: 37층</title></rect>
+      <text x="234.39999999999998" y="81.16521739130434" class="barval" text-anchor="middle">37</text>
+      <text x="234.39999999999998" y="230" class="tick" text-anchor="middle">기본</text><rect x="319.52" y="80.4173913043478" width="72.96" height="131.5826086956522" rx="4" fill="#2a78d6"><title>환생 1.0: 39층</title></rect>
+      <text x="356" y="74.4173913043478" class="barval" text-anchor="middle">39</text>
+      <text x="356" y="230" class="tick" text-anchor="middle">환생 1.0</text><rect x="441.11999999999995" y="73.6695652173913" width="72.96" height="138.3304347826087" rx="4" fill="#2a78d6"><title>비용완화: 41층</title></rect>
+      <text x="477.59999999999997" y="67.6695652173913" class="barval" text-anchor="middle">41</text>
+      <text x="477.59999999999997" y="230" class="tick" text-anchor="middle">비용완화</text><rect x="562.72" y="43.30434782608694" width="72.96" height="168.69565217391306" rx="4" fill="#1baf7a"><title>종합안: 50층</title></rect>
+      <text x="599.2" y="37.30434782608694" class="barval" text-anchor="middle">50</text>
+      <text x="599.2" y="230" class="tick" text-anchor="middle">종합안</text></svg>
+  </div>
+
+  <div class="findings">
+    <h2>핵심 발견</h2>
+    <ol>
+      <li><span class="crit">지수적 벽</span>: Day 1에 30층 폭발 후 하루 +1씩. 적 성장(1.14ⁿ) &gt; 보상 성장(1.12ⁿ) + 강화비용 폭증이 겹침.</li>
+      <li>곡선 상수(적/보상) 조정만으로는 벽이 안 풀림 → 진짜 원인은 <b>지출 곡선</b>과 <b>곱셈형 루프 부재</b>.</li>
+      <li><span class="crit">환생이 장식용이었다</span>: <code>state.prestige</code>가 포인트만 쌓고 보너스 미적용 → 수정(수입 배수)하니 곡선이 개선(37→50층).</li>
+      <li>더 깊은 구조적 병목: 유닛 파워가 <b>레벨 상한(랭크×20)</b>에 묶여, 상한 개방은 소환(희소 자원)에 의존 → 수입만으로는 못 넘음.</li>
+    </ol>
+  </div>
+
+  <details>
+    <summary>표로 보기 (기본 시나리오 원자료)</summary>
+    <table class="dtable"><thead><tr><th>Day</th><th>최고Stage</th><th>일일증가</th><th>보유전투력</th><th>요구전투력</th><th>환생</th></tr></thead><tbody><tr><td>1</td><td>30</td><td>29</td><td>6,408</td><td>10,593</td><td>0</td></tr><tr><td>2</td><td>31</td><td>1</td><td>7,569</td><td>12,076</td><td>5</td></tr><tr><td>3</td><td>33</td><td>2</td><td>10,174</td><td>15,693</td><td>5</td></tr><tr><td>4</td><td>34</td><td>1</td><td>10,999</td><td>17,890</td><td>10</td></tr><tr><td>5</td><td>36</td><td>2</td><td>11,850</td><td>23,250</td><td>10</td></tr><tr><td>6</td><td>36</td><td>0</td><td>12,249</td><td>23,250</td><td>16</td></tr><tr><td>7</td><td>37</td><td>1</td><td>14,189</td><td>26,504</td><td>22</td></tr></tbody></table>
+  </details>
+</div>

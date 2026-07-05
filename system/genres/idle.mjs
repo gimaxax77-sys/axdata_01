@@ -2,6 +2,7 @@ import { resolve } from '../core/resolution.mjs';
 import { getStage } from '../core/progression.mjs';
 import { getPartyUnits } from '../core/gameState.mjs';
 import { earn } from '../core/economy.mjs';
+import { BALANCE } from '../core/balance.mjs';
 
 // ─────────────────────────────────────────────────────────────
 // 장르 어댑터: 방치형 (자동/누적형)
@@ -49,6 +50,11 @@ export const idleGenre = {
       gained.currency += stageDef.rewards.currency;
       gained.growth += stageDef.rewards.growth;
     }
+
+    // 환생 영구 보너스: 방치 수입 × (1 + prestige × 보너스)
+    const mult = 1 + (state.prestige || 0) * BALANCE.prestigeIncomeBonus;
+    gained.currency = Math.round(gained.currency * mult);
+    gained.growth = Math.round(gained.growth * mult);
 
     earn(state.wallet, gained);
     state.lastTick = Date.now();

@@ -2,6 +2,7 @@ import { getArchetype } from './archetypes.mjs';
 import { computeStats } from './stats.mjs';
 import { collectUnitModifiers } from './modifiers.mjs';
 import { createEnhance } from './enhance.mjs';
+import { BALANCE } from './balance.mjs';
 
 // ─────────────────────────────────────────────────────────────
 // 유닛 인스턴스 — 시스템이 다루는 최소 단위.
@@ -28,7 +29,11 @@ export function createUnit(archetype, { level = 1, rank = 1 } = {}) {
 
 // 레벨업 비용(성장 재화). 레벨이 오를수록 비용 증가.
 export function levelUpCost(unit) {
-  return { growth: Math.round(50 * Math.pow(1.15, unit.level - 1)) };
+  return {
+    growth: Math.round(
+      BALANCE.levelCostBase * Math.pow(BALANCE.levelCostGrowth, unit.level - 1)
+    ),
+  };
 }
 
 // 레벨 상한 = 랭크 × 20. 돌파(랭크업) 없이는 못 넘는다.

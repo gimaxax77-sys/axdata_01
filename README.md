@@ -35,6 +35,8 @@ system/
 node system/demo.mjs        # 장르·컨셉 스왑 증명
 node system/demo-build.mjs  # 캐릭터 성장 분화 증명
 node system/demo-gacha.mjs  # 소환(가차) + 장비 증명
+node system/sim/balance.mjs # 7일 밸런스 시뮬레이션 (곡선·병목·튜닝)
+node system/sim/report.mjs  # 곡선 시각화 HTML 리포트 생성
 ```
 
 `demo.mjs` — 같은 IP 데이터 하나로:
@@ -57,6 +59,15 @@ node system/demo-gacha.mjs  # 소환(가차) + 장비 증명
 
 모든 성장 요소는 하나의 `modifiers` 파이프라인에서 합산되어
 스탯 계산과 전투 판정이 동일한 결과를 공유합니다.
+
+## 밸런스 시뮬레이터
+
+합리적 오토플레이어를 7일간 돌려 성장 곡선·병목·해금 페이싱을 검증합니다.
+모든 밸런스 상수는 `core/balance.mjs` 단일 소스에 있어, 시뮬레이터가 값을
+바꿔가며 튜닝 실험을 합니다. 시각화 리포트는 `docs/balance-report.html` 참고.
+
+이 시뮬레이터가 잡아낸 대표 이슈: 초반 러시 후 지수적 벽(적 1.14ⁿ > 보상 1.12ⁿ),
+장식용이던 환생 루프(수입 배수 미적용 → 수정), 소환 수급에 묶인 파워 상한.
 
 ## 다음 단계
 
