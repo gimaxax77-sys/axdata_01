@@ -8,12 +8,16 @@ import { toCombatProfile } from './units.mjs';
 //   · win      : RPG 장르가 사용 (승패로 진행 게이팅)
 //   · duration : 방치형 장르가 사용 (클리어 소요 초 → 초당 보상)
 //
-// 같은 함수가 두 장르를 모두 굴린다. 이게 이 IP의 핵심.
+// 스킬 전투 효과를 반영한다:
+//   치명타 → dps에 이미 반영(프로필 단계)
+//   흡혈(lifesteal)  → 파티 유효 HP 증가
+//   관통(defPierce)  → 적 방어 무시
+//   팀버프(teamBuffAtk) → 파티 dps 배수
 // ─────────────────────────────────────────────────────────────
 
 // 방어(def)에 의한 피해 감쇠 계수: 100/(100+def)
 function mitigation(def) {
-  return 100 / (100 + def);
+  return 100 / (100 + Math.max(0, def));
 }
 
 // challenge 형태: { hp, atk, def }  (스칼라 적)
@@ -22,30 +26,39 @@ export function resolve(party, challenge) {
 
   const profiles = party.map(toCombatProfile);
 
-  // 지원형 팀 버프 합산 (예: 공격력 +15%)
-  let atkMult = 1;
-  for (const p of profiles) {
-    if (p.teamBuff && p.teamBuff.stat === 'atk') atkMult += p.teamBuff.mult;
-  }
+  // 팀 버프 합산 (지원형 원형 + 지휘 스킬 등)
+  const atkMult = 1 + profiles.reduce((s, p) => s + (p.teamBuffAtk || 0), 0);
+  // 흡혈 합산 (상한 60%) → 파티 실효 HP 증가
+  const lifesteal = Math.min(
+    0.6,
+    profiles.reduce((s, p) => s + (p.effect?.lifesteal || 0), 0)
+  );
+  // 방어 관통은 파티 내 최댓값 사용
+  const defPierce = Math.min(
+    0.9,
+    Math.max(0, ...profiles.map((p) => p.effect?.defPierce || 0))
+  );
 
   const partyHP = profiles.reduce((s, p) => s + p.hp, 0);
+  const partyHPeff = partyHP * (1 + lifesteal);
   const rawDPS = profiles.reduce((s, p) => s + p.dps, 0) * atkMult;
   const avgDef = profiles.reduce((s, p) => s + p.def, 0) / profiles.length;
 
+  const enemyDefEff = challenge.def * (1 - defPierce);
   // 파티가 적에게 넣는 유효 DPS (적 방어 반영)
-  const partyEffDPS = Math.max(1, rawDPS * mitigation(challenge.def));
+  const partyEffDPS = Math.max(1, rawDPS * mitigation(enemyDefEff));
   // 적이 파티에게 넣는 유효 DPS (파티 평균 방어 반영)
   const enemyEffDPS = Math.max(1, challenge.atk * mitigation(avgDef));
 
   const timeToKillEnemy = challenge.hp / partyEffDPS;
-  const timeToKillParty = partyHP / enemyEffDPS;
+  const timeToKillParty = partyHPeff / enemyEffDPS;
 
   const win = timeToKillEnemy <= timeToKillParty;
   return {
     win,
     duration: win ? timeToKillEnemy : timeToKillParty, // 초
     partyPower: Math.round(rawDPS),
-    partyHP: Math.round(partyHP),
+    partyHP: Math.round(partyHPeff),
     log: win
       ? `승리 (${timeToKillEnemy.toFixed(1)}초 소요)`
       : `패배 (${timeToKillParty.toFixed(1)}초 버팀)`,
