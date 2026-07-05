@@ -1,59 +1,45 @@
-# 🐹 두더지 잡기 (Mole Blitz)
+# 🎮 IP 게임 시스템 (Swappable Game System)
 
-React Native + Expo로 만든 간단한 모바일 게임입니다.
-30초 안에 두더지를 최대한 많이 잡으세요. 단, 💣 폭탄을 치면 즉시 게임 오버!
+**IP = 게임 시스템 그 자체.** 시스템은 고정 자산으로 두고,
+그 위에 **장르(RPG ↔ 방치형)** 와 **컨셉(판타지 ↔ SF)** 만 갈아끼워
+여러 게임으로 운영하는 구조입니다.
 
-## 게임 방법
+> 캐릭터·세계관이 IP가 아니라, **성장·전투·경제 규칙**이 IP입니다.
+> 시스템 하나를 잘 만들어두면 판타지 RPG로도, SF 방치형으로도 재출시할 수 있습니다.
 
-- 구멍에서 튀어나오는 🐹 두더지를 탭하면 +1점
-- 점수가 오를수록 두더지가 더 빠르게 등장하고 사라집니다 (난이도 상승)
-- 💣 폭탄을 잘못 치면 즉시 게임 종료
-- 최고 점수가 기록됩니다
+## 구조
 
-## 실행 방법
+```
+system/
+├── core/       # IP — 고정 (장르/컨셉 무관한 순수 규칙)
+├── genres/     # Driver — 스왑 (rpg / idle)
+├── concepts/   # Skin — 스왑 (fantasy / scifi)
+└── demo.mjs    # 스왑 증명 데모
+```
 
-### 1. 의존성 설치
+자세한 설계는 [`docs/IP-SYSTEM-DESIGN.md`](docs/IP-SYSTEM-DESIGN.md) 참고.
+
+## 핵심 아이디어
+
+전투 판정 엔진이 `{ win, duration }` 을 반환합니다.
+- **RPG** 는 `win`(승패)으로 진행을 게이팅
+- **방치형** 은 `duration`(소요 초)으로 초당 보상을 누적
+
+→ **같은 엔진 하나가 두 장르를 모두 굴립니다.**
+
+## 실행
+
+시스템 데모(장르·컨셉 스왑 증명)를 실행합니다. 별도 설치 없이 Node로 바로 실행됩니다.
 
 ```bash
-npm install
+node system/demo.mjs
 ```
 
-### 2. 개발 서버 실행
+같은 IP 데이터 하나로:
+1. 컨셉만 스왑 → 판타지/SF (스탯 숫자는 완전 동일, 이름만 다름)
+2. 장르만 스왑 → RPG 능동 전투 / 방치형 오프라인 자동 누적
 
-```bash
-npm start
-```
+## 다음 단계
 
-### 3. 휴대폰에서 실행 (가장 쉬움)
-
-1. 휴대폰에 **Expo Go** 앱을 설치합니다
-   - [iOS App Store](https://apps.apple.com/app/expo-go/id982107779)
-   - [Android Play Store](https://play.google.com/store/apps/details?id=host.exp.exponent)
-2. `npm start` 실행 후 터미널에 나타나는 **QR 코드**를 스캔합니다
-   - Android: Expo Go 앱으로 스캔
-   - iOS: 기본 카메라 앱으로 스캔
-3. 폰에서 바로 게임이 실행됩니다!
-
-> 휴대폰과 컴퓨터가 **같은 Wi-Fi**에 연결되어 있어야 합니다.
-
-### 웹 브라우저에서 미리보기
-
-```bash
-npm run web
-```
-
-## 프로젝트 구조
-
-```
-.
-├── App.js          # 게임 전체 로직 & UI
-├── app.json        # Expo 앱 설정
-├── package.json    # 의존성
-└── babel.config.js # Babel 설정
-```
-
-## 기술 스택
-
-- **React Native** — 크로스 플랫폼 모바일 프레임워크
-- **Expo** — 설치 없이 실기기 테스트가 가능한 개발 환경
-- **Animated API** — 두더지 등장 애니메이션
+모바일(Expo) UI 레이어를 이 `core` 위에 얹어, 런타임에 장르/컨셉을
+토글하는 앱으로 확장할 수 있습니다. (Expo 스캐폴딩은 `package.json`/`app.json`에 준비됨)

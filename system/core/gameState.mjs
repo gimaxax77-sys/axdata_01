@@ -1,0 +1,26 @@
+import { createWallet } from './economy.mjs';
+
+// ─────────────────────────────────────────────────────────────
+// 게임 상태(세이브) — IP의 지속 자산.
+// 장르도 컨셉도 여기 없다. 순수하게 "무엇을 가졌고 어디까지 왔나".
+// 같은 상태 객체를 RPG 어댑터에도, 방치형 어댑터에도 그대로 넣을 수 있다.
+// ─────────────────────────────────────────────────────────────
+
+export function createGameState({ units = [], party = [] } = {}) {
+  return {
+    units, // 보유 유닛 인스턴스 배열
+    party, // 편성된 유닛 uid 배열 (최대 정책은 장르가 정함)
+    wallet: createWallet(),
+    stage: 1, // 현재 도전/진행 스테이지
+    maxStage: 1, // 최고 도달 스테이지
+    energy: 60, // RPG 장르가 사용하는 행동력 (방치형은 무시)
+    prestige: 0, // 방치형 장르가 사용하는 환생 횟수 (RPG는 무시)
+    lastTick: null, // 방치형 오프라인 계산 기준 시각(ms)
+  };
+}
+
+// party uid → 유닛 인스턴스 배열
+export function getPartyUnits(state) {
+  const byId = new Map(state.units.map((u) => [u.uid, u]));
+  return state.party.map((uid) => byId.get(uid)).filter(Boolean);
+}
