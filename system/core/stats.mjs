@@ -6,6 +6,7 @@ import { collectUnitModifiers } from './modifiers.mjs';
 // 계산 순서:
 //   1) 기본스탯 × 레벨배수 × 랭크배수   (원형 성장)
 //   2) × (1 + 강화·스킬의 statPct)       (방향성 성장)
+//   3) + 장비의 statFlat                 (착용 성장)
 //
 //   레벨: 스탯 +8%/레벨 (곱연산)
 //   랭크: 스탯 +25%/랭크 (곱연산)
@@ -36,10 +37,10 @@ export function computeStats(unit) {
   const g = baseGrownStats(unit);
   const mods = collectUnitModifiers(unit);
   return {
-    hp: Math.round(g.hp * (1 + mods.statPct.hp)),
-    atk: Math.round(g.atk * (1 + mods.statPct.atk)),
-    def: Math.round(g.def * (1 + mods.statPct.def)),
-    spd: Math.round(g.spd * (1 + mods.statPct.spd)),
+    hp: Math.round(g.hp * (1 + mods.statPct.hp) + mods.statFlat.hp),
+    atk: Math.round(g.atk * (1 + mods.statPct.atk) + mods.statFlat.atk),
+    def: Math.round(g.def * (1 + mods.statPct.def) + mods.statFlat.def),
+    spd: Math.round(g.spd * (1 + mods.statPct.spd) + mods.statFlat.spd),
   };
 }
 

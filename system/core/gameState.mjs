@@ -10,12 +10,14 @@ export function createGameState({ units = [], party = [] } = {}) {
   return {
     units, // 보유 유닛 인스턴스 배열
     party, // 편성된 유닛 uid 배열 (최대 정책은 장르가 정함)
+    inventory: [], // 미장착 장비 인스턴스 배열
     wallet: createWallet(),
     stage: 1, // 현재 도전/진행 스테이지
     maxStage: 1, // 최고 도달 스테이지
     energy: 60, // RPG 장르가 사용하는 행동력 (방치형은 무시)
     prestige: 0, // 방치형 장르가 사용하는 환생 횟수 (RPG는 무시)
     lastTick: null, // 방치형 오프라인 계산 기준 시각(ms)
+    gacha: { pity: 0 }, // 소환 천장 카운터
   };
 }
 

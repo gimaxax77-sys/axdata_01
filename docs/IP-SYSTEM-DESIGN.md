@@ -18,9 +18,12 @@
 │  장르도 컨셉도 모른다. 순수 규칙과 데이터.               │
 │    · archetypes  유닛 역할(방어/공격/지원)              │
 │    · stats       레벨·랭크 성장 + 모디파이어 반영         │
-│    · modifiers   성장요소 합산 파이프라인(스킬·강화)      │
+│    · modifiers   성장요소 합산(스킬·강화·장비)           │
 │    · skills      스킬 카탈로그/장착/강화                 │
 │    · enhance     강화(각인) 노드 정의                    │
+│    · gear        장비 카탈로그/제작/장착/강화             │
+│    · gacha       소환(확률·천장) — RNG 주입              │
+│    · rng         시드 가능 난수                          │
 │    · character   레벨업·돌파·장착·강화 액션(자원 소모)    │
 │    · units       유닛 인스턴스 → 전투 프로필              │
 │    · resolution  전투 판정 엔진  → { win, duration }    │
@@ -74,6 +77,7 @@ core 는 위 레이어를 절대 import 하지 않는다 → 그래서 재사용
 | **스킬 장착** | 선택 분화 | (장착 무료) | 슬롯에 스킬을 골라 끼움 → 빌드/역할 |
 | **스킬 강화** | 선택 심화 | growth | 스킬 레벨 +15%/레벨 |
 | **강화(각인)** | 방향 투자 | currency | 특정 스탯 노드에 집중(atk/hp/def/crit) |
+| **장비** | 착용 성장 | currency | 슬롯별 flat 스탯 + 효과, 강화로 +12%/레벨 |
 
 ### 3-1. 모디파이어 파이프라인 (`modifiers.mjs`)
 
@@ -82,18 +86,21 @@ core 는 위 레이어를 절대 import 하지 않는다 → 그래서 재사용
 ```
 collectUnitModifiers(unit)  →
   { statPct: {atk,hp,def,spd},                  // % 스탯 증가
+    statFlat:{atk,hp,def,spd},                  // 고정 스탯 (장비)
     effect:  {critChance,critDamage,lifesteal,defPierce},  // 전투 효과
     teamBuff:{atk} }                             // 팀 버프
 ```
 
-소스는 3개: **원형 고유 버프 · 장착 스킬(레벨 반영) · 강화 노드**.
+소스는 4개: **원형 버프 · 장착 스킬(레벨 반영) · 강화 노드 · 장착 장비**.
 `stats.mjs`(스탯)와 `resolution.mjs`(판정)가 이 합산 결과를 공유한다.
+새 성장 요소(예: 유물/각성)를 붙여도 여기 소스만 추가하면 된다.
 
 ### 3-2. 스탯 계산 순서 (`stats.mjs`)
 
 ```
 1) 기본스탯 × 레벨배수 × 랭크배수      (원형 성장 — 균일)
 2) × (1 + statPct)                    (스킬·각인 — 방향성)
+3) + statFlat                         (장비 — 착용)
 ```
 
 ### 3-3. 스킬 전투 효과가 판정에 들어가는 법
@@ -115,6 +122,24 @@ collectUnitModifiers(unit)  →
 | B 브루저 | 요새+흡혈, hp·def 각인 | 4720(실효6136) | 1473 | 5.9초 클리어 |
 
 > 출발점이 완전히 같아도, 투자 방향이 유닛의 정체성을 바꾼다.
+
+### 3-5. 소환(가차) — 유닛 획득 (`gacha.mjs` + `rng.mjs`)
+
+- **등급 확률**: N 50 / R 33 / SR 14 / SSR 3 (가중치). 등급이 시작 랭크를 정함(전설=R3).
+- **역할**: VANGUARD/STRIKER/SUPPORT 균등.
+- **천장(pity)**: 90회 안에 SSR 보장, SSR 획득 시 리셋.
+- **10연차**: 최소 1개 SR 이상 보장.
+- **RNG 주입**: `makeRng(seed)` 로 재현 가능 → 확률 검증·밸런싱에 사용.
+
+### 3-6. 장비 — 착용 성장 (`gear.mjs`)
+
+- 슬롯 3종: **weapon(공격) · armor(생존) · accessory(효과/속도)**.
+- 장비는 flat 스탯 + 전투 효과(치명/흡혈/관통)를 준다 → modifiers의 한 소스.
+- **제작(craft)** → 인벤토리, **장착(equip)** → 슬롯, **강화(enhance)** → flat +12%/레벨.
+- 강화(각인)이 "본체 %투자"라면, 장비는 "착용 flat + 효과"로 역할이 갈린다.
+
+검증(`node system/demo-gacha.mjs`): 10연차(천장·바닥보장 동작) 후,
+뽑은 유닛에 장비 3종 장착·강화 → 전투력 347 → 679.
 
 ---
 
@@ -140,6 +165,9 @@ collectUnitModifiers(unit)  →
 **`node system/demo-build.mjs`** — 캐릭터 성장 분화
 - 동일 STRIKER 두 유닛을 레벨업·돌파·스킬·각인으로 다르게 육성 → 성능 분화(§3-4)
 
+**`node system/demo-gacha.mjs`** — 소환 + 장비
+- 시드 10연차(천장·바닥보장) → 뽑은 유닛에 장비 제작·장착·강화(§3-5, §3-6)
+
 ---
 
 ## 6. 폴더 구조
@@ -152,6 +180,9 @@ system/
 │   ├── modifiers.mjs    # 성장요소 합산 파이프라인
 │   ├── skills.mjs       # 스킬 카탈로그/장착/강화
 │   ├── enhance.mjs      # 강화(각인) 노드
+│   ├── gear.mjs         # 장비 카탈로그/제작/장착/강화
+│   ├── gacha.mjs        # 소환(확률·천장)
+│   ├── rng.mjs          # 시드 가능 난수
 │   ├── character.mjs    # 레벨업·돌파·장착·강화 액션
 │   ├── units.mjs
 │   ├── resolution.mjs   ← 판정 엔진 (심장)
@@ -166,14 +197,16 @@ system/
 │   ├── scifi.mjs
 │   └── index.mjs
 ├── demo.mjs         # 장르·컨셉 스왑 데모
-└── demo-build.mjs   # 캐릭터 성장 분화 데모
+├── demo-build.mjs   # 캐릭터 성장 분화 데모
+└── demo-gacha.mjs   # 소환 + 장비 데모
 ```
 
 ---
 
 ## 7. 다음 단계 (제안)
 
-- [ ] 유닛 소환(가차) 시스템 — `summon` 자원 소비, 확률 테이블
+- [x] ~~유닛 소환(가차) 시스템 — `summon` 자원 소비, 확률 테이블~~ (완료)
+- [x] ~~장비 시스템 — 슬롯별 장착/강화~~ (완료)
 - [ ] 세이브 직렬화(JSON) + 로드 → 오프라인 정산 연결
 - [ ] Expo(모바일) UI 레이어를 이 core 위에 얹기 (genre/concept를 런타임 토글)
 - [ ] 밸런스 시뮬레이터: 스테이지별 요구 전투력 곡선 자동 리포트

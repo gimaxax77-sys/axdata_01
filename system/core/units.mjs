@@ -21,6 +21,8 @@ export function createUnit(archetype, { level = 1, rank = 1 } = {}) {
     skills: [null, null, null],
     // 강화(각인) 노드 레벨
     enhance: createEnhance(),
+    // 장비 슬롯: 각 원소는 null 또는 장비 인스턴스
+    gear: { weapon: null, armor: null, accessory: null },
   };
 }
 

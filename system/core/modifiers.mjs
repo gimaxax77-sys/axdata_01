@@ -1,6 +1,7 @@
 import { getArchetype } from './archetypes.mjs';
 import { getSkill, skillPower } from './skills.mjs';
 import { ENHANCE_NODES } from './enhance.mjs';
+import { GEAR_SLOTS, gearContribution } from './gear.mjs';
 
 // ─────────────────────────────────────────────────────────────
 // 모디파이어 파이프라인 — 한 유닛의 "모든 성장 요소"를 하나로 합산.
@@ -16,6 +17,7 @@ import { ENHANCE_NODES } from './enhance.mjs';
 function emptyMods() {
   return {
     statPct: { atk: 0, hp: 0, def: 0, spd: 0 },
+    statFlat: { atk: 0, hp: 0, def: 0, spd: 0 },
     effect: { critChance: 0, critDamage: 0, lifesteal: 0, defPierce: 0 },
     teamBuff: { atk: 0 },
   };
@@ -25,6 +27,12 @@ function addStatPct(mods, src, scale = 1) {
   if (!src) return;
   for (const k of Object.keys(mods.statPct)) {
     if (src[k]) mods.statPct[k] += src[k] * scale;
+  }
+}
+function addStatFlat(mods, src) {
+  if (!src) return;
+  for (const k of Object.keys(mods.statFlat)) {
+    if (src[k]) mods.statFlat[k] += src[k];
   }
 }
 function addEffect(mods, src, scale = 1) {
@@ -64,6 +72,16 @@ export function collectUnitModifiers(unit) {
     if (!node) continue;
     if (node.kind === 'statPct') mods.statPct[node.stat] += node.per * lvl;
     else if (node.kind === 'effect') mods.effect[node.stat] += node.per * lvl;
+  }
+
+  // 4) 장착 장비 — flat 스탯 + 전투 효과
+  const gear = unit.gear || {};
+  for (const slot of GEAR_SLOTS) {
+    const item = gear[slot];
+    if (!item) continue;
+    const c = gearContribution(item);
+    addStatFlat(mods, c.flat);
+    addEffect(mods, c.effect);
   }
 
   return mods;
