@@ -10,12 +10,32 @@
 ## 구조
 
 ```
-system/
-├── core/       # IP — 고정 (장르/컨셉 무관한 순수 규칙)
-├── genres/     # Driver — 스왑 (rpg / idle)
-├── concepts/   # Skin — 스왑 (fantasy / scifi)
-└── demo.mjs    # 스왑 증명 데모
+system/          # 게임 시스템 (IP)
+├── core/        # 고정 — 장르/컨셉 무관한 순수 규칙
+├── genres/      # Driver — 스왑 (rpg / idle)
+├── concepts/    # Skin — 스왑 (fantasy / scifi)
+├── sim/         # 밸런스 시뮬레이터
+└── demo*.mjs    # 증명 데모
+
+app/             # 모바일 UI (Expo) — 검증된 시스템 위에 얹은 화면
+├── screens/     # 방치 · 캐릭터 · 소환 탭
+├── useGame.js   # 게임 상태 훅 (방치 틱 루프)
+└── theme.js
+App.js           # 앱 진입 (탭 셸)
 ```
+
+## 모바일 앱 실행
+
+`system/` 코어 위에 얹은 판타지 컨셉 방치형 RPG. 방치(자동전투·환생) /
+캐릭터(레벨업·돌파·스킬·각인·장비) / 소환(가차·천장) 3개 탭.
+
+```bash
+npm install
+npm start        # QR 스캔 → Expo Go (iOS/Android)
+npm run web      # 브라우저 미리보기
+```
+
+> 코어는 `.mjs`(ESM), 앱은 Metro가 `metro.config.js`로 `.mjs`를 해석해 직접 import.
 
 자세한 설계는 [`docs/IP-SYSTEM-DESIGN.md`](docs/IP-SYSTEM-DESIGN.md) 참고.
 
