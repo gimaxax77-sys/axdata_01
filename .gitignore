@@ -10,7 +10,7 @@ web-build/
 expo-env.d.ts
 
 # Generated playable web build (regenerate: expo export + scripts/build-play.mjs)
-docs/play.html
+docs/play*.html
 
 # Native
 *.orig.*

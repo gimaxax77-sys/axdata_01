@@ -7,14 +7,23 @@ import { accountMods } from '../system/core/balance.mjs';
 import { idleGenre } from '../system/genres/idle.mjs';
 import { serialize, deserialize } from '../system/core/save.mjs';
 import { fantasyConcept } from '../system/concepts/fantasy.mjs';
+import { CONCEPTS } from '../system/concepts/index.mjs';
 import { loadRaw, saveRaw, clearSave } from './storage';
 
 // 게임 상태 훅. 저장/복원 + 오프라인 보상 정산 + 방치 틱.
 const TICK_MS = 1000;
 const TICK_GAME_SEC = 24; // 실제 1초 = 게임 24초 (숫자가 눈에 보이게)
 
+// 운영 컨셉 선택 — 빌드/초기화 시점의 운영자 결정(글로벌로 주입).
+// 같은 코어를 판타지/SF 두 제품으로 배포함을 실증. 기본은 판타지.
+function activeConcept() {
+  const id = (typeof globalThis !== 'undefined' && globalThis.__ELDRIA_CONCEPT__) || 'fantasy';
+  return CONCEPTS[id] || fantasyConcept;
+}
+const CONCEPT = activeConcept();
+
 function createFresh() {
-  const starter = fantasyConcept.roster.find((c) => c.id === 'mir');
+  const starter = CONCEPT.roster.find((c) => c.id === 'mir') || CONCEPT.roster.find((c) => c.rarity === 'N') || CONCEPT.roster[0];
   const hero = createUnit(starter.archetype, {
     level: 1, rank: 1, characterId: starter.id, signature: starter.signature, element: starter.element,
   });
@@ -85,7 +94,7 @@ export function useGame() {
     bump();
   }, [bump, save]);
 
-  return { state: ref.current, bump, lastGain, offline, dismissOffline, reset, save, concept: fantasyConcept };
+  return { state: ref.current, bump, lastGain, offline, dismissOffline, reset, save, concept: CONCEPT };
 }
 
 // 파티 최고 유닛의 "실효 전투력"(환생 배수 포함)
