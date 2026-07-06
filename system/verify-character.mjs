@@ -19,6 +19,7 @@ import {
 } from './core/runes.mjs';
 import { awakenSignature } from './core/character.mjs';
 import { AWAKEN_MAX } from './core/skills.mjs';
+import { seedProgress, seedStatPct, SEED_FULL, RARITY_BASE_MULT } from './core/seed.mjs';
 
 let passed = 0; const fails = [];
 const ok = (n, c) => { if (c) { passed++; console.log(`  ✓ ${n}`); } else { fails.push(n); console.log(`  ✗ ${n}`); } };
@@ -97,6 +98,43 @@ console.log('\n■ 캐릭터 성장 축 검증 (assert)\n');
     ru.runes.filter(Boolean).length === u.runes.filter(Boolean).length);
   ok('세이브 왕복: 전투력 동일', computePower(ru) === computePower(u));
   ok('세이브 왕복: 룬 가방 보존', r.runeBag.length === s.runeBag.length);
+}
+
+// ── 씨앗 (서사 발현 + 저등급 구제, UR 천장) ────────────────────
+{
+  // 등급 없는 유닛(데모/시뮬)은 씨앗/등급배수 영향 0 → 하위호환
+  const plain = createUnit('STRIKER', { level: 40, rank: 3 });
+  const sp0 = seedStatPct(plain);
+  ok('등급 없는 유닛은 씨앗 없음(하위호환)', !seedProgress(plain).hasSeed && sp0.atk === 0 && sp0.hp === 0);
+
+  // 완전 투자 유닛을 등급만 바꿔 비교
+  const maxU = (rarity) => {
+    const u = createUnit('STRIKER', { level: 80, rank: 5, signature: 'SIG_FLAME_EDGE' });
+    u.rarity = rarity; u.intimacy = 1e6; u.sigWeapon = { level: 15 }; u.sigAwaken = 3;
+    u.runes = [1, 2, 3].map((i) => ({ uid: `r${i}`, set: 'RAGE', rarity: 'N', level: 0 }));
+    return u;
+  };
+  for (const r of ['N', 'R', 'SR', 'SSR']) ok(`${r} 완전 발현 6/6`, seedProgress(maxU(r)).fullyUnlocked);
+
+  const powN = computePower(maxU('N'));
+  const powSR = computePower(maxU('SR'));
+  const powSSR = computePower(maxU('SSR'));
+  ok('완전발현도 등급 높을수록 강함 (N<SR<SSR)', powN < powSR && powSR < powSSR);
+
+  // 핵심 제약: 완전발현 N 실효배수 < 무발현 SSR 기본배수
+  const nFull = RARITY_BASE_MULT.N * (1 + SEED_FULL.N);
+  ok('완전발현 저등급 < 무발현 UR (살짝 아래)', nFull < RARITY_BASE_MULT.SSR);
+  ok('저등급일수록 씨앗 보정 큼', SEED_FULL.N > SEED_FULL.R && SEED_FULL.R > SEED_FULL.SR && SEED_FULL.SR > SEED_FULL.SSR);
+
+  // 조건 난이도 차등: 동일 투자에서 낮은 등급이 더 많이 발현
+  const same = (r) => { const u = createUnit('STRIKER', { level: 40, rank: 3 }); u.rarity = r; u.intimacy = 700; return seedProgress(u).met; };
+  ok('동일 투자 시 낮은 등급이 더 빨리 발현', same('N') >= same('SR') && same('SR') >= same('SSR'));
+
+  // 조건 달성이 실제로 전투력에 반영
+  const growing = createUnit('STRIKER', { level: 5, rank: 1 }); growing.rarity = 'N';
+  const before = computePower(growing);
+  growing.level = 40; growing.rank = 3; // talent+breakthrough 조건 달성
+  ok('씨앗 조건 달성이 전투력 증가에 기여', seedProgress(growing).met >= 2 && computePower(growing) > before);
 }
 
 console.log(`\n결과: ${passed} 통과 / ${fails.length} 실패`);

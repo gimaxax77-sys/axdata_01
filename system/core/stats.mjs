@@ -1,6 +1,7 @@
 import { getArchetype } from './archetypes.mjs';
 import { collectUnitModifiers } from './modifiers.mjs';
 import { BALANCE } from './balance.mjs';
+import { rarityBaseMult } from './seed.mjs';
 
 // ─────────────────────────────────────────────────────────────
 // 스탯 성장 공식 — 장르/컨셉 무관.
@@ -21,11 +22,14 @@ function baseGrownStats(unit) {
   const rankMult = 1 + (unit.rank - 1) * BALANCE.statPerRank;
   const growth = levelMult * rankMult;
   const spdMult = 1 + (unit.level - 1) * BALANCE.spdPerLevel;
+  // 등급 기본 배수 — 등급이 곧 잠재력의 하한(씨앗이 좁히되 다 못 메움).
+  // 등급 없는 유닛(데모/시뮬)은 1.0 → 하위호환.
+  const rm = rarityBaseMult(unit);
   return {
-    hp: base.hp * growth,
-    atk: base.atk * growth,
-    def: base.def * growth,
-    spd: base.spd * spdMult,
+    hp: base.hp * growth * rm,
+    atk: base.atk * growth * rm,
+    def: base.def * growth * rm,
+    spd: base.spd * spdMult * rm,
   };
 }
 

@@ -13,6 +13,7 @@ import { AWAKEN_MAX, awakenCost } from '../../system/core/skills.mjs';
 import { craftGear, equipGear, enhanceGear, unequipGear } from '../../system/core/gear.mjs';
 import { recordMission } from '../../system/core/daily.mjs';
 import { intimacyLevel, intimacyProgress, giftCost, giveGift, INTIMACY_MAX } from '../../system/core/intimacy.mjs';
+import { seedConditions, seedProgress } from '../../system/core/seed.mjs';
 import { linesOf, costumesOf, equipCostume, unequipCostume, sigWeaponOf } from '../../system/concepts/index.mjs';
 import {
   hasSigWeapon, canOwnSigWeapon, unlockSigWeapon, enhanceSigWeapon,
@@ -195,6 +196,36 @@ export default function RosterScreen({ state, bump, concept }) {
           ))}
         </Card>
       )}
+
+      {/* 씨앗 — 서사 발현 (등급별 보정, 6조건 달성분 능력치) */}
+      {(() => {
+        const sp = seedProgress(unit);
+        if (!sp.hasSeed) return null;
+        const conds = seedConditions(unit);
+        const STAT_KO = { atk: '공격', hp: '체력', def: '방어', spd: '속도' };
+        return (
+          <Card style={{ marginTop: 12, borderColor: sp.fullyUnlocked ? T.good : T.line }}>
+            <View style={g.sigHead}>
+              <Text style={g.sec}>🌱 씨앗 <Text style={g.dim}>서사 발현</Text></Text>
+              {sp.fullyUnlocked
+                ? <Text style={g.seedFull}>완전 발현</Text>
+                : <Text style={g.dim}>{sp.met}/{sp.total}</Text>}
+            </View>
+            <Text style={g.slotDesc}>{unit.rarity || '?'}등급 · 완전 발현 시 전 스탯 최대 +{Math.round(sp.full * 100)}%. 낮은 등급일수록 보정이 크지만, 완전 발현해도 최고등급을 살짝 넘지 못합니다.</Text>
+            <View style={{ height: 8 }} />
+            {conds.map((c) => (
+              <View key={c.id} style={[g.seedRow, c.met && g.seedRowMet]}>
+                <Text style={g.seedIcon}>{c.met ? '🌸' : '🔒'}</Text>
+                <View style={{ flex: 1 }}>
+                  <Text style={g.seedLabel}>{c.label} <Text style={g.dim}>· {c.narrative}</Text></Text>
+                  <Text style={g.seedSub}>{c.unitLabel} {c.cur}/{c.need} · {STAT_KO[c.stat]} +{(c.value * 100).toFixed(1)}%</Text>
+                </View>
+                <View style={c.met ? g.seedBadgeOn : g.seedBadgeOff}><Text style={c.met ? g.seedBadgeTextOn : g.seedBadgeTextOff}>{c.met ? '발현' : `${c.cur}/${c.need}`}</Text></View>
+              </View>
+            ))}
+          </Card>
+        );
+      })()}
 
       {/* 전용 스킬 (시그니처) — 항상 발동, 교체 불가. 각성으로 2차 효과 개방 */}
       {unit.signature && (() => {
@@ -514,6 +545,16 @@ const g = StyleSheet.create({
   awHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 10 },
   subsec2: { color: T.text, fontSize: 13, fontWeight: '700' },
   setBonus: { color: T.good, fontSize: 12, fontWeight: '700', marginTop: 6 },
+  seedFull: { color: '#183a1d', backgroundColor: T.good, fontSize: 11, fontWeight: '800', paddingHorizontal: 8, paddingVertical: 2, borderRadius: 8, overflow: 'hidden' },
+  seedRow: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 8, borderTopWidth: 1, borderTopColor: T.line },
+  seedRowMet: {},
+  seedIcon: { fontSize: 20, width: 26, textAlign: 'center' },
+  seedLabel: { color: T.text, fontWeight: '700', fontSize: 13 },
+  seedSub: { color: T.muted, fontSize: 12, marginTop: 2 },
+  seedBadgeOn: { backgroundColor: T.good, borderRadius: 8, paddingHorizontal: 8, paddingVertical: 3 },
+  seedBadgeOff: { backgroundColor: T.surface2, borderRadius: 8, paddingHorizontal: 8, paddingVertical: 3 },
+  seedBadgeTextOn: { color: '#183a1d', fontWeight: '800', fontSize: 11 },
+  seedBadgeTextOff: { color: T.muted, fontWeight: '700', fontSize: 11 },
   statGrid: { flexDirection: 'row', gap: 8, marginTop: 14 },
   stat: { flex: 1, backgroundColor: T.surface2, borderRadius: 10, paddingVertical: 8, alignItems: 'center' },
   statK: { color: T.muted, fontSize: 11 },

@@ -5,6 +5,7 @@ import { GEAR_SLOTS, gearContribution } from './gear.mjs';
 import { intimacyBonus } from './intimacy.mjs';
 import { sigWeaponContribution, sigWeaponBoost } from './sigweapon.mjs';
 import { runeMainContribution, runeSetContribution } from './runes.mjs';
+import { seedStatPct } from './seed.mjs';
 
 // ─────────────────────────────────────────────────────────────
 // 모디파이어 파이프라인 — 한 유닛의 "모든 성장 요소"를 하나로 합산.
@@ -123,6 +124,9 @@ export function collectUnitModifiers(unit) {
   const rs = runeSetContribution(unit.runes);
   addStatPct(mods, rs.statPct);
   addEffect(mods, rs.effect);
+
+  // 7) 씨앗 — 서사 발현(등급별 보정, 달성 조건분 statPct)
+  addStatPct(mods, seedStatPct(unit));
 
   return mods;
 }
