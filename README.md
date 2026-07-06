@@ -27,15 +27,17 @@ App.js           # 앱 진입 (탭 셸)
 ## 모바일 앱 실행
 
 `system/` 코어 위에 얹은 판타지 컨셉 방치형 RPG. 방치(자동전투·환생) /
-캐릭터(레벨업·돌파·스킬·각인·장비) / 소환(가차·천장) 3개 탭.
+캐릭터(레벨업·돌파·스킬 편성·각인·장비 제작/교체/강화) / 소환(가차·천장) 3개 탭.
 
 ```bash
 npm install
-npm start        # QR 스캔 → Expo Go (iOS/Android)
-npm run web      # 브라우저 미리보기
+npm start        # QR 스캔 → Expo Go (iOS/Android 실기기)
+npm run web      # 브라우저 미리보기 (개발 서버)
+npm run build:play  # 단일 자립형 HTML(docs/play.html) 생성 → 정적 호스팅용
 ```
 
 > 코어는 `.mjs`(ESM), 앱은 Metro가 `metro.config.js`로 `.mjs`를 해석해 직접 import.
+> 게임 로직을 다시 짜지 않고 검증된 `system/` 코어 함수를 UI에서 호출만 합니다.
 
 자세한 설계는 [`docs/IP-SYSTEM-DESIGN.md`](docs/IP-SYSTEM-DESIGN.md) 참고.
 

@@ -1,44 +1,55 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Modal } from 'react-native';
 import { T } from '../theme';
 import { Card, Btn, fmt } from '../components';
 import { computeStats, computePower } from '../../system/core/stats.mjs';
 import { levelCap } from '../../system/core/units.mjs';
 import { skillSlots, SKILL_CATALOG } from '../../system/core/skills.mjs';
-import { GEAR_SLOTS } from '../../system/core/gear.mjs';
-import {
-  levelUp, ascend, enhanceNode, equipSkill,
-} from '../../system/core/character.mjs';
-import { craftGear, equipGear, enhanceGear } from '../../system/core/gear.mjs';
+import { GEAR_SLOTS, GEAR_CATALOG, gearEnhanceCost } from '../../system/core/gear.mjs';
+import { levelUp, ascend, enhanceNode, equipSkill, unequipSkill, upgradeSkill } from '../../system/core/character.mjs';
+import { craftGear, equipGear, enhanceGear, unequipGear } from '../../system/core/gear.mjs';
 
-const DEFAULT_SKILLS = { STRIKER: ['BERSERK', 'PRECISION', 'SWIFT'], VANGUARD: ['FORTRESS', 'RALLY', 'VAMPIRIC'], SUPPORT: ['RALLY', 'PRECISION', 'FORTRESS'] };
-const DEFAULT_GEAR = { weapon: 'RUNE_BLADE', armor: 'PLATE_ARMOR', accessory: 'CRIT_RING' };
+const SLOT_KO = { weapon: '무기', armor: '방어구', accessory: '장신구' };
+
+// 효과 객체 → 사람이 읽는 문자열
+function describeEffect(e = {}) {
+  const p = [];
+  if (e.critChance) p.push(`치명 +${Math.round(e.critChance * 100)}%`);
+  if (e.critDamage) p.push(`치피 +${Math.round(e.critDamage * 100)}%`);
+  if (e.lifesteal) p.push(`흡혈 +${Math.round(e.lifesteal * 100)}%`);
+  if (e.defPierce) p.push(`관통 +${Math.round(e.defPierce * 100)}%`);
+  return p;
+}
+function describeSkill(id) {
+  const s = SKILL_CATALOG[id];
+  const p = [];
+  if (s.statPct) for (const [k, v] of Object.entries(s.statPct)) p.push(`${k.toUpperCase()} +${Math.round(v * 100)}%`);
+  p.push(...describeEffect(s.effect));
+  if (s.teamBuff?.atk) p.push(`팀ATK +${Math.round(s.teamBuff.atk * 100)}%`);
+  return p.join(' · ');
+}
+function describeGear(bp) {
+  const p = [];
+  for (const [k, v] of Object.entries(bp.flat || {})) p.push(`${k.toUpperCase()} +${v}`);
+  p.push(...describeEffect(bp.effect));
+  return p.join(' · ');
+}
 
 export default function RosterScreen({ state, bump, concept }) {
   const [selId, setSel] = useState(state.party[0] || state.units[0]?.uid);
+  const [picker, setPicker] = useState(null); // {mode:'skill'|'gear', slot}
   const unit = state.units.find((u) => u.uid === selId) || state.units[0];
-
-  // 유닛 목록 (전투력순)
   const list = state.units.slice().sort((a, b) => computePower(b) - computePower(a));
 
   const act = (fn) => { fn(); bump(); };
-  const autoSkills = () => {
-    const order = DEFAULT_SKILLS[unit.archetype] || [];
-    for (let i = 0; i < skillSlots(unit); i++) if (!unit.skills[i] && order[i]) equipSkill(state, unit.uid, i, order[i]);
-    bump();
-  };
-  const fillGear = () => {
-    for (const slot of GEAR_SLOTS) if (!unit.gear[slot]) { const c = craftGear(state, DEFAULT_GEAR[slot]); if (c.ok) equipGear(state, unit.uid, c.item.uid); }
-    bump();
-  };
-
   const st8 = computeStats(unit);
   const meta = concept.archetypes[unit.archetype];
   const atCap = unit.level >= levelCap(unit);
+  const slots = skillSlots(unit);
 
   return (
     <ScrollView contentContainerStyle={g.wrap}>
-      {/* 보유 유닛 가로 스크롤 */}
+      {/* 보유 유닛 */}
       <Text style={g.sec}>보유 {concept.terms.unit} ({list.length})</Text>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={g.hlist}>
         {list.map((u) => {
@@ -54,7 +65,7 @@ export default function RosterScreen({ state, bump, concept }) {
         })}
       </ScrollView>
 
-      {/* 선택 유닛 상세 */}
+      {/* 상세 */}
       <Card style={{ marginTop: 6 }}>
         <View style={g.head}>
           <Text style={g.headEmoji}>{meta.emoji}</Text>
@@ -68,26 +79,52 @@ export default function RosterScreen({ state, bump, concept }) {
             <View key={k} style={g.stat}><Text style={g.statK}>{k}</Text><Text style={g.statV}>{fmt(v)}</Text></View>
           ))}
         </View>
-
-        {/* 스킬/장비 요약 */}
-        <Text style={g.subsec}>스킬 {unit.skills.filter(Boolean).length}/{skillSlots(unit)}</Text>
-        <View style={g.tagRow}>
-          {unit.skills.filter(Boolean).map((sk, i) => (
-            <Text key={i} style={g.tag}>{SKILL_CATALOG[sk.id].label}+{sk.level}</Text>
-          ))}
-          {unit.skills.filter(Boolean).length === 0 && <Text style={g.dim}>없음</Text>}
-        </View>
-        <View style={g.tagRow}>
-          {GEAR_SLOTS.map((slot) => (
-            <Text key={slot} style={[g.tag, !unit.gear[slot] && g.tagEmpty]}>
-              {unit.gear[slot] ? `${slot} +${unit.gear[slot].level}` : slot}
-            </Text>
-          ))}
-        </View>
       </Card>
 
-      {/* 성장 액션 */}
+      {/* 스킬 편성 (수동) */}
       <Card style={{ marginTop: 12 }}>
+        <Text style={g.sec}>스킬 편성 <Text style={g.dim}>({unit.skills.filter(Boolean).length}/{slots})</Text></Text>
+        {[0, 1, 2].map((i) => {
+          const locked = i >= slots;
+          const sk = unit.skills[i];
+          return (
+            <TouchableOpacity key={i} disabled={locked} onPress={() => setPicker({ mode: 'skill', slot: i })}
+              style={[g.slotRow, locked && g.slotLocked]} activeOpacity={0.8}>
+              <View style={{ flex: 1 }}>
+                {locked ? <Text style={g.dim}>슬롯 {i + 1} · 잠김 (돌파 필요)</Text>
+                  : sk ? (<>
+                    <Text style={g.slotName}>{SKILL_CATALOG[sk.id].label} +{sk.level}</Text>
+                    <Text style={g.slotDesc}>{describeSkill(sk.id)}</Text>
+                  </>) : <Text style={g.slotEmpty}>＋ 슬롯 {i + 1} 비어있음</Text>}
+              </View>
+              {!locked && <Text style={g.chev}>›</Text>}
+            </TouchableOpacity>
+          );
+        })}
+      </Card>
+
+      {/* 장비 (수동) */}
+      <Card style={{ marginTop: 12 }}>
+        <Text style={g.sec}>장비</Text>
+        {GEAR_SLOTS.map((slot) => {
+          const item = unit.gear[slot];
+          return (
+            <TouchableOpacity key={slot} onPress={() => setPicker({ mode: 'gear', slot })} style={g.slotRow} activeOpacity={0.8}>
+              <View style={{ flex: 1 }}>
+                <Text style={g.slotTag}>{SLOT_KO[slot]}</Text>
+                {item ? (<>
+                  <Text style={g.slotName}>{GEAR_CATALOG[item.blueprint].label} +{item.level - 1}</Text>
+                  <Text style={g.slotDesc}>{describeGear(GEAR_CATALOG[item.blueprint])}</Text>
+                </>) : <Text style={g.slotEmpty}>＋ 비어있음</Text>}
+              </View>
+              <Text style={g.chev}>›</Text>
+            </TouchableOpacity>
+          );
+        })}
+      </Card>
+
+      {/* 성장 */}
+      <Card style={{ marginTop: 12, marginBottom: 24 }}>
         <Text style={g.sec}>성장</Text>
         <View style={g.btnRow}>
           <View style={{ flex: 1 }}><Btn small label={atCap ? '상한 (돌파 필요)' : '레벨업'} disabled={atCap} onPress={() => act(() => levelUp(state, unit.uid))} /></View>
@@ -101,21 +138,100 @@ export default function RosterScreen({ state, bump, concept }) {
             </View>
           ))}
         </View>
-        <View style={{ height: 8 }} />
-        <View style={g.btnRow}>
-          <View style={{ flex: 1 }}><Btn small label="스킬 자동장착" onPress={autoSkills} /></View>
-          <View style={{ flex: 1 }}><Btn small label="장비 제작·장착" kind="gold" onPress={fillGear} /></View>
-        </View>
-        <Text style={g.subsec}>장비 강화</Text>
-        <View style={g.btnRow}>
-          {GEAR_SLOTS.map((slot) => (
-            <View key={slot} style={{ flex: 1 }}>
-              <Btn small kind="ghost" label={unit.gear[slot] ? `${slot}↑` : slot} disabled={!unit.gear[slot]} onPress={() => act(() => enhanceGear(state, unit.gear[slot].uid))} />
-            </View>
-          ))}
-        </View>
       </Card>
+
+      {/* 편성 모달 */}
+      <PickerModal picker={picker} unit={unit} state={state} concept={concept}
+        onClose={() => setPicker(null)} onChange={bump} />
     </ScrollView>
+  );
+}
+
+// ── 모달: 스킬/장비 선택 ──────────────────────────────────────
+function PickerModal({ picker, unit, state, onClose, onChange }) {
+  if (!picker) return null;
+  const apply = (fn) => { fn(); onChange(); };
+
+  let body;
+  if (picker.mode === 'skill') {
+    const i = picker.slot;
+    const equipped = unit.skills[i];
+    body = (
+      <>
+        <Text style={m.title}>스킬 선택 · 슬롯 {i + 1}</Text>
+        {equipped && (
+          <View style={m.equippedRow}>
+            <Text style={m.equippedName}>장착: {SKILL_CATALOG[equipped.id].label} +{equipped.level}</Text>
+            <View style={{ flexDirection: 'row', gap: 8 }}>
+              <Btn small kind="gold" label="강화" onPress={() => apply(() => upgradeSkill(state, unit.uid, i))} />
+              <Btn small kind="ghost" label="해제" onPress={() => apply(() => unequipSkill(state, unit.uid, i))} />
+            </View>
+          </View>
+        )}
+        <ScrollView style={{ maxHeight: 360 }}>
+          {Object.values(SKILL_CATALOG).map((s) => {
+            const on = equipped && equipped.id === s.id;
+            const dupOther = unit.skills.some((x, j) => x && x.id === s.id && j !== i);
+            return (
+              <TouchableOpacity key={s.id} disabled={dupOther} onPress={() => apply(() => { equipSkill(state, unit.uid, i, s.id); onClose(); })}
+                style={[m.opt, on && m.optOn, dupOther && m.optDim]} activeOpacity={0.8}>
+                <Text style={m.optName}>{s.label} {on ? '✓' : ''}{dupOther ? ' (다른 슬롯 장착중)' : ''}</Text>
+                <Text style={m.optDesc}>{describeSkill(s.id)}</Text>
+              </TouchableOpacity>
+            );
+          })}
+        </ScrollView>
+      </>
+    );
+  } else {
+    const slot = picker.slot;
+    const item = unit.gear[slot];
+    const bps = Object.values(GEAR_CATALOG).filter((b) => b.slot === slot);
+    const owned = state.inventory.filter((g2) => g2.slot === slot);
+    body = (
+      <>
+        <Text style={m.title}>{SLOT_KO[slot]} 선택</Text>
+        {item && (
+          <View style={m.equippedRow}>
+            <Text style={m.equippedName}>장착: {GEAR_CATALOG[item.blueprint].label} +{item.level - 1}</Text>
+            <View style={{ flexDirection: 'row', gap: 8 }}>
+              <Btn small kind="gold" label={`강화 (${fmt(gearEnhanceCost(item.level).currency)})`} onPress={() => apply(() => enhanceGear(state, item.uid))} />
+              <Btn small kind="ghost" label="해제" onPress={() => apply(() => unequipGear(state, unit.uid, slot))} />
+            </View>
+          </View>
+        )}
+        <ScrollView style={{ maxHeight: 340 }}>
+          <Text style={m.group}>제작 (150 골드)</Text>
+          {bps.map((b) => (
+            <TouchableOpacity key={b.id} onPress={() => apply(() => { const c = craftGear(state, b.id); if (c.ok) { equipGear(state, unit.uid, c.item.uid); onClose(); } })}
+              style={m.opt} activeOpacity={0.8}>
+              <Text style={m.optName}>{b.label}</Text>
+              <Text style={m.optDesc}>{describeGear(b)}</Text>
+            </TouchableOpacity>
+          ))}
+          {owned.length > 0 && <Text style={m.group}>보유 장비</Text>}
+          {owned.map((it) => (
+            <TouchableOpacity key={it.uid} onPress={() => apply(() => { equipGear(state, unit.uid, it.uid); onClose(); })}
+              style={m.opt} activeOpacity={0.8}>
+              <Text style={m.optName}>{GEAR_CATALOG[it.blueprint].label} +{it.level - 1}</Text>
+              <Text style={m.optDesc}>{describeGear(GEAR_CATALOG[it.blueprint])}</Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
+      </>
+    );
+  }
+
+  return (
+    <Modal transparent animationType="slide" visible onRequestClose={onClose}>
+      <TouchableOpacity style={m.backdrop} activeOpacity={1} onPress={onClose}>
+        <TouchableOpacity activeOpacity={1} style={m.sheet}>
+          {body}
+          <View style={{ height: 8 }} />
+          <Btn label="닫기" kind="ghost" onPress={onClose} />
+        </TouchableOpacity>
+      </TouchableOpacity>
+    </Modal>
   );
 }
 
@@ -137,9 +253,27 @@ const g = StyleSheet.create({
   stat: { flex: 1, backgroundColor: T.surface2, borderRadius: 10, paddingVertical: 8, alignItems: 'center' },
   statK: { color: T.muted, fontSize: 11 },
   statV: { color: T.text, fontWeight: '800', fontSize: 15, marginTop: 2 },
-  tagRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 2 },
-  tag: { color: T.text, backgroundColor: T.surface2, borderRadius: 8, paddingHorizontal: 8, paddingVertical: 4, fontSize: 12, overflow: 'hidden' },
-  tagEmpty: { color: T.muted, backgroundColor: 'transparent', borderWidth: 1, borderColor: T.line },
-  dim: { color: T.muted, fontSize: 12 },
+  slotRow: { flexDirection: 'row', alignItems: 'center', backgroundColor: T.surface2, borderRadius: 12, padding: 12, marginBottom: 8 },
+  slotLocked: { opacity: 0.5 },
+  slotName: { color: T.text, fontWeight: '800', fontSize: 14 },
+  slotDesc: { color: T.muted, fontSize: 12, marginTop: 2 },
+  slotEmpty: { color: T.primary, fontWeight: '700', fontSize: 14 },
+  slotTag: { color: T.accent, fontSize: 11, fontWeight: '700', marginBottom: 2 },
+  chev: { color: T.muted, fontSize: 22, marginLeft: 8 },
+  dim: { color: T.muted, fontSize: 12, fontWeight: '400' },
   btnRow: { flexDirection: 'row', gap: 8 },
+});
+
+const m = StyleSheet.create({
+  backdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'flex-end' },
+  sheet: { backgroundColor: T.surface, borderTopLeftRadius: 22, borderTopRightRadius: 22, padding: 18, borderTopWidth: 1, borderColor: T.line },
+  title: { color: T.text, fontWeight: '900', fontSize: 18, marginBottom: 12 },
+  equippedRow: { backgroundColor: T.surface2, borderRadius: 12, padding: 12, marginBottom: 10, gap: 8 },
+  equippedName: { color: T.text, fontWeight: '700', fontSize: 14 },
+  group: { color: T.muted, fontSize: 12, fontWeight: '700', marginTop: 10, marginBottom: 6 },
+  opt: { backgroundColor: T.surface2, borderRadius: 12, padding: 12, marginBottom: 8, borderWidth: 1, borderColor: 'transparent' },
+  optOn: { borderColor: T.accent },
+  optDim: { opacity: 0.4 },
+  optName: { color: T.text, fontWeight: '800', fontSize: 14 },
+  optDesc: { color: T.muted, fontSize: 12, marginTop: 2 },
 });

@@ -1,12 +1,12 @@
 {
   "expo": {
-    "name": "두더지 잡기",
-    "slug": "mole-blitz",
+    "name": "엘드리아 연대기",
+    "slug": "eldria-idle",
     "version": "1.0.0",
     "orientation": "portrait",
-    "userInterfaceStyle": "light",
+    "userInterfaceStyle": "dark",
     "splash": {
-      "backgroundColor": "#7bc043"
+      "backgroundColor": "#1b1430"
     },
     "assetBundlePatterns": ["**/*"],
     "ios": {
@@ -14,7 +14,7 @@
     },
     "android": {
       "adaptiveIcon": {
-        "backgroundColor": "#7bc043"
+        "backgroundColor": "#1b1430"
       }
     },
     "web": {
