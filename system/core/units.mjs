@@ -11,6 +11,9 @@ import { BALANCE } from './balance.mjs';
 // ─────────────────────────────────────────────────────────────
 
 let _seq = 0;
+// 세이브 로드 후, 기존 uid와 충돌하지 않게 시퀀스를 끌어올린다.
+export function ensureUnitSeq(n) { if (n > _seq) _seq = n; }
+
 export function createUnit(archetype, { level = 1, rank = 1, characterId = null, signature = null, element = null } = {}) {
   getArchetype(archetype); // 검증
   return {

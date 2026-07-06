@@ -5,31 +5,50 @@ import { earn } from '../system/core/economy.mjs';
 import { computePower } from '../system/core/stats.mjs';
 import { accountMods } from '../system/core/balance.mjs';
 import { idleGenre } from '../system/genres/idle.mjs';
+import { serialize, deserialize } from '../system/core/save.mjs';
 import { fantasyConcept } from '../system/concepts/fantasy.mjs';
+import { loadRaw, saveRaw, clearSave } from './storage';
 
-// 게임 상태 훅.
-// Core는 상태를 제자리에서 변형하므로, 액션 후 bump()로 강제 리렌더한다.
-// 방치형 틱을 1초마다 돌려(가속 dt) "살아있는" 자동 성장을 보여준다.
+// 게임 상태 훅. 저장/복원 + 오프라인 보상 정산 + 방치 틱.
 const TICK_MS = 1000;
 const TICK_GAME_SEC = 24; // 실제 1초 = 게임 24초 (숫자가 눈에 보이게)
 
+function createFresh() {
+  const starter = fantasyConcept.roster.find((c) => c.id === 'mir');
+  const hero = createUnit(starter.archetype, {
+    level: 1, rank: 1, characterId: starter.id, signature: starter.signature, element: starter.element,
+  });
+  hero.rarity = starter.rarity;
+  const s = createGameState({ units: [hero], party: [hero.uid] });
+  earn(s.wallet, { currency: 800, growth: 600, summon: 130 });
+  return s;
+}
+
 export function useGame() {
   const ref = useRef(null);
+  const offlineRef = useRef(null);
   if (!ref.current) {
-    // 시작 캐릭터: 견습 검사 미르 (정체성 부여)
-    const starter = fantasyConcept.roster.find((c) => c.id === 'mir');
-    const hero = createUnit(starter.archetype, {
-      level: 1, rank: 1, characterId: starter.id, signature: starter.signature, element: starter.element,
-    });
-    hero.rarity = starter.rarity;
-    const s = createGameState({ units: [hero], party: [hero.uid] });
-    earn(s.wallet, { currency: 800, growth: 600, summon: 130 });
-    ref.current = s;
+    const raw = loadRaw();
+    const loaded = raw ? deserialize(raw) : null;
+    if (loaded) {
+      // 재접속: 마지막 저장 이후 경과분 오프라인 정산
+      const rew = idleGenre.collectOffline(loaded, Date.now());
+      if (rew.gained && (rew.gained.currency > 0 || rew.gained.growth > 0)) {
+        offlineRef.current = { ...rew, seconds: rew.seconds };
+      }
+      ref.current = loaded;
+    } else {
+      ref.current = createFresh();
+    }
   }
   const [, force] = useState(0);
   const bump = useCallback(() => force((v) => (v + 1) % 1e9), []);
-
+  const [offline, setOffline] = useState(offlineRef.current);
   const [lastGain, setLastGain] = useState({ currency: 0, growth: 0 });
+
+  const save = useCallback(() => saveRaw(serialize(ref.current)), []);
+
+  // 방치 틱 + 주기 저장
   useEffect(() => {
     const id = setInterval(() => {
       const before = { ...ref.current.wallet };
@@ -38,12 +57,35 @@ export function useGame() {
         currency: Math.round(ref.current.wallet.currency - before.currency),
         growth: Math.round(ref.current.wallet.growth - before.growth),
       });
+      save();
       bump();
     }, TICK_MS);
     return () => clearInterval(id);
-  }, [bump]);
+  }, [bump, save]);
 
-  return { state: ref.current, bump, lastGain, concept: fantasyConcept };
+  // 창 닫힘/숨김 시 저장 (웹)
+  useEffect(() => {
+    const w = typeof globalThis !== 'undefined' ? globalThis : null;
+    if (!w || !w.addEventListener) return;
+    const onHide = () => save();
+    w.addEventListener('beforeunload', onHide);
+    w.addEventListener('visibilitychange', onHide);
+    return () => {
+      w.removeEventListener('beforeunload', onHide);
+      w.removeEventListener('visibilitychange', onHide);
+    };
+  }, [save]);
+
+  const dismissOffline = useCallback(() => setOffline(null), []);
+  const reset = useCallback(() => {
+    clearSave();
+    ref.current = createFresh();
+    save();
+    setOffline(null);
+    bump();
+  }, [bump, save]);
+
+  return { state: ref.current, bump, lastGain, offline, dismissOffline, reset, save, concept: fantasyConcept };
 }
 
 // 파티 최고 유닛의 "실효 전투력"(환생 배수 포함)

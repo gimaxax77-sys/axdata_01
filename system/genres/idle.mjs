@@ -67,10 +67,10 @@ export const idleGenre = {
   collectOffline(state, nowMs = Date.now()) {
     if (!state.lastTick) {
       state.lastTick = nowMs;
-      return { clears: 0, gained: { currency: 0, growth: 0 }, stage: state.stage };
+      return { clears: 0, gained: { currency: 0, growth: 0 }, stage: state.stage, seconds: 0 };
     }
-    const dt = (nowMs - state.lastTick) / 1000;
-    return this.tick(state, dt);
+    const dt = Math.max(0, (nowMs - state.lastTick) / 1000);
+    return { ...this.tick(state, dt), seconds: Math.min(dt, OFFLINE_CAP_SEC) };
   },
 
   // 환생: 이번 회차 진행을 리셋하고 영구 파워/수입 배수를 얻는다.

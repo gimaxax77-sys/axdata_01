@@ -31,6 +31,8 @@ export function getBlueprint(id) {
 }
 
 let _gseq = 0;
+export function ensureGearSeq(n) { if (n > _gseq) _gseq = n; }
+
 export function createGear(blueprintId) {
   const b = getBlueprint(blueprintId);
   return { uid: `g${++_gseq}`, blueprint: blueprintId, slot: b.slot, level: 1 };
