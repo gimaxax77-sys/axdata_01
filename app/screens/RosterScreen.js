@@ -8,11 +8,20 @@ import { levelCap } from '../../system/core/units.mjs';
 import { skillSlots, SKILL_CATALOG, equippableSkills } from '../../system/core/skills.mjs';
 import { identity, elementMeta } from '../../system/concepts/index.mjs';
 import { GEAR_SLOTS, GEAR_CATALOG, gearEnhanceCost } from '../../system/core/gear.mjs';
-import { levelUp, ascend, enhanceNode, equipSkill, unequipSkill, upgradeSkill } from '../../system/core/character.mjs';
+import { levelUp, ascend, enhanceNode, equipSkill, unequipSkill, upgradeSkill, awakenSignature } from '../../system/core/character.mjs';
+import { AWAKEN_MAX, awakenCost } from '../../system/core/skills.mjs';
 import { craftGear, equipGear, enhanceGear, unequipGear } from '../../system/core/gear.mjs';
 import { recordMission } from '../../system/core/daily.mjs';
 import { intimacyLevel, intimacyProgress, giftCost, giveGift, INTIMACY_MAX } from '../../system/core/intimacy.mjs';
-import { linesOf, costumesOf, equipCostume, unequipCostume } from '../../system/concepts/index.mjs';
+import { linesOf, costumesOf, equipCostume, unequipCostume, sigWeaponOf } from '../../system/concepts/index.mjs';
+import {
+  hasSigWeapon, canOwnSigWeapon, unlockSigWeapon, enhanceSigWeapon,
+  sigWeaponUnlockCost, sigWeaponEnhanceCost, sigWeaponBoost, SIGWEAPON_MAX,
+} from '../../system/core/sigweapon.mjs';
+import {
+  RUNE_SLOTS, RUNE_SETS, RUNE_RARITY, summonRune, equipRune, unequipRune,
+  enhanceRune, runeMainValue, runeEnhanceCost, RUNE_MAX_LEVEL, RUNE_SUMMON_COST, activeRuneSets,
+} from '../../system/core/runes.mjs';
 
 const SLOT_KO = { weapon: '무기', armor: '방어구', accessory: '장신구' };
 
@@ -38,6 +47,22 @@ function describeGear(bp) {
   for (const [k, v] of Object.entries(bp.flat || {})) p.push(`${k.toUpperCase()} +${v}`);
   p.push(...describeEffect(bp.effect));
   return p.join(' · ');
+}
+// 시그니처 각성 2차 효과 설명
+function describeAwaken(a = {}) {
+  const p = [];
+  if (a.statPct) for (const [k, v] of Object.entries(a.statPct)) p.push(`${k.toUpperCase()} +${Math.round(v * 100)}%`);
+  p.push(...describeEffect(a.effect));
+  if (a.teamBuff?.atk) p.push(`팀ATK +${Math.round(a.teamBuff.atk * 100)}%`);
+  return p.join(' · ');
+}
+// 룬 한 개 요약 (메인스탯 + 등급)
+function describeRune(rune) {
+  const set = RUNE_SETS[rune.set];
+  const val = runeMainValue(rune);
+  const stat = set.main.stat.toUpperCase();
+  const pct = `${(val * 100).toFixed(1)}%`;
+  return { title: `${set.emoji} ${set.label} +${rune.level}`, sub: `${stat} ${pct} · ${RUNE_RARITY[rune.rarity].label}` };
 }
 
 export default function RosterScreen({ state, bump, concept }) {
@@ -171,18 +196,92 @@ export default function RosterScreen({ state, bump, concept }) {
         </Card>
       )}
 
-      {/* 전용 스킬 (시그니처) — 항상 발동, 교체 불가 */}
-      {unit.signature && (
-        <Card style={{ marginTop: 12, borderColor: T.accent }}>
-          <View style={g.sigHead}>
-            <Text style={g.sec}>전용 스킬</Text>
-            <Text style={g.sigBadge}>시그니처</Text>
-          </View>
-          <Text style={g.slotName}>{SKILL_CATALOG[unit.signature].label} <Text style={g.dim}>(R{unit.rank} 강도)</Text></Text>
-          <Text style={g.slotDesc}>{describeSkill(unit.signature)}</Text>
-          <Text style={g.sigNote}>캐릭터 고유 능력 · 랭크가 오르면 강해집니다</Text>
-        </Card>
-      )}
+      {/* 전용 스킬 (시그니처) — 항상 발동, 교체 불가. 각성으로 2차 효과 개방 */}
+      {unit.signature && (() => {
+        const sig = SKILL_CATALOG[unit.signature];
+        const aw = unit.sigAwaken || 0;
+        const boost = sigWeaponBoost(unit);
+        const awCost = awakenCost(aw);
+        const canAwaken = aw < AWAKEN_MAX && (state.wallet.summon || 0) >= awCost.summon && (state.wallet.gem || 0) >= awCost.gem;
+        return (
+          <Card style={{ marginTop: 12, borderColor: T.accent }}>
+            <View style={g.sigHead}>
+              <Text style={g.sec}>전용 스킬</Text>
+              <Text style={g.sigBadge}>시그니처</Text>
+            </View>
+            <Text style={g.slotName}>{sig.label} <Text style={g.dim}>(R{unit.rank} 강도{boost ? ` · 무기 +${Math.round(boost * 100)}%` : ''})</Text></Text>
+            <Text style={g.slotDesc}>{describeSkill(unit.signature)}</Text>
+            {/* 각성 */}
+            <View style={g.awHead}>
+              <Text style={g.subsec2}>각성 <Text style={g.dim}>{aw}/{AWAKEN_MAX}</Text></Text>
+              <Btn small kind={aw >= AWAKEN_MAX ? 'ghost' : 'gold'} disabled={!canAwaken}
+                label={aw >= AWAKEN_MAX ? 'MAX' : `각성 ${concept.resources.summon.emoji}${awCost.summon} ${concept.resources.gem.emoji}${awCost.gem}`}
+                onPress={() => act(() => awakenSignature(state, unit.uid))} />
+            </View>
+            {sig.awaken && <Text style={[g.slotDesc, aw > 0 && { color: T.good }]}>2차 효과: {describeAwaken(sig.awaken)}{aw > 0 ? ` ×${aw}` : ' (각성 시 개방)'}</Text>}
+          </Card>
+        );
+      })()}
+
+      {/* 전용무기 — 캐릭터 전용 슬롯 (일반 장비와 별개). 시그니처 증폭 */}
+      {canOwnSigWeapon(unit) && (() => {
+        const w = sigWeaponOf(concept, unit);
+        const owned = hasSigWeapon(unit);
+        const lv = owned ? unit.sigWeapon.level : 0;
+        const unlockCost = sigWeaponUnlockCost();
+        const enhCost = sigWeaponEnhanceCost(lv);
+        const canUnlock = (state.wallet.gem || 0) >= unlockCost.gem;
+        const maxed = lv >= SIGWEAPON_MAX;
+        const canEnh = owned && !maxed && (state.wallet.currency || 0) >= enhCost.currency;
+        return (
+          <Card style={{ marginTop: 12 }}>
+            <Text style={g.sec}>전용무기</Text>
+            <View style={g.slotRow}>
+              <Text style={g.cosEmoji}>{owned ? w.emoji : '🔒'}</Text>
+              <View style={{ flex: 1 }}>
+                <Text style={g.slotName}>{w.name} {owned ? <Text style={g.dim}>Lv.{lv}/{SIGWEAPON_MAX}</Text> : null}</Text>
+                <Text style={g.slotDesc}>{owned
+                  ? `원형 전용 스탯 · 5레벨마다 시그니처 +10% (현재 +${Math.round(sigWeaponBoost(unit) * 100)}%)`
+                  : `획득 시 전용 스탯 + 시그니처 증폭`}</Text>
+              </View>
+              {owned
+                ? <Btn small kind="gold" disabled={!canEnh} label={maxed ? 'MAX' : `강화 ${concept.resources.currency.emoji}${fmt(enhCost.currency)}`}
+                    onPress={() => grow(() => enhanceSigWeapon(state, unit.uid))} />
+                : <Btn small kind="gold" disabled={!canUnlock} label={`획득 ${concept.resources.gem.emoji}${unlockCost.gem}`}
+                    onPress={() => act(() => unlockSigWeapon(state, unit.uid))} />}
+            </View>
+          </Card>
+        );
+      })()}
+
+      {/* 룬 — 소켓형 서브스탯 + 세트 보너스 */}
+      <Card style={{ marginTop: 12 }}>
+        <View style={g.intiHead}>
+          <Text style={g.sec}>룬 <Text style={g.dim}>({(unit.runes || []).filter(Boolean).length}/{RUNE_SLOTS})</Text></Text>
+          <Btn small kind="gold" disabled={(state.wallet.currency || 0) < RUNE_SUMMON_COST.currency}
+            label={`발굴 ${concept.resources.currency.emoji}${fmt(RUNE_SUMMON_COST.currency)}`}
+            onPress={() => act(() => summonRune(state, Math.random))} />
+        </View>
+        {(state.runeBag || []).length > 0 && <Text style={g.dim}>가방 보유 {state.runeBag.length}개</Text>}
+        {[0, 1, 2].map((i) => {
+          const rune = (unit.runes || [])[i];
+          const d = rune && describeRune(rune);
+          return (
+            <TouchableOpacity key={i} onPress={() => setPicker({ mode: 'rune', slot: i })} style={g.slotRow} activeOpacity={0.8}>
+              <View style={{ flex: 1 }}>
+                {rune ? (<>
+                  <Text style={g.slotName}>{d.title}</Text>
+                  <Text style={g.slotDesc}>{d.sub}</Text>
+                </>) : <Text style={g.slotEmpty}>＋ 룬 슬롯 {i + 1}</Text>}
+              </View>
+              <Text style={g.chev}>›</Text>
+            </TouchableOpacity>
+          );
+        })}
+        {activeRuneSets(unit.runes).filter((s) => s.active2).map((s) => (
+          <Text key={s.set} style={g.setBonus}>{s.emoji} {s.label} {s.active3 ? '3세트' : '2세트'} 보너스 활성</Text>
+        ))}
+      </Card>
 
       {/* 스킬 편성 (수동) */}
       <Card style={{ marginTop: 12 }}>
@@ -248,18 +347,55 @@ export default function RosterScreen({ state, bump, concept }) {
 
       {/* 편성 모달 */}
       <PickerModal picker={picker} unit={unit} state={state} concept={concept}
-        onClose={() => setPicker(null)} onChange={bump} />
+        onClose={() => setPicker(null)} onChange={bump} key={picker ? picker.mode + picker.slot : 'none'} />
     </ScrollView>
   );
 }
 
-// ── 모달: 스킬/장비 선택 ──────────────────────────────────────
-function PickerModal({ picker, unit, state, onClose, onChange }) {
+// ── 모달: 스킬/장비/룬 선택 ───────────────────────────────────
+function PickerModal({ picker, unit, state, onClose, onChange, concept }) {
   if (!picker) return null;
   const apply = (fn) => { fn(); onChange(); };
 
   let body;
-  if (picker.mode === 'skill') {
+  if (picker.mode === 'rune') {
+    const i = picker.slot;
+    const equipped = (unit.runes || [])[i];
+    const bag = state.runeBag || [];
+    body = (
+      <>
+        <Text style={m.title}>룬 선택 · 슬롯 {i + 1}</Text>
+        {equipped && (() => {
+          const d = describeRune(equipped);
+          const maxed = equipped.level >= RUNE_MAX_LEVEL;
+          const cost = runeEnhanceCost(equipped.level);
+          return (
+            <View style={m.equippedRow}>
+              <Text style={m.equippedName}>장착: {d.title} · {d.sub}</Text>
+              <View style={{ flexDirection: 'row', gap: 8 }}>
+                <Btn small kind="gold" disabled={maxed || (state.wallet.currency || 0) < cost.currency}
+                  label={maxed ? 'MAX' : `강화 ${fmt(cost.currency)}`} onPress={() => apply(() => enhanceRune(state, equipped.uid))} />
+                <Btn small kind="ghost" label="해제" onPress={() => apply(() => unequipRune(state, unit.uid, i))} />
+              </View>
+            </View>
+          );
+        })()}
+        <ScrollView style={{ maxHeight: 360 }}>
+          {bag.length === 0 && <Text style={m.optDesc}>가방이 비었습니다. 룬 카드에서 발굴하세요.</Text>}
+          {bag.map((r) => {
+            const d = describeRune(r);
+            return (
+              <TouchableOpacity key={r.uid} onPress={() => apply(() => { equipRune(state, unit.uid, i, r.uid); onClose(); })}
+                style={m.opt} activeOpacity={0.8}>
+                <Text style={m.optName}>{d.title}</Text>
+                <Text style={m.optDesc}>{d.sub}</Text>
+              </TouchableOpacity>
+            );
+          })}
+        </ScrollView>
+      </>
+    );
+  } else if (picker.mode === 'skill') {
     const i = picker.slot;
     const equipped = unit.skills[i];
     body = (
@@ -375,6 +511,9 @@ const g = StyleSheet.create({
   sigHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 },
   sigBadge: { color: '#3a2a05', backgroundColor: T.accent, fontSize: 11, fontWeight: '800', paddingHorizontal: 8, paddingVertical: 2, borderRadius: 8, overflow: 'hidden' },
   sigNote: { color: T.muted, fontSize: 11, marginTop: 6 },
+  awHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 10 },
+  subsec2: { color: T.text, fontSize: 13, fontWeight: '700' },
+  setBonus: { color: T.good, fontSize: 12, fontWeight: '700', marginTop: 6 },
   statGrid: { flexDirection: 'row', gap: 8, marginTop: 14 },
   stat: { flex: 1, backgroundColor: T.surface2, borderRadius: 10, paddingVertical: 8, alignItems: 'center' },
   statK: { color: T.muted, fontSize: 11 },

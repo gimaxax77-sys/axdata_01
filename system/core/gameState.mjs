@@ -14,6 +14,7 @@ export function createGameState({ units = [], party = [] } = {}) {
     units, // 보유 유닛 인스턴스 배열
     party, // 편성된 유닛 uid 배열 (최대 정책은 장르가 정함)
     inventory: [], // 미장착 장비 인스턴스 배열
+    runeBag: [], // 미장착 룬 인스턴스 배열
     wallet: createWallet(),
     stage: 1, // 현재 도전/진행 스테이지 (환생 시 리셋)
     maxStage: 1, // 이번 회차 최고 도달 (환생 시 리셋)

@@ -1,6 +1,6 @@
 import { spend } from './economy.mjs';
 import { levelUpCost, levelCap } from './units.mjs';
-import { getSkill, skillSlots, skillUpCost } from './skills.mjs';
+import { getSkill, skillSlots, skillUpCost, AWAKEN_MAX, awakenCost } from './skills.mjs';
 import { getEnhanceNode, enhanceCost, ENHANCE_CAP } from './enhance.mjs';
 
 // ─────────────────────────────────────────────────────────────
@@ -65,6 +65,18 @@ export function upgradeSkill(state, uid, slotIndex) {
   if (!spend(state.wallet, cost)) return { ok: false, reason: '스킬 강화 재료 부족', cost };
   slot.level += 1;
   return { ok: true, skill: slot.id, level: slot.level, cost };
+}
+
+// ── 시그니처 각성 : 고유 스킬에 2차 효과를 연다 ────────────────
+export function awakenSignature(state, uid) {
+  const unit = findUnit(state, uid);
+  if (!unit.signature) return { ok: false, reason: '고유 스킬 없음' };
+  const cur = unit.sigAwaken || 0;
+  if (cur >= AWAKEN_MAX) return { ok: false, reason: `각성 상한 ${AWAKEN_MAX}` };
+  const cost = awakenCost(cur);
+  if (!spend(state.wallet, cost)) return { ok: false, reason: '각성 재료 부족', cost };
+  unit.sigAwaken = cur + 1;
+  return { ok: true, level: unit.sigAwaken, cost };
 }
 
 // ── 강화(각인) : 특정 스탯에 집중 투자 ────────────────────────

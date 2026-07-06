@@ -3,6 +3,8 @@ import { getSkill, skillPower } from './skills.mjs';
 import { ENHANCE_NODES } from './enhance.mjs';
 import { GEAR_SLOTS, gearContribution } from './gear.mjs';
 import { intimacyBonus } from './intimacy.mjs';
+import { sigWeaponContribution, sigWeaponBoost } from './sigweapon.mjs';
+import { runeMainContribution, runeSetContribution } from './runes.mjs';
 
 // ─────────────────────────────────────────────────────────────
 // 모디파이어 파이프라인 — 한 유닛의 "모든 성장 요소"를 하나로 합산.
@@ -54,12 +56,20 @@ export function collectUnitModifiers(unit) {
   }
 
   // 1-b) 전용(시그니처) 스킬 — 항상 발동, 랭크에 비례해 강해짐(정체성=성장)
+  //      전용무기 보유 시 시그니처 강도가 증폭되고, 각성 시 2차 효과가 열린다.
   if (unit.signature) {
     const sig = getSkill(unit.signature);
-    const scale = skillPower(unit.rank);
+    const scale = skillPower(unit.rank) * (1 + sigWeaponBoost(unit));
     addStatPct(mods, sig.statPct, scale);
     addEffect(mods, sig.effect, scale);
     if (sig.teamBuff && sig.teamBuff.atk) mods.teamBuff.atk += sig.teamBuff.atk * scale;
+    // 각성: 2차 효과 (각성 레벨 비례)
+    const aw = unit.sigAwaken || 0;
+    if (aw && sig.awaken) {
+      addStatPct(mods, sig.awaken.statPct, aw);
+      addEffect(mods, sig.awaken.effect, aw);
+      if (sig.awaken.teamBuff && sig.awaken.teamBuff.atk) mods.teamBuff.atk += sig.awaken.teamBuff.atk * aw;
+    }
   }
 
   // 2) 장착 스킬 (슬롯별, 스킬 레벨에 비례)
@@ -101,6 +111,18 @@ export function collectUnitModifiers(unit) {
     addStatFlat(mods, c.flat);
     addEffect(mods, c.effect);
   }
+
+  // 5) 전용무기 — 별도 슬롯(일반 장비와 무관)의 flat + 효과
+  const sw = sigWeaponContribution(unit);
+  if (sw) { addStatFlat(mods, sw.flat); addEffect(mods, sw.effect); }
+
+  // 6) 룬 — 메인스탯 + 세트 보너스
+  const rm = runeMainContribution(unit.runes);
+  addStatPct(mods, rm.statPct);
+  addEffect(mods, rm.effect);
+  const rs = runeSetContribution(unit.runes);
+  addStatPct(mods, rs.statPct);
+  addEffect(mods, rs.effect);
 
   return mods;
 }

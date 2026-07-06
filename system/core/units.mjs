@@ -25,6 +25,9 @@ export function createUnit(archetype, { level = 1, rank = 1, characterId = null,
     intimacy: 0, // 친밀도 포인트 (선물로 상승)
     costume: null, // 장착 코스튬 id (Concept가 정의). null = 기본
     costumeBonus: {}, // 장착 코스튬의 statPct (장착 시 Concept가 세팅)
+    sigWeapon: { level: 0 }, // 전용무기 (0 = 미획득)
+    sigAwaken: 0, // 시그니처 각성 레벨
+    runes: [null, null, null], // 룬 슬롯 (각 원소는 null 또는 룬 인스턴스)
     level,
     rank,
     // 스킬 슬롯: 각 원소는 null 또는 { id, level }

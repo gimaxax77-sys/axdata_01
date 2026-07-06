@@ -42,15 +42,22 @@ export const SKILL_CATALOG = {
   // ── 전용(시그니처) 스킬 ─────────────────────────────────────
   // 캐릭터 고유 능력. 일반 슬롯에 장착하는 게 아니라 항상 발동하며,
   // 랭크가 오를수록 강해진다(정체성 = 성장). signature:true 로 표시.
-  SIG_FLAME_EDGE: { id: 'SIG_FLAME_EDGE', label: '불꽃검', desc: '공격+치명 특화', signature: true, statPct: { atk: 0.15 }, effect: { critChance: 0.2, critDamage: 0.6 } },
-  SIG_MOON_BLESSING: { id: 'SIG_MOON_BLESSING', label: '달의 축복', desc: '팀 공격+흡혈', signature: true, teamBuff: { atk: 0.25 }, effect: { lifesteal: 0.15 } },
-  SIG_FROST_GUARD: { id: 'SIG_FROST_GUARD', label: '서리방벽', desc: '체력·방어 특화', signature: true, statPct: { hp: 0.30, def: 0.25 } },
-  SIG_WIND_DANCE: { id: 'SIG_WIND_DANCE', label: '바람춤', desc: '속도·공격', signature: true, statPct: { spd: 0.5, atk: 0.1 } },
-  SIG_EARTH_AEGIS: { id: 'SIG_EARTH_AEGIS', label: '대지수호', desc: '체력·흡혈', signature: true, statPct: { hp: 0.2 }, effect: { lifesteal: 0.2 } },
-  SIG_LIGHT_ORACLE: { id: 'SIG_LIGHT_ORACLE', label: '빛의 신탁', desc: '팀 공격+치명', signature: true, teamBuff: { atk: 0.15 }, effect: { critChance: 0.15 } },
-  SIG_STORM_BLADE: { id: 'SIG_STORM_BLADE', label: '폭풍검', desc: '공격·관통', signature: true, statPct: { atk: 0.2 }, effect: { defPierce: 0.2 } },
-  SIG_NOVICE: { id: 'SIG_NOVICE', label: '견습 일격', desc: '기본 공격 강화', signature: true, statPct: { atk: 0.12 } },
+  // awaken: 각성(sigAwaken 레벨) 당 추가되는 2차 효과.
+  SIG_FLAME_EDGE: { id: 'SIG_FLAME_EDGE', label: '불꽃검', desc: '공격+치명 특화', signature: true, statPct: { atk: 0.15 }, effect: { critChance: 0.2, critDamage: 0.6 }, awaken: { effect: { defPierce: 0.1 } } },
+  SIG_MOON_BLESSING: { id: 'SIG_MOON_BLESSING', label: '달의 축복', desc: '팀 공격+흡혈', signature: true, teamBuff: { atk: 0.25 }, effect: { lifesteal: 0.15 }, awaken: { teamBuff: { atk: 0.06 } } },
+  SIG_FROST_GUARD: { id: 'SIG_FROST_GUARD', label: '서리방벽', desc: '체력·방어 특화', signature: true, statPct: { hp: 0.30, def: 0.25 }, awaken: { effect: { lifesteal: 0.06 } } },
+  SIG_WIND_DANCE: { id: 'SIG_WIND_DANCE', label: '바람춤', desc: '속도·공격', signature: true, statPct: { spd: 0.5, atk: 0.1 }, awaken: { statPct: { atk: 0.06 } } },
+  SIG_EARTH_AEGIS: { id: 'SIG_EARTH_AEGIS', label: '대지수호', desc: '체력·흡혈', signature: true, statPct: { hp: 0.2 }, effect: { lifesteal: 0.2 }, awaken: { statPct: { def: 0.08 } } },
+  SIG_LIGHT_ORACLE: { id: 'SIG_LIGHT_ORACLE', label: '빛의 신탁', desc: '팀 공격+치명', signature: true, teamBuff: { atk: 0.15 }, effect: { critChance: 0.15 }, awaken: { effect: { critDamage: 0.15 } } },
+  SIG_STORM_BLADE: { id: 'SIG_STORM_BLADE', label: '폭풍검', desc: '공격·관통', signature: true, statPct: { atk: 0.2 }, effect: { defPierce: 0.2 }, awaken: { effect: { critChance: 0.03 } } },
+  SIG_NOVICE: { id: 'SIG_NOVICE', label: '견습 일격', desc: '기본 공격 강화', signature: true, statPct: { atk: 0.12 }, awaken: { statPct: { atk: 0.05 } } },
 };
+
+// 시그니처 각성 상한 + 비용 (같은 캐릭터 조각=소환 재화 + 프리미엄).
+export const AWAKEN_MAX = 3;
+export function awakenCost(level) {
+  return { summon: 30 * (level + 1), gem: 10 * (level + 1) };
+}
 
 export function getSkill(id) {
   const s = SKILL_CATALOG[id];

@@ -44,6 +44,22 @@ export function unequipCostume(unit) {
   return { ok: true };
 }
 
+// 전용무기 표시명/이모지. 컨셉이 weapons[characterId]로 지정하면 그걸 쓰고,
+// 없으면 원형에 맞춰 파생(캐릭터명 + 무기 종류). Core 수치와는 무관한 렌더용.
+const ARCH_WEAPON = {
+  STRIKER: { emoji: '⚔️', kind: '검' },
+  VANGUARD: { emoji: '🛡️', kind: '중갑' },
+  SUPPORT: { emoji: '🔮', kind: '법구' },
+};
+export function sigWeaponOf(concept, unit) {
+  const w = concept.weapons && concept.weapons[unit.characterId];
+  if (w) return { name: w.name, emoji: w.emoji };
+  const a = ARCH_WEAPON[unit.archetype] || ARCH_WEAPON.STRIKER;
+  const ch = unit.characterId && characterOf(concept, unit.characterId);
+  const base = ch ? ch.name : (concept.archetypes[unit.archetype]?.name || '영웅');
+  return { name: `${base}의 ${a.kind}`, emoji: a.emoji };
+}
+
 // 속성 ID → 표시명/이모지 (컨셉 매핑). 없으면 ID 그대로.
 export function elementMeta(concept, id) {
   if (!id) return null;

@@ -1,5 +1,6 @@
 import { ensureUnitSeq } from './units.mjs';
 import { ensureGearSeq } from './gear.mjs';
+import { ensureRuneSeq } from './runes.mjs';
 import { createWallet } from './economy.mjs';
 
 // ─────────────────────────────────────────────────────────────
@@ -16,6 +17,7 @@ export function serialize(state) {
 // 누락/구버전 필드 보정 (안전한 로드).
 function normalize(state) {
   state.inventory = state.inventory || [];
+  state.runeBag = state.runeBag || [];
   state.wallet = { ...createWallet(), ...(state.wallet || {}) };
   state.gacha = state.gacha || { pity: 0 };
   state.relics = state.relics || {};
@@ -64,13 +66,16 @@ function normalize(state) {
     if (u.intimacy === undefined) u.intimacy = 0;
     if (u.costume === undefined) u.costume = null;
     if (!u.costumeBonus) u.costumeBonus = {};
+    if (!u.sigWeapon) u.sigWeapon = { level: 0 };
+    if (u.sigAwaken === undefined) u.sigAwaken = 0;
+    if (!u.runes) u.runes = [null, null, null];
   }
   return state;
 }
 
 // uid("u12"/"g3")를 스캔해 시퀀스를 끌어올린다 → 로드 후 신규 생성 충돌 방지.
 function syncSeq(state) {
-  let maxU = 0, maxG = 0;
+  let maxU = 0, maxG = 0, maxR = 0;
   const num = (id, pfx) => parseInt(String(id || '').replace(pfx, ''), 10) || 0;
   for (const u of state.units || []) {
     maxU = Math.max(maxU, num(u.uid, 'u'));
@@ -78,10 +83,13 @@ function syncSeq(state) {
       const it = u.gear[slot];
       if (it) maxG = Math.max(maxG, num(it.uid, 'g'));
     }
+    for (const r of u.runes || []) if (r) maxR = Math.max(maxR, num(r.uid, 'r'));
   }
   for (const it of state.inventory || []) maxG = Math.max(maxG, num(it.uid, 'g'));
+  for (const r of state.runeBag || []) maxR = Math.max(maxR, num(r.uid, 'r'));
   ensureUnitSeq(maxU);
   ensureGearSeq(maxG);
+  ensureRuneSeq(maxR);
 }
 
 // json → state (실패/버전불일치 시 null).
