@@ -32,12 +32,28 @@ function normalize(state) {
   state.daily.ads = state.daily.ads || {};
   state.shop = state.shop || { purchased: {} };
   state.shop.purchased = state.shop.purchased || {};
+  state.arena = state.arena || { points: 0, day: -1, entries: 0 };
+  state.arena.points = state.arena.points || 0;
+  state.arena.day = state.arena.day ?? -1;
+  state.arena.entries = state.arena.entries || 0;
+  state.guild = state.guild || { coins: 0, day: -1, attacks: 0, tier: 1, bossHp: null };
+  state.guild.coins = state.guild.coins || 0;
+  state.guild.day = state.guild.day ?? -1;
+  state.guild.attacks = state.guild.attacks || 0;
+  state.guild.tier = state.guild.tier || 1;
+  if (state.guild.bossHp === undefined) state.guild.bossHp = null;
   state.stage = state.stage || 1;
   state.maxStage = state.maxStage || 1;
   state.peakStage = state.peakStage || state.maxStage || 1;
   state.energy = state.energy ?? 60;
   state.prestige = state.prestige || 0;
   state.party = state.party || [];
+  // 파티가 비었거나 보유하지 않은 uid만 남았다면 최소 1명 보정.
+  const owned = new Set((state.units || []).map((u) => u.uid));
+  state.party = state.party.filter((uid) => owned.has(uid));
+  if (state.party.length === 0 && state.units && state.units.length) {
+    state.party = [state.units[0].uid];
+  }
   for (const u of state.units || []) {
     if (!u.skills) u.skills = [null, null, null];
     if (!u.enhance) u.enhance = { atk: 0, hp: 0, def: 0, crit: 0 };
