@@ -8,7 +8,7 @@ import { idleGenre } from '../system/genres/idle.mjs';
 import { serialize, deserialize } from '../system/core/save.mjs';
 import { fantasyConcept } from '../system/concepts/fantasy.mjs';
 import { CONCEPTS } from '../system/concepts/index.mjs';
-import { loadRaw, saveRaw, clearSave } from './storage';
+import { loadRawSync, loadRawAsync, saveRaw, clearSave } from './storage';
 
 // 게임 상태 훅. 저장/복원 + 오프라인 보상 정산 + 방치 틱.
 const TICK_MS = 1000;
@@ -33,32 +33,56 @@ function createFresh() {
   return s;
 }
 
+// 재접속 오프라인 정산을 상태에 반영해 로드된 세이브를 반환.
+function applyLoad(loaded, offlineRef) {
+  const rew = idleGenre.collectOffline(loaded, Date.now());
+  if (rew.gained && (rew.gained.currency > 0 || rew.gained.growth > 0)) {
+    offlineRef.current = { ...rew, seconds: rew.seconds };
+  }
+  return loaded;
+}
+
 export function useGame() {
   const ref = useRef(null);
   const offlineRef = useRef(null);
+  // 웹: 동기 로드로 첫 렌더에 세이브 반영. 네이티브: null → 아래 async 하이드레이트.
+  const bootRaw = useRef(loadRawSync());
   if (!ref.current) {
-    const raw = loadRaw();
-    const loaded = raw ? deserialize(raw) : null;
-    if (loaded) {
-      // 재접속: 마지막 저장 이후 경과분 오프라인 정산
-      const rew = idleGenre.collectOffline(loaded, Date.now());
-      if (rew.gained && (rew.gained.currency > 0 || rew.gained.growth > 0)) {
-        offlineRef.current = { ...rew, seconds: rew.seconds };
-      }
-      ref.current = loaded;
-    } else {
-      ref.current = createFresh();
-    }
+    const loaded = bootRaw.current ? deserialize(bootRaw.current) : null;
+    ref.current = loaded ? applyLoad(loaded, offlineRef) : createFresh();
   }
   const [, force] = useState(0);
   const bump = useCallback(() => force((v) => (v + 1) % 1e9), []);
   const [offline, setOffline] = useState(offlineRef.current);
   const [lastGain, setLastGain] = useState({ currency: 0, growth: 0 });
+  // 웹은 이미 로드 완료. 네이티브는 AsyncStorage 하이드레이트 전까지 틱/저장 보류.
+  const [hydrated, setHydrated] = useState(bootRaw.current !== null);
 
   const save = useCallback(() => saveRaw(serialize(ref.current)), []);
 
-  // 방치 틱 + 주기 저장
+  // 네이티브 비동기 하이드레이트 — 로드 완료 전까지 저장하지 않아 덮어쓰기 방지.
   useEffect(() => {
+    if (hydrated) return;
+    let alive = true;
+    (async () => {
+      const raw = await loadRawAsync();
+      if (!alive) return;
+      if (raw) {
+        const loaded = deserialize(raw);
+        if (loaded) {
+          ref.current = applyLoad(loaded, offlineRef);
+          if (offlineRef.current) setOffline(offlineRef.current);
+        }
+      }
+      setHydrated(true);
+      bump();
+    })();
+    return () => { alive = false; };
+  }, [hydrated, bump]);
+
+  // 방치 틱 + 주기 저장 (하이드레이트 완료 후에만)
+  useEffect(() => {
+    if (!hydrated) return;
     const id = setInterval(() => {
       const before = { ...ref.current.wallet };
       idleGenre.tick(ref.current, TICK_GAME_SEC);
@@ -70,7 +94,7 @@ export function useGame() {
       bump();
     }, TICK_MS);
     return () => clearInterval(id);
-  }, [bump, save]);
+  }, [hydrated, bump, save]);
 
   // 창 닫힘/숨김 시 저장 (웹)
   useEffect(() => {
