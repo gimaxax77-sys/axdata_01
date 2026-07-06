@@ -22,6 +22,7 @@ export function createUnit(archetype, { level = 1, rank = 1, characterId = null,
     characterId, // 정체성(Concept 도감이 이름/성격을 매핑). Core는 ID만 앎.
     signature, // 전용 스킬 id (항상 발동). null 가능.
     element, // 속성 ID (FIRE/WATER/…). null 가능.
+    intimacy: 0, // 친밀도 포인트 (선물로 상승)
     level,
     rank,
     // 스킬 슬롯: 각 원소는 null 또는 { id, level }

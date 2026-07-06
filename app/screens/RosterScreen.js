@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Modal } from 'react-native';
 import { T } from '../theme';
 import { Card, Btn, fmt } from '../components';
@@ -10,6 +10,8 @@ import { GEAR_SLOTS, GEAR_CATALOG, gearEnhanceCost } from '../../system/core/gea
 import { levelUp, ascend, enhanceNode, equipSkill, unequipSkill, upgradeSkill } from '../../system/core/character.mjs';
 import { craftGear, equipGear, enhanceGear, unequipGear } from '../../system/core/gear.mjs';
 import { recordMission } from '../../system/core/daily.mjs';
+import { intimacyLevel, intimacyProgress, giftCost, giveGift, INTIMACY_MAX } from '../../system/core/intimacy.mjs';
+import { linesOf } from '../../system/concepts/index.mjs';
 
 const SLOT_KO = { weapon: '무기', armor: '방어구', accessory: '장신구' };
 
@@ -40,7 +42,11 @@ function describeGear(bp) {
 export default function RosterScreen({ state, bump, concept }) {
   const [selId, setSel] = useState(state.party[0] || state.units[0]?.uid);
   const [picker, setPicker] = useState(null); // {mode:'skill'|'gear', slot}
+  const [bubble, setBubble] = useState(null); // 현재 대사
   const unit = state.units.find((u) => u.uid === selId) || state.units[0];
+  const lines = unit && linesOf(concept, unit);
+  // 선택 캐릭터가 바뀌면 인사 대사로 초기화
+  useEffect(() => { setBubble(lines ? lines.greet : null); }, [selId]);
   const list = state.units.slice().sort((a, b) => computePower(b) - computePower(a));
 
   const act = (fn) => { fn(); bump(); };
@@ -90,6 +96,27 @@ export default function RosterScreen({ state, bump, concept }) {
           ))}
         </View>
       </Card>
+
+      {/* 친밀도 + 대사 */}
+      {lines && (
+        <Card style={{ marginTop: 12 }}>
+          <View style={g.bubble}>
+            <Text style={g.bubbleEmoji}>{meta.emoji}</Text>
+            <Text style={g.bubbleText}>“{bubble || lines.greet}”</Text>
+          </View>
+          <View style={g.intiHead}>
+            <Text style={g.sec}>친밀도 <Text style={g.dim}>Lv.{intimacyLevel(unit)}/{INTIMACY_MAX} · 전 스탯 +{intimacyLevel(unit) * 2}%</Text></Text>
+            <Btn small kind="gold" disabled={intimacyLevel(unit) >= INTIMACY_MAX}
+              label={intimacyLevel(unit) >= INTIMACY_MAX ? 'MAX' : `선물 ${concept.resources.currency.emoji}${fmt(giftCost(unit).currency)}`}
+              onPress={() => {
+                const r = giveGift(state, unit.uid);
+                if (r.ok) setBubble(r.leveledUp ? lines.levelup : lines.bond);
+                bump();
+              }} />
+          </View>
+          <View style={g.bar}><View style={[g.barFill, { width: `${intimacyProgress(unit).ratio * 100}%` }]} /></View>
+        </Card>
+      )}
 
       {/* 전용 스킬 (시그니처) — 항상 발동, 교체 불가 */}
       {unit.signature && (
@@ -274,6 +301,12 @@ const g = StyleSheet.create({
   rarity: { color: T.accent, fontSize: 13, fontWeight: '800' },
   headTitle: { color: T.primary, fontSize: 13, fontWeight: '700', marginTop: 1 },
   headSub: { color: T.muted, fontSize: 13, marginTop: 2 },
+  bubble: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: T.surface2, borderRadius: 12, padding: 12, marginBottom: 12 },
+  bubbleEmoji: { fontSize: 26 },
+  bubbleText: { flex: 1, color: T.text, fontSize: 14, fontStyle: 'italic' },
+  intiHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  bar: { height: 6, backgroundColor: T.surface2, borderRadius: 3, marginTop: 8, overflow: 'hidden' },
+  barFill: { height: 6, backgroundColor: T.accent, borderRadius: 3 },
   sigHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 },
   sigBadge: { color: '#3a2a05', backgroundColor: T.accent, fontSize: 11, fontWeight: '800', paddingHorizontal: 8, paddingVertical: 2, borderRadius: 8, overflow: 'hidden' },
   sigNote: { color: T.muted, fontSize: 11, marginTop: 6 },

@@ -22,6 +22,12 @@ export function elementMeta(concept, id) {
   return (concept.elements && concept.elements[id]) || { name: id, emoji: '' };
 }
 
+// 유닛의 대사 세트 (캐릭터가 있을 때만).
+export function linesOf(concept, unit) {
+  const ch = unit.characterId && characterOf(concept, unit.characterId);
+  return (ch && ch.lines) || null;
+}
+
 // 컨셉을 적용해 유닛을 사람이 읽을 수 있게 렌더 (숫자는 그대로).
 export function renderUnit(concept, unit, stats) {
   const id = identity(concept, unit);

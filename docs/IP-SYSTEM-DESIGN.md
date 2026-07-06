@@ -160,6 +160,16 @@ collectUnitModifiers(unit)  →
 
 > "IP=시스템" 원칙 유지: 캐릭터 개성은 Concept로 들어가므로, Core는 여전히 이름을 모른다.
 
+### 3-7-b. 친밀도 + 대사/감정 — "말하는 캐릭터"
+
+정체성이 "누구인가"라면, 친밀도는 **애착 루프**다. `core/intimacy.mjs`:
+- 유닛별 `intimacy` 포인트, **선물**(currency 소모)로 상승, 레벨당 전 스탯 +2%
+  (modifier 파이프라인에 합류) — 키우는 캐릭터가 나만의 강함이 됨.
+- 대사는 Concept roster의 `lines`(greet/bond/levelup) — 캐릭터별·컨셉별. 판타지
+  카엘 "가자, 전부 태워버리자!" ↔ SF 유닛-07 "타겟 확인. 발열 개시."
+- 앱: 캐릭터 화면에 **말풍선** + 친밀도 게이지 + 선물 버튼. 선물 시 인사→유대 대사로
+  전환, 레벨업 시 레벨업 대사.
+
 ### 3-8. 속성 상성 — 기계적이면서 정체성
 
 `core/elements.mjs`: 고정 속성 5종(FIRE/WATER/WOOD/LIGHT/DARK)과 상성표.

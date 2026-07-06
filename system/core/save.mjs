@@ -45,6 +45,7 @@ function normalize(state) {
     if (u.characterId === undefined) u.characterId = null;
     if (u.signature === undefined) u.signature = null;
     if (u.element === undefined) u.element = null;
+    if (u.intimacy === undefined) u.intimacy = 0;
   }
   return state;
 }

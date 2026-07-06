@@ -2,6 +2,7 @@ import { getArchetype } from './archetypes.mjs';
 import { getSkill, skillPower } from './skills.mjs';
 import { ENHANCE_NODES } from './enhance.mjs';
 import { GEAR_SLOTS, gearContribution } from './gear.mjs';
+import { intimacyBonus } from './intimacy.mjs';
 
 // ─────────────────────────────────────────────────────────────
 // 모디파이어 파이프라인 — 한 유닛의 "모든 성장 요소"를 하나로 합산.
@@ -82,6 +83,10 @@ export function collectUnitModifiers(unit) {
     if (node.kind === 'statPct') mods.statPct[node.stat] += node.per * lvl;
     else if (node.kind === 'effect') mods.effect[node.stat] += node.per * lvl;
   }
+
+  // 3-b) 친밀도 — 레벨당 전 스탯 % 보너스
+  const ib = intimacyBonus(unit);
+  if (ib) for (const k of Object.keys(mods.statPct)) mods.statPct[k] += ib;
 
   // 4) 장착 장비 — flat 스탯 + 전투 효과
   const gear = unit.gear || {};
