@@ -8,6 +8,7 @@ import { getStage } from '../../system/core/progression.mjs';
 import { computePower } from '../../system/core/stats.mjs';
 import { identity, elementMeta } from '../../system/concepts/index.mjs';
 import { affinity, affinityLabel } from '../../system/core/elements.mjs';
+import { teamSynergy } from '../../system/core/synergy.mjs';
 
 export default function IdleScreen({ state, bump, lastGain, concept }) {
   const power = effectivePower(state);
@@ -20,6 +21,7 @@ export default function IdleScreen({ state, bump, lastGain, concept }) {
 
   const canPrestige = state.maxStage >= 15;
   const nextGain = Math.floor(Math.sqrt(state.maxStage));
+  const synergy = teamSynergy(party);
 
   return (
     <ScrollView contentContainerStyle={st.wrap}>
@@ -46,6 +48,11 @@ export default function IdleScreen({ state, bump, lastGain, concept }) {
             </Text>
           );
         })()}
+        {synergy.list.length > 0 && (
+          <View style={st.synRow}>
+            {synergy.list.map((s) => <Text key={s.id} style={st.synTag}>✦ {s.label}</Text>)}
+          </View>
+        )}
       </Card>
 
       {/* 핵심 지표 */}
@@ -102,6 +109,8 @@ const st = StyleSheet.create({
   vsMid: { color: T.muted, fontSize: 12 },
   enemy: { color: T.muted, fontSize: 12, marginTop: 8 },
   affinity: { color: T.text, fontSize: 12, marginTop: 6, fontWeight: '600' },
+  synRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 10, justifyContent: 'center' },
+  synTag: { color: T.accent, fontSize: 11, fontWeight: '800', backgroundColor: T.surface, borderRadius: 8, paddingHorizontal: 8, paddingVertical: 3, overflow: 'hidden' },
   row: { flexDirection: 'row', gap: 12 },
   metric: { flex: 1, alignItems: 'center' },
   mLabel: { color: T.muted, fontSize: 12, marginBottom: 4 },

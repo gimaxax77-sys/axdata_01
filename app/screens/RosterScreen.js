@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Modal } from 'react-native';
 import { T } from '../theme';
 import { Card, Btn, fmt, MultiToggle, repeat } from '../components';
-import { togglePartyMember, MAX_PARTY } from '../../system/core/gameState.mjs';
+import { togglePartyMember, MAX_PARTY, getPartyUnits } from '../../system/core/gameState.mjs';
+import { teamSynergy } from '../../system/core/synergy.mjs';
 import { computeStats, computePower } from '../../system/core/stats.mjs';
 import { levelCap } from '../../system/core/units.mjs';
 import { skillSlots, SKILL_CATALOG, equippableSkills } from '../../system/core/skills.mjs';
@@ -111,6 +112,18 @@ export default function RosterScreen({ state, bump, concept }) {
             );
           })}
         </View>
+        {/* 팀 시너지 — 편성 구성 보너스 */}
+        {(() => {
+          const syn = teamSynergy(getPartyUnits(state));
+          if (!syn.list.length) return <Text style={g.synNone}>시너지 없음 — 3원형/동일 속성/전원 다른 속성으로 보너스</Text>;
+          return (
+            <View style={g.synWrap}>
+              {syn.list.map((s) => (
+                <View key={s.id} style={g.synChip}><Text style={g.synChipText}>✦ {s.label}</Text><Text style={g.synChipDesc}>{s.desc}</Text></View>
+              ))}
+            </View>
+          );
+        })()}
       </Card>
 
       {/* 보유 유닛 */}
@@ -524,6 +537,11 @@ const g = StyleSheet.create({
   partyEmoji: { fontSize: 26 },
   partyName: { color: T.text, fontSize: 10, fontWeight: '700', marginTop: 2 },
   partyEmpty: { color: T.muted, fontSize: 24, fontWeight: '400' },
+  synNone: { color: T.muted, fontSize: 12, marginTop: 10 },
+  synWrap: { marginTop: 10, gap: 6 },
+  synChip: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: T.surface2, borderRadius: 10, paddingHorizontal: 10, paddingVertical: 6, borderWidth: 1, borderColor: T.accent },
+  synChipText: { color: T.accent, fontWeight: '800', fontSize: 12 },
+  synChipDesc: { color: T.muted, fontSize: 11, flex: 1 },
   chipName: { color: T.text, fontSize: 12, fontWeight: '700', marginTop: 4 },
   chipLv: { color: T.muted, fontSize: 11, marginTop: 2 },
   head: { flexDirection: 'row', alignItems: 'center', gap: 12 },

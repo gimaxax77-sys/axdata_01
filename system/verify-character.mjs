@@ -137,6 +137,22 @@ console.log('\n■ 캐릭터 성장 축 검증 (assert)\n');
   ok('씨앗 조건 달성이 전투력 증가에 기여', seedProgress(growing).met >= 2 && computePower(growing) > before);
 }
 
+// ── 팀 시너지 (편성 구성 보너스) ───────────────────────────────
+{
+  const mk = (arch, elem) => { const u = createUnit(arch, { level: 20, rank: 2, element: elem }); return u; };
+  const { teamSynergy } = await import('./core/synergy.mjs');
+  ok('빈/단일 파티는 시너지 없음', teamSynergy([]).list.length === 0);
+  const trinity = [mk('VANGUARD', 'FIRE'), mk('STRIKER', 'WATER'), mk('SUPPORT', 'WOOD')];
+  ok('삼위일체 발동 (3원형)', teamSynergy(trinity).list.some((s) => s.id === 'trinity'));
+  ok('오색 결속 발동 (전원 다른 속성)', teamSynergy(trinity).list.some((s) => s.id === 'rainbow'));
+  const strFocus = [mk('STRIKER', 'FIRE'), mk('STRIKER', 'FIRE'), mk('STRIKER', 'FIRE')];
+  const sf = teamSynergy(strFocus);
+  ok('공격 진형 발동 (전사 3+)', sf.list.some((s) => s.id === 'str_focus'));
+  ok('속성 결속 발동 (동일 속성 3)', sf.list.some((s) => s.id === 'elem_bond'));
+  ok('시너지가 공격 배수 실제 상승', sf.mult.atk > 1);
+  ok('배타성: 동일속성 집중은 오색 미발동', !sf.list.some((s) => s.id === 'rainbow'));
+}
+
 console.log(`\n결과: ${passed} 통과 / ${fails.length} 실패`);
 if (fails.length) { console.log('실패:', fails.join(', ')); process.exit(1); }
 console.log('→ 전용무기·룬·각성 세 축이 모디파이어 파이프라인에 정상 합산됨이 검증됨.\n');

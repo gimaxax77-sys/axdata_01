@@ -1,5 +1,6 @@
 import { toCombatProfile } from './units.mjs';
 import { affinity } from './elements.mjs';
+import { teamSynergy } from './synergy.mjs';
 
 // ─────────────────────────────────────────────────────────────
 // 전투 판정 엔진 — 시스템의 심장.
@@ -28,6 +29,8 @@ export function resolve(party, challenge, accountMods = {}) {
   const powerMult = accountMods.powerMult || 1;
 
   const profiles = party.map(toCombatProfile);
+  // 파티 구성 시너지 (삼위일체·진형·속성 결속) — 팀 전체 배수
+  const syn = teamSynergy(party).mult;
 
   // 팀 버프 합산 (지원형 원형 + 지휘 스킬 등)
   const atkMult = 1 + profiles.reduce((s, p) => s + (p.teamBuffAtk || 0), 0);
@@ -43,11 +46,11 @@ export function resolve(party, challenge, accountMods = {}) {
   );
 
   const partyHP = profiles.reduce((s, p) => s + p.hp, 0);
-  const partyHPeff = partyHP * (1 + lifesteal) * powerMult;
+  const partyHPeff = partyHP * (1 + lifesteal) * powerMult * syn.hp;
   // 각 유닛의 dps에 속성 상성 배수 적용 (적 속성 대비 유리/불리)
   const rawDPS = profiles.reduce((s, p) => s + p.dps * affinity(p.element, challenge.element), 0)
-    * atkMult * powerMult;
-  const avgDef = profiles.reduce((s, p) => s + p.def, 0) / profiles.length;
+    * atkMult * powerMult * syn.atk;
+  const avgDef = profiles.reduce((s, p) => s + p.def, 0) / profiles.length * syn.def;
 
   const enemyDefEff = challenge.def * (1 - defPierce);
   // 파티가 적에게 넣는 유효 DPS (적 방어 반영)
