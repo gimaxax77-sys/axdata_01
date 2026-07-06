@@ -13,7 +13,13 @@ export function identity(concept, unit) {
   const ch = unit.characterId && characterOf(concept, unit.characterId);
   if (ch) return { name: ch.name, emoji: ch.emoji, title: ch.title, personality: ch.personality, element: ch.element };
   const a = concept.archetypes[unit.archetype];
-  return { name: a.name, emoji: a.emoji, title: null, personality: null, element: null };
+  return { name: a.name, emoji: a.emoji, title: null, personality: null, element: unit.element || null };
+}
+
+// 속성 ID → 표시명/이모지 (컨셉 매핑). 없으면 ID 그대로.
+export function elementMeta(concept, id) {
+  if (!id) return null;
+  return (concept.elements && concept.elements[id]) || { name: id, emoji: '' };
 }
 
 // 컨셉을 적용해 유닛을 사람이 읽을 수 있게 렌더 (숫자는 그대로).

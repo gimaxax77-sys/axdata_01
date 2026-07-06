@@ -160,6 +160,20 @@ collectUnitModifiers(unit)  →
 
 > "IP=시스템" 원칙 유지: 캐릭터 개성은 Concept로 들어가므로, Core는 여전히 이름을 모른다.
 
+### 3-8. 속성 상성 — 기계적이면서 정체성
+
+`core/elements.mjs`: 고정 속성 5종(FIRE/WATER/WOOD/LIGHT/DARK)과 상성표.
+FIRE>WOOD>WATER>FIRE 순환 + LIGHT↔DARK. 유리 ×1.3, 불리 ×0.8.
+
+- 유닛은 `element`(Core ID)를 갖고, 스테이지도 속성을 순환 배정(`getStage`).
+- 판정 시 각 유닛의 dps에 `affinity(유닛속성, 적속성)` 배수 적용 → 카운터 속성을
+  데려가면 더 빨리 클리어.
+- 속성 없는 유닛(데모/시뮬)은 상성 1.0 → **하위호환**.
+- 표시명은 Concept가 매핑: FIRE = 판타지 "불" / SF "열" (같은 ID, 다른 이름).
+
+검증: 동일 STRIKER가 WOOD 적 상대로 FIRE(유리) DPS 1091 / 무속성 840 / WATER(불리)
+672 = 정확히 ×1.3 / ×1.0 / ×0.8.
+
 ---
 
 ## 4. 레이어별 스왑 규칙

@@ -6,7 +6,8 @@ import { effectivePower, powerMultOf } from '../useGame';
 import { idleGenre } from '../../system/genres/idle.mjs';
 import { getStage } from '../../system/core/progression.mjs';
 import { computePower } from '../../system/core/stats.mjs';
-import { identity } from '../../system/concepts/index.mjs';
+import { identity, elementMeta } from '../../system/concepts/index.mjs';
+import { affinity, affinityLabel } from '../../system/core/elements.mjs';
 
 export default function IdleScreen({ state, bump, lastGain, concept }) {
   const power = effectivePower(state);
@@ -32,6 +33,19 @@ export default function IdleScreen({ state, bump, lastGain, concept }) {
           <Text style={st.vsText}>👹 적</Text>
         </View>
         <Text style={st.enemy}>적 HP {fmt(stageDef.challenge.hp)} · ATK {fmt(stageDef.challenge.atk)}</Text>
+        {(() => {
+          const enemyEl = stageDef.challenge.element;
+          const em = elementMeta(concept, enemyEl);
+          const lm = lead && lead.element ? elementMeta(concept, lead.element) : null;
+          const lab = lead ? affinityLabel(lead.element, enemyEl) : '무관';
+          const col = lab === '유리' ? T.good : lab === '불리' ? T.danger : T.muted;
+          return (
+            <Text style={st.affinity}>
+              적 속성 {em.emoji}{em.name}
+              {lm ? <Text> · 내 {lm.emoji}{lm.name} → <Text style={{ color: col, fontWeight: '800' }}>{lab}</Text></Text> : null}
+            </Text>
+          );
+        })()}
       </Card>
 
       {/* 핵심 지표 */}
@@ -87,6 +101,7 @@ const st = StyleSheet.create({
   vsText: { color: T.text, fontWeight: '700', fontSize: 14 },
   vsMid: { color: T.muted, fontSize: 12 },
   enemy: { color: T.muted, fontSize: 12, marginTop: 8 },
+  affinity: { color: T.text, fontSize: 12, marginTop: 6, fontWeight: '600' },
   row: { flexDirection: 'row', gap: 12 },
   metric: { flex: 1, alignItems: 'center' },
   mLabel: { color: T.muted, fontSize: 12, marginBottom: 4 },

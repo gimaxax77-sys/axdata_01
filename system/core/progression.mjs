@@ -7,6 +7,7 @@
 // ─────────────────────────────────────────────────────────────
 
 import { BALANCE } from './balance.mjs';
+import { ELEMENTS } from './elements.mjs';
 export { BALANCE }; // 하위호환: 기존 import 경로 유지
 
 // stage: 1부터 시작하는 정수
@@ -19,6 +20,7 @@ export function getStage(stage) {
       hp: Math.round(BALANCE.enemyBase.hp * g),
       atk: Math.round(BALANCE.enemyBase.atk * g),
       def: Math.round(BALANCE.enemyBase.def * g),
+      element: ELEMENTS[(stage - 1) % ELEMENTS.length], // 스테이지마다 속성 순환
     },
     rewards: {
       // 컨셉 무관한 자원 키. 컨셉이 표시명을 붙인다.

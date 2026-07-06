@@ -45,7 +45,7 @@ function grant(state, rarity, rng, pool) {
   if (pool && pool.length) {
     const ch = pickCharacter(pool, rarity.id, rng);
     const unit = createUnit(ch.archetype, {
-      level: 1, rank: rarity.startRank, characterId: ch.id, signature: ch.signature,
+      level: 1, rank: rarity.startRank, characterId: ch.id, signature: ch.signature, element: ch.element,
     });
     unit.rarity = rarity.id;
     state.units.push(unit);

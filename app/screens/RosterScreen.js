@@ -5,7 +5,7 @@ import { Card, Btn, fmt } from '../components';
 import { computeStats, computePower } from '../../system/core/stats.mjs';
 import { levelCap } from '../../system/core/units.mjs';
 import { skillSlots, SKILL_CATALOG, equippableSkills } from '../../system/core/skills.mjs';
-import { identity } from '../../system/concepts/index.mjs';
+import { identity, elementMeta } from '../../system/concepts/index.mjs';
 import { GEAR_SLOTS, GEAR_CATALOG, gearEnhanceCost } from '../../system/core/gear.mjs';
 import { levelUp, ascend, enhanceNode, equipSkill, unequipSkill, upgradeSkill } from '../../system/core/character.mjs';
 import { craftGear, equipGear, enhanceGear, unequipGear } from '../../system/core/gear.mjs';
@@ -73,7 +73,10 @@ export default function RosterScreen({ state, bump, concept }) {
           <View style={{ flex: 1 }}>
             <Text style={g.headName}>{meta.name}{unit.rarity ? <Text style={g.rarity}>  {unit.rarity}</Text> : null}</Text>
             {(meta.title || meta.personality) && (
-              <Text style={g.headTitle}>{meta.title}{meta.personality ? ` · ${meta.personality}` : ''}{meta.element ? ` · ${meta.element}속성` : ''}</Text>
+              <Text style={g.headTitle}>
+                {meta.title}{meta.personality ? ` · ${meta.personality}` : ''}
+                {meta.element ? ` · ${elementMeta(concept, meta.element).emoji}${elementMeta(concept, meta.element).name}` : ''}
+              </Text>
             )}
             <Text style={g.headSub}>Lv.{unit.level}/{levelCap(unit)} · R{unit.rank} · 전투력 {fmt(computePower(unit))}</Text>
           </View>

@@ -1,4 +1,5 @@
 import { toCombatProfile } from './units.mjs';
+import { affinity } from './elements.mjs';
 
 // ─────────────────────────────────────────────────────────────
 // 전투 판정 엔진 — 시스템의 심장.
@@ -43,7 +44,9 @@ export function resolve(party, challenge, accountMods = {}) {
 
   const partyHP = profiles.reduce((s, p) => s + p.hp, 0);
   const partyHPeff = partyHP * (1 + lifesteal) * powerMult;
-  const rawDPS = profiles.reduce((s, p) => s + p.dps, 0) * atkMult * powerMult;
+  // 각 유닛의 dps에 속성 상성 배수 적용 (적 속성 대비 유리/불리)
+  const rawDPS = profiles.reduce((s, p) => s + p.dps * affinity(p.element, challenge.element), 0)
+    * atkMult * powerMult;
   const avgDef = profiles.reduce((s, p) => s + p.def, 0) / profiles.length;
 
   const enemyDefEff = challenge.def * (1 - defPierce);
