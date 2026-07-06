@@ -62,6 +62,8 @@ export function resolve(party, challenge, accountMods = {}) {
   return {
     win,
     duration: win ? timeToKillEnemy : timeToKillParty, // 초
+    // 승부 여유: 파티전멸시간/적처치시간. >1이면 승리, 클수록 여유.
+    margin: timeToKillParty / timeToKillEnemy,
     partyPower: Math.round(rawDPS),
     partyHP: Math.round(partyHPeff),
     log: win

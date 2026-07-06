@@ -3,6 +3,8 @@ import { createUnit } from '../core/units.mjs';
 import { earn } from '../core/economy.mjs';
 import { getStage } from '../core/progression.mjs';
 import { BALANCE, accountMods } from '../core/balance.mjs';
+import { resolve } from '../core/resolution.mjs';
+import { getPartyUnits } from '../core/gameState.mjs';
 import { idleGenre } from '../genres/idle.mjs';
 import { summonMulti } from '../core/gacha.mjs';
 import { makeRng } from '../core/rng.mjs';
@@ -29,10 +31,26 @@ export const GATES = [
   { stage: 300, name: '길드' },
 ];
 
-// 스테이지 요구 전투력(비교용 지표)
+// 스테이지 요구 전투력(참고용 프록시)
 export function stagePower(stage) {
   const c = getStage(stage).challenge;
   return Math.round(c.hp * 0.15 + c.atk * 1.2 + c.def * 0.6);
+}
+
+// resolve 모델 기반: 파티가 실제로 이길 수 있는 최심 스테이지.
+// (프록시 대신 진짜 전투 판정으로 탐색 — 지수 탐색 후 이분 탐색)
+export function deepestWinnable(state) {
+  const party = getPartyUnits(state);
+  if (!party.length) return state.peakStage;
+  const mods = accountMods(state);
+  const wins = (stg) => resolve(party, getStage(stg).challenge, mods).win;
+  const base = Math.max(1, state.peakStage);
+  if (!wins(base)) return base;
+  let hi = base, step = 8;
+  while (wins(hi + step) && hi < base + 1000) { hi += step; step *= 2; }
+  let lo = hi, up = hi + step;
+  while (up - lo > 1) { const mid = (lo + up) >> 1; if (wins(mid)) lo = mid; else up = mid; }
+  return lo;
 }
 
 // BALANCE 상수를 잠시 바꿔 fn을 실행하고 원복한다 (튜닝 실험용).
@@ -94,6 +112,8 @@ export function runSimulation(opts = {}) {
     const peak = state.peakStage;
     const mult = accountMods(state).powerMult;
     const pp = partyPower(state);
+    const winnable = deepestWinnable(state); // resolve 기반 최심 승리 스테이지
+    const headroom = winnable - peak; // 파밍벽 너머 여유 스테이지 수
     // 게이트 통과 기록 (역대 최고 = 실제 진행도 기준)
     while (gateIdx < GATES.length && peak >= GATES[gateIdx].stage) {
       gateHits.push({ day, ...GATES[gateIdx] });
@@ -107,6 +127,8 @@ export function runSimulation(opts = {}) {
       totalPower: Math.round(pp.total * mult),
       roster: pp.size,
       required: stagePower(peak),
+      winnable, // resolve 기반 최심 승리 스테이지
+      headroom, // 여유 스테이지 (winnable - peak)
       prestige: state.prestige,
       accMult: mult, // 계정 배수(환생×유물×펫)
       relicLv: Object.values(state.relics || {}).reduce((a, b) => a + b, 0),
@@ -130,9 +152,12 @@ export function runSimulation(opts = {}) {
   const mean = gains.reduce((s, g) => s + g, 0) / (gains.length || 1);
   const variance = gains.reduce((s, g) => s + (g - mean) ** 2, 0) / (gains.length || 1);
   const cv = mean > 0 ? Math.sqrt(variance) / mean : Infinity; // 변동계수(낮을수록 매끄러움)
-  const ratios = daily.map((d) => d.bestPower / d.required);
-  const minRatio = Math.min(...ratios);
-  const smoothness = { cv, minRatio, meanGain: mean };
+  // resolve 기반 여유(headroom): 0에 가까우면 타이트, 크면 과도하게 강함
+  const heads = daily.map((d) => d.headroom);
+  const minHeadroom = Math.min(...heads);
+  const maxHeadroom = Math.max(...heads);
+  const avgHeadroom = Math.round(heads.reduce((a, b) => a + b, 0) / (heads.length || 1));
+  const smoothness = { cv, minHeadroom, maxHeadroom, avgHeadroom, meanGain: mean };
 
   return { daily, gateHits, bottlenecks, smoothness, opts: { days, checkinsPerDay, hoursPerCheckin, dailySummon, seed } };
 }
@@ -143,17 +168,17 @@ function main() {
   const line = (c = '─') => console.log(c.repeat(66));
 
   console.log('\n■ 7일 성장 곡선 (합리적 오토플레이어, 하루 ~8h 파밍)\n');
-  console.log('  Day  최고Stage  일일증가  최고전투력  환생  유물Lv  펫  계정배수  달성률');
+  console.log('  Day  파밍Stage  일일증가  승리가능  여유  계정배수  유물Lv  펫');
   line();
   for (const d of sim.daily) {
-    const ratio = ((d.bestPower / d.required) * 100).toFixed(0) + '%';
     console.log(
       `  ${String(d.day).padStart(3)}  ${String(d.maxStage).padStart(8)}  ` +
-        `${String(d.stageGain).padStart(7)}  ${String(d.bestPower).padStart(9)}  ` +
-        `${String(d.prestige).padStart(4)}  ${String(d.relicLv).padStart(5)}  ${String(d.pets).padStart(2)}  ` +
-        `${('×' + d.accMult.toFixed(2)).padStart(7)}  ${ratio.padStart(6)}`
+        `${String(d.stageGain).padStart(7)}  ${String(d.winnable).padStart(8)}  ` +
+        `${('+' + d.headroom).padStart(4)}  ${('×' + d.accMult.toFixed(2)).padStart(7)}  ` +
+        `${String(d.relicLv).padStart(5)}  ${String(d.pets).padStart(2)}`
     );
   }
+  console.log('\n  · 파밍Stage=자동전진 벽(2.5초) · 승리가능=resolve로 실제 이기는 최심 · 여유=그 차이');
 
   console.log('\n\n■ 콘텐츠 해금 게이트 도달 페이싱 (문서 기준)\n');
   line();
@@ -183,19 +208,19 @@ function main() {
     { label: '종합안 (난이도↓+비용완화+환생1.0)',
       opt: { balance: { enemyGrowth: 1.12, rewardGrowth: 1.13, levelCostGrowth: 1.09, enhanceCostGrowth: 1.16, gearCostGrowth: 1.2, prestigeIncomeBonus: 1.0 } } },
   ];
-  console.log('  튜닝안                                  7일차Stage  최저달성률  변동계수  병목');
+  console.log('  튜닝안                                  7일차Stage  평균여유  변동계수  병목');
   line();
   for (const t of trials) {
     const s = runSimulation(t.opt);
     const last = s.daily[s.daily.length - 1];
-    const minR = (s.smoothness.minRatio * 100).toFixed(0) + '%';
+    const avgH = '+' + s.smoothness.avgHeadroom;
     const cv = s.smoothness.cv.toFixed(2);
     console.log(
       `  ${t.label.padEnd(38)}  ${String(last.maxStage).padStart(8)}  ` +
-        `${minR.padStart(8)}  ${cv.padStart(7)}  ${String(s.bottlenecks.length).padStart(4)}`
+        `${avgH.padStart(7)}  ${cv.padStart(7)}  ${String(s.bottlenecks.length).padStart(4)}`
     );
   }
-  console.log('\n  → 최저달성률이 높고(뒤처지지 않음) 변동계수가 낮은(매끄러운) 튜닝안이 좋다.');
+  console.log('\n  → 여유(resolve 기반)가 0 근처면 타이트, 클수록 과강. 병목 0 + 여유 적당이 이상적.');
   console.log('');
 }
 

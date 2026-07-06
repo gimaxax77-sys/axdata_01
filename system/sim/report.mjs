@@ -100,8 +100,8 @@ const tunedFinal = scenarios.tuned.daily[scenarios.tuned.daily.length - 1].maxSt
 const offFinal = scenarios.off.daily[scenarios.off.daily.length - 1].maxStage;
 
 function dataTable() {
-  const rows = base.daily.map((d) => `<tr><td>${d.day}</td><td>${d.maxStage}</td><td>${d.stageGain}</td><td>${d.bestPower.toLocaleString()}</td><td>${d.prestige}</td><td>${d.relicLv}</td><td>${d.pets}</td><td>×${d.accMult.toFixed(1)}</td></tr>`).join('');
-  return `<table class="dtable"><thead><tr><th>Day</th><th>최고Stage</th><th>일일증가</th><th>보유전투력</th><th>환생</th><th>유물Lv</th><th>펫</th><th>계정배수</th></tr></thead><tbody>${rows}</tbody></table>`;
+  const rows = base.daily.map((d) => `<tr><td>${d.day}</td><td>${d.maxStage}</td><td>${d.stageGain}</td><td>${d.winnable}</td><td>+${d.headroom}</td><td>×${d.accMult.toFixed(1)}</td><td>${d.relicLv}</td><td>${d.pets}</td></tr>`).join('');
+  return `<table class="dtable"><thead><tr><th>Day</th><th>파밍Stage</th><th>일일증가</th><th>승리가능</th><th>여유</th><th>계정배수</th><th>유물Lv</th><th>펫</th></tr></thead><tbody>${rows}</tbody></table>`;
 }
 
 // ── HTML (body-only; Artifact 스켈레톤이 head/body 감쌈) ────────
@@ -149,7 +149,7 @@ const html = `<title>밸런스 시뮬레이터 리포트</title>
     <div class="tile"><div class="k">환생 OFF · 7일차 (벽)</div><div class="v crit">${offFinal}<small>층</small></div></div>
     <div class="tile"><div class="k">환생 ON · 7일차 (해소)</div><div class="v good">${baseFinal}<small>층</small></div></div>
     <div class="tile"><div class="k">종합 튜닝안</div><div class="v good">${tunedFinal}<small>층</small></div></div>
-    <div class="tile"><div class="k">최저 달성률 (환생 ON)</div><div class="v good">${Math.round(base.smoothness.minRatio * 100)}<small>%</small></div></div>
+    <div class="tile"><div class="k">전투 여유 (resolve 기반)</div><div class="v good">+${base.smoothness.avgHeadroom}<small>층</small></div></div>
   </div>
 
   <div class="card">
@@ -175,11 +175,11 @@ const html = `<title>밸런스 시뮬레이터 리포트</title>
   <div class="findings">
     <h2>진단 → 수정 → 재검증</h2>
     <ol>
-      <li><span class="crit">문제(벽)</span>: 파워가 <b>레벨 상한(랭크×20)</b>에 묶이고, 유일한 돌파 수단인 환생이 <b>수입만</b> 늘리고 파워는 안 늘려 지수적 난이도(1.14ⁿ)를 못 따라감 → 최저달성률 ${Math.round(scenarios.off.smoothness.minRatio * 100)}%로 뒤처짐, 병목 ${scenarios.off.bottlenecks.length}회.</li>
+      <li><span class="crit">문제(벽)</span>: 파워가 <b>레벨 상한(랭크×20)</b>에 묶이고, 유일한 돌파 수단인 환생이 <b>수입만</b> 늘리고 파워는 안 늘려 지수적 난이도(1.14ⁿ)를 못 따라감 → 초반 러시 후 정체, 병목 ${scenarios.off.bottlenecks.length}회.</li>
       <li><span class="good">수정</span>: 환생에 <b>상한 없는 글로벌 파워 배수</b> 추가(<code>prestigePowerBonus</code>). 벽에서 환생 → 배수로 더 깊이 재등반하는 정통 방치형 루프. 진행도(peakStage)는 유지.</li>
-      <li><span class="good">결과</span>: 벽 해소. ${offFinal}층 → <b>${baseFinal}층</b>, 최저달성률 ${Math.round(scenarios.off.smoothness.minRatio * 100)}% → <b>${Math.round(base.smoothness.minRatio * 100)}%</b>, 병목 ${scenarios.off.bottlenecks.length}회 → <b>${base.bottlenecks.length}회</b>(급정체 없음).</li>
-      <li>모든 상수는 <code>core/balance.mjs</code> 단일 소스 → 시뮬레이터가 값을 바꿔가며 곡선을 계속 튜닝 가능.</li>
-      <li><span class="good">재점검(유물·펫 추가 후)</span>: 계정 성장(환생×유물×펫)이 <code>accountMods</code>로 합산돼 7일 만에 계정 배수 <b>×${base.daily[base.daily.length - 1].accMult.toFixed(0)}</b>까지 누적. 곡선은 여전히 <b>병목 ${base.bottlenecks.length}회</b>로 매끄럽고, 계정성장 OFF 대비 ${offFinal < baseFinal ? `+${baseFinal - scenarios.off.daily.at(-1).maxStage}층` : ''} 더 깊이 도달. 지수 난이도 탓에 배수 폭증 대비 stage는 완만히 상승(방치형 특유의 숫자 인플레이션 — 정상).</li>
+      <li><span class="good">결과</span>: 벽 해소. ${offFinal}층 → <b>${baseFinal}층</b>, 병목 ${scenarios.off.bottlenecks.length}회 → <b>${base.bottlenecks.length}회</b>(급정체 없음).</li>
+      <li><span class="good">지표 정교화</span>: 옛 "달성률"(hp·atk 가중합 프록시)은 실제 전투와 스케일이 달라 왜곡됐다. <b>resolve로 직접</b> "이길 수 있는 최심 스테이지 − 파밍 스테이지 = 전투 여유"를 측정하도록 교체.</li>
+      <li><span class="good">재점검(유물·펫 추가 후)</span>: 계정 배수가 7일 만에 <b>×${base.daily[base.daily.length - 1].accMult.toFixed(0)}</b>까지 누적되지만, resolve 기반 <b>전투 여유는 +${base.smoothness.minHeadroom}~+${base.smoothness.maxHeadroom}층으로 안정</b>. 즉 파워 인플레이션을 지수 난이도가 그대로 흡수 — 옛 프록시가 "과강"으로 보이게 한 건 거짓 경보였고, 실제 곡선은 <b>병목 ${base.bottlenecks.length}회</b>로 건강함.</li>
     </ol>
   </div>
 
