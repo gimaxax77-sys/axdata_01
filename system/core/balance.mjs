@@ -10,11 +10,13 @@
 export const BALANCE = {
   // 적 스탯 (스테이지 곡선)
   enemyBase: { hp: 900, atk: 70, def: 30 },
-  enemyGrowth: 1.14, // 스테이지당 적 강화율
+  // 적 강화율 = 보상 증가율(1.13) → 수입이 난이도를 따라가 벽이 완만.
+  // 남는 벽은 "성장 비용의 지수화"라 환생(파워 배수)이 자연스레 이를 넘는다.
+  enemyGrowth: 1.13, // 스테이지당 적 강화율
 
   // 스테이지 보상 (수입 곡선)
   rewardBase: { currency: 20, growth: 8 },
-  rewardGrowth: 1.12, // 스테이지당 보상 증가율
+  rewardGrowth: 1.13, // 스테이지당 보상 증가율
 
   // 유닛 성장 (스탯 곡선)
   statPerLevel: 0.08, // 레벨당 스탯 +8%
@@ -28,9 +30,10 @@ export const BALANCE = {
 
   // 환생(prestige) 영구 보너스 — 지수적 벽을 넘는 곱셈형 루프.
   // 환생 포인트 1당: 방치 수입 배수 + 글로벌 파워 배수(상한 없음).
-  // 파워 배수가 상한 없이 커져야 1.14ⁿ 난이도를 매 환생마다 따라잡는다.
+  // 파워 배수가 상한 없이 커져야 1.13ⁿ 난이도를 매 환생마다 따라잡는다.
+  // 포인트당 파워 0.14 → 필요 환생 횟수↓·곡선 매끄러움↑(cv 0.67→0.53).
   prestigeIncomeBonus: 0.5,
-  prestigePowerBonus: 0.12,
+  prestigePowerBonus: 0.14,
 };
 
 import { relicMods } from './relics.mjs';
