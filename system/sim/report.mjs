@@ -9,7 +9,8 @@ import { runSimulation } from './balance.mjs';
 
 const base = runSimulation();
 const scenarios = {
-  off: runSimulation({ balance: { prestigeIncomeBonus: 0 }, usePrestige: false }),
+  // 원시(환생·계정성장 모두 OFF) = 원래의 지수적 벽
+  off: runSimulation({ balance: { prestigeIncomeBonus: 0 }, usePrestige: false, useAccount: false }),
   base,
   tuned: runSimulation({
     balance: { enemyGrowth: 1.12, rewardGrowth: 1.13, levelCostGrowth: 1.09,
@@ -99,8 +100,8 @@ const tunedFinal = scenarios.tuned.daily[scenarios.tuned.daily.length - 1].maxSt
 const offFinal = scenarios.off.daily[scenarios.off.daily.length - 1].maxStage;
 
 function dataTable() {
-  const rows = base.daily.map((d) => `<tr><td>${d.day}</td><td>${d.maxStage}</td><td>${d.stageGain}</td><td>${d.bestPower.toLocaleString()}</td><td>${d.required.toLocaleString()}</td><td>${d.prestige}</td></tr>`).join('');
-  return `<table class="dtable"><thead><tr><th>Day</th><th>최고Stage</th><th>일일증가</th><th>보유전투력</th><th>요구전투력</th><th>환생</th></tr></thead><tbody>${rows}</tbody></table>`;
+  const rows = base.daily.map((d) => `<tr><td>${d.day}</td><td>${d.maxStage}</td><td>${d.stageGain}</td><td>${d.bestPower.toLocaleString()}</td><td>${d.prestige}</td><td>${d.relicLv}</td><td>${d.pets}</td><td>×${d.accMult.toFixed(1)}</td></tr>`).join('');
+  return `<table class="dtable"><thead><tr><th>Day</th><th>최고Stage</th><th>일일증가</th><th>보유전투력</th><th>환생</th><th>유물Lv</th><th>펫</th><th>계정배수</th></tr></thead><tbody>${rows}</tbody></table>`;
 }
 
 // ── HTML (body-only; Artifact 스켈레톤이 head/body 감쌈) ────────
@@ -178,6 +179,7 @@ const html = `<title>밸런스 시뮬레이터 리포트</title>
       <li><span class="good">수정</span>: 환생에 <b>상한 없는 글로벌 파워 배수</b> 추가(<code>prestigePowerBonus</code>). 벽에서 환생 → 배수로 더 깊이 재등반하는 정통 방치형 루프. 진행도(peakStage)는 유지.</li>
       <li><span class="good">결과</span>: 벽 해소. ${offFinal}층 → <b>${baseFinal}층</b>, 최저달성률 ${Math.round(scenarios.off.smoothness.minRatio * 100)}% → <b>${Math.round(base.smoothness.minRatio * 100)}%</b>, 병목 ${scenarios.off.bottlenecks.length}회 → <b>${base.bottlenecks.length}회</b>(급정체 없음).</li>
       <li>모든 상수는 <code>core/balance.mjs</code> 단일 소스 → 시뮬레이터가 값을 바꿔가며 곡선을 계속 튜닝 가능.</li>
+      <li><span class="good">재점검(유물·펫 추가 후)</span>: 계정 성장(환생×유물×펫)이 <code>accountMods</code>로 합산돼 7일 만에 계정 배수 <b>×${base.daily[base.daily.length - 1].accMult.toFixed(0)}</b>까지 누적. 곡선은 여전히 <b>병목 ${base.bottlenecks.length}회</b>로 매끄럽고, 계정성장 OFF 대비 ${offFinal < baseFinal ? `+${baseFinal - scenarios.off.daily.at(-1).maxStage}층` : ''} 더 깊이 도달. 지수 난이도 탓에 배수 폭증 대비 stage는 완만히 상승(방치형 특유의 숫자 인플레이션 — 정상).</li>
     </ol>
   </div>
 

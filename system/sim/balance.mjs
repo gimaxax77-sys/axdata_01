@@ -52,10 +52,12 @@ export function runSimulation(opts = {}) {
     checkinsPerDay = 8,
     hoursPerCheckin = 1, // 하루 약 8시간 파밍(오프라인 상한)
     dailySummon = 40, // 출석/미션 소환권
+    dailyGem = 20, // 광고 보상 다이아 (펫 소환용)
     seed = 20260706,
     starter = { currency: 300, growth: 200, summon: 100 },
     balance = null, // BALANCE 오버라이드 (튜닝 실험)
     usePrestige = true, // 정체 시 환생 루프 사용
+    useAccount = true, // 유물·펫 등 계정 성장 사용
   } = opts;
 
   if (balance) return withBalance(balance, () => runSimulation({ ...opts, balance: null }));
@@ -72,13 +74,18 @@ export function runSimulation(opts = {}) {
   let prevPeak = 1;
 
   for (let day = 1; day <= days; day++) {
-    earn(state.wallet, { summon: dailySummon });
+    // 일일 콘텐츠 faucet: 출석/미션(소환권) + 광고(다이아) + 던전(골드, 진행도 비례)
+    earn(state.wallet, {
+      summon: dailySummon,
+      gem: useAccount ? dailyGem : 0,
+      currency: Math.round(getStage(state.peakStage).rewards.currency * 80),
+    });
     let clears = 0;
     for (let c = 0; c < checkinsPerDay; c++) {
       const before = state.maxStage;
       const t = idleGenre.tick(state, hoursPerCheckin * 3600);
       clears += t.clears;
-      invest(state, rng, summonMulti);
+      invest(state, rng, summonMulti, useAccount);
       // 벽에서 환생: 이번 체크인에 더 못 나아갔고 충분히 깊으면 환생
       if (usePrestige && state.maxStage <= before && state.maxStage >= 15) {
         idleGenre.prestige(state);
@@ -101,6 +108,9 @@ export function runSimulation(opts = {}) {
       roster: pp.size,
       required: stagePower(peak),
       prestige: state.prestige,
+      accMult: mult, // 계정 배수(환생×유물×펫)
+      relicLv: Object.values(state.relics || {}).reduce((a, b) => a + b, 0),
+      pets: (state.pets && state.pets.active.length) || 0,
       gold: Math.round(state.wallet.currency),
       clears,
     });
@@ -133,15 +143,15 @@ function main() {
   const line = (c = '─') => console.log(c.repeat(66));
 
   console.log('\n■ 7일 성장 곡선 (합리적 오토플레이어, 하루 ~8h 파밍)\n');
-  console.log('  Day  최고Stage  일일증가  최고전투력  파티합   로스터  환생  달성률');
+  console.log('  Day  최고Stage  일일증가  최고전투력  환생  유물Lv  펫  계정배수  달성률');
   line();
   for (const d of sim.daily) {
     const ratio = ((d.bestPower / d.required) * 100).toFixed(0) + '%';
     console.log(
       `  ${String(d.day).padStart(3)}  ${String(d.maxStage).padStart(8)}  ` +
         `${String(d.stageGain).padStart(7)}  ${String(d.bestPower).padStart(9)}  ` +
-        `${String(d.totalPower).padStart(7)}  ${String(d.roster).padStart(5)}  ` +
-        `${String(d.prestige).padStart(4)}  ${ratio.padStart(6)}`
+        `${String(d.prestige).padStart(4)}  ${String(d.relicLv).padStart(5)}  ${String(d.pets).padStart(2)}  ` +
+        `${('×' + d.accMult.toFixed(2)).padStart(7)}  ${ratio.padStart(6)}`
     );
   }
 
@@ -166,10 +176,10 @@ function main() {
   // ── 튜닝 실험: 보상/난이도 곡선을 조정하면 어떻게 달라지나 ──
   console.log('\n\n■ 튜닝 실험 — 곡선 상수를 바꿔 재시뮬레이션\n');
   const trials = [
-    { label: '환생 OFF (bonus 0)', opt: { balance: { prestigeIncomeBonus: 0 }, usePrestige: false } },
-    { label: '기본 (환생 ON)', opt: {} },
-    { label: '환생 강화 (bonus 0.5→1.0)', opt: { balance: { prestigeIncomeBonus: 1.0 } } },
-    { label: '비용 완화만', opt: { balance: { levelCostGrowth: 1.09, enhanceCostGrowth: 1.16, gearCostGrowth: 1.2 } } },
+    { label: '계정성장 OFF (유물·펫 없음)', opt: { useAccount: false } },
+    { label: '기본 (환생+유물+펫)', opt: {} },
+    { label: '환생 OFF', opt: { balance: { prestigeIncomeBonus: 0 }, usePrestige: false } },
+    { label: '비용 완화', opt: { balance: { levelCostGrowth: 1.09, enhanceCostGrowth: 1.16, gearCostGrowth: 1.2 } } },
     { label: '종합안 (난이도↓+비용완화+환생1.0)',
       opt: { balance: { enemyGrowth: 1.12, rewardGrowth: 1.13, levelCostGrowth: 1.09, enhanceCostGrowth: 1.16, gearCostGrowth: 1.2, prestigeIncomeBonus: 1.0 } } },
   ];

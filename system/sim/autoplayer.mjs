@@ -5,6 +5,8 @@ import {
   levelUp, ascend, equipSkill, upgradeSkill, enhanceNode,
 } from '../core/character.mjs';
 import { craftGear, equipGear, enhanceGear, GEAR_SLOTS } from '../core/gear.mjs';
+import { RELICS, upgradeRelic } from '../core/relics.mjs';
+import { petSummon, PET_PULL_COST } from '../core/pets.mjs';
 
 // ─────────────────────────────────────────────────────────────
 // 오토플레이어 — "합리적 유저"의 투자 전략을 흉내낸다.
@@ -90,8 +92,8 @@ function drainSummon(state, rng, summonFn) {
   }
 }
 
-// currency 풀 소진: 빈 장비 슬롯 채움 → 장비강화/각인을 싼 것부터
-function drainCurrency(state) {
+// currency 풀 소진: 빈 장비 슬롯 채움 → 장비강화/각인/유물을 번갈아
+function drainCurrency(state, useAccount) {
   // 1) 빈 장비 슬롯 채우기
   let iters = 0;
   while (iters++ < CAP_ITERS) {
@@ -106,9 +108,11 @@ function drainCurrency(state) {
     }
     if (!did) break;
   }
-  // 2) 각인 + 장비강화를 번갈아, 싼 것부터
+  // 2) 각인 + 장비강화 + 유물을 번갈아, 싼 것부터
   iters = 0;
   const enhIdx = {};
+  const relicIds = Object.keys(RELICS);
+  let relicIdx = 0;
   while (iters++ < CAP_ITERS) {
     let did = false;
     for (const u of partyUnits(state)) {
@@ -119,16 +123,31 @@ function drainCurrency(state) {
         if (u.gear[slot] && enhanceGear(state, u.gear[slot].uid).ok) did = true;
       }
     }
+    // 유물 강화 (계정 성장) — 라운드로빈
+    if (useAccount) {
+      const rid = relicIds[relicIdx++ % relicIds.length];
+      if (upgradeRelic(state, rid).ok) did = true;
+    }
     if (!did) break;
   }
 }
 
-// 한 세션의 전체 투자 (세 풀 소진)
-export function invest(state, rng, summonFn) {
+// gem 풀 소진: 펫 소환(중복 레벨업·자동 장착)
+function drainPets(state, rng) {
+  let iters = 0;
+  while (iters++ < CAP_ITERS) {
+    if ((state.wallet.gem || 0) < PET_PULL_COST.gem) break;
+    if (!petSummon(state, rng).ok) break;
+  }
+}
+
+// 한 세션의 전체 투자 (모든 풀 소진)
+export function invest(state, rng, summonFn, useAccount = true) {
   fillSkills(state);
   drainGrowth(state);
   drainSummon(state, rng, summonFn);
-  drainCurrency(state);
+  drainCurrency(state, useAccount);
+  if (useAccount) drainPets(state, rng);
   pickParty(state);
 }
 
