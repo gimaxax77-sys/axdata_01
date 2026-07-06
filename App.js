@@ -11,6 +11,7 @@ import ContentScreen from './app/screens/ContentScreen';
 import ArenaGuildScreen from './app/screens/ArenaGuildScreen';
 import MetaScreen from './app/screens/MetaScreen';
 import ShopScreen from './app/screens/ShopScreen';
+import { IntroModal, ObjectiveBanner } from './app/screens/Onboarding';
 
 const TABS = [
   { key: 'idle', label: '방치', icon: '🏰', Screen: IdleScreen },
@@ -65,6 +66,11 @@ export default function App() {
         <ResourceBar concept={game.concept} wallet={game.state.wallet} />
       </View>
 
+      {/* 온보딩 목표 배너 (소개를 본 뒤, 목표가 남아있을 때만) */}
+      {game.state.tutorial.introSeen && (
+        <ObjectiveBanner state={game.state} concept={game.concept} onGo={setTab} />
+      )}
+
       {/* 화면 */}
       <View style={s.body}>
         <Active state={game.state} bump={game.bump} lastGain={game.lastGain} concept={game.concept} />
@@ -99,6 +105,13 @@ export default function App() {
           </View>
         </View>
       </Modal>
+
+      {/* 첫 실행 소개 — 오프라인 팝업이 없을 때만 노출 */}
+      <IntroModal
+        concept={game.concept}
+        visible={!game.state.tutorial.introSeen && !game.offline}
+        onDone={() => { game.state.tutorial.introSeen = true; game.save(); game.bump(); }}
+      />
     </SafeAreaView>
   );
 }
