@@ -21,8 +21,10 @@ function mitigation(def) {
 }
 
 // challenge 형태: { hp, atk, def }  (스칼라 적)
-export function resolve(party, challenge) {
+// accountMods.powerMult: 계정 단위 영구 파워 배수(환생 보너스 등). 기본 1.
+export function resolve(party, challenge, accountMods = {}) {
   if (!party.length) return { win: false, duration: Infinity, log: '파티 없음' };
+  const powerMult = accountMods.powerMult || 1;
 
   const profiles = party.map(toCombatProfile);
 
@@ -40,8 +42,8 @@ export function resolve(party, challenge) {
   );
 
   const partyHP = profiles.reduce((s, p) => s + p.hp, 0);
-  const partyHPeff = partyHP * (1 + lifesteal);
-  const rawDPS = profiles.reduce((s, p) => s + p.dps, 0) * atkMult;
+  const partyHPeff = partyHP * (1 + lifesteal) * powerMult;
+  const rawDPS = profiles.reduce((s, p) => s + p.dps, 0) * atkMult * powerMult;
   const avgDef = profiles.reduce((s, p) => s + p.def, 0) / profiles.length;
 
   const enemyDefEff = challenge.def * (1 - defPierce);

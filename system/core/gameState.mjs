@@ -12,8 +12,9 @@ export function createGameState({ units = [], party = [] } = {}) {
     party, // 편성된 유닛 uid 배열 (최대 정책은 장르가 정함)
     inventory: [], // 미장착 장비 인스턴스 배열
     wallet: createWallet(),
-    stage: 1, // 현재 도전/진행 스테이지
-    maxStage: 1, // 최고 도달 스테이지
+    stage: 1, // 현재 도전/진행 스테이지 (환생 시 리셋)
+    maxStage: 1, // 이번 회차 최고 도달 (환생 시 리셋)
+    peakStage: 1, // 역대 최고 도달 (환생해도 유지 — 실제 진행도)
     energy: 60, // RPG 장르가 사용하는 행동력 (방치형은 무시)
     prestige: 0, // 방치형 장르가 사용하는 환생 횟수 (RPG는 무시)
     lastTick: null, // 방치형 오프라인 계산 기준 시각(ms)

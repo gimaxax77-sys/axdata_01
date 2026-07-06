@@ -27,6 +27,13 @@ export const BALANCE = {
   gearCostBase: 60, gearCostGrowth: 1.3, // 장비 강화 (currency)
 
   // 환생(prestige) 영구 보너스 — 지수적 벽을 넘는 곱셈형 루프.
-  // 환생 포인트 1당 방치 수입 +50%.
+  // 환생 포인트 1당: 방치 수입 배수 + 글로벌 파워 배수(상한 없음).
+  // 파워 배수가 상한 없이 커져야 1.14ⁿ 난이도를 매 환생마다 따라잡는다.
   prestigeIncomeBonus: 0.5,
+  prestigePowerBonus: 0.12,
 };
+
+// 계정 단위 전투 보정 (환생 파워 배수). resolve()에 넘긴다.
+export function accountMods(state) {
+  return { powerMult: 1 + (state.prestige || 0) * BALANCE.prestigePowerBonus };
+}

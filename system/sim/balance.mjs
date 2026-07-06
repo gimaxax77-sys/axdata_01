@@ -2,7 +2,7 @@ import { createGameState } from '../core/gameState.mjs';
 import { createUnit } from '../core/units.mjs';
 import { earn } from '../core/economy.mjs';
 import { getStage } from '../core/progression.mjs';
-import { BALANCE } from '../core/balance.mjs';
+import { BALANCE, accountMods } from '../core/balance.mjs';
 import { idleGenre } from '../genres/idle.mjs';
 import { summonMulti } from '../core/gacha.mjs';
 import { makeRng } from '../core/rng.mjs';
@@ -69,53 +69,62 @@ export function runSimulation(opts = {}) {
   const daily = [];
   const gateHits = [];
   let gateIdx = 0;
-  let prevStage = 1;
+  let prevPeak = 1;
 
   for (let day = 1; day <= days; day++) {
     earn(state.wallet, { summon: dailySummon });
     let clears = 0;
     for (let c = 0; c < checkinsPerDay; c++) {
+      const before = state.maxStage;
       const t = idleGenre.tick(state, hoursPerCheckin * 3600);
       clears += t.clears;
       invest(state, rng, summonMulti);
+      // 벽에서 환생: 이번 체크인에 더 못 나아갔고 충분히 깊으면 환생
+      if (usePrestige && state.maxStage <= before && state.maxStage >= 15) {
+        idleGenre.prestige(state);
+      }
     }
-    const stageGain = state.maxStage - prevStage;
-    // 정체 시 환생: 진행이 막히고 어느 정도 깊이면 곱셈형 루프 발동
-    if (usePrestige && stageGain <= 1 && state.maxStage >= 15) {
-      idleGenre.prestige(state);
-    }
-    // 게이트 통과 기록
-    while (gateIdx < GATES.length && state.maxStage >= GATES[gateIdx].stage) {
+    const peak = state.peakStage;
+    const mult = accountMods(state).powerMult;
+    const pp = partyPower(state);
+    // 게이트 통과 기록 (역대 최고 = 실제 진행도 기준)
+    while (gateIdx < GATES.length && peak >= GATES[gateIdx].stage) {
       gateHits.push({ day, ...GATES[gateIdx] });
       gateIdx++;
     }
-    const pp = partyPower(state);
     daily.push({
       day,
-      maxStage: state.maxStage,
-      stageGain,
-      bestPower: pp.best,
-      totalPower: pp.total,
+      maxStage: peak, // 역대 최고 도달(실제 진행도)
+      stageGain: peak - prevPeak,
+      bestPower: Math.round(pp.best * mult), // 환생 배수 반영
+      totalPower: Math.round(pp.total * mult),
       roster: pp.size,
-      required: stagePower(state.maxStage),
+      required: stagePower(peak),
       prestige: state.prestige,
       gold: Math.round(state.wallet.currency),
       clears,
     });
-    prevStage = state.maxStage;
+    prevPeak = peak;
   }
 
-  // 병목 검출: 일일 스테이지 증가가 직전 피크의 50% 미만으로 꺾이는 날
-  let peakGain = 0;
+  // 병목 검출: 초반 러시(Day1) 이후 진행이 사실상 멈춘 날(일일 +1 이하).
   const bottlenecks = [];
   for (const d of daily) {
-    peakGain = Math.max(peakGain, d.stageGain);
-    if (peakGain > 0 && d.stageGain < peakGain * 0.5 && d.day > 1) {
-      bottlenecks.push({ day: d.day, stage: d.maxStage, gain: d.stageGain, peakGain });
+    if (d.day > 1 && d.stageGain <= 1) {
+      bottlenecks.push({ day: d.day, stage: d.maxStage, gain: d.stageGain });
     }
   }
 
-  return { daily, gateHits, bottlenecks, opts: { days, checkinsPerDay, hoursPerCheckin, dailySummon, seed } };
+  // 곡선 매끄러움 지표
+  const gains = daily.slice(1).map((d) => d.stageGain);
+  const mean = gains.reduce((s, g) => s + g, 0) / (gains.length || 1);
+  const variance = gains.reduce((s, g) => s + (g - mean) ** 2, 0) / (gains.length || 1);
+  const cv = mean > 0 ? Math.sqrt(variance) / mean : Infinity; // 변동계수(낮을수록 매끄러움)
+  const ratios = daily.map((d) => d.bestPower / d.required);
+  const minRatio = Math.min(...ratios);
+  const smoothness = { cv, minRatio, meanGain: mean };
+
+  return { daily, gateHits, bottlenecks, smoothness, opts: { days, checkinsPerDay, hoursPerCheckin, dailySummon, seed } };
 }
 
 // ── CLI 리포트 ────────────────────────────────────────────────
@@ -150,7 +159,7 @@ function main() {
     console.log('  뚜렷한 급정체 없음 (곡선이 매끄러움)');
   } else {
     for (const b of sim.bottlenecks) {
-      console.log(`  Day ${b.day}: 스테이지 ${b.stage}에서 정체 (일일 +${b.gain}, 피크 +${b.peakGain})`);
+      console.log(`  Day ${b.day}: 스테이지 ${b.stage}에서 정체 (일일 +${b.gain})`);
     }
   }
 
@@ -164,18 +173,19 @@ function main() {
     { label: '종합안 (난이도↓+비용완화+환생1.0)',
       opt: { balance: { enemyGrowth: 1.12, rewardGrowth: 1.13, levelCostGrowth: 1.09, enhanceCostGrowth: 1.16, gearCostGrowth: 1.2, prestigeIncomeBonus: 1.0 } } },
   ];
-  console.log('  튜닝안                                  7일차Stage  달성률  병목수');
+  console.log('  튜닝안                                  7일차Stage  최저달성률  변동계수  병목');
   line();
   for (const t of trials) {
     const s = runSimulation(t.opt);
     const last = s.daily[s.daily.length - 1];
-    const ratio = ((last.bestPower / last.required) * 100).toFixed(0) + '%';
+    const minR = (s.smoothness.minRatio * 100).toFixed(0) + '%';
+    const cv = s.smoothness.cv.toFixed(2);
     console.log(
       `  ${t.label.padEnd(38)}  ${String(last.maxStage).padStart(8)}  ` +
-        `${ratio.padStart(6)}  ${String(s.bottlenecks.length).padStart(5)}`
+        `${minR.padStart(8)}  ${cv.padStart(7)}  ${String(s.bottlenecks.length).padStart(4)}`
     );
   }
-  console.log('\n  → 환생(곱셈형 루프)이 지수적 벽을 넘는 가장 큰 레버임을 확인.');
+  console.log('\n  → 최저달성률이 높고(뒤처지지 않음) 변동계수가 낮은(매끄러운) 튜닝안이 좋다.');
   console.log('');
 }
 

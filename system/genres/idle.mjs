@@ -2,7 +2,7 @@ import { resolve } from '../core/resolution.mjs';
 import { getStage } from '../core/progression.mjs';
 import { getPartyUnits } from '../core/gameState.mjs';
 import { earn } from '../core/economy.mjs';
-import { BALANCE } from '../core/balance.mjs';
+import { BALANCE, accountMods } from '../core/balance.mjs';
 
 // ─────────────────────────────────────────────────────────────
 // 장르 어댑터: 방치형 (자동/누적형)
@@ -26,13 +26,14 @@ export const idleGenre = {
   tick(state, dtSeconds) {
     let remaining = Math.min(dtSeconds, OFFLINE_CAP_SEC);
     const party = getPartyUnits(state);
+    const mods = accountMods(state);
     const gained = { currency: 0, growth: 0 };
     let clears = 0;
 
     // 시간 예산이 남는 동안 현재 스테이지를 반복
     while (remaining > 0) {
       const stageDef = getStage(state.stage);
-      const result = resolve(party, stageDef.challenge);
+      const result = resolve(party, stageDef.challenge, mods);
 
       if (!result.win || result.duration === Infinity) break; // 벽에 막힘
 
@@ -40,6 +41,7 @@ export const idleGenre = {
       if (result.duration <= AUTO_ADVANCE_MARGIN) {
         state.stage += 1;
         state.maxStage = Math.max(state.maxStage, state.stage);
+        state.peakStage = Math.max(state.peakStage || 1, state.maxStage);
         continue;
       }
 
@@ -71,11 +73,16 @@ export const idleGenre = {
     return this.tick(state, dt);
   },
 
-  // 환생: 진행도를 초기화하고 영구 배수를 얻는다 (방치형 전용 루프)
+  // 환생: 이번 회차 진행을 리셋하고 영구 파워/수입 배수를 얻는다.
+  // 정통 방치형 루프 — 벽에서 환생 → 배수로 더 깊이 재등반.
+  // peakStage(역대 최고)는 유지하므로 "실제 진행도"는 사라지지 않는다.
   prestige(state) {
     const gain = Math.floor(Math.sqrt(state.maxStage));
+    if (gain < 1) return { prestigeGained: 0, totalPrestige: state.prestige };
     state.prestige += gain;
+    state.peakStage = Math.max(state.peakStage || 1, state.maxStage);
     state.stage = 1;
+    state.maxStage = 1; // 이번 회차 리셋 → 재등반
     return { prestigeGained: gain, totalPrestige: state.prestige };
   },
 };

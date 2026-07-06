@@ -81,8 +81,8 @@ function barChart(items) {
 
 // ── 데이터 시리즈 ─────────────────────────────────────────────
 const powerFig = lineChart([
-  { name: '보유', color: P.blue[0], points: base.daily.map((d) => d.bestPower) },
-  { name: '요구', color: P.red[0], points: base.daily.map((d) => d.required) },
+  { name: '보유', color: P.blue[0], points: scenarios.off.daily.map((d) => d.bestPower) },
+  { name: '요구', color: P.red[0], points: scenarios.off.daily.map((d) => d.required) },
 ], (v) => (v >= 1000 ? (v / 1000).toFixed(0) + 'k' : v), { aria: '보유 vs 요구 전투력' });
 
 const stageFig = lineChart([
@@ -142,25 +142,25 @@ const html = `<title>밸런스 시뮬레이터 리포트</title>
 </style>
 <div class="viz-root">
   <h1>🎮 밸런스 시뮬레이터 리포트</h1>
-  <p class="sub">합리적 오토플레이어를 7일간 시뮬레이션 — Core 엔진이 실제로 돌린 성장 곡선. 문서가 "미정"으로 남긴 수치를 코드로 검증.</p>
+  <p class="sub">합리적 오토플레이어를 7일간 시뮬레이션 — Core 엔진이 실제로 돌린 성장 곡선. 시뮬레이터로 <b>지수적 벽</b>을 찾아내고, 환생 파워 루프로 <b>해소</b>하기까지.</p>
 
   <div class="tiles">
-    <div class="tile"><div class="k">Day 1 도달 (벽 시작)</div><div class="v">${wallStage}<small>층</small></div></div>
-    <div class="tile"><div class="k">기본 7일차</div><div class="v crit">${baseFinal}<small>층</small></div></div>
-    <div class="tile"><div class="k">종합안 7일차</div><div class="v good">${tunedFinal}<small>층</small></div></div>
-    <div class="tile"><div class="k">환생 OFF 7일차</div><div class="v">${offFinal}<small>층</small></div></div>
+    <div class="tile"><div class="k">환생 OFF · 7일차 (벽)</div><div class="v crit">${offFinal}<small>층</small></div></div>
+    <div class="tile"><div class="k">환생 ON · 7일차 (해소)</div><div class="v good">${baseFinal}<small>층</small></div></div>
+    <div class="tile"><div class="k">종합 튜닝안</div><div class="v good">${tunedFinal}<small>층</small></div></div>
+    <div class="tile"><div class="k">최저 달성률 (환생 ON)</div><div class="v good">${Math.round(base.smoothness.minRatio * 100)}<small>%</small></div></div>
   </div>
 
   <div class="card">
-    <h2>① 전투력 격차 — 플레이어가 뒤처진다</h2>
-    <p class="note">요구 전투력(적)이 보유 전투력보다 빠르게 벌어짐 = 초반 러시 후 콘크리트 벽. 이게 방치형의 대표 실패 모드.</p>
+    <h2>① 문제 — 환생 OFF에서 요구 전투력이 보유를 추월</h2>
+    <p class="note">수정 전(환생이 파워를 안 줌): 요구 전투력(적)이 보유보다 빠르게 벌어짐 = 초반 러시 후 콘크리트 벽. 방치형의 대표 실패 모드.</p>
     ${powerFig}
     <div class="legend"><span><i class="dot" style="background:${P.blue[0]}"></i>보유 전투력</span><span><i class="dot" style="background:${P.red[0]}"></i>요구 전투력</span></div>
   </div>
 
   <div class="card">
-    <h2>② 스테이지 도달 곡선 — 튜닝 시나리오 비교</h2>
-    <p class="note">환생(곱셈형 루프)을 실제 보너스로 고치고 곡선 상수를 완화한 "종합안"이 가장 깊이 도달.</p>
+    <h2>② 수정 — 환생 파워 배수로 벽 해소</h2>
+    <p class="note">환생 OFF는 ~36층에서 정체(평평). 환생 ON(기본)은 벽 없이 꾸준히 등반, 종합 튜닝안은 더 깊이 도달.</p>
     ${stageFig}
     <div class="legend"><span><i class="dot" style="background:${P.blue[0]}"></i>환생 OFF</span><span><i class="dot" style="background:${P.aqua[0]}"></i>기본</span><span><i class="dot" style="background:${P.yellow[0]}"></i>종합안</span></div>
   </div>
@@ -172,12 +172,12 @@ const html = `<title>밸런스 시뮬레이터 리포트</title>
   </div>
 
   <div class="findings">
-    <h2>핵심 발견</h2>
+    <h2>진단 → 수정 → 재검증</h2>
     <ol>
-      <li><span class="crit">지수적 벽</span>: Day 1에 ${wallStage}층 폭발 후 하루 +1씩. 적 성장(1.14ⁿ) &gt; 보상 성장(1.12ⁿ) + 강화비용 폭증이 겹침.</li>
-      <li>곡선 상수(적/보상) 조정만으로는 벽이 안 풀림 → 진짜 원인은 <b>지출 곡선</b>과 <b>곱셈형 루프 부재</b>.</li>
-      <li><span class="crit">환생이 장식용이었다</span>: <code>state.prestige</code>가 포인트만 쌓고 보너스 미적용 → 수정(수입 배수)하니 곡선이 개선(${baseFinal}→${tunedFinal}층).</li>
-      <li>더 깊은 구조적 병목: 유닛 파워가 <b>레벨 상한(랭크×20)</b>에 묶여, 상한 개방은 소환(희소 자원)에 의존 → 수입만으로는 못 넘음.</li>
+      <li><span class="crit">문제(벽)</span>: 파워가 <b>레벨 상한(랭크×20)</b>에 묶이고, 유일한 돌파 수단인 환생이 <b>수입만</b> 늘리고 파워는 안 늘려 지수적 난이도(1.14ⁿ)를 못 따라감 → 최저달성률 ${Math.round(scenarios.off.smoothness.minRatio * 100)}%로 뒤처짐, 병목 ${scenarios.off.bottlenecks.length}회.</li>
+      <li><span class="good">수정</span>: 환생에 <b>상한 없는 글로벌 파워 배수</b> 추가(<code>prestigePowerBonus</code>). 벽에서 환생 → 배수로 더 깊이 재등반하는 정통 방치형 루프. 진행도(peakStage)는 유지.</li>
+      <li><span class="good">결과</span>: 벽 해소. ${offFinal}층 → <b>${baseFinal}층</b>, 최저달성률 ${Math.round(scenarios.off.smoothness.minRatio * 100)}% → <b>${Math.round(base.smoothness.minRatio * 100)}%</b>, 병목 ${scenarios.off.bottlenecks.length}회 → <b>${base.bottlenecks.length}회</b>(급정체 없음).</li>
+      <li>모든 상수는 <code>core/balance.mjs</code> 단일 소스 → 시뮬레이터가 값을 바꿔가며 곡선을 계속 튜닝 가능.</li>
     </ol>
   </div>
 

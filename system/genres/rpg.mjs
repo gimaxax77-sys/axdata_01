@@ -2,6 +2,7 @@ import { resolve } from '../core/resolution.mjs';
 import { getStage } from '../core/progression.mjs';
 import { getPartyUnits } from '../core/gameState.mjs';
 import { earn } from '../core/economy.mjs';
+import { accountMods } from '../core/balance.mjs';
 
 // ─────────────────────────────────────────────────────────────
 // 장르 어댑터: RPG (능동형)
@@ -23,7 +24,7 @@ export const rpgGenre = {
 
     const party = getPartyUnits(state);
     const stageDef = getStage(state.stage);
-    const result = resolve(party, stageDef.challenge);
+    const result = resolve(party, stageDef.challenge, accountMods(state));
 
     if (result.win) {
       earn(state.wallet, {
