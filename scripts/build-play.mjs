@@ -27,7 +27,7 @@ const meta = CONCEPT_META[concept] || CONCEPT_META.fantasy;
 const inject = concept === 'fantasy' ? '' : `<script>globalThis.__ELDRIA_CONCEPT__=${JSON.stringify(concept)};</script>\n`;
 
 const body = `<title>${meta.title}</title>
-<style id="expo-reset">html,body{height:100%;margin:0}body{overflow:hidden;background:${meta.bg}}#root{display:flex;height:100vh;flex:1}</style>
+<style id="expo-reset">html,body{height:100%;margin:0}body{overflow:hidden;background:${meta.bg}}#root{display:flex;height:100vh;flex:1;overflow:hidden}</style>
 <div id="root"></div>
 ${inject}<script>${js}</script>`;
 

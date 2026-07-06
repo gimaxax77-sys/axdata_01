@@ -24,7 +24,7 @@ export default function ShopScreen({ state, bump, concept }) {
   const gem = concept.resources.gem;
 
   return (
-    <ScrollView contentContainerStyle={s.wrap}>
+    <ScrollView style={s.flex} contentContainerStyle={s.wrap}>
       {/* 광고 보상 */}
       <Card>
         <Text style={s.sec}>📺 광고 보상 <Text style={s.dim}>(무료 · 일일 제한)</Text></Text>
@@ -84,6 +84,7 @@ export default function ShopScreen({ state, bump, concept }) {
 }
 
 const s = StyleSheet.create({
+  flex: { flex: 1 },
   wrap: { padding: 14 },
   sec: { color: T.text, fontWeight: '800', fontSize: 15, marginBottom: 4 },
   shopHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 },

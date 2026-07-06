@@ -34,7 +34,7 @@ export default function ContentScreen({ state, bump, concept }) {
   const missions = missionList(state);
 
   return (
-    <ScrollView contentContainerStyle={c.wrap}>
+    <ScrollView style={c.flex} contentContainerStyle={c.wrap}>
       {/* 스토리 캠페인 */}
       <Card style={{ borderColor: T.accent }}>
         <Text style={c.sec}>📖 스토리 <Text style={c.dim}>챕터 {state.campaign.cleared}/{CAMPAIGN_CHAPTER_COUNT}</Text></Text>
@@ -181,6 +181,7 @@ export default function ContentScreen({ state, bump, concept }) {
 }
 
 const c = StyleSheet.create({
+  flex: { flex: 1 },
   wrap: { padding: 14 },
   sec: { color: T.text, fontWeight: '800', fontSize: 15, marginBottom: 4 },
   sub: { color: T.muted, fontSize: 12, marginBottom: 12 },

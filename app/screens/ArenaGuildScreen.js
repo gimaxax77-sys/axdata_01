@@ -56,7 +56,7 @@ export default function ArenaGuildScreen({ state, bump, concept }) {
   const bossHp = guildOpen ? (state.guild.bossHp ?? bossMax) : bossMax;
 
   return (
-    <ScrollView contentContainerStyle={c.wrap}>
+    <ScrollView style={c.flex} contentContainerStyle={c.wrap}>
       {/* ── 아레나 ───────────────────────────────── */}
       <Card>
         <View style={c.head}>
@@ -117,6 +117,7 @@ export default function ArenaGuildScreen({ state, bump, concept }) {
 }
 
 const c = StyleSheet.create({
+  flex: { flex: 1 },
   wrap: { padding: 14 },
   head: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 },
   sec: { color: T.text, fontWeight: '800', fontSize: 16 },

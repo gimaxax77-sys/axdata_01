@@ -88,7 +88,7 @@ export default function RosterScreen({ state, bump, concept }) {
   const slots = skillSlots(unit);
 
   return (
-    <ScrollView contentContainerStyle={g.wrap}>
+    <ScrollView style={g.flex} contentContainerStyle={g.wrap}>
       {/* 파티 편성 — 전투는 편성된 전원 합산 */}
       <Card style={{ marginBottom: 12 }}>
         <View style={g.intiHead}>
@@ -522,6 +522,7 @@ function PickerModal({ picker, unit, state, onClose, onChange, concept }) {
 }
 
 const g = StyleSheet.create({
+  flex: { flex: 1 },
   wrap: { padding: 14, paddingBottom: 30 },
   sec: { color: T.text, fontWeight: '800', fontSize: 15, marginBottom: 8 },
   subsec: { color: T.muted, fontSize: 12, marginTop: 12, marginBottom: 6, fontWeight: '700' },

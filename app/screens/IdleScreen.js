@@ -29,7 +29,7 @@ export default function IdleScreen({ state, bump, lastGain, concept }) {
   const battle = resolve(getPartyUnits(state), stageDef.challenge, accountMods(state));
 
   return (
-    <ScrollView contentContainerStyle={st.wrap}>
+    <ScrollView style={st.flex} contentContainerStyle={st.wrap}>
       {/* 자동 전투 무대 */}
       <Card style={st.stage}>
         <Text style={st.stageLabel}>{concept.terms.stage} {state.stage}</Text>
@@ -105,6 +105,7 @@ export default function IdleScreen({ state, bump, lastGain, concept }) {
 }
 
 const st = StyleSheet.create({
+  flex: { flex: 1 },
   wrap: { padding: 14, gap: 12 },
   stage: { alignItems: 'center', backgroundColor: T.surface2 },
   stageLabel: { color: T.accent, fontWeight: '800', fontSize: 18, marginBottom: 4 },

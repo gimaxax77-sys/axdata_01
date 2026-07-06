@@ -36,7 +36,7 @@ export default function GachaScreen({ state, bump, concept }) {
   }
 
   return (
-    <ScrollView contentContainerStyle={s.wrap}>
+    <ScrollView style={s.flex} contentContainerStyle={s.wrap}>
       <Card style={s.banner}>
         <Text style={s.bannerEmoji}>{concept.resources.summon.emoji}</Text>
         <Text style={s.bannerTitle}>{concept.terms.unit} 소환</Text>
@@ -81,6 +81,7 @@ export default function GachaScreen({ state, bump, concept }) {
 }
 
 const s = StyleSheet.create({
+  flex: { flex: 1 },
   wrap: { padding: 14 },
   banner: { alignItems: 'center', backgroundColor: T.surface2 },
   bannerEmoji: { fontSize: 48 },

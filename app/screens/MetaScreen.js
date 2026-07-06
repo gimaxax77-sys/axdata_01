@@ -23,7 +23,7 @@ export default function MetaScreen({ state, bump, concept }) {
   const claimableTiers = tiers.filter((t) => t.reached && (!t.free.claimed || (sp.premium && !t.premium.claimed)));
 
   return (
-    <ScrollView contentContainerStyle={c.wrap}>
+    <ScrollView style={c.flex} contentContainerStyle={c.wrap}>
       {/* 시즌패스 */}
       <Card>
         <View style={c.head}>
@@ -97,6 +97,7 @@ export default function MetaScreen({ state, bump, concept }) {
 }
 
 const c = StyleSheet.create({
+  flex: { flex: 1 },
   wrap: { padding: 14 },
   head: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 },
   sec: { color: T.text, fontWeight: '800', fontSize: 15, marginBottom: 4 },
