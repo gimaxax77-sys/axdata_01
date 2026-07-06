@@ -77,12 +77,15 @@ export function runSimulation(opts = {}) {
     balance = null, // BALANCE 오버라이드 (튜닝 실험)
     usePrestige = true, // 정체 시 환생 루프 사용
     useAccount = true, // 유물·펫 등 계정 성장 사용
+    useAxes = true, // 전용무기·룬·각성(=씨앗 조건) 투자
   } = opts;
 
   if (balance) return withBalance(balance, () => runSimulation({ ...opts, balance: null }));
 
   const rng = makeRng(seed);
-  const hero = createUnit('STRIKER', { level: 1, rank: 1 });
+  // 실제 게임 스타터와 동일하게 등급(N)을 부여 → 등급배수·씨앗이 시뮬에도 반영.
+  const hero = createUnit('STRIKER', { level: 1, rank: 1, signature: 'SIG_NOVICE' });
+  hero.rarity = 'N';
   const state = createGameState({ units: [hero], party: [hero.uid] });
   earn(state.wallet, starter);
   pickParty(state);
@@ -104,7 +107,7 @@ export function runSimulation(opts = {}) {
       const before = state.maxStage;
       const t = idleGenre.tick(state, hoursPerCheckin * 3600);
       clears += t.clears;
-      invest(state, rng, summonMulti, useAccount);
+      invest(state, rng, summonMulti, useAccount, useAxes);
       // 벽에서 환생: 이번 체크인에 더 못 나아갔고 충분히 깊으면 환생
       if (usePrestige && state.maxStage <= before && state.maxStage >= 15) {
         idleGenre.prestige(state);
@@ -202,8 +205,9 @@ function main() {
   // ── 튜닝 실험: 보상/난이도 곡선을 조정하면 어떻게 달라지나 ──
   console.log('\n\n■ 튜닝 실험 — 곡선 상수를 바꿔 재시뮬레이션\n');
   const trials = [
+    { label: '신규 축 OFF (무기·룬·각성 없음)', opt: { useAxes: false } },
+    { label: '기본 (등급+씨앗+신규축)', opt: {} },
     { label: '계정성장 OFF (유물·펫 없음)', opt: { useAccount: false } },
-    { label: '기본 (환생+유물+펫)', opt: {} },
     { label: '환생 OFF', opt: { balance: { prestigeIncomeBonus: 0 }, usePrestige: false } },
     { label: '비용 완화', opt: { balance: { levelCostGrowth: 1.09, enhanceCostGrowth: 1.16, gearCostGrowth: 1.2 } } },
     { label: '종합안 (난이도↓+비용완화+환생1.0)',

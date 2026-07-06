@@ -8,6 +8,14 @@ import { craftGear, equipGear, enhanceGear, GEAR_SLOTS } from '../core/gear.mjs'
 import { RELICS, upgradeRelic } from '../core/relics.mjs';
 import { petSummon, PET_PULL_COST } from '../core/pets.mjs';
 import { MAX_PARTY } from '../core/gameState.mjs';
+import {
+  canOwnSigWeapon, hasSigWeapon, unlockSigWeapon, enhanceSigWeapon, SIGWEAPON_MAX,
+} from '../core/sigweapon.mjs';
+import {
+  summonRune, equipRune, enhanceRune, RUNE_SLOTS, RUNE_MAX_LEVEL, RUNE_SUMMON_COST,
+} from '../core/runes.mjs';
+import { awakenSignature } from '../core/character.mjs';
+import { AWAKEN_MAX } from '../core/skills.mjs';
 
 // ─────────────────────────────────────────────────────────────
 // 오토플레이어 — "합리적 유저"의 투자 전략을 흉내낸다.
@@ -133,6 +141,51 @@ function drainCurrency(state, useAccount) {
   }
 }
 
+// 캐릭터 신규 성장 축 소진: 전용무기·룬·시그니처 각성.
+// 등급/씨앗 반영 후 "정체성 축까지 투자하는" 플레이어를 흉내낸다.
+// gem(무기 획득·각성) / summon(각성) / currency(룬·무기·룬강화) 를 함께 쓴다.
+function drainAxes(state, rng) {
+  const party = partyUnits(state);
+  // 1) 전용무기 획득(gem) — 파티 전원
+  for (const u of party) {
+    if (canOwnSigWeapon(u) && !hasSigWeapon(u)) unlockSigWeapon(state, u.uid);
+  }
+  // 2) 시그니처 각성(summon+gem) — 상한까지
+  let iters = 0;
+  while (iters++ < CAP_ITERS) {
+    let did = false;
+    for (const u of party) {
+      if ((u.sigAwaken || 0) < AWAKEN_MAX && awakenSignature(state, u.uid).ok) did = true;
+    }
+    if (!did) break;
+  }
+  // 3) 룬 발굴(currency) — 파티 슬롯 채울 만큼 넉넉히
+  const need = party.length * RUNE_SLOTS + 3;
+  iters = 0;
+  while ((state.runeBag || []).length < need && state.wallet.currency >= RUNE_SUMMON_COST.currency && iters++ < 500) {
+    if (!summonRune(state, rng).ok) break;
+  }
+  // 4) 빈 룬 슬롯 채우기
+  for (const u of party) {
+    if (!u.runes) continue;
+    for (let s = 0; s < RUNE_SLOTS; s++) {
+      if (!u.runes[s] && (state.runeBag || []).length) equipRune(state, u.uid, s, state.runeBag[0].uid);
+    }
+  }
+  // 5) 전용무기 + 룬 강화(currency) 라운드로빈
+  iters = 0;
+  while (iters++ < CAP_ITERS) {
+    let did = false;
+    for (const u of party) {
+      if (hasSigWeapon(u) && u.sigWeapon.level < SIGWEAPON_MAX && enhanceSigWeapon(state, u.uid).ok) did = true;
+      for (const rune of (u.runes || [])) {
+        if (rune && rune.level < RUNE_MAX_LEVEL && enhanceRune(state, rune.uid).ok) did = true;
+      }
+    }
+    if (!did) break;
+  }
+}
+
 // gem 풀 소진: 펫 소환(중복 레벨업·자동 장착)
 function drainPets(state, rng) {
   let iters = 0;
@@ -143,10 +196,13 @@ function drainPets(state, rng) {
 }
 
 // 한 세션의 전체 투자 (모든 풀 소진)
-export function invest(state, rng, summonFn, useAccount = true) {
+// useAxes: 전용무기·룬·각성(=씨앗 조건 추가 달성) 투자 여부.
+export function invest(state, rng, summonFn, useAccount = true, useAxes = true) {
   fillSkills(state);
   drainGrowth(state);
   drainSummon(state, rng, summonFn);
+  // 신규 축은 gem/summon을 쓰므로 각성은 소환 이후, 나머지는 currency 소진 전에.
+  if (useAxes) drainAxes(state, rng);
   drainCurrency(state, useAccount);
   if (useAccount) drainPets(state, rng);
   pickParty(state);
