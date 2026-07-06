@@ -11,7 +11,7 @@ import { levelUp, ascend, enhanceNode, equipSkill, unequipSkill, upgradeSkill } 
 import { craftGear, equipGear, enhanceGear, unequipGear } from '../../system/core/gear.mjs';
 import { recordMission } from '../../system/core/daily.mjs';
 import { intimacyLevel, intimacyProgress, giftCost, giveGift, INTIMACY_MAX } from '../../system/core/intimacy.mjs';
-import { linesOf } from '../../system/concepts/index.mjs';
+import { linesOf, costumesOf, equipCostume, unequipCostume } from '../../system/concepts/index.mjs';
 
 const SLOT_KO = { weapon: '무기', armor: '방어구', accessory: '장신구' };
 
@@ -115,6 +115,25 @@ export default function RosterScreen({ state, bump, concept }) {
               }} />
           </View>
           <View style={g.bar}><View style={[g.barFill, { width: `${intimacyProgress(unit).ratio * 100}%` }]} /></View>
+        </Card>
+      )}
+
+      {/* 코스튬 — 외형 변경 + 소량 보너스 (친밀도로 해금) */}
+      {costumesOf(concept, unit).length > 0 && (
+        <Card style={{ marginTop: 12 }}>
+          <Text style={g.sec}>코스튬</Text>
+          {costumesOf(concept, unit).map((cos) => (
+            <View key={cos.id} style={g.slotRow}>
+              <Text style={g.cosEmoji}>{cos.unlocked ? cos.emoji : '🔒'}</Text>
+              <View style={{ flex: 1 }}>
+                <Text style={g.slotName}>{cos.name}</Text>
+                <Text style={g.slotDesc}>전 스탯 +{Math.round((cos.bonus.atk || 0) * 100)}%{cos.unlocked ? '' : ` · 친밀도 Lv.${cos.unlock} 필요`}</Text>
+              </View>
+              <Btn small kind={cos.equipped ? 'ghost' : 'gold'} disabled={!cos.unlocked}
+                label={cos.equipped ? '해제' : cos.unlocked ? '장착' : '잠김'}
+                onPress={() => act(() => (cos.equipped ? unequipCostume(unit) : equipCostume(concept, unit, cos.id)))} />
+            </View>
+          ))}
         </Card>
       )}
 
@@ -303,6 +322,7 @@ const g = StyleSheet.create({
   headSub: { color: T.muted, fontSize: 13, marginTop: 2 },
   bubble: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: T.surface2, borderRadius: 12, padding: 12, marginBottom: 12 },
   bubbleEmoji: { fontSize: 26 },
+  cosEmoji: { fontSize: 26, width: 34, textAlign: 'center' },
   bubbleText: { flex: 1, color: T.text, fontSize: 14, fontStyle: 'italic' },
   intiHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   bar: { height: 6, backgroundColor: T.surface2, borderRadius: 3, marginTop: 8, overflow: 'hidden' },

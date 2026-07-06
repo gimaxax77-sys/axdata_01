@@ -55,4 +55,17 @@ export const fantasyConcept = {
     { id: 'mir', name: '미르', emoji: '🗡️', title: '견습 검사', personality: '풋풋한', element: 'WOOD', archetype: 'STRIKER', rarity: 'N', signature: 'SIG_NOVICE',
       lines: { greet: '잘 부탁해요!', bond: '저를 제자로 삼아주세요!', levelup: '저 강해졌죠?!' } },
   ],
+
+  // 코스튬 — 캐릭터별 외형+소량 보너스. 친밀도 Lv로 해금.
+  // (캐릭터 id로 키잉. 보너스는 장착 시 Core 모디파이어로 흘러간다.)
+  costumes: {
+    kael: { id: 'kael_c1', name: '홍염 예복', emoji: '👘', unlock: 5, bonus: { atk: 0.06, hp: 0.06, def: 0.06, spd: 0.06 } },
+    luna: { id: 'luna_c1', name: '달빛 드레스', emoji: '👗', unlock: 5, bonus: { atk: 0.06, hp: 0.06, def: 0.06, spd: 0.06 } },
+    gwen: { id: 'gwen_c1', name: '서리 갑주', emoji: '🥋', unlock: 5, bonus: { atk: 0.06, hp: 0.06, def: 0.06, spd: 0.06 } },
+    ciel: { id: 'ciel_c1', name: '바람 무복', emoji: '🎐', unlock: 5, bonus: { atk: 0.06, hp: 0.06, def: 0.06, spd: 0.06 } },
+    bran: { id: 'bran_c1', name: '대지 중갑', emoji: '⛰️', unlock: 5, bonus: { atk: 0.06, hp: 0.06, def: 0.06, spd: 0.06 } },
+    ael: { id: 'ael_c1', name: '예언자 로브', emoji: '🔮', unlock: 5, bonus: { atk: 0.06, hp: 0.06, def: 0.06, spd: 0.06 } },
+    ara: { id: 'ara_c1', name: '폭풍 망토', emoji: '🧥', unlock: 5, bonus: { atk: 0.06, hp: 0.06, def: 0.06, spd: 0.06 } },
+    mir: { id: 'mir_c1', name: '수련복', emoji: '🥋', unlock: 5, bonus: { atk: 0.06, hp: 0.06, def: 0.06, spd: 0.06 } },
+  },
 };

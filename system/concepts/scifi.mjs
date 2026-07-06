@@ -53,4 +53,16 @@ export const scifiConcept = {
     { id: 'mir', name: '루키', emoji: '🗡️', title: '시제기', personality: '미숙한', element: 'WOOD', archetype: 'STRIKER', rarity: 'N', signature: 'SIG_NOVICE',
       lines: { greet: '시운전 시작합니다!', bond: '정식 배치 부탁해요!', levelup: '성능 향상 확인!' } },
   ],
+
+  // 코스튬 — fantasy와 같은 구조(같은 캐릭터 id·해금·보너스), SF 외형.
+  costumes: {
+    kael: { id: 'kael_c1', name: '강화 프레임', emoji: '🦾', unlock: 5, bonus: { atk: 0.06, hp: 0.06, def: 0.06, spd: 0.06 } },
+    luna: { id: 'luna_c1', name: '정밀 코어', emoji: '🛰️', unlock: 5, bonus: { atk: 0.06, hp: 0.06, def: 0.06, spd: 0.06 } },
+    gwen: { id: 'gwen_c1', name: '냉각 장갑', emoji: '🛡️', unlock: 5, bonus: { atk: 0.06, hp: 0.06, def: 0.06, spd: 0.06 } },
+    ciel: { id: 'ciel_c1', name: '가속 부스터', emoji: '🚀', unlock: 5, bonus: { atk: 0.06, hp: 0.06, def: 0.06, spd: 0.06 } },
+    bran: { id: 'bran_c1', name: '중장 모듈', emoji: '🏗️', unlock: 5, bonus: { atk: 0.06, hp: 0.06, def: 0.06, spd: 0.06 } },
+    ael: { id: 'ael_c1', name: '예측 안테나', emoji: '📡', unlock: 5, bonus: { atk: 0.06, hp: 0.06, def: 0.06, spd: 0.06 } },
+    ara: { id: 'ara_c1', name: '방전 코일', emoji: '⚙️', unlock: 5, bonus: { atk: 0.06, hp: 0.06, def: 0.06, spd: 0.06 } },
+    mir: { id: 'mir_c1', name: '정비 슈트', emoji: '🔧', unlock: 5, bonus: { atk: 0.06, hp: 0.06, def: 0.06, spd: 0.06 } },
+  },
 };
