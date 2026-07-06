@@ -5,6 +5,32 @@ import { Card, Btn, fmt, LockedPanel } from '../components';
 import { isUnlocked, unlockStage } from '../../system/core/unlocks.mjs';
 import { ARENA_ENTRIES, arenaEntriesLeft, arenaFight, arenaTier } from '../../system/core/arena.mjs';
 import { GUILD_ATTACKS, guildAttacksLeft, guildAttack, guildBossMaxHp } from '../../system/core/guild.mjs';
+import { COMP_SHOP, compPurchase, compGrantPreview } from '../../system/core/compshop.mjs';
+
+// 경쟁 재화 상점 섹션 (arena=포인트 / guild=코인 소모)
+function CompShop({ state, bump, concept, kind, balance, unit }) {
+  const items = COMP_SHOP[kind];
+  const buy = (id) => { compPurchase(state, kind, id); bump(); };
+  return (
+    <View style={c.shop}>
+      <Text style={c.shopHead}>{kind === 'arena' ? '🏅 아레나 상점' : '🎖️ 길드 상점'} <Text style={c.dim}>보유 {unit} {fmt(balance)}</Text></Text>
+      {items.map((p) => {
+        const g = compGrantPreview(state, p.grant);
+        const txt = Object.entries(g).map(([k, v]) => `${concept.resources[k]?.emoji || ''}${fmt(v)}`).join(' ');
+        const afford = balance >= p.cost;
+        return (
+          <View key={p.id} style={c.shopRow}>
+            <View style={{ flex: 1 }}>
+              <Text style={c.shopLabel}>{p.label}</Text>
+              <Text style={c.shopReward}>{txt}</Text>
+            </View>
+            <Btn small kind="gold" disabled={!afford} label={`${unit} ${p.cost}`} onPress={() => buy(p.id)} />
+          </View>
+        );
+      })}
+    </View>
+  );
+}
 
 export default function ArenaGuildScreen({ state, bump, concept }) {
   const [arenaLog, setArenaLog] = useState(null);
@@ -53,6 +79,7 @@ export default function ArenaGuildScreen({ state, bump, concept }) {
           )}
           <View style={{ height: 10 }} />
           <Btn label={aLeft > 0 ? '전투 시작' : '오늘 입장 소진'} kind="gold" disabled={aLeft <= 0} onPress={doArena} />
+          <CompShop state={state} bump={bump} concept={concept} kind="arena" balance={state.arena.points} unit="🏅" />
         </>)}
       </Card>
 
@@ -82,6 +109,7 @@ export default function ArenaGuildScreen({ state, bump, concept }) {
           )}
           <View style={{ height: 10 }} />
           <Btn label={gLeft > 0 ? '보스 공격' : '오늘 공격 소진'} disabled={gLeft <= 0} onPress={doGuild} />
+          <CompShop state={state} bump={bump} concept={concept} kind="guild" balance={state.guild.coins} unit="🎖️" />
         </>)}
       </Card>
     </ScrollView>
@@ -104,4 +132,9 @@ const c = StyleSheet.create({
   bossBar: { height: 26, backgroundColor: T.surface2, borderRadius: 8, overflow: 'hidden', justifyContent: 'center', marginBottom: 8 },
   bossFill: { position: 'absolute', left: 0, top: 0, bottom: 0, backgroundColor: T.danger, opacity: 0.5 },
   bossText: { color: T.text, fontSize: 12, fontWeight: '700', textAlign: 'center' },
+  shop: { marginTop: 14, borderTopWidth: 1, borderTopColor: T.line, paddingTop: 12 },
+  shopHead: { color: T.text, fontWeight: '800', fontSize: 13, marginBottom: 4 },
+  shopRow: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 8 },
+  shopLabel: { color: T.text, fontWeight: '700', fontSize: 13 },
+  shopReward: { color: T.muted, fontSize: 12, marginTop: 2 },
 });
