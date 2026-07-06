@@ -4,10 +4,11 @@
 //   currency : 소프트 재화 (컨셉에서 골드/크레딧 등으로 표시)
 //   growth   : 성장 재료 (레벨업에 소모)
 //   summon   : 소환 재화 (신규 유닛 획득)
+//   gem      : 프리미엄 재화 (BM/상점 — 다이아 등)
 // ─────────────────────────────────────────────────────────────
 
 export function createWallet(init = {}) {
-  return { currency: 0, growth: 0, summon: 0, ...init };
+  return { currency: 0, growth: 0, summon: 0, gem: 0, ...init };
 }
 
 export function earn(wallet, gains) {

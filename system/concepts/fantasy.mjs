@@ -21,6 +21,7 @@ export const fantasyConcept = {
     currency: { name: '골드', emoji: '🪙' },
     growth: { name: '정수', emoji: '💠' },
     summon: { name: '소환석', emoji: '🔮' },
+    gem: { name: '다이아', emoji: '💎' },
   },
 
   terms: { unit: '영웅', party: '원정대', stage: '층', energy: '기력' },

@@ -20,8 +20,9 @@ export function createGameState({ units = [], party = [] } = {}) {
     lastTick: null, // 방치형 오프라인 계산 기준 시각(ms)
     gacha: { pity: 0 }, // 소환 천장 카운터
     // 일일 콘텐츠(출석·미션·던전) 상태
-    daily: { epochDay: 0, streak: 0, claimedDay: -1, missions: { summon: 0, upgrade: 0, dungeon: 0 }, claimed: {}, dungeon: { GOLD: 0, ESSENCE: 0 } },
+    daily: { epochDay: 0, streak: 0, claimedDay: -1, missions: { summon: 0, upgrade: 0, dungeon: 0 }, claimed: {}, dungeon: { GOLD: 0, ESSENCE: 0 }, ads: {} },
     relics: {}, // 유물 id → 레벨
+    shop: { purchased: {} }, // 1회성 패키지 구매 기록
   };
 }
 

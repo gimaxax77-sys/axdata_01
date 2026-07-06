@@ -19,6 +19,7 @@ export const scifiConcept = {
     currency: { name: '크레딧', emoji: '💳' },
     growth: { name: '코어', emoji: '🔋' },
     summon: { name: '설계도', emoji: '📡' },
+    gem: { name: '퀀텀', emoji: '💎' },
   },
 
   terms: { unit: '기체', party: '편대', stage: '섹터', energy: '연료' },

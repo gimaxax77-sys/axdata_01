@@ -8,12 +8,14 @@ import IdleScreen from './app/screens/IdleScreen';
 import RosterScreen from './app/screens/RosterScreen';
 import GachaScreen from './app/screens/GachaScreen';
 import ContentScreen from './app/screens/ContentScreen';
+import ShopScreen from './app/screens/ShopScreen';
 
 const TABS = [
   { key: 'idle', label: '방치', icon: '🏰', Screen: IdleScreen },
   { key: 'roster', label: '캐릭터', icon: '🐹', Screen: RosterScreen },
   { key: 'gacha', label: '소환', icon: '🔮', Screen: GachaScreen },
   { key: 'content', label: '콘텐츠', icon: '📅', Screen: ContentScreen },
+  { key: 'shop', label: '상점', icon: '🛒', Screen: ShopScreen },
 ];
 
 function fmtDuration(sec) {

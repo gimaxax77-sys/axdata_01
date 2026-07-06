@@ -26,6 +26,9 @@ function normalize(state) {
   state.daily.missions = state.daily.missions || { summon: 0, upgrade: 0, dungeon: 0 };
   state.daily.claimed = state.daily.claimed || {};
   state.daily.dungeon = state.daily.dungeon || { GOLD: 0, ESSENCE: 0 };
+  state.daily.ads = state.daily.ads || {};
+  state.shop = state.shop || { purchased: {} };
+  state.shop.purchased = state.shop.purchased || {};
   state.stage = state.stage || 1;
   state.maxStage = state.maxStage || 1;
   state.peakStage = state.peakStage || state.maxStage || 1;

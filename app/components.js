@@ -4,7 +4,7 @@ import { T } from './theme';
 
 // 상단 자원 바
 export function ResourceBar({ concept, wallet }) {
-  const keys = ['currency', 'growth', 'summon'];
+  const keys = ['currency', 'growth', 'summon', 'gem'];
   return (
     <View style={s.resbar}>
       {keys.map((k) => {

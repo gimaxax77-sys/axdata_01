@@ -20,7 +20,7 @@ function createFresh() {
   });
   hero.rarity = starter.rarity;
   const s = createGameState({ units: [hero], party: [hero.uid] });
-  earn(s.wallet, { currency: 800, growth: 600, summon: 130 });
+  earn(s.wallet, { currency: 800, growth: 600, summon: 130, gem: 120 });
   return s;
 }
 
