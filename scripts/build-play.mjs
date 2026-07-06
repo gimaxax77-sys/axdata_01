@@ -26,8 +26,11 @@ const meta = CONCEPT_META[concept] || CONCEPT_META.fantasy;
 // 번들 실행 전 운영 컨셉을 글로벌로 주입(판타지는 기본값이라 생략).
 const inject = concept === 'fantasy' ? '' : `<script>globalThis.__ELDRIA_CONCEPT__=${JSON.stringify(concept)};</script>\n`;
 
-const body = `<title>${meta.title}</title>
-<style id="expo-reset">html,body{height:100%;margin:0}body{overflow:hidden;background:${meta.bg}}#root{display:flex;height:100vh;flex:1;overflow:hidden}</style>
+// 모바일 뷰포트 메타 필수 — 없으면 모바일 브라우저가 ~980px 가상 뷰포트로
+// 렌더해 100vh 레이아웃이 깨지고 페이지 스크롤이 안 잡힌다.
+const body = `<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+<title>${meta.title}</title>
+<style id="expo-reset">html,body{height:100%;margin:0}body{overflow:hidden;background:${meta.bg}}#root{display:flex;height:100vh;height:100dvh;flex:1;overflow:hidden}</style>
 <div id="root"></div>
 ${inject}<script>${js}</script>`;
 
