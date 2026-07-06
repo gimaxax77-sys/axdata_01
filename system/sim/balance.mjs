@@ -9,6 +9,7 @@ import { idleGenre } from '../genres/idle.mjs';
 import { summonMulti } from '../core/gacha.mjs';
 import { makeRng } from '../core/rng.mjs';
 import { invest, pickParty, partyPower } from './autoplayer.mjs';
+import { UNLOCKS } from '../core/unlocks.mjs';
 
 // ─────────────────────────────────────────────────────────────
 // 밸런스 시뮬레이터 — 합리적 오토플레이어를 N일간 돌려
@@ -16,20 +17,20 @@ import { invest, pickParty, partyPower } from './autoplayer.mjs';
 // 문서가 "미정"으로 남긴 수치 감각을 코드로 채운다.
 // ─────────────────────────────────────────────────────────────
 
-// 문서(04장/03장)의 스테이지 해금 게이트
+// 스테이지 해금 게이트. 실제 코드(unlocks.mjs)가 게이팅하는 기능은
+// 그 값을 그대로 참조해 "리포트와 빌드가 어긋나지 않게" 한다.
+// 나머지는 아직 코드화 안 된 설계상 플레이스홀더(문서 기준).
 export const GATES = [
   { stage: 2, name: '캐릭터 강화' },
   { stage: 5, name: '장비' },
   { stage: 10, name: '보스 도전' },
-  { stage: 20, name: '소환' },
-  { stage: 30, name: '골드 던전' },
-  { stage: 50, name: '강화석 던전' },
-  { stage: 80, name: '도감' },
-  { stage: 100, name: '펫' },
-  { stage: 150, name: '시즌 패스' },
-  { stage: 200, name: '아레나' },
-  { stage: 300, name: '길드' },
-];
+  { stage: UNLOCKS.gacha, name: '소환' },
+  { stage: UNLOCKS.dungeonGold, name: '골드 던전' },
+  { stage: UNLOCKS.dungeonEssence, name: '강화석 던전' },
+  { stage: UNLOCKS.pets, name: '펫' },
+  { stage: UNLOCKS.arena, name: '아레나' },
+  { stage: UNLOCKS.guild, name: '길드' },
+].sort((a, b) => a.stage - b.stage);
 
 // 스테이지 요구 전투력(참고용 프록시)
 export function stagePower(stage) {

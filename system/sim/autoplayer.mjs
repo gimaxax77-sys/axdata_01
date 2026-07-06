@@ -7,6 +7,7 @@ import {
 import { craftGear, equipGear, enhanceGear, GEAR_SLOTS } from '../core/gear.mjs';
 import { RELICS, upgradeRelic } from '../core/relics.mjs';
 import { petSummon, PET_PULL_COST } from '../core/pets.mjs';
+import { MAX_PARTY } from '../core/gameState.mjs';
 
 // ─────────────────────────────────────────────────────────────
 // 오토플레이어 — "합리적 유저"의 투자 전략을 흉내낸다.
@@ -37,7 +38,7 @@ function partyUnits(state) {
 }
 
 // 파티 = 전투력 상위 N명 (투자한 유닛이 자연스럽게 주력이 됨)
-export function pickParty(state, size = 5) {
+export function pickParty(state, size = MAX_PARTY) {
   const sorted = [...state.units].sort((a, b) => computePower(b) - computePower(a));
   state.party = sorted.slice(0, size).map((u) => u.uid);
 }
