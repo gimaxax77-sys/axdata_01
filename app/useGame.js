@@ -25,7 +25,9 @@ const CONCEPT = activeConcept();
 function createFresh() {
   const starter = CONCEPT.roster.find((c) => c.id === 'mir') || CONCEPT.roster.find((c) => c.rarity === 'N') || CONCEPT.roster[0];
   const hero = createUnit(starter.archetype, {
-    level: 1, rank: 1, characterId: starter.id, signature: starter.signature, element: starter.element,
+    // R2 시작(레벨 상한 40) — 솔로 온보딩 구간을 넉넉히 주고 소환 해금(8층)까지
+    // 레벨업만으로 도달하게 한다.
+    level: 1, rank: 2, characterId: starter.id, signature: starter.signature, element: starter.element,
   });
   hero.rarity = starter.rarity;
   const s = createGameState({ units: [hero], party: [hero.uid] });
