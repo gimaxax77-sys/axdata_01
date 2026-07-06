@@ -52,6 +52,15 @@ export function collectUnitModifiers(unit) {
     mods.teamBuff.atk += arch.teamBuff.mult;
   }
 
+  // 1-b) 전용(시그니처) 스킬 — 항상 발동, 랭크에 비례해 강해짐(정체성=성장)
+  if (unit.signature) {
+    const sig = getSkill(unit.signature);
+    const scale = skillPower(unit.rank);
+    addStatPct(mods, sig.statPct, scale);
+    addEffect(mods, sig.effect, scale);
+    if (sig.teamBuff && sig.teamBuff.atk) mods.teamBuff.atk += sig.teamBuff.atk * scale;
+  }
+
   // 2) 장착 스킬 (슬롯별, 스킬 레벨에 비례)
   for (const slot of unit.skills || []) {
     if (!slot || !slot.id) continue;

@@ -4,7 +4,8 @@ import { T } from '../theme';
 import { Card, Btn, fmt } from '../components';
 import { computeStats, computePower } from '../../system/core/stats.mjs';
 import { levelCap } from '../../system/core/units.mjs';
-import { skillSlots, SKILL_CATALOG } from '../../system/core/skills.mjs';
+import { skillSlots, SKILL_CATALOG, equippableSkills } from '../../system/core/skills.mjs';
+import { identity } from '../../system/concepts/index.mjs';
 import { GEAR_SLOTS, GEAR_CATALOG, gearEnhanceCost } from '../../system/core/gear.mjs';
 import { levelUp, ascend, enhanceNode, equipSkill, unequipSkill, upgradeSkill } from '../../system/core/character.mjs';
 import { craftGear, equipGear, enhanceGear, unequipGear } from '../../system/core/gear.mjs';
@@ -43,7 +44,7 @@ export default function RosterScreen({ state, bump, concept }) {
 
   const act = (fn) => { fn(); bump(); };
   const st8 = computeStats(unit);
-  const meta = concept.archetypes[unit.archetype];
+  const meta = identity(concept, unit);
   const atCap = unit.level >= levelCap(unit);
   const slots = skillSlots(unit);
 
@@ -53,7 +54,7 @@ export default function RosterScreen({ state, bump, concept }) {
       <Text style={g.sec}>보유 {concept.terms.unit} ({list.length})</Text>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={g.hlist}>
         {list.map((u) => {
-          const m = concept.archetypes[u.archetype];
+          const m = identity(concept, u);
           const on = u.uid === unit.uid;
           return (
             <TouchableOpacity key={u.uid} onPress={() => setSel(u.uid)} style={[g.chip, on && g.chipOn]} activeOpacity={0.8}>
@@ -70,7 +71,10 @@ export default function RosterScreen({ state, bump, concept }) {
         <View style={g.head}>
           <Text style={g.headEmoji}>{meta.emoji}</Text>
           <View style={{ flex: 1 }}>
-            <Text style={g.headName}>{meta.name}</Text>
+            <Text style={g.headName}>{meta.name}{unit.rarity ? <Text style={g.rarity}>  {unit.rarity}</Text> : null}</Text>
+            {(meta.title || meta.personality) && (
+              <Text style={g.headTitle}>{meta.title}{meta.personality ? ` · ${meta.personality}` : ''}{meta.element ? ` · ${meta.element}속성` : ''}</Text>
+            )}
             <Text style={g.headSub}>Lv.{unit.level}/{levelCap(unit)} · R{unit.rank} · 전투력 {fmt(computePower(unit))}</Text>
           </View>
         </View>
@@ -80,6 +84,19 @@ export default function RosterScreen({ state, bump, concept }) {
           ))}
         </View>
       </Card>
+
+      {/* 전용 스킬 (시그니처) — 항상 발동, 교체 불가 */}
+      {unit.signature && (
+        <Card style={{ marginTop: 12, borderColor: T.accent }}>
+          <View style={g.sigHead}>
+            <Text style={g.sec}>전용 스킬</Text>
+            <Text style={g.sigBadge}>시그니처</Text>
+          </View>
+          <Text style={g.slotName}>{SKILL_CATALOG[unit.signature].label} <Text style={g.dim}>(R{unit.rank} 강도)</Text></Text>
+          <Text style={g.slotDesc}>{describeSkill(unit.signature)}</Text>
+          <Text style={g.sigNote}>캐릭터 고유 능력 · 랭크가 오르면 강해집니다</Text>
+        </Card>
+      )}
 
       {/* 스킬 편성 (수동) */}
       <Card style={{ marginTop: 12 }}>
@@ -169,7 +186,7 @@ function PickerModal({ picker, unit, state, onClose, onChange }) {
           </View>
         )}
         <ScrollView style={{ maxHeight: 360 }}>
-          {Object.values(SKILL_CATALOG).map((s) => {
+          {equippableSkills().map((s) => {
             const on = equipped && equipped.id === s.id;
             const dupOther = unit.skills.some((x, j) => x && x.id === s.id && j !== i);
             return (
@@ -248,7 +265,12 @@ const g = StyleSheet.create({
   head: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   headEmoji: { fontSize: 44 },
   headName: { color: T.text, fontWeight: '900', fontSize: 20 },
+  rarity: { color: T.accent, fontSize: 13, fontWeight: '800' },
+  headTitle: { color: T.primary, fontSize: 13, fontWeight: '700', marginTop: 1 },
   headSub: { color: T.muted, fontSize: 13, marginTop: 2 },
+  sigHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 },
+  sigBadge: { color: '#3a2a05', backgroundColor: T.accent, fontSize: 11, fontWeight: '800', paddingHorizontal: 8, paddingVertical: 2, borderRadius: 8, overflow: 'hidden' },
+  sigNote: { color: T.muted, fontSize: 11, marginTop: 6 },
   statGrid: { flexDirection: 'row', gap: 8, marginTop: 14 },
   stat: { flex: 1, backgroundColor: T.surface2, borderRadius: 10, paddingVertical: 8, alignItems: 'center' },
   statK: { color: T.muted, fontSize: 11 },

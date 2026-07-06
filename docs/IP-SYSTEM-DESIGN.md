@@ -35,9 +35,9 @@
 │    · rpg   플레이어가 battle() 트리거, 행동력 소모, 능동   │
 │    · idle  tick(dt) 자동 반복·누적, 오프라인·환생, 수동0  │
 ├─ Concept Layer (Skin · 스왑) ───────────────────────┤
-│  숫자는 그대로. 이름·이모지·색상만 매핑.                  │
-│    · fantasy  VANGUARD→수호기사, currency→골드           │
-│    · scifi    VANGUARD→가디언프레임, currency→크레딧       │
+│  숫자는 그대로. 이름·이모지·색상 + 캐릭터 도감(정체성).     │
+│    · fantasy  VANGUARD→수호기사, 카엘/루나… (roster)      │
+│    · scifi    VANGUARD→가디언프레임, 유닛-07/노바…          │
 └─────────────────────────────────────────────────────┘
 ```
 
@@ -140,6 +140,25 @@ collectUnitModifiers(unit)  →
 
 검증(`node system/demo-gacha.mjs`): 10연차(천장·바닥보장 동작) 후,
 뽑은 유닛에 장비 3종 장착·강화 → 전투력 347 → 679.
+
+### 3-7. 캐릭터 정체성 + 전용 스킬 — "이 캐릭터가 누구인가"
+
+§3-1~3-6이 "같은 유닛을 어떻게 키우나"(기계적 차별화)라면, 이건 "캐릭터가 누구인가"
+(정체성 차별화). 아키텍처 원칙을 지켜 **정체성은 Concept, 전투는 Core**로 분리한다.
+
+- **유닛** = `archetype`(역할·전투, Core가 앎) + `characterId`(정체성, Concept가 정의)
+- **캐릭터 도감**은 Concept의 `roster` 배열: `{ id, name, emoji, title, personality,
+  element, archetype, rarity, signature }`. Core는 mechanical 필드(archetype/
+  rarity/signature)만 읽고, 이름·성격·속성 flavor는 표시에만 쓴다.
+- **전용(시그니처) 스킬**: 캐릭터마다 고유 스킬 1개. 일반 슬롯이 아니라 **항상 발동**하며
+  **랭크에 비례해 강해짐**(정체성=성장). `SKILL_CATALOG`의 `signature:true` 항목.
+- **소환**은 도감 pool을 주입받아 **개별 캐릭터**를 뽑는다:
+  `summonMulti(state, n, rng, concept.roster)`. pool을 안 주면 원형만 뽑는 기존 동작
+  (하위호환 — 데모/시뮬 불변).
+- **컨셉 스왑**: 같은 캐릭터 슬롯이 판타지=카엘(불꽃의 검사), SF=유닛-07(화염 프레임)로.
+  **같은 시스템·같은 mechanical, 다른 인물**.
+
+> "IP=시스템" 원칙 유지: 캐릭터 개성은 Concept로 들어가므로, Core는 여전히 이름을 모른다.
 
 ---
 

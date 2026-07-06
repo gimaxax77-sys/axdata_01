@@ -6,6 +6,7 @@ import { effectivePower, powerMultOf } from '../useGame';
 import { idleGenre } from '../../system/genres/idle.mjs';
 import { getStage } from '../../system/core/progression.mjs';
 import { computePower } from '../../system/core/stats.mjs';
+import { identity } from '../../system/concepts/index.mjs';
 
 export default function IdleScreen({ state, bump, lastGain, concept }) {
   const power = effectivePower(state);
@@ -14,7 +15,7 @@ export default function IdleScreen({ state, bump, lastGain, concept }) {
   const byId = new Map(state.units.map((u) => [u.uid, u]));
   const party = state.party.map((id) => byId.get(id)).filter(Boolean);
   const lead = party.slice().sort((a, b) => computePower(b) - computePower(a))[0];
-  const leadMeta = lead ? concept.archetypes[lead.archetype] : null;
+  const leadMeta = lead ? identity(concept, lead) : null;
 
   const canPrestige = state.maxStage >= 15;
   const nextGain = Math.floor(Math.sqrt(state.maxStage));

@@ -16,7 +16,12 @@ const TICK_GAME_SEC = 24; // 실제 1초 = 게임 24초 (숫자가 눈에 보이
 export function useGame() {
   const ref = useRef(null);
   if (!ref.current) {
-    const hero = createUnit('STRIKER', { level: 1, rank: 1 });
+    // 시작 캐릭터: 견습 검사 미르 (정체성 부여)
+    const starter = fantasyConcept.roster.find((c) => c.id === 'mir');
+    const hero = createUnit(starter.archetype, {
+      level: 1, rank: 1, characterId: starter.id, signature: starter.signature,
+    });
+    hero.rarity = starter.rarity;
     const s = createGameState({ units: [hero], party: [hero.uid] });
     earn(s.wallet, { currency: 800, growth: 600, summon: 130 });
     ref.current = s;

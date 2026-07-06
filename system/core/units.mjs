@@ -11,11 +11,13 @@ import { BALANCE } from './balance.mjs';
 // ─────────────────────────────────────────────────────────────
 
 let _seq = 0;
-export function createUnit(archetype, { level = 1, rank = 1 } = {}) {
+export function createUnit(archetype, { level = 1, rank = 1, characterId = null, signature = null } = {}) {
   getArchetype(archetype); // 검증
   return {
     uid: `u${++_seq}`,
     archetype,
+    characterId, // 정체성(Concept 도감이 이름/성격을 매핑). Core는 ID만 앎.
+    signature, // 전용 스킬 id (항상 발동). null 가능.
     level,
     rank,
     // 스킬 슬롯: 각 원소는 null 또는 { id, level }

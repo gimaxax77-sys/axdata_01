@@ -3,19 +3,21 @@ import { View, Text, StyleSheet, ScrollView } from 'react-native';
 import { T } from '../theme';
 import { Card, Btn, fmt } from '../components';
 import { summonOne, summonMulti, RARITY, PULL_COST } from '../../system/core/gacha.mjs';
+import { identity } from '../../system/concepts/index.mjs';
 
 const RARITY_COLOR = { N: '#9aa0b5', R: '#5aa9e6', SR: '#c98bff', SSR: '#f5c542' };
 
 export default function GachaScreen({ state, bump, concept }) {
   const [results, setResults] = useState([]);
 
+  const pool = concept.roster;
   const pull = (n) => {
     let res;
     if (n === 1) {
-      const r = summonOne(state, Math.random);
+      const r = summonOne(state, Math.random, pool);
       res = r.ok ? [r] : [];
     } else {
-      const r = summonMulti(state, 10, Math.random);
+      const r = summonMulti(state, 10, Math.random, pool);
       res = r.ok ? r.results : [];
     }
     if (res.length) setResults(res);
@@ -49,12 +51,12 @@ export default function GachaScreen({ state, bump, concept }) {
           <Text style={s.sec}>소환 결과</Text>
           <View style={s.grid}>
             {results.map((r, i) => {
-              const m = concept.archetypes[r.archetype];
+              const id = identity(concept, r.unit);
               return (
                 <View key={i} style={[s.cell, { borderColor: RARITY_COLOR[r.rarity] }]}>
                   <Text style={[s.cellRarity, { color: RARITY_COLOR[r.rarity] }]}>{RARITY[r.rarity].label}</Text>
-                  <Text style={s.cellEmoji}>{m.emoji}</Text>
-                  <Text style={s.cellName} numberOfLines={1}>{m.name}</Text>
+                  <Text style={s.cellEmoji}>{id.emoji}</Text>
+                  <Text style={s.cellName} numberOfLines={1}>{id.name}</Text>
                 </View>
               );
             })}

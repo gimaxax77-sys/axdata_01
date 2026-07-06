@@ -32,17 +32,34 @@ function rollArchetype(rng) {
   return ARCH_IDS[Math.floor(rng() * ARCH_IDS.length)];
 }
 
+// pool에서 해당 등급의 캐릭터를 고른다. 없으면 pool 전체에서.
+function pickCharacter(pool, rarityId, rng) {
+  const of = pool.filter((c) => c.rarity === rarityId);
+  const from = of.length ? of : pool;
+  return from[Math.floor(rng() * from.length)];
+}
+
 // 한 유닛을 실제로 만들어 상태에 추가.
-function grant(state, rarity, rng) {
+// pool(컨셉 도감)이 주어지면 "개별 캐릭터"를 뽑고, 없으면 원형만 뽑는다.
+function grant(state, rarity, rng, pool) {
+  if (pool && pool.length) {
+    const ch = pickCharacter(pool, rarity.id, rng);
+    const unit = createUnit(ch.archetype, {
+      level: 1, rank: rarity.startRank, characterId: ch.id, signature: ch.signature,
+    });
+    unit.rarity = rarity.id;
+    state.units.push(unit);
+    return { rarity: rarity.id, archetype: ch.archetype, characterId: ch.id, uid: unit.uid, unit };
+  }
   const archetype = rollArchetype(rng);
   const unit = createUnit(archetype, { level: 1, rank: rarity.startRank });
-  unit.rarity = rarity.id; // 표시용 메타(성장 규칙엔 영향 없음)
+  unit.rarity = rarity.id;
   state.units.push(unit);
   return { rarity: rarity.id, archetype, uid: unit.uid, unit };
 }
 
-// 단차 소환.
-export function summonOne(state, rng = Math.random) {
+// 단차 소환. pool 주면 캐릭터 소환, 없으면 원형 소환.
+export function summonOne(state, rng = Math.random, pool = null) {
   if (!spend(state.wallet, PULL_COST)) {
     return { ok: false, reason: '소환 재화 부족', cost: PULL_COST };
   }
@@ -56,11 +73,11 @@ export function summonOne(state, rng = Math.random) {
     rarity = rollRarity(rng);
     if (rarity.id === 'SSR') state.gacha.pity = 0; // SSR 뽑으면 천장 리셋
   }
-  return { ok: true, ...grant(state, rarity, rng) };
+  return { ok: true, ...grant(state, rarity, rng, pool) };
 }
 
-// 10연차 소환 (최소 1개 SR 이상 보장).
-export function summonMulti(state, count = 10, rng = Math.random) {
+// 10연차 소환 (최소 1개 SR 이상 보장). pool 주면 캐릭터 소환.
+export function summonMulti(state, count = 10, rng = Math.random, pool = null) {
   const cost = { summon: PULL_COST.summon * count };
   if (!spend(state.wallet, cost)) {
     return { ok: false, reason: '소환 재화 부족', cost };
@@ -77,7 +94,7 @@ export function summonMulti(state, count = 10, rng = Math.random) {
       rarity = rollRarity(rng);
       if (rarity.id === 'SSR') state.gacha.pity = 0;
     }
-    results.push(grant(state, rarity, rng));
+    results.push(grant(state, rarity, rng, pool));
   }
   // 바닥 보장: SR 이상이 하나도 없으면 마지막을 승급
   if (!results.some((r) => rank[r.rarity] >= rank[MULTI_FLOOR])) {
