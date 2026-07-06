@@ -9,6 +9,7 @@ import { identity, elementMeta } from '../../system/concepts/index.mjs';
 import { GEAR_SLOTS, GEAR_CATALOG, gearEnhanceCost } from '../../system/core/gear.mjs';
 import { levelUp, ascend, enhanceNode, equipSkill, unequipSkill, upgradeSkill } from '../../system/core/character.mjs';
 import { craftGear, equipGear, enhanceGear, unequipGear } from '../../system/core/gear.mjs';
+import { recordMission } from '../../system/core/daily.mjs';
 
 const SLOT_KO = { weapon: '무기', armor: '방어구', accessory: '장신구' };
 
@@ -43,6 +44,8 @@ export default function RosterScreen({ state, bump, concept }) {
   const list = state.units.slice().sort((a, b) => computePower(b) - computePower(a));
 
   const act = (fn) => { fn(); bump(); };
+  // 성장 액션은 일일 미션(강화) 진행에 카운트
+  const grow = (fn) => { const r = fn(); if (!r || r.ok !== false) recordMission(state, 'upgrade', 1); bump(); };
   const st8 = computeStats(unit);
   const meta = identity(concept, unit);
   const atCap = unit.level >= levelCap(unit);
@@ -147,14 +150,14 @@ export default function RosterScreen({ state, bump, concept }) {
       <Card style={{ marginTop: 12, marginBottom: 24 }}>
         <Text style={g.sec}>성장</Text>
         <View style={g.btnRow}>
-          <View style={{ flex: 1 }}><Btn small label={atCap ? '상한 (돌파 필요)' : '레벨업'} disabled={atCap} onPress={() => act(() => levelUp(state, unit.uid))} /></View>
-          <View style={{ flex: 1 }}><Btn small kind="ghost" label="돌파 (랭크↑)" onPress={() => act(() => ascend(state, unit.uid))} /></View>
+          <View style={{ flex: 1 }}><Btn small label={atCap ? '상한 (돌파 필요)' : '레벨업'} disabled={atCap} onPress={() => grow(() => levelUp(state, unit.uid))} /></View>
+          <View style={{ flex: 1 }}><Btn small kind="ghost" label="돌파 (랭크↑)" onPress={() => grow(() => ascend(state, unit.uid))} /></View>
         </View>
         <Text style={g.subsec}>각인 (특정 스탯 집중)</Text>
         <View style={g.btnRow}>
           {['atk', 'hp', 'def', 'crit'].map((s2) => (
             <View key={s2} style={{ flex: 1 }}>
-              <Btn small kind="ghost" label={`${s2}+${unit.enhance[s2]}`} onPress={() => act(() => enhanceNode(state, unit.uid, s2))} />
+              <Btn small kind="ghost" label={`${s2}+${unit.enhance[s2]}`} onPress={() => grow(() => enhanceNode(state, unit.uid, s2))} />
             </View>
           ))}
         </View>

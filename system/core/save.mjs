@@ -18,6 +18,14 @@ function normalize(state) {
   state.inventory = state.inventory || [];
   state.wallet = { ...createWallet(), ...(state.wallet || {}) };
   state.gacha = state.gacha || { pity: 0 };
+  state.relics = state.relics || {};
+  state.daily = state.daily || {};
+  state.daily.epochDay = state.daily.epochDay || 0;
+  state.daily.streak = state.daily.streak || 0;
+  state.daily.claimedDay = state.daily.claimedDay ?? -1;
+  state.daily.missions = state.daily.missions || { summon: 0, upgrade: 0, dungeon: 0 };
+  state.daily.claimed = state.daily.claimed || {};
+  state.daily.dungeon = state.daily.dungeon || { GOLD: 0, ESSENCE: 0 };
   state.stage = state.stage || 1;
   state.maxStage = state.maxStage || 1;
   state.peakStage = state.peakStage || state.maxStage || 1;

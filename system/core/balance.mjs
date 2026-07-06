@@ -33,7 +33,18 @@ export const BALANCE = {
   prestigePowerBonus: 0.12,
 };
 
-// 계정 단위 전투 보정 (환생 파워 배수). resolve()에 넘긴다.
+import { relicMods } from './relics.mjs';
+
+// 계정 단위 보정 = 환생(prestige) + 유물(relic) 합산.
+//   powerMult    : resolve()에 넘겨 전투력에 곱함
+//   currencyMult / growthMult : 방치 수입에 곱함
 export function accountMods(state) {
-  return { powerMult: 1 + (state.prestige || 0) * BALANCE.prestigePowerBonus };
+  const pr = state.prestige || 0;
+  const income = 1 + pr * BALANCE.prestigeIncomeBonus;
+  const rm = relicMods(state);
+  return {
+    powerMult: (1 + pr * BALANCE.prestigePowerBonus) * rm.power,
+    currencyMult: income * rm.currency,
+    growthMult: income * rm.growth,
+  };
 }

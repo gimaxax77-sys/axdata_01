@@ -1,0 +1,119 @@
+import React from 'react';
+import { View, Text, StyleSheet, ScrollView } from 'react-native';
+import { T } from '../theme';
+import { Card, Btn, fmt } from '../components';
+import {
+  ATTENDANCE, canClaimAttendance, claimAttendance,
+  missionList, claimMission, DUNGEONS, dungeonEntriesLeft, enterDungeon,
+} from '../../system/core/daily.mjs';
+import { RELICS, relicUpgradeCost, upgradeRelic, RELIC_CAP } from '../../system/core/relics.mjs';
+import { getStage } from '../../system/core/progression.mjs';
+
+function rewardText(concept, reward) {
+  return Object.entries(reward)
+    .map(([k, v]) => `${concept.resources[k]?.emoji || ''}${fmt(v)}`)
+    .join(' ');
+}
+
+export default function ContentScreen({ state, bump, concept }) {
+  const act = (fn) => { fn(); bump(); };
+  const streakIdx = state.daily.streak % ATTENDANCE.length;
+  const canAtt = canClaimAttendance(state);
+  const missions = missionList(state);
+
+  return (
+    <ScrollView contentContainerStyle={c.wrap}>
+      {/* 출석 */}
+      <Card>
+        <Text style={c.sec}>출석 체크</Text>
+        <Text style={c.sub}>연속 {state.daily.streak}일 · 오늘 보상 {rewardText(concept, ATTENDANCE[streakIdx])}</Text>
+        <View style={c.attRow}>
+          {ATTENDANCE.map((r, i) => (
+            <View key={i} style={[c.attCell, i === streakIdx && canAtt && c.attToday, i < streakIdx % ATTENDANCE.length && c.attDone]}>
+              <Text style={c.attDay}>{i + 1}</Text>
+              <Text style={c.attEmoji}>{concept.resources[Object.keys(r)[0]]?.emoji}</Text>
+            </View>
+          ))}
+        </View>
+        <Btn label={canAtt ? '출석 보상 받기' : '오늘 수령 완료'} kind="gold" disabled={!canAtt}
+          onPress={() => act(() => claimAttendance(state))} />
+      </Card>
+
+      {/* 일일 미션 */}
+      <Card style={{ marginTop: 12 }}>
+        <Text style={c.sec}>일일 미션</Text>
+        {missions.map((m) => (
+          <View key={m.id} style={c.mRow}>
+            <View style={{ flex: 1 }}>
+              <Text style={c.mLabel}>{m.label} <Text style={c.dim}>{m.progress}/{m.goal}</Text></Text>
+              <View style={c.bar}><View style={[c.barFill, { width: `${(m.progress / m.goal) * 100}%` }]} /></View>
+              <Text style={c.mReward}>보상 {rewardText(concept, m.reward)}</Text>
+            </View>
+            <Btn small kind={m.claimed ? 'ghost' : 'gold'} disabled={!m.done || m.claimed}
+              label={m.claimed ? '완료' : '받기'} onPress={() => act(() => claimMission(state, m.id))} />
+          </View>
+        ))}
+      </Card>
+
+      {/* 던전 */}
+      <Card style={{ marginTop: 12 }}>
+        <Text style={c.sec}>던전</Text>
+        <Text style={c.sub}>즉시 대량 자원 · 하루 입장 제한</Text>
+        {Object.entries(DUNGEONS).map(([type, d]) => {
+          const res = concept.resources[d.resource];
+          const left = dungeonEntriesLeft(state, type);
+          const amount = Math.round(getStage(state.peakStage).rewards[d.resource] * 40);
+          return (
+            <View key={type} style={c.dRow}>
+              <View style={{ flex: 1 }}>
+                <Text style={c.mLabel}>{res.emoji} {res.name} 던전</Text>
+                <Text style={c.mReward}>1회 {res.emoji}+{fmt(amount)} · 입장 {left}/{d.entriesPerDay}</Text>
+              </View>
+              <Btn small label="입장" disabled={left <= 0} onPress={() => act(() => enterDungeon(state, type))} />
+            </View>
+          );
+        })}
+      </Card>
+
+      {/* 유물 */}
+      <Card style={{ marginTop: 12, marginBottom: 24 }}>
+        <Text style={c.sec}>유물 <Text style={c.dim}>(계정 영구 성장)</Text></Text>
+        {Object.values(RELICS).map((r) => {
+          const lv = (state.relics && state.relics[r.id]) || 0;
+          const cost = relicUpgradeCost(lv);
+          const eff = r.kind === 'power' ? '전투력' : r.kind === 'currency' ? `${concept.resources.currency.name} 수입` : `${concept.resources.growth.name} 수입`;
+          const maxed = lv >= RELIC_CAP;
+          return (
+            <View key={r.id} style={c.dRow}>
+              <View style={{ flex: 1 }}>
+                <Text style={c.mLabel}>{r.label} <Text style={c.dim}>Lv.{lv}</Text></Text>
+                <Text style={c.mReward}>{eff} +{Math.round(r.per * lv * 100)}%{maxed ? ' (MAX)' : ` → +${Math.round(r.per * (lv + 1) * 100)}%`}</Text>
+              </View>
+              <Btn small kind="ghost" disabled={maxed} label={maxed ? 'MAX' : `강화 ${concept.resources.currency.emoji}${fmt(cost.currency)}`}
+                onPress={() => act(() => upgradeRelic(state, r.id))} />
+            </View>
+          );
+        })}
+      </Card>
+    </ScrollView>
+  );
+}
+
+const c = StyleSheet.create({
+  wrap: { padding: 14 },
+  sec: { color: T.text, fontWeight: '800', fontSize: 15, marginBottom: 4 },
+  sub: { color: T.muted, fontSize: 12, marginBottom: 12 },
+  dim: { color: T.muted, fontSize: 12, fontWeight: '400' },
+  attRow: { flexDirection: 'row', gap: 6, marginBottom: 14 },
+  attCell: { flex: 1, backgroundColor: T.surface2, borderRadius: 10, paddingVertical: 8, alignItems: 'center', borderWidth: 1, borderColor: 'transparent' },
+  attToday: { borderColor: T.accent },
+  attDone: { opacity: 0.4 },
+  attDay: { color: T.muted, fontSize: 10 },
+  attEmoji: { fontSize: 16, marginTop: 2 },
+  mRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 8, borderTopWidth: 1, borderTopColor: T.line },
+  mLabel: { color: T.text, fontWeight: '700', fontSize: 14 },
+  mReward: { color: T.muted, fontSize: 12, marginTop: 3 },
+  bar: { height: 6, backgroundColor: T.surface2, borderRadius: 3, marginTop: 5, overflow: 'hidden' },
+  barFill: { height: 6, backgroundColor: T.good, borderRadius: 3 },
+  dRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 10, borderTopWidth: 1, borderTopColor: T.line },
+});

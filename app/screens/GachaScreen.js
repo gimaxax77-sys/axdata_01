@@ -4,6 +4,7 @@ import { T } from '../theme';
 import { Card, Btn, fmt } from '../components';
 import { summonOne, summonMulti, RARITY, PULL_COST } from '../../system/core/gacha.mjs';
 import { identity } from '../../system/concepts/index.mjs';
+import { recordMission } from '../../system/core/daily.mjs';
 
 const RARITY_COLOR = { N: '#9aa0b5', R: '#5aa9e6', SR: '#c98bff', SSR: '#f5c542' };
 
@@ -20,7 +21,7 @@ export default function GachaScreen({ state, bump, concept }) {
       const r = summonMulti(state, 10, Math.random, pool);
       res = r.ok ? r.results : [];
     }
-    if (res.length) setResults(res);
+    if (res.length) { recordMission(state, 'summon', 1); setResults(res); }
     bump();
   };
 
