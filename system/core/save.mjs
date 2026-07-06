@@ -50,6 +50,8 @@ function normalize(state) {
   state.meta.season = state.meta.season || { claimed: {}, premium: false };
   state.meta.season.claimed = state.meta.season.claimed || {};
   state.meta.season.premium = !!state.meta.season.premium;
+  state.campaign = state.campaign || { cleared: 0 };
+  state.campaign.cleared = state.campaign.cleared || 0;
   state.stage = state.stage || 1;
   state.maxStage = state.maxStage || 1;
   state.peakStage = state.peakStage || state.maxStage || 1;

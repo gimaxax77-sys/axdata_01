@@ -31,6 +31,7 @@ export function createGameState({ units = [], party = [] } = {}) {
     arena: { points: 0, day: -1, entries: 0 }, // 아레나(경쟁) 랭크·일일 입장
     guild: { coins: 0, day: -1, attacks: 0, tier: 1, bossHp: null }, // 길드 보스 레이드
     meta: { achv: {}, coll: {}, season: { claimed: {}, premium: false } }, // 도감·업적·시즌패스 청구 기록
+    campaign: { cleared: 0 }, // 스토리 캠페인 클리어 챕터 수
   };
 }
 
