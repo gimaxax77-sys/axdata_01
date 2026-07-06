@@ -9,6 +9,7 @@ import RosterScreen from './app/screens/RosterScreen';
 import GachaScreen from './app/screens/GachaScreen';
 import ContentScreen from './app/screens/ContentScreen';
 import ArenaGuildScreen from './app/screens/ArenaGuildScreen';
+import MetaScreen from './app/screens/MetaScreen';
 import ShopScreen from './app/screens/ShopScreen';
 
 const TABS = [
@@ -17,6 +18,7 @@ const TABS = [
   { key: 'gacha', label: '소환', icon: '🔮', Screen: GachaScreen },
   { key: 'content', label: '콘텐츠', icon: '📅', Screen: ContentScreen },
   { key: 'arena', label: '경쟁', icon: '⚔️', Screen: ArenaGuildScreen },
+  { key: 'meta', label: '기록', icon: '📖', Screen: MetaScreen },
   { key: 'shop', label: '상점', icon: '🛒', Screen: ShopScreen },
 ];
 

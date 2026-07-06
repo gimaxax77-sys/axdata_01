@@ -44,6 +44,12 @@ function normalize(state) {
   state.guild.attacks = state.guild.attacks || 0;
   state.guild.tier = state.guild.tier || 1;
   if (state.guild.bossHp === undefined) state.guild.bossHp = null;
+  state.meta = state.meta || {};
+  state.meta.achv = state.meta.achv || {};
+  state.meta.coll = state.meta.coll || {};
+  state.meta.season = state.meta.season || { claimed: {}, premium: false };
+  state.meta.season.claimed = state.meta.season.claimed || {};
+  state.meta.season.premium = !!state.meta.season.premium;
   state.stage = state.stage || 1;
   state.maxStage = state.maxStage || 1;
   state.peakStage = state.peakStage || state.maxStage || 1;
