@@ -7,6 +7,7 @@ import {
   missionList, claimMission, DUNGEONS, dungeonEntriesLeft, enterDungeon,
 } from '../../system/core/daily.mjs';
 import { RELICS, relicUpgradeCost, upgradeRelic, RELIC_CAP } from '../../system/core/relics.mjs';
+import { PETS, petSummon, equipPet, unequipPet, petEffectLabel, MAX_ACTIVE_PETS, PET_PULL_COST } from '../../system/core/pets.mjs';
 import { getStage } from '../../system/core/progression.mjs';
 
 function rewardText(concept, reward) {
@@ -75,6 +76,33 @@ export default function ContentScreen({ state, bump, concept }) {
         })}
       </Card>
 
+      {/* 펫 */}
+      <Card style={{ marginTop: 12 }}>
+        <View style={c.petHead}>
+          <Text style={c.sec}>펫 <Text style={c.dim}>(장착 {state.pets.active.length}/{MAX_ACTIVE_PETS})</Text></Text>
+          <Btn small kind="gold" label={`펫 소환 ${concept.resources.gem.emoji}${PET_PULL_COST.gem}`}
+            disabled={(state.wallet.gem || 0) < PET_PULL_COST.gem} onPress={() => act(() => petSummon(state))} />
+        </View>
+        {Object.keys(state.pets.owned).length === 0 && <Text style={c.sub}>보유 펫 없음 — 소환으로 획득하세요.</Text>}
+        {Object.entries(state.pets.owned).map(([id, lv]) => {
+          const p = PETS[id];
+          const active = state.pets.active.includes(id);
+          const full = state.pets.active.length >= MAX_ACTIVE_PETS;
+          return (
+            <View key={id} style={c.dRow}>
+              <Text style={c.petEmoji}>{p.emoji}</Text>
+              <View style={{ flex: 1 }}>
+                <Text style={c.mLabel}>{p.label} <Text style={c.dim}>Lv.{lv} · {p.rarity}</Text></Text>
+                <Text style={c.mReward}>{petEffectLabel(p.type, concept)} +{Math.round(p.per * lv * 100)}%</Text>
+              </View>
+              <Btn small kind={active ? 'ghost' : 'primary'} disabled={!active && full}
+                label={active ? '해제' : full ? '슬롯참' : '장착'}
+                onPress={() => act(() => (active ? unequipPet(state, id) : equipPet(state, id)))} />
+            </View>
+          );
+        })}
+      </Card>
+
       {/* 유물 */}
       <Card style={{ marginTop: 12, marginBottom: 24 }}>
         <Text style={c.sec}>유물 <Text style={c.dim}>(계정 영구 성장)</Text></Text>
@@ -116,4 +144,6 @@ const c = StyleSheet.create({
   bar: { height: 6, backgroundColor: T.surface2, borderRadius: 3, marginTop: 5, overflow: 'hidden' },
   barFill: { height: 6, backgroundColor: T.good, borderRadius: 3 },
   dRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 10, borderTopWidth: 1, borderTopColor: T.line },
+  petHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 },
+  petEmoji: { fontSize: 26 },
 });

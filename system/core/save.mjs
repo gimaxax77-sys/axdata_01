@@ -19,6 +19,9 @@ function normalize(state) {
   state.wallet = { ...createWallet(), ...(state.wallet || {}) };
   state.gacha = state.gacha || { pity: 0 };
   state.relics = state.relics || {};
+  state.pets = state.pets || { owned: {}, active: [] };
+  state.pets.owned = state.pets.owned || {};
+  state.pets.active = state.pets.active || [];
   state.daily = state.daily || {};
   state.daily.epochDay = state.daily.epochDay || 0;
   state.daily.streak = state.daily.streak || 0;

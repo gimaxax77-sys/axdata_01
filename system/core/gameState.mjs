@@ -22,6 +22,7 @@ export function createGameState({ units = [], party = [] } = {}) {
     // 일일 콘텐츠(출석·미션·던전) 상태
     daily: { epochDay: 0, streak: 0, claimedDay: -1, missions: { summon: 0, upgrade: 0, dungeon: 0 }, claimed: {}, dungeon: { GOLD: 0, ESSENCE: 0 }, ads: {} },
     relics: {}, // 유물 id → 레벨
+    pets: { owned: {}, active: [] }, // 펫 보유(id→레벨) + 장착(최대 3)
     shop: { purchased: {} }, // 1회성 패키지 구매 기록
   };
 }

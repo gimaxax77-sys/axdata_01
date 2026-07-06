@@ -34,17 +34,20 @@ export const BALANCE = {
 };
 
 import { relicMods } from './relics.mjs';
+import { petMods } from './pets.mjs';
 
-// 계정 단위 보정 = 환생(prestige) + 유물(relic) 합산.
+// 계정 단위 보정 = 환생(prestige) + 유물(relic) + 펫(pet) 합산.
 //   powerMult    : resolve()에 넘겨 전투력에 곱함
 //   currencyMult / growthMult : 방치 수입에 곱함
+// 새 계정 성장 축을 붙일 때도 여기 한 곳만 곱해주면 전 시스템에 반영된다.
 export function accountMods(state) {
   const pr = state.prestige || 0;
   const income = 1 + pr * BALANCE.prestigeIncomeBonus;
   const rm = relicMods(state);
+  const pm = petMods(state);
   return {
-    powerMult: (1 + pr * BALANCE.prestigePowerBonus) * rm.power,
-    currencyMult: income * rm.currency,
-    growthMult: income * rm.growth,
+    powerMult: (1 + pr * BALANCE.prestigePowerBonus) * rm.power * pm.power,
+    currencyMult: income * rm.currency * pm.currency,
+    growthMult: income * rm.growth * pm.growth,
   };
 }
