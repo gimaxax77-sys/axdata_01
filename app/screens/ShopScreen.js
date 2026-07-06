@@ -1,7 +1,7 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView } from 'react-native';
 import { T } from '../theme';
-import { Card, Btn, fmt } from '../components';
+import { Card, Btn, fmt, MultiToggle, repeat } from '../components';
 import { SHOP, purchase, adLeft, packageOwned } from '../../system/core/shop.mjs';
 import { getStage } from '../../system/core/progression.mjs';
 
@@ -18,7 +18,9 @@ function grantText(state, concept, grant) {
 }
 
 export default function ShopScreen({ state, bump, concept }) {
+  const [mult, setMult] = useState(1);
   const buy = (id) => { purchase(state, id); bump(); };
+  const buyN = (id) => { repeat(() => purchase(state, id), mult); bump(); };
   const gem = concept.resources.gem;
 
   return (
@@ -42,15 +44,18 @@ export default function ShopScreen({ state, bump, concept }) {
 
       {/* 다이아 상점 */}
       <Card style={{ marginTop: 12 }}>
-        <Text style={s.sec}>{gem.emoji} {gem.name} 상점</Text>
+        <View style={s.shopHead}>
+          <Text style={s.sec}>{gem.emoji} {gem.name} 상점</Text>
+          <MultiToggle value={mult} onChange={setMult} />
+        </View>
         {SHOP.gem.map((p) => (
           <View key={p.id} style={s.row}>
             <View style={{ flex: 1 }}>
               <Text style={s.label}>{p.label}</Text>
               <Text style={s.reward}>{grantText(state, concept, p.grant)}</Text>
             </View>
-            <Btn small kind="gold" label={`${gem.emoji}${p.cost.gem}`} disabled={(state.wallet.gem || 0) < p.cost.gem}
-              onPress={() => buy(p.id)} />
+            <Btn small kind="gold" label={`×${mult} ${gem.emoji}${fmt(p.cost.gem * mult)}`} disabled={(state.wallet.gem || 0) < p.cost.gem}
+              onPress={() => buyN(p.id)} />
           </View>
         ))}
       </Card>
@@ -81,6 +86,7 @@ export default function ShopScreen({ state, bump, concept }) {
 const s = StyleSheet.create({
   wrap: { padding: 14 },
   sec: { color: T.text, fontWeight: '800', fontSize: 15, marginBottom: 4 },
+  shopHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 },
   dim: { color: T.muted, fontSize: 12, fontWeight: '400' },
   row: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 10, borderTopWidth: 1, borderTopColor: T.line },
   label: { color: T.text, fontWeight: '700', fontSize: 14 },

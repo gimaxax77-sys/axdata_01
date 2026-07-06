@@ -5,6 +5,8 @@ import { Card, Btn, fmt } from '../components';
 import { summonOne, summonMulti, RARITY, PULL_COST } from '../../system/core/gacha.mjs';
 import { identity } from '../../system/concepts/index.mjs';
 import { recordMission } from '../../system/core/daily.mjs';
+import { isUnlocked, unlockStage } from '../../system/core/unlocks.mjs';
+import { LockedPanel } from '../components';
 
 const RARITY_COLOR = { N: '#9aa0b5', R: '#5aa9e6', SR: '#c98bff', SSR: '#f5c542' };
 
@@ -18,15 +20,20 @@ export default function GachaScreen({ state, bump, concept }) {
       const r = summonOne(state, Math.random, pool);
       res = r.ok ? [r] : [];
     } else {
-      const r = summonMulti(state, 10, Math.random, pool);
+      const r = summonMulti(state, n, Math.random, pool);
       res = r.ok ? r.results : [];
     }
-    if (res.length) { recordMission(state, 'summon', 1); setResults(res); }
+    if (res.length) { recordMission(state, 'summon', res.length); setResults(res.slice(-20)); }
     bump();
   };
 
   const canOne = state.wallet.summon >= PULL_COST.summon;
   const canTen = state.wallet.summon >= PULL_COST.summon * 10;
+  const canHundred = state.wallet.summon >= PULL_COST.summon * 100;
+
+  if (!isUnlocked(state, 'gacha')) {
+    return <LockedPanel concept={concept} title="소환" stage={unlockStage('gacha')} desc="스테이지를 진행하면 영웅 소환이 열립니다." />;
+  }
 
   return (
     <ScrollView contentContainerStyle={s.wrap}>
@@ -44,12 +51,15 @@ export default function GachaScreen({ state, bump, concept }) {
         <View style={{ flex: 1 }}>
           <Btn label={`10연차 (${PULL_COST.summon * 10})`} kind="gold" disabled={!canTen} onPress={() => pull(10)} />
         </View>
+        <View style={{ flex: 1 }}>
+          <Btn label={`100연차 (${fmt(PULL_COST.summon * 100)})`} kind="gold" disabled={!canHundred} onPress={() => pull(100)} />
+        </View>
       </View>
-      <Text style={s.floor}>10연차는 최소 1개 SR 이상 보장</Text>
+      <Text style={s.floor}>10연차 이상은 최소 1개 SR 이상 보장 · 100연차는 결과 요약 표시</Text>
 
       {results.length > 0 && (
         <Card style={{ marginTop: 14 }}>
-          <Text style={s.sec}>소환 결과</Text>
+          <Text style={s.sec}>소환 결과 <Text style={s.floor}>({results.length}건{results.length >= 20 ? ' · 최근 20' : ''})</Text></Text>
           <View style={s.grid}>
             {results.map((r, i) => {
               const id = identity(concept, r.unit);

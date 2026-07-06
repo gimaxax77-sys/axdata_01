@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Modal } from 'react-native';
 import { T } from '../theme';
-import { Card, Btn, fmt } from '../components';
+import { Card, Btn, fmt, MultiToggle, repeat } from '../components';
+import { togglePartyMember, MAX_PARTY } from '../../system/core/gameState.mjs';
 import { computeStats, computePower } from '../../system/core/stats.mjs';
 import { levelCap } from '../../system/core/units.mjs';
 import { skillSlots, SKILL_CATALOG, equippableSkills } from '../../system/core/skills.mjs';
@@ -43,15 +44,17 @@ export default function RosterScreen({ state, bump, concept }) {
   const [selId, setSel] = useState(state.party[0] || state.units[0]?.uid);
   const [picker, setPicker] = useState(null); // {mode:'skill'|'gear', slot}
   const [bubble, setBubble] = useState(null); // 현재 대사
+  const [mult, setMult] = useState(1); // 성장 배수 (×1/×10/×100)
   const unit = state.units.find((u) => u.uid === selId) || state.units[0];
   const lines = unit && linesOf(concept, unit);
   // 선택 캐릭터가 바뀌면 인사 대사로 초기화
   useEffect(() => { setBubble(lines ? lines.greet : null); }, [selId]);
   const list = state.units.slice().sort((a, b) => computePower(b) - computePower(a));
+  const inParty = state.party.includes(unit.uid);
 
   const act = (fn) => { fn(); bump(); };
-  // 성장 액션은 일일 미션(강화) 진행에 카운트
-  const grow = (fn) => { const r = fn(); if (!r || r.ok !== false) recordMission(state, 'upgrade', 1); bump(); };
+  // 성장 액션은 일일 미션(강화) 진행에 카운트. mult 배수만큼 반복 실행.
+  const grow = (fn) => { const n = repeat(fn, mult); if (n > 0) recordMission(state, 'upgrade', n); bump(); };
   const st8 = computeStats(unit);
   const meta = identity(concept, unit);
   const atCap = unit.level >= levelCap(unit);
@@ -59,14 +62,41 @@ export default function RosterScreen({ state, bump, concept }) {
 
   return (
     <ScrollView contentContainerStyle={g.wrap}>
+      {/* 파티 편성 — 전투는 편성된 전원 합산 */}
+      <Card style={{ marginBottom: 12 }}>
+        <View style={g.intiHead}>
+          <Text style={g.sec}>파티 편성 <Text style={g.dim}>{state.party.length}/{MAX_PARTY}</Text></Text>
+          <Text style={g.dim}>전투는 편성 전원 합산</Text>
+        </View>
+        <View style={g.partyRow}>
+          {Array.from({ length: MAX_PARTY }).map((_, i) => {
+            const uid = state.party[i];
+            const pu = uid && state.units.find((u) => u.uid === uid);
+            const pm = pu && identity(concept, pu);
+            return (
+              <TouchableOpacity key={i} activeOpacity={0.8}
+                onPress={() => pu && setSel(pu.uid)}
+                style={[g.partySlot, pu && g.partySlotOn, pu && pu.uid === unit.uid && g.partySlotSel]}>
+                {pu ? (<>
+                  <Text style={g.partyEmoji}>{pm.emoji}</Text>
+                  <Text style={g.partyName} numberOfLines={1}>{pm.name}</Text>
+                </>) : <Text style={g.partyEmpty}>＋</Text>}
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+      </Card>
+
       {/* 보유 유닛 */}
       <Text style={g.sec}>보유 {concept.terms.unit} ({list.length})</Text>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={g.hlist}>
         {list.map((u) => {
           const m = identity(concept, u);
           const on = u.uid === unit.uid;
+          const party = state.party.includes(u.uid);
           return (
             <TouchableOpacity key={u.uid} onPress={() => setSel(u.uid)} style={[g.chip, on && g.chipOn]} activeOpacity={0.8}>
+              {party && <Text style={g.chipStar}>⭐</Text>}
               <Text style={g.chipEmoji}>{m.emoji}</Text>
               <Text style={g.chipName} numberOfLines={1}>{m.name}</Text>
               <Text style={g.chipLv}>Lv.{u.level}{u.rarity ? ` · ${u.rarity}` : ''}</Text>
@@ -89,6 +119,10 @@ export default function RosterScreen({ state, bump, concept }) {
             )}
             <Text style={g.headSub}>Lv.{unit.level}/{levelCap(unit)} · R{unit.rank} · 전투력 {fmt(computePower(unit))}</Text>
           </View>
+          <Btn small kind={inParty ? 'ghost' : 'gold'}
+            label={inParty ? '편성 해제' : '편성'}
+            disabled={!inParty && state.party.length >= MAX_PARTY}
+            onPress={() => act(() => togglePartyMember(state, unit.uid))} />
         </View>
         <View style={g.statGrid}>
           {[['HP', st8.hp], ['ATK', st8.atk], ['DEF', st8.def], ['SPD', st8.spd]].map(([k, v]) => (
@@ -194,12 +228,15 @@ export default function RosterScreen({ state, bump, concept }) {
 
       {/* 성장 */}
       <Card style={{ marginTop: 12, marginBottom: 24 }}>
-        <Text style={g.sec}>성장</Text>
-        <View style={g.btnRow}>
-          <View style={{ flex: 1 }}><Btn small label={atCap ? '상한 (돌파 필요)' : '레벨업'} disabled={atCap} onPress={() => grow(() => levelUp(state, unit.uid))} /></View>
-          <View style={{ flex: 1 }}><Btn small kind="ghost" label="돌파 (랭크↑)" onPress={() => grow(() => ascend(state, unit.uid))} /></View>
+        <View style={g.intiHead}>
+          <Text style={g.sec}>성장</Text>
+          <MultiToggle value={mult} onChange={setMult} />
         </View>
-        <Text style={g.subsec}>각인 (특정 스탯 집중)</Text>
+        <View style={g.btnRow}>
+          <View style={{ flex: 1 }}><Btn small label={atCap ? '상한 (돌파 필요)' : `레벨업 ×${mult}`} disabled={atCap} onPress={() => grow(() => levelUp(state, unit.uid))} /></View>
+          <View style={{ flex: 1 }}><Btn small kind="ghost" label={`돌파 (랭크↑) ×${mult}`} onPress={() => grow(() => ascend(state, unit.uid))} /></View>
+        </View>
+        <Text style={g.subsec}>각인 (특정 스탯 집중) · ×{mult}</Text>
         <View style={g.btnRow}>
           {['atk', 'hp', 'def', 'crit'].map((s2) => (
             <View key={s2} style={{ flex: 1 }}>
@@ -311,7 +348,15 @@ const g = StyleSheet.create({
   hlist: { gap: 10, paddingVertical: 4, paddingRight: 8 },
   chip: { width: 84, backgroundColor: T.surface, borderRadius: 14, padding: 10, alignItems: 'center', borderWidth: 1, borderColor: T.line },
   chipOn: { borderColor: T.accent, backgroundColor: T.surface2 },
+  chipStar: { position: 'absolute', top: 4, right: 6, fontSize: 12 },
   chipEmoji: { fontSize: 28 },
+  partyRow: { flexDirection: 'row', gap: 8, marginTop: 4 },
+  partySlot: { flex: 1, aspectRatio: 1, backgroundColor: T.surface2, borderRadius: 12, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: 'transparent', padding: 4 },
+  partySlotOn: { borderColor: T.line },
+  partySlotSel: { borderColor: T.accent },
+  partyEmoji: { fontSize: 26 },
+  partyName: { color: T.text, fontSize: 10, fontWeight: '700', marginTop: 2 },
+  partyEmpty: { color: T.muted, fontSize: 24, fontWeight: '400' },
   chipName: { color: T.text, fontSize: 12, fontWeight: '700', marginTop: 4 },
   chipLv: { color: T.muted, fontSize: 11, marginTop: 2 },
   head: { flexDirection: 'row', alignItems: 'center', gap: 12 },

@@ -1,7 +1,7 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView } from 'react-native';
 import { T } from '../theme';
-import { Card, Btn, fmt } from '../components';
+import { Card, Btn, fmt, MultiToggle, repeat } from '../components';
 import {
   ATTENDANCE, canClaimAttendance, claimAttendance,
   missionList, claimMission, DUNGEONS, dungeonEntriesLeft, enterDungeon,
@@ -9,6 +9,7 @@ import {
 import { RELICS, relicUpgradeCost, upgradeRelic, RELIC_CAP } from '../../system/core/relics.mjs';
 import { PETS, petSummon, equipPet, unequipPet, petEffectLabel, MAX_ACTIVE_PETS, PET_PULL_COST } from '../../system/core/pets.mjs';
 import { getStage } from '../../system/core/progression.mjs';
+import { isUnlocked, unlockStage } from '../../system/core/unlocks.mjs';
 
 function rewardText(concept, reward) {
   return Object.entries(reward)
@@ -17,7 +18,9 @@ function rewardText(concept, reward) {
 }
 
 export default function ContentScreen({ state, bump, concept }) {
+  const [mult, setMult] = useState(1);
   const act = (fn) => { fn(); bump(); };
+  const actN = (fn) => { repeat(fn, mult); bump(); };
   const streakIdx = state.daily.streak % ATTENDANCE.length;
   const canAtt = canClaimAttendance(state);
   const missions = missionList(state);
@@ -62,15 +65,19 @@ export default function ContentScreen({ state, bump, concept }) {
         <Text style={c.sub}>즉시 대량 자원 · 하루 입장 제한</Text>
         {Object.entries(DUNGEONS).map(([type, d]) => {
           const res = concept.resources[d.resource];
+          const feature = type === 'GOLD' ? 'dungeonGold' : 'dungeonEssence';
+          const unlocked = isUnlocked(state, feature);
           const left = dungeonEntriesLeft(state, type);
           const amount = Math.round(getStage(state.peakStage).rewards[d.resource] * 40);
           return (
             <View key={type} style={c.dRow}>
               <View style={{ flex: 1 }}>
                 <Text style={c.mLabel}>{res.emoji} {res.name} 던전</Text>
-                <Text style={c.mReward}>1회 {res.emoji}+{fmt(amount)} · 입장 {left}/{d.entriesPerDay}</Text>
+                {unlocked
+                  ? <Text style={c.mReward}>1회 {res.emoji}+{fmt(amount)} · 입장 {left}/{d.entriesPerDay}</Text>
+                  : <Text style={c.mReward}>🔒 스테이지 {unlockStage(feature)} 해금</Text>}
               </View>
-              <Btn small label="입장" disabled={left <= 0} onPress={() => act(() => enterDungeon(state, type))} />
+              <Btn small label={unlocked ? '입장' : '잠김'} disabled={!unlocked || left <= 0} onPress={() => actN(() => enterDungeon(state, type))} />
             </View>
           );
         })}
@@ -80,11 +87,14 @@ export default function ContentScreen({ state, bump, concept }) {
       <Card style={{ marginTop: 12 }}>
         <View style={c.petHead}>
           <Text style={c.sec}>펫 <Text style={c.dim}>(장착 {state.pets.active.length}/{MAX_ACTIVE_PETS})</Text></Text>
-          <Btn small kind="gold" label={`펫 소환 ${concept.resources.gem.emoji}${PET_PULL_COST.gem}`}
-            disabled={(state.wallet.gem || 0) < PET_PULL_COST.gem} onPress={() => act(() => petSummon(state))} />
+          {isUnlocked(state, 'pets') && (
+            <Btn small kind="gold" label={`펫 소환 ${concept.resources.gem.emoji}${PET_PULL_COST.gem}`}
+              disabled={(state.wallet.gem || 0) < PET_PULL_COST.gem} onPress={() => act(() => petSummon(state))} />
+          )}
         </View>
-        {Object.keys(state.pets.owned).length === 0 && <Text style={c.sub}>보유 펫 없음 — 소환으로 획득하세요.</Text>}
-        {Object.entries(state.pets.owned).map(([id, lv]) => {
+        {!isUnlocked(state, 'pets') && <Text style={c.sub}>🔒 스테이지 {unlockStage('pets')} 도달 시 해금</Text>}
+        {isUnlocked(state, 'pets') && Object.keys(state.pets.owned).length === 0 && <Text style={c.sub}>보유 펫 없음 — 소환으로 획득하세요.</Text>}
+        {isUnlocked(state, 'pets') && Object.entries(state.pets.owned).map(([id, lv]) => {
           const p = PETS[id];
           const active = state.pets.active.includes(id);
           const full = state.pets.active.length >= MAX_ACTIVE_PETS;
@@ -105,7 +115,10 @@ export default function ContentScreen({ state, bump, concept }) {
 
       {/* 유물 */}
       <Card style={{ marginTop: 12, marginBottom: 24 }}>
-        <Text style={c.sec}>유물 <Text style={c.dim}>(계정 영구 성장)</Text></Text>
+        <View style={c.petHead}>
+          <Text style={c.sec}>유물 <Text style={c.dim}>(계정 영구 성장)</Text></Text>
+          <MultiToggle value={mult} onChange={setMult} />
+        </View>
         {Object.values(RELICS).map((r) => {
           const lv = (state.relics && state.relics[r.id]) || 0;
           const cost = relicUpgradeCost(lv);
@@ -117,8 +130,8 @@ export default function ContentScreen({ state, bump, concept }) {
                 <Text style={c.mLabel}>{r.label} <Text style={c.dim}>Lv.{lv}</Text></Text>
                 <Text style={c.mReward}>{eff} +{Math.round(r.per * lv * 100)}%{maxed ? ' (MAX)' : ` → +${Math.round(r.per * (lv + 1) * 100)}%`}</Text>
               </View>
-              <Btn small kind="ghost" disabled={maxed} label={maxed ? 'MAX' : `강화 ${concept.resources.currency.emoji}${fmt(cost.currency)}`}
-                onPress={() => act(() => upgradeRelic(state, r.id))} />
+              <Btn small kind="ghost" disabled={maxed} label={maxed ? 'MAX' : `강화 ×${mult} ${concept.resources.currency.emoji}${fmt(cost.currency)}`}
+                onPress={() => actN(() => upgradeRelic(state, r.id))} />
             </View>
           );
         })}
