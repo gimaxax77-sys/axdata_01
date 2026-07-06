@@ -9,6 +9,10 @@ import { computePower } from '../../system/core/stats.mjs';
 import { identity, elementMeta } from '../../system/concepts/index.mjs';
 import { affinity, affinityLabel } from '../../system/core/elements.mjs';
 import { teamSynergy } from '../../system/core/synergy.mjs';
+import { resolve } from '../../system/core/resolution.mjs';
+import { getPartyUnits } from '../../system/core/gameState.mjs';
+import { accountMods } from '../../system/core/balance.mjs';
+import BattleView from './BattleView';
 
 export default function IdleScreen({ state, bump, lastGain, concept }) {
   const power = effectivePower(state);
@@ -22,18 +26,19 @@ export default function IdleScreen({ state, bump, lastGain, concept }) {
   const canPrestige = state.maxStage >= 15;
   const nextGain = Math.floor(Math.sqrt(state.maxStage));
   const synergy = teamSynergy(party);
+  const battle = resolve(getPartyUnits(state), stageDef.challenge, accountMods(state));
 
   return (
     <ScrollView contentContainerStyle={st.wrap}>
       {/* 자동 전투 무대 */}
       <Card style={st.stage}>
         <Text style={st.stageLabel}>{concept.terms.stage} {state.stage}</Text>
-        <Text style={st.leadEmoji}>{leadMeta ? leadMeta.emoji : '⚔️'}</Text>
-        <View style={st.vs}>
-          <Text style={st.vsText}>{leadMeta ? leadMeta.name : '영웅'}</Text>
-          <Text style={st.vsMid}>⚔️ 자동 전투 중</Text>
-          <Text style={st.vsText}>👹 적</Text>
-        </View>
+        <BattleView
+          heroEmoji={leadMeta ? leadMeta.emoji : '⚔️'}
+          enemyEmoji={elementMeta(concept, stageDef.challenge.element)?.emoji || '👹'}
+          win={battle.win}
+          margin={battle.margin}
+        />
         <Text style={st.enemy}>적 HP {fmt(stageDef.challenge.hp)} · ATK {fmt(stageDef.challenge.atk)}</Text>
         {(() => {
           const enemyEl = stageDef.challenge.element;
