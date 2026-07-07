@@ -47,7 +47,7 @@ export default function App() {
   useEffect(() => { setMuted(st.muted); setHaptics(st.haptics); setReduceMotion(st.reduceMotion); }, [st.muted, st.haptics, st.reduceMotion]);
   const changeSetting = (key, val) => {
     game.state.settings[key] = val;
-    if (key === 'muted') setMuted(val); if (key === 'haptics') setHaptics(val); if (key === 'reduceMotion') setReduceMotion(val);
+    // 엔진 반영은 위 useEffect가 담당(settings 값 변화 감지). 여기선 상태만 갱신.
     if (!game.state.settings.muted) fx('tap');
     game.save(); game.bump();
   };
@@ -74,7 +74,8 @@ export default function App() {
           <Text style={s.title}>{game.concept.title}</Text>
           <Text style={s.subtitle}>방치형 수집 RPG · 자동 저장</Text>
         </View>
-        <TouchableOpacity onPress={() => { fx('tap'); setSettingsOpen(true); }} style={s.iconBtn} activeOpacity={0.7}>
+        <TouchableOpacity onPress={() => { fx('tap'); setSettingsOpen(true); }} style={s.iconBtn} activeOpacity={0.7}
+          accessibilityRole="button" accessibilityLabel="설정">
           <Text style={s.iconBtnText}>⚙️</Text>
         </TouchableOpacity>
       </View>
@@ -97,7 +98,8 @@ export default function App() {
         {TABS.map((t) => {
           const on = t.key === tab;
           return (
-            <TouchableOpacity key={t.key} style={s.tab} onPress={() => setTab(t.key)} activeOpacity={0.8}>
+            <TouchableOpacity key={t.key} style={s.tab} onPress={() => setTab(t.key)} activeOpacity={0.8}
+              accessibilityRole="tab" accessibilityLabel={t.label} accessibilityState={{ selected: on }}>
               <Text style={[s.tabIcon, on && s.tabIconOn]}>{t.icon}</Text>
               <Text style={[s.tabLabel, on && s.tabLabelOn]}>{t.label}</Text>
             </TouchableOpacity>

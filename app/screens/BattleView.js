@@ -3,6 +3,8 @@ import { View, Text, StyleSheet } from 'react-native';
 import { T } from '../theme';
 import { reducedMotion } from '../motion';
 
+// reduce: 설정에서 전달(즉시 반영). 미전달 시 모듈 플래그 폴백.
+
 // ─────────────────────────────────────────────────────────────
 // 자동 전투 시각화 — 순수 연출(게임 로직 불변).
 // resolve()의 win/margin으로 "얼마나 우세한가"만 받아 페이스를 정한다.
@@ -10,7 +12,8 @@ import { reducedMotion } from '../motion';
 // setInterval + ref 로 가볍게 구동(웹 export에서도 안정).
 // ─────────────────────────────────────────────────────────────
 
-function BattleView({ heroEmoji = '⚔️', enemyEmoji = '👹', win = true, margin = 1 }) {
+function BattleView({ heroEmoji = '⚔️', enemyEmoji = '👹', win = true, margin = 1, reduce }) {
+  const noMotion = reduce !== undefined ? reduce : reducedMotion();
   const enemyHp = useRef(1);
   const heroHp = useRef(1);
   const [, force] = useState(0);
@@ -21,7 +24,7 @@ function BattleView({ heroEmoji = '⚔️', enemyEmoji = '👹', win = true, mar
 
   useEffect(() => {
     enemyHp.current = 1; heroHp.current = 1;
-    if (reducedMotion()) { enemyHp.current = win ? 0.45 : 0.85; heroHp.current = win ? 0.9 : 0.5; force((v) => v + 1); return; }
+    if (noMotion) { enemyHp.current = win ? 0.45 : 0.85; heroHp.current = win ? 0.9 : 0.5; force((v) => v + 1); return; }
     // 우세할수록 적 HP가 빨리 깎임. 열세(패배)면 파티 HP가 위태.
     const enemyDmg = win ? (margin > 2.2 ? 0.30 : margin > 1.4 ? 0.20 : 0.14) : 0.10;
     const heroDmg = win ? 0.05 : 0.16;
@@ -53,7 +56,7 @@ function BattleView({ heroEmoji = '⚔️', enemyEmoji = '👹', win = true, mar
       force((v) => (v + 1) % 1e6);
     }, 120);
     return () => clearInterval(iv);
-  }, [win, margin]);
+  }, [win, margin, noMotion]);
 
   function pushFloat(val, side, crit, big) {
     fid.current += 1;

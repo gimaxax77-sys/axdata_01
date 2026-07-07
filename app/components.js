@@ -58,16 +58,19 @@ export function Btn({ label, onPress, disabled, kind = 'primary', small, sfx = '
   const content = (
     <Text style={[s.btnText, { color: kind === 'ghost' ? T.text : fg }, small && { fontSize: 13 }]} numberOfLines={1}>{label}</Text>
   );
+  const a11y = typeof label === 'string' ? label : undefined;
   if (kind === 'ghost' || disabled) {
     return (
       <TouchableOpacity style={[s.btn, small && s.btnSmall, kind === 'ghost' ? s.btnGhost : s.btnDisabled]}
-        onPress={press} disabled={disabled} activeOpacity={0.75}>
+        onPress={press} disabled={disabled} activeOpacity={0.75}
+        accessibilityRole="button" accessibilityLabel={a11y} accessibilityState={{ disabled: !!disabled }}>
         <Text style={[s.btnText, { color: disabled ? T.muted : T.text }, small && { fontSize: 13 }]} numberOfLines={1}>{label}</Text>
       </TouchableOpacity>
     );
   }
   return (
     <TouchableOpacity onPress={press} disabled={disabled} activeOpacity={0.82}
+      accessibilityRole="button" accessibilityLabel={a11y}
       style={[{ borderRadius: small ? 10 : 12 }, kind === 'gold' ? s.glowGold : s.glowPrimary]}>
       <LinearGradient colors={grad} start={{ x: 0, y: 0 }} end={{ x: 0, y: 1 }} style={[s.btn, small && s.btnSmall]}>
         {content}
@@ -133,10 +136,14 @@ export function repeat(fn, n) {
 
 export function fmt(n) {
   n = Math.round(n);
-  if (n >= 1e9) return (n / 1e9).toFixed(1) + 'B';
-  if (n >= 1e6) return (n / 1e6).toFixed(1) + 'M';
-  if (n >= 1e4) return (n / 1e3).toFixed(1) + 'K';
-  return n.toLocaleString();
+  const neg = n < 0 ? '-' : '';
+  n = Math.abs(n);
+  if (n >= 1e15) return neg + (n / 1e15).toFixed(1) + 'Q';
+  if (n >= 1e12) return neg + (n / 1e12).toFixed(1) + 'T';
+  if (n >= 1e9) return neg + (n / 1e9).toFixed(1) + 'B';
+  if (n >= 1e6) return neg + (n / 1e6).toFixed(1) + 'M';
+  if (n >= 1e4) return neg + (n / 1e3).toFixed(1) + 'K';
+  return neg + n.toLocaleString();
 }
 
 const bs = StyleSheet.create({

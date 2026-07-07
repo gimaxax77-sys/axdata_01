@@ -38,6 +38,7 @@ export default function IdleScreen({ state, bump, lastGain, concept }) {
           enemyEmoji={elementMeta(concept, stageDef.challenge.element)?.emoji || '👹'}
           win={battle.win}
           margin={battle.margin}
+          reduce={state.settings.reduceMotion}
         />
         <Text style={st.enemy}>적 HP {fmt(stageDef.challenge.hp)} · ATK {fmt(stageDef.challenge.atk)}</Text>
         {(() => {
