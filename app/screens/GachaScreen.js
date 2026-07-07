@@ -4,6 +4,7 @@ import { T, rarityMeta } from '../theme';
 import { Card, Btn, fmt, Portrait } from '../components';
 import { charImage } from '../charImages';
 import { fx } from '../feedback';
+import { reducedMotion } from '../motion';
 import { summonOne, summonMulti, PULL_COST } from '../../system/core/gacha.mjs';
 import { identity } from '../../system/concepts/index.mjs';
 import { recordMission } from '../../system/core/daily.mjs';
@@ -14,8 +15,9 @@ import { LockedPanel } from '../components';
 // 소환 결과 한 칸 — 등장 시 페이드+스케일+글로우 (등급 높을수록 늦게=강조).
 const RevealCell = React.memo(function RevealCell({ index, rarity, emoji, image, name }) {
   const rm = rarityMeta(rarity);
-  const a = useRef(new Animated.Value(0)).current;
+  const a = useRef(new Animated.Value(reducedMotion() ? 1 : 0)).current;
   useEffect(() => {
+    if (reducedMotion()) { a.setValue(1); return; }
     a.setValue(0);
     Animated.timing(a, { toValue: 1, duration: 340, delay: Math.min(index, 12) * 70, useNativeDriver: true }).start();
   }, []);

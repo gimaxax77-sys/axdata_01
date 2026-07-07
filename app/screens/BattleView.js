@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { T } from '../theme';
+import { reducedMotion } from '../motion';
 
 // ─────────────────────────────────────────────────────────────
 // 자동 전투 시각화 — 순수 연출(게임 로직 불변).
@@ -20,6 +21,7 @@ function BattleView({ heroEmoji = '⚔️', enemyEmoji = '👹', win = true, mar
 
   useEffect(() => {
     enemyHp.current = 1; heroHp.current = 1;
+    if (reducedMotion()) { enemyHp.current = win ? 0.45 : 0.85; heroHp.current = win ? 0.9 : 0.5; force((v) => v + 1); return; }
     // 우세할수록 적 HP가 빨리 깎임. 열세(패배)면 파티 HP가 위태.
     const enemyDmg = win ? (margin > 2.2 ? 0.30 : margin > 1.4 ? 0.20 : 0.14) : 0.10;
     const heroDmg = win ? 0.05 : 0.16;

@@ -31,8 +31,10 @@ async function playFile(name, src) {
 
 const isWeb = Platform.OS === 'web';
 let muted = false;
+let hapticsOn = true;
 export function setMuted(m) { muted = !!m; }
 export function isMuted() { return muted; }
+export function setHaptics(h) { hapticsOn = h !== false; }
 
 // ── Web Audio 합성 ────────────────────────────────────────────
 let _ctx = null;
@@ -94,6 +96,7 @@ const SOUNDS = {
 // ── 햅틱 ──────────────────────────────────────────────────────
 const VIBE_WEB = { click: 8, tap: 6, success: [0, 20, 30, 20], coin: 10, levelup: [0, 15, 20, 15, 20, 30], summon: 20, sr: [0, 25, 30, 25], ssr: [0, 30, 40, 30, 40, 60], win: [0, 20, 30, 20], error: [0, 40, 30, 40] };
 function haptic(name) {
+  if (!hapticsOn) return;
   if (isWeb) {
     try { if (typeof navigator !== 'undefined' && navigator.vibrate) navigator.vibrate(VIBE_WEB[name] || 0); } catch { /* 무시 */ }
     return;

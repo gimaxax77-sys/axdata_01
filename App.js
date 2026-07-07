@@ -5,7 +5,9 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { T } from './app/theme';
 import { ResourceBar, Btn, fmt } from './app/components';
 import { useGame } from './app/useGame';
-import { setMuted, fx } from './app/feedback';
+import { setMuted, setHaptics, fx } from './app/feedback';
+import { setReduceMotion } from './app/motion';
+import { SettingsModal } from './app/screens/Settings';
 import IdleScreen from './app/screens/IdleScreen';
 import RosterScreen from './app/screens/RosterScreen';
 import GachaScreen from './app/screens/GachaScreen';
@@ -39,12 +41,13 @@ export default function App() {
   const [tab, setTab] = useState('idle');
   const Active = TABS.find((t) => t.key === tab).Screen;
 
-  // 음소거 상태를 세이브에서 피드백 엔진에 반영
-  const muted = game.state.settings.muted;
-  useEffect(() => { setMuted(muted); }, [muted]);
-  const toggleMute = () => {
-    game.state.settings.muted = !muted;
-    setMuted(game.state.settings.muted);
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  // 설정을 세이브에서 엔진들에 반영
+  const st = game.state.settings;
+  useEffect(() => { setMuted(st.muted); setHaptics(st.haptics); setReduceMotion(st.reduceMotion); }, [st.muted, st.haptics, st.reduceMotion]);
+  const changeSetting = (key, val) => {
+    game.state.settings[key] = val;
+    if (key === 'muted') setMuted(val); if (key === 'haptics') setHaptics(val); if (key === 'reduceMotion') setReduceMotion(val);
     if (!game.state.settings.muted) fx('tap');
     game.save(); game.bump();
   };
@@ -71,11 +74,8 @@ export default function App() {
           <Text style={s.title}>{game.concept.title}</Text>
           <Text style={s.subtitle}>방치형 수집 RPG · 자동 저장</Text>
         </View>
-        <TouchableOpacity onPress={toggleMute} style={s.iconBtn} activeOpacity={0.7}>
-          <Text style={s.iconBtnText}>{muted ? '🔇' : '🔊'}</Text>
-        </TouchableOpacity>
-        <TouchableOpacity onPress={doReset} style={s.reset} activeOpacity={0.7}>
-          <Text style={s.resetText}>초기화</Text>
+        <TouchableOpacity onPress={() => { fx('tap'); setSettingsOpen(true); }} style={s.iconBtn} activeOpacity={0.7}>
+          <Text style={s.iconBtnText}>⚙️</Text>
         </TouchableOpacity>
       </View>
       <View style={s.resWrap}>
@@ -122,6 +122,15 @@ export default function App() {
         </View>
       </Modal>
 
+      {/* 설정 */}
+      <SettingsModal
+        visible={settingsOpen}
+        settings={game.state.settings}
+        onChange={changeSetting}
+        onReset={() => { setSettingsOpen(false); doReset(); }}
+        onClose={() => setSettingsOpen(false)}
+      />
+
       {/* 첫 실행 소개 — 오프라인 팝업이 없을 때만 노출 */}
       <IntroModal
         concept={game.concept}
@@ -139,8 +148,6 @@ const s = StyleSheet.create({
   subtitle: { color: T.muted, fontSize: 12, marginTop: 1 },
   iconBtn: { borderWidth: 1, borderColor: T.line, borderRadius: 10, paddingHorizontal: 10, paddingVertical: 6, marginRight: 8 },
   iconBtnText: { fontSize: 15 },
-  reset: { borderWidth: 1, borderColor: T.line, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 6 },
-  resetText: { color: T.muted, fontSize: 12, fontWeight: '700' },
   resWrap: { paddingHorizontal: 14, paddingVertical: 8 },
   body: { flex: 1 },
   tabbar: { flexDirection: 'row', backgroundColor: T.surface, borderTopWidth: 1, borderTopColor: T.line, paddingBottom: 6 },

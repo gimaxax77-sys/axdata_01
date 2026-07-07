@@ -54,8 +54,10 @@ function normalize(state) {
   state.campaign.cleared = state.campaign.cleared || 0;
   state.tutorial = state.tutorial || { introSeen: false };
   state.tutorial.introSeen = !!state.tutorial.introSeen;
-  state.settings = state.settings || { muted: false };
+  state.settings = state.settings || {};
   state.settings.muted = !!state.settings.muted;
+  state.settings.haptics = state.settings.haptics !== false; // 기본 on
+  state.settings.reduceMotion = !!state.settings.reduceMotion;
   state.tower = state.tower || { floor: 1, best: 1 };
   state.tower.floor = state.tower.floor || 1;
   state.tower.best = state.tower.best || state.tower.floor || 1;
