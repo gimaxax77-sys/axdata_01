@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView } from 'react-native';
-import { T } from '../theme';
-import { Card, Btn, fmt, MultiToggle, repeat } from '../components';
+import { T, rarityMeta } from '../theme';
+import { Card, Btn, fmt, MultiToggle, multLabel, repeat } from '../components';
 import {
   ATTENDANCE, canClaimAttendance, claimAttendance,
   missionList, claimMission, DUNGEONS, dungeonEntriesLeft, enterDungeon,
@@ -153,11 +153,12 @@ export default function ContentScreen({ state, bump, concept }) {
       <Card style={{ marginTop: 12 }}>
         <View style={c.petHead}>
           <Text style={c.sec}>펫 <Text style={c.dim}>(장착 {state.pets.active.length}/{MAX_ACTIVE_PETS})</Text></Text>
-          {isUnlocked(state, 'pets') && (
-            <Btn small kind="gold" label={`펫 소환 ${concept.resources.gem.emoji}${PET_PULL_COST.gem}`}
-              disabled={(state.wallet.gem || 0) < PET_PULL_COST.gem} onPress={() => act(() => petSummon(state))} />
-          )}
+          {isUnlocked(state, 'pets') && <MultiToggle value={mult} onChange={setMult} />}
         </View>
+        {isUnlocked(state, 'pets') && (
+          <Btn small kind="gold" label={`펫 소환 ${multLabel(mult)} ${concept.resources.gem.emoji}${mult === 'Max' ? '' : fmt(PET_PULL_COST.gem * mult)}`}
+            disabled={(state.wallet.gem || 0) < PET_PULL_COST.gem} onPress={() => actN(() => petSummon(state))} />
+        )}
         {!isUnlocked(state, 'pets') && <Text style={c.sub}>🔒 스테이지 {unlockStage('pets')} 도달 시 해금</Text>}
         {isUnlocked(state, 'pets') && Object.keys(state.pets.owned).length === 0 && <Text style={c.sub}>보유 펫 없음 — 소환으로 획득하세요.</Text>}
         {/* 합성(승급): 하위 등급 펫 레벨 소모 → 상위 1 */}
@@ -183,7 +184,7 @@ export default function ContentScreen({ state, bump, concept }) {
             <View key={id} style={c.dRow}>
               <Text style={c.petEmoji}>{p.emoji}</Text>
               <View style={{ flex: 1 }}>
-                <Text style={c.mLabel}>{p.label} <Text style={c.dim}>Lv.{lv} · {p.rarity}</Text></Text>
+                <Text style={c.mLabel}>{p.label} <Text style={c.dim}>Lv.{lv}</Text> <Text style={{ color: rarityMeta(p.rarity).color, fontWeight: '900', fontSize: 12 }}>{p.rarity}</Text></Text>
                 <Text style={c.mReward}>{petEffectLabel(p.type, concept)} +{Math.round(p.per * lv * 100)}%{opt ? ` · 옵션 ${petOptLabel(opt, concept)}` : ''}</Text>
               </View>
               <View style={{ gap: 5 }}>
@@ -213,7 +214,7 @@ export default function ContentScreen({ state, bump, concept }) {
             <View key={r.id} style={c.dRow}>
               <Text style={c.petEmoji}>{r.emoji}</Text>
               <View style={{ flex: 1 }}>
-                <Text style={c.mLabel}>{r.label} <Text style={c.dim}>Lv.{lv}/{cap} · {r.rarity}</Text></Text>
+                <Text style={c.mLabel}>{r.label} <Text style={c.dim}>Lv.{lv}/{cap}</Text> <Text style={{ color: rarityMeta(r.rarity).color, fontWeight: '900', fontSize: 12 }}>{r.rarity}</Text></Text>
                 <Text style={c.mReward}>{eff} +{Math.round(r.per * lv * 100)}%{maxed ? ' (MAX)' : ` → +${Math.round(r.per * (lv + 1) * 100)}%`}</Text>
               </View>
               <Btn small kind="ghost" disabled={maxed} label={maxed ? 'MAX' : `강화 ×${mult} ${concept.resources.currency.emoji}${fmt(cost.currency)}`}

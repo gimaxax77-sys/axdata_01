@@ -59,6 +59,7 @@ export default function GachaScreen({ state, bump, concept }) {
   const canOne = state.wallet.summon >= PULL_COST.summon;
   const canTen = state.wallet.summon >= PULL_COST.summon * 10;
   const canHundred = state.wallet.summon >= PULL_COST.summon * 100;
+  const maxN = Math.min(300, Math.floor((state.wallet.summon || 0) / PULL_COST.summon)); // 보유량 전량(상한 300)
 
   if (!isUnlocked(state, 'gacha')) {
     return <LockedPanel concept={concept} title="소환" stage={unlockStage('gacha')} desc="스테이지를 진행하면 영웅 소환이 열립니다." />;
@@ -83,8 +84,11 @@ export default function GachaScreen({ state, bump, concept }) {
         <View style={{ flex: 1 }}>
           <Btn label={`100연차 (${fmt(PULL_COST.summon * 100)})`} kind="gold" disabled={!canHundred} sfx={false} onPress={() => pull(100)} />
         </View>
+        <View style={{ flex: 1 }}>
+          <Btn label={maxN > 0 ? `Max (${maxN})` : 'Max'} kind="gold" disabled={maxN < 1} sfx={false} onPress={() => pull(maxN)} />
+        </View>
       </View>
-      <Text style={s.floor}>10연차 이상은 최소 1개 SR 이상 보장 · 100연차는 결과 요약 표시</Text>
+      <Text style={s.floor}>10연차 이상은 최소 1개 SR 이상 보장 · Max는 보유 소환권 전량(상한 300)</Text>
 
       {results.length > 0 && (
         <Card style={{ marginTop: 14 }}>

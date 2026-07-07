@@ -19,14 +19,16 @@ import ShopScreen from './app/screens/ShopScreen';
 import { IntroModal, ObjectiveBanner } from './app/screens/Onboarding';
 import ErrorBoundary from './app/ErrorBoundary';
 
+// 탭 화면을 React.memo로 감싼다 — 방치 틱(초당)에는 rev/props가 안 바뀌어
+// 비활성 화면이 리렌더되지 않는다(탭 전환·조작 렉 제거).
 const TABS = [
-  { key: 'idle', label: '방치', icon: '🏰', Screen: IdleScreen },
-  { key: 'roster', label: '캐릭터', icon: '🐹', Screen: RosterScreen },
-  { key: 'gacha', label: '소환', icon: '🔮', Screen: GachaScreen },
-  { key: 'content', label: '콘텐츠', icon: '📅', Screen: ContentScreen },
-  { key: 'arena', label: '경쟁', icon: '⚔️', Screen: ArenaGuildScreen },
-  { key: 'meta', label: '기록', icon: '📖', Screen: MetaScreen },
-  { key: 'shop', label: '상점', icon: '🛒', Screen: ShopScreen },
+  { key: 'idle', label: '방치', icon: '🏰', Screen: React.memo(IdleScreen) },
+  { key: 'roster', label: '캐릭터', icon: '🐹', Screen: React.memo(RosterScreen) },
+  { key: 'gacha', label: '소환', icon: '🔮', Screen: React.memo(GachaScreen) },
+  { key: 'content', label: '콘텐츠', icon: '📅', Screen: React.memo(ContentScreen) },
+  { key: 'arena', label: '경쟁', icon: '⚔️', Screen: React.memo(ArenaGuildScreen) },
+  { key: 'meta', label: '기록', icon: '📖', Screen: React.memo(MetaScreen) },
+  { key: 'shop', label: '상점', icon: '🛒', Screen: React.memo(ShopScreen) },
 ];
 
 function fmtDuration(sec) {
@@ -99,9 +101,11 @@ function AppInner() {
         <ObjectiveBanner state={game.state} concept={game.concept} onGo={setTab} />
       )}
 
-      {/* 화면 */}
+      {/* 화면 — rev(액션 신호)로만 리렌더. lastGain은 방치 탭에만 전달해
+          다른 탭이 초당 리렌더되지 않게 한다. */}
       <View style={s.body}>
-        <Active state={game.state} bump={game.bump} lastGain={game.lastGain} concept={game.concept} />
+        <Active state={game.state} rev={game.rev} bump={game.bump} concept={game.concept}
+          lastGain={tab === 'idle' ? game.lastGain : undefined} />
       </View>
 
       {/* 하단 탭 */}

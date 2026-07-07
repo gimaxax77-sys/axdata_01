@@ -63,8 +63,10 @@ export function useGame() {
     }
     ref.current = loaded ? applyLoad(loaded, offlineRef) : createFresh();
   }
-  const [, force] = useState(0);
-  const bump = useCallback(() => force((v) => (v + 1) % 1e9), []);
+  // rev = "사용자 액션" 리렌더 신호. 방치 틱은 rev를 올리지 않아(아래) 비활성
+  // 화면이 초당 리렌더되지 않는다(React.memo와 결합해 탭 렉 제거).
+  const [rev, setRev] = useState(0);
+  const bump = useCallback(() => setRev((v) => (v + 1) % 1e9), []);
   const [offline, setOffline] = useState(offlineRef.current);
   const [lastGain, setLastGain] = useState({ currency: 0, growth: 0 });
   // 웹은 이미 로드 완료. 네이티브는 AsyncStorage 하이드레이트 전까지 틱/저장 보류.
@@ -107,7 +109,8 @@ export function useGame() {
       save();
       // 약 30초마다 정상본 백업(손상 복구용) — 매 틱 쓰기 부담 회피.
       if (++tickCount.current % 30 === 0) saveBackup(serialize(ref.current));
-      bump();
+      // rev를 올리지 않는다 → 비활성 화면은 리렌더 안 됨. setLastGain이 App만
+      // 리렌더시켜 상단 자원바/방치 화면만 실시간 갱신.
     }, TICK_MS);
     return () => clearInterval(id);
   }, [hydrated, bump, save]);
@@ -147,7 +150,7 @@ export function useGame() {
     return true;
   }, [bump, save]);
 
-  return { state: ref.current, bump, lastGain, offline, dismissOffline, reset, save, exportSave, importSave, concept: CONCEPT };
+  return { state: ref.current, rev, bump, lastGain, offline, dismissOffline, reset, save, exportSave, importSave, concept: CONCEPT };
 }
 
 // 파티 최고 유닛의 "실효 전투력"(환생 배수 포함)

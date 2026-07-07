@@ -1,6 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Modal } from 'react-native';
-import { T } from '../theme';
+import { T, rarityMeta } from '../theme';
+
+// 등급 순위(정렬용) — 인벤토리 상위 우선.
+const RARITY_RANK = { N: 0, R: 1, SR: 2, SSR: 3, UR: 4 };
+function rarityColor(r) { return rarityMeta(r).color; }
 import { Card, Btn, fmt, MultiToggle, multLabel, repeat, Portrait } from '../components';
 import { charImage } from '../charImages';
 import { fx } from '../feedback';
@@ -228,10 +232,12 @@ export default function RosterScreen({ state, bump, concept }) {
           <View style={g.intiHead}>
             <Text style={g.sec}>친밀도 <Text style={g.dim}>Lv.{intimacyLevel(unit)}/{INTIMACY_MAX} · 전 스탯 +{intimacyLevel(unit) * 2}%</Text></Text>
             <Btn small kind="gold" disabled={intimacyLevel(unit) >= INTIMACY_MAX}
-              label={intimacyLevel(unit) >= INTIMACY_MAX ? 'MAX' : `선물 ${concept.resources.currency.emoji}${fmt(giftCost(unit).currency)}`}
+              label={intimacyLevel(unit) >= INTIMACY_MAX ? 'MAX' : `선물 ${multLabel(mult)} ${concept.resources.currency.emoji}${fmt(giftCost(unit).currency)}`}
               onPress={() => {
-                const r = giveGift(state, unit.uid);
-                if (r.ok) setBubble(r.leveledUp ? lines.levelup : lines.bond);
+                let last = null;
+                const n = repeat(() => { const r = giveGift(state, unit.uid); if (r.ok) last = r; return r; }, mult);
+                if (last) setBubble(last.leveledUp ? lines.levelup : lines.bond);
+                fx(n > 0 ? 'success' : 'error');
                 bump();
               }} />
           </View>
@@ -350,10 +356,11 @@ export default function RosterScreen({ state, bump, concept }) {
       <Card style={{ marginTop: 12 }}>
         <View style={g.intiHead}>
           <Text style={g.sec}>룬 <Text style={g.dim}>({(unit.runes || []).filter(Boolean).length}/{RUNE_SLOTS})</Text></Text>
-          <Btn small kind="gold" disabled={(state.wallet.currency || 0) < RUNE_SUMMON_COST.currency}
-            label={`발굴 ${concept.resources.currency.emoji}${fmt(RUNE_SUMMON_COST.currency)}`}
-            onPress={() => act(() => summonRune(state, Math.random))} />
+          <MultiToggle value={mult} onChange={setMult} />
         </View>
+        <Btn small kind="gold" disabled={(state.wallet.currency || 0) < RUNE_SUMMON_COST.currency}
+          label={`발굴 ${multLabel(mult)} ${concept.resources.currency.emoji}${mult === 'Max' ? '' : fmt(RUNE_SUMMON_COST.currency * mult)}`}
+          onPress={() => { const n = repeat(() => summonRune(state, Math.random), mult); fx(n > 0 ? 'success' : 'error'); bump(); }} />
         {(state.runeBag || []).length > 0 && <Text style={g.dim}>가방 보유 {state.runeBag.length}개</Text>}
         {[0, 1, 2].map((i) => {
           const rune = (unit.runes || [])[i];
@@ -416,7 +423,8 @@ export default function RosterScreen({ state, bump, concept }) {
               <View style={{ flex: 1 }}>
                 <Text style={g.slotTag}>{SLOT_KO[slot]}</Text>
                 {item ? (<>
-                  <Text style={g.slotName}>{GEAR_CATALOG[item.blueprint].label} +{item.level - 1}</Text>
+                  <Text style={g.slotName}>{GEAR_CATALOG[item.blueprint].label} +{item.level - 1}
+                    {item.rarity ? <Text style={{ color: rarityColor(item.rarity), fontWeight: '900' }}>  {(GEAR_RARITY[item.rarity] || {}).label || item.rarity}</Text> : null}</Text>
                   <Text style={g.slotDesc}>{describeGearItem(item)}</Text>
                 </>) : <Text style={g.slotEmpty}>＋ 비어있음</Text>}
               </View>
@@ -468,10 +476,12 @@ function PickerModal({ picker, unit, state, onClose, onChange, concept }) {
   if (picker.mode === 'rune') {
     const i = picker.slot;
     const equipped = (unit.runes || [])[i];
-    const bag = state.runeBag || [];
+    // 가방: 등급↓ → 메인값↓ 정렬(상위 우선).
+    const bag = (state.runeBag || []).slice()
+      .sort((a, b) => (RARITY_RANK[b.rarity] || 0) - (RARITY_RANK[a.rarity] || 0) || (runeMainValue(b) - runeMainValue(a)));
     body = (
       <>
-        <Text style={m.title}>룬 선택 · 슬롯 {i + 1}</Text>
+        <Text style={m.title}>룬 선택 · 슬롯 {i + 1} <Text style={m.optDesc}>(가방 {bag.length})</Text></Text>
         {equipped && (() => {
           const d = describeRune(equipped);
           const maxed = equipped.level >= RUNE_MAX_LEVEL;
@@ -495,8 +505,8 @@ function PickerModal({ picker, unit, state, onClose, onChange, concept }) {
             const d = describeRune(r);
             return (
               <TouchableOpacity key={r.uid} onPress={() => apply(() => { equipRune(state, unit.uid, i, r.uid); onClose(); })}
-                style={m.opt} activeOpacity={0.8}>
-                <Text style={m.optName}>{d.title}</Text>
+                style={[m.opt, { borderColor: rarityColor(r.rarity) }]} activeOpacity={0.8}>
+                <Text style={m.optName}>{d.title} <Text style={{ color: rarityColor(r.rarity), fontWeight: '900' }}>[{RUNE_RARITY[r.rarity].label}]</Text></Text>
                 <Text style={m.optDesc}>{d.sub}</Text>
               </TouchableOpacity>
             );
@@ -540,7 +550,9 @@ function PickerModal({ picker, unit, state, onClose, onChange, concept }) {
     const slot = picker.slot;
     const item = unit.gear[slot];
     const bps = Object.values(GEAR_CATALOG).filter((b) => b.slot === slot);
-    const owned = state.inventory.filter((g2) => g2.slot === slot);
+    // 인벤토리: 등급↓ → 강화레벨↓ 로 정렬(상위 우선).
+    const owned = state.inventory.filter((g2) => g2.slot === slot)
+      .sort((a, b) => (RARITY_RANK[b.rarity] || 0) - (RARITY_RANK[a.rarity] || 0) || (b.level - a.level));
     body = (
       <>
         <Text style={m.title}>{SLOT_KO[slot]} 선택</Text>
@@ -548,7 +560,7 @@ function PickerModal({ picker, unit, state, onClose, onChange, concept }) {
           <View style={m.equippedRow}>
             <Text style={m.equippedName}>
               장착: {GEAR_CATALOG[item.blueprint].label} +{item.level - 1}
-              {item.rarity ? <Text style={{ color: (GEAR_RARITY[item.rarity] || {}).mult ? T.accent : T.muted }}>  [{(GEAR_RARITY[item.rarity] || {}).label || item.rarity}]</Text> : null}
+              {item.rarity ? <Text style={{ color: rarityColor(item.rarity), fontWeight: '900' }}>  [{(GEAR_RARITY[item.rarity] || {}).label || item.rarity}]</Text> : null}
             </Text>
             <Text style={m.equippedDesc}>{describeGearItem(item)}</Text>
             {(item.subs || []).length > 0 && <Text style={m.subLine}>부옵션: {describeSubs(item.subs)}</Text>}
@@ -574,7 +586,7 @@ function PickerModal({ picker, unit, state, onClose, onChange, concept }) {
             <TouchableOpacity key={it.uid} onPress={() => apply(() => { equipGear(state, unit.uid, it.uid); onClose(); })}
               style={m.opt} activeOpacity={0.8}>
               <Text style={m.optName}>{GEAR_CATALOG[it.blueprint].label} +{it.level - 1}
-                {it.rarity ? <Text style={m.optCost}>  [{(GEAR_RARITY[it.rarity] || {}).label || it.rarity}]</Text> : null}</Text>
+                {it.rarity ? <Text style={{ color: rarityColor(it.rarity), fontWeight: '900' }}>  [{(GEAR_RARITY[it.rarity] || {}).label || it.rarity}]</Text> : null}</Text>
               <Text style={m.optDesc}>{describeGearItem(it)}</Text>
             </TouchableOpacity>
           ))}

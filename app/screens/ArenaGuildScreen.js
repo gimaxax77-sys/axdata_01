@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView } from 'react-native';
 import { T } from '../theme';
-import { Card, Btn, fmt } from '../components';
+import { Card, Btn, fmt, MultiToggle, multLabel, repeat } from '../components';
 import { isUnlocked, unlockStage } from '../../system/core/unlocks.mjs';
 import { ARENA_ENTRIES, arenaEntriesLeft, arenaFight, arenaTier } from '../../system/core/arena.mjs';
 import { GUILD_ATTACKS, guildAttacksLeft, guildAttack, guildBossMaxHp } from '../../system/core/guild.mjs';
@@ -13,10 +13,14 @@ import { fx } from '../feedback';
 // 경쟁 재화 상점 섹션 (arena=포인트 / guild=코인 소모)
 function CompShop({ state, bump, concept, kind, balance, unit }) {
   const items = COMP_SHOP[kind];
-  const buy = (id) => { compPurchase(state, kind, id); bump(); };
+  const [mult, setMult] = useState(1);
+  const buy = (id) => { repeat(() => compPurchase(state, kind, id), mult); bump(); };
   return (
     <View style={c.shop}>
-      <Text style={c.shopHead}>{kind === 'arena' ? '🏅 아레나 상점' : '🎖️ 길드 상점'} <Text style={c.dim}>보유 {unit} {fmt(balance)}</Text></Text>
+      <View style={c.shopHeadRow}>
+        <Text style={c.shopHead}>{kind === 'arena' ? '🏅 아레나 상점' : '🎖️ 길드 상점'} <Text style={c.dim}>보유 {unit} {fmt(balance)}</Text></Text>
+        <MultiToggle value={mult} onChange={setMult} />
+      </View>
       {items.map((p) => {
         const g = compGrantPreview(state, p.grant);
         const txt = Object.entries(g).map(([k, v]) => `${concept.resources[k]?.emoji || ''}${fmt(v)}`).join(' ');
@@ -27,7 +31,7 @@ function CompShop({ state, bump, concept, kind, balance, unit }) {
               <Text style={c.shopLabel}>{p.label}</Text>
               <Text style={c.shopReward}>{txt}</Text>
             </View>
-            <Btn small kind="gold" disabled={!afford} label={`${unit} ${p.cost}`} onPress={() => buy(p.id)} />
+            <Btn small kind="gold" disabled={!afford} label={`${multLabel(mult)} ${unit} ${mult === 'Max' ? p.cost : p.cost * mult}`} onPress={() => buy(p.id)} />
           </View>
         );
       })}
@@ -172,6 +176,7 @@ const c = StyleSheet.create({
   bossText: { color: T.text, fontSize: 12, fontWeight: '700', textAlign: 'center' },
   shop: { marginTop: 14, borderTopWidth: 1, borderTopColor: T.line, paddingTop: 12 },
   shopHead: { color: T.text, fontWeight: '800', fontSize: 13, marginBottom: 4 },
+  shopHeadRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 },
   shopRow: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 8 },
   shopLabel: { color: T.text, fontWeight: '700', fontSize: 13 },
   shopReward: { color: T.muted, fontSize: 12, marginTop: 2 },
