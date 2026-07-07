@@ -11,6 +11,7 @@
     "test:smoke": "node system/demo.mjs && node system/demo-build.mjs && node system/demo-gacha.mjs && node system/sim/balance.mjs",
     "build:play": "EXPO_OFFLINE=1 expo export --platform web && node scripts/build-play.mjs",
     "gen:portraits": "node scripts/gen-portraits.mjs",
+    "gen:screens": "node scripts/gen-screenshots.mjs",
     "build:apk": "eas build -p android --profile preview",
     "build:aab": "eas build -p android --profile production",
     "build:apk:scifi": "APP_VARIANT=scifi eas build -p android --profile preview",
