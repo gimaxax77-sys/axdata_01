@@ -54,6 +54,11 @@ function normalize(state) {
   state.campaign.cleared = state.campaign.cleared || 0;
   state.tutorial = state.tutorial || { introSeen: false };
   state.tutorial.introSeen = !!state.tutorial.introSeen;
+  state.settings = state.settings || { muted: false };
+  state.settings.muted = !!state.settings.muted;
+  state.tower = state.tower || { floor: 1, best: 1 };
+  state.tower.floor = state.tower.floor || 1;
+  state.tower.best = state.tower.best || state.tower.floor || 1;
   state.stage = state.stage || 1;
   state.maxStage = state.maxStage || 1;
   state.peakStage = state.peakStage || state.maxStage || 1;

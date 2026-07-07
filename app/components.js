@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, Image, TouchableOpacity, StyleSheet } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { T, rarityMeta } from './theme';
+import { fx } from './feedback';
 
 // ── 캐릭터 초상 — 등급 프레임 + 글로우. 로스터/파티/소환/도감 공용 ──
 //   image(있으면): 캐릭터 일러스트를 프레임 안에 렌더. 없으면 emoji 폴백.
@@ -47,8 +48,10 @@ export function ResourceBar({ concept, wallet }) {
   );
 }
 
-// 버튼 — gold/primary는 그라데이션, ghost는 외곽선
-export function Btn({ label, onPress, disabled, kind = 'primary', small }) {
+// 버튼 — gold/primary는 그라데이션, ghost는 외곽선.
+// sfx: 누를 때 재생할 피드백 이름(기본 'tap', false면 무음 — 화면에서 직접 재생할 때).
+export function Btn({ label, onPress, disabled, kind = 'primary', small, sfx = 'tap' }) {
+  const press = onPress ? (e) => { if (sfx) fx(sfx); onPress(e); } : onPress;
   const grad = kind === 'gold' ? T.accentGrad : T.primaryGrad;
   const fg = kind === 'gold' ? '#3a2a05' : '#fff';
   const content = (
@@ -57,13 +60,13 @@ export function Btn({ label, onPress, disabled, kind = 'primary', small }) {
   if (kind === 'ghost' || disabled) {
     return (
       <TouchableOpacity style={[s.btn, small && s.btnSmall, kind === 'ghost' ? s.btnGhost : s.btnDisabled]}
-        onPress={onPress} disabled={disabled} activeOpacity={0.75}>
+        onPress={press} disabled={disabled} activeOpacity={0.75}>
         <Text style={[s.btnText, { color: disabled ? T.muted : T.text }, small && { fontSize: 13 }]} numberOfLines={1}>{label}</Text>
       </TouchableOpacity>
     );
   }
   return (
-    <TouchableOpacity onPress={onPress} disabled={disabled} activeOpacity={0.82}
+    <TouchableOpacity onPress={press} disabled={disabled} activeOpacity={0.82}
       style={[{ borderRadius: small ? 10 : 12 }, kind === 'gold' ? s.glowGold : s.glowPrimary]}>
       <LinearGradient colors={grad} start={{ x: 0, y: 0 }} end={{ x: 0, y: 1 }} style={[s.btn, small && s.btnSmall]}>
         {content}

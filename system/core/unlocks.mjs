@@ -12,6 +12,7 @@ export const UNLOCKS = {
   dungeonEssence: 35, // 정수(강화석) 던전
   pets: 45,           // 펫
   arena: 55,          // 아레나 (경쟁)
+  tower: 40,          // 무한의 탑 (엔드게임 도전)
   guild: 75,          // 길드 (경쟁)
 };
 

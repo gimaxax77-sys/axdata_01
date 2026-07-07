@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Modal } from 'rea
 import { T } from '../theme';
 import { Card, Btn, fmt, MultiToggle, repeat, Portrait } from '../components';
 import { charImage } from '../charImages';
+import { fx } from '../feedback';
 import { togglePartyMember, MAX_PARTY, getPartyUnits } from '../../system/core/gameState.mjs';
 import { teamSynergy } from '../../system/core/synergy.mjs';
 import { computeStats, computePower } from '../../system/core/stats.mjs';
@@ -83,7 +84,7 @@ export default function RosterScreen({ state, bump, concept }) {
 
   const act = (fn) => { fn(); bump(); };
   // 성장 액션은 일일 미션(강화) 진행에 카운트. mult 배수만큼 반복 실행.
-  const grow = (fn) => { const n = repeat(fn, mult); if (n > 0) recordMission(state, 'upgrade', n); bump(); };
+  const grow = (fn) => { const n = repeat(fn, mult); if (n > 0) { recordMission(state, 'upgrade', n); fx('success'); } else { fx('error'); } bump(); };
   const st8 = computeStats(unit);
   const meta = identity(concept, unit);
   const arch = concept.archetypes[unit.archetype] || { name: unit.archetype, emoji: '❔' };

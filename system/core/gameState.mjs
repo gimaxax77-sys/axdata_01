@@ -33,6 +33,8 @@ export function createGameState({ units = [], party = [] } = {}) {
     meta: { achv: {}, coll: {}, season: { claimed: {}, premium: false } }, // 도감·업적·시즌패스 청구 기록
     campaign: { cleared: 0 }, // 스토리 캠페인 클리어 챕터 수
     tutorial: { introSeen: false }, // 온보딩: 첫 소개 확인 여부
+    settings: { muted: false }, // 사운드/햅틱 음소거
+    tower: { floor: 1, best: 1 }, // 무한의 탑 현재/최고 층
   };
 }
 

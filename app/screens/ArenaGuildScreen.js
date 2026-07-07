@@ -6,6 +6,9 @@ import { isUnlocked, unlockStage } from '../../system/core/unlocks.mjs';
 import { ARENA_ENTRIES, arenaEntriesLeft, arenaFight, arenaTier } from '../../system/core/arena.mjs';
 import { GUILD_ATTACKS, guildAttacksLeft, guildAttack, guildBossMaxHp } from '../../system/core/guild.mjs';
 import { COMP_SHOP, compPurchase, compGrantPreview } from '../../system/core/compshop.mjs';
+import { climbTower, towerChallenge } from '../../system/core/tower.mjs';
+import { elementMeta } from '../../system/concepts/index.mjs';
+import { fx } from '../feedback';
 
 // 경쟁 재화 상점 섹션 (arena=포인트 / guild=코인 소모)
 function CompShop({ state, bump, concept, kind, balance, unit }) {
@@ -35,18 +38,25 @@ function CompShop({ state, bump, concept, kind, balance, unit }) {
 export default function ArenaGuildScreen({ state, bump, concept }) {
   const [arenaLog, setArenaLog] = useState(null);
   const [guildLog, setGuildLog] = useState(null);
+  const [towerLog, setTowerLog] = useState(null);
 
   const arenaOpen = isUnlocked(state, 'arena');
   const guildOpen = isUnlocked(state, 'guild');
 
   const doArena = () => {
     const r = arenaFight(state, Math.random);
-    if (r.ok) setArenaLog(r);
+    if (r.ok) { setArenaLog(r); fx(r.win ? 'win' : 'error'); }
     bump();
   };
   const doGuild = () => {
     const r = guildAttack(state);
-    if (r.ok) setGuildLog(r);
+    if (r.ok) { setGuildLog(r); fx(r.killed ? 'ssr' : 'win'); }
+    bump();
+  };
+  const towerOpen = isUnlocked(state, 'tower');
+  const doTower = () => {
+    const r = climbTower(state);
+    if (r.ok) { setTowerLog(r); fx(r.win ? (r.milestone ? 'ssr' : 'win') : 'error'); }
     bump();
   };
 
@@ -78,8 +88,35 @@ export default function ArenaGuildScreen({ state, bump, concept }) {
             </View>
           )}
           <View style={{ height: 10 }} />
-          <Btn label={aLeft > 0 ? '전투 시작' : '오늘 입장 소진'} kind="gold" disabled={aLeft <= 0} onPress={doArena} />
+          <Btn label={aLeft > 0 ? '전투 시작' : '오늘 입장 소진'} kind="gold" disabled={aLeft <= 0} sfx={false} onPress={doArena} />
           <CompShop state={state} bump={bump} concept={concept} kind="arena" balance={state.arena.points} unit="🏅" />
+        </>)}
+      </Card>
+
+      {/* ── 무한의 탑 ─────────────────────────────── */}
+      <Card style={{ marginTop: 12 }}>
+        <View style={c.head}>
+          <Text style={c.sec}>🗼 무한의 탑 <Text style={c.dim}>엔드게임</Text></Text>
+          {towerOpen && <Text style={c.tier}>{state.tower.floor}층 · 최고 {state.tower.best}</Text>}
+        </View>
+        {!towerOpen ? (
+          <Text style={c.lock}>🔒 스테이지 {unlockStage('tower')} 도달 시 해금</Text>
+        ) : (<>
+          <Text style={c.sub}>끝없이 오르는 도전. 각 층은 더 강한 보스입니다. 5층마다 마일스톤 보상.</Text>
+          {(() => {
+            const boss = towerChallenge(state.tower.floor);
+            return <Text style={c.left}>{state.tower.floor}층 보스 {elementMeta(concept, boss.element)?.emoji} · HP {fmt(boss.hp)} · ATK {fmt(boss.atk)}</Text>;
+          })()}
+          {towerLog && (
+            <View style={[c.result, { borderColor: towerLog.win ? T.good : T.danger }]}>
+              <Text style={[c.resultTitle, { color: towerLog.win ? (towerLog.milestone ? T.accent : T.good) : T.danger }]}>
+                {towerLog.win ? `${towerLog.floor}층 돌파! → ${towerLog.next}층` : `${towerLog.floor}층 실패 (여유 ${towerLog.margin?.toFixed(2)})`}
+              </Text>
+              {towerLog.win && <Text style={c.resultReward}>보상 {concept.resources.gem.emoji}+{towerLog.reward.gem}{towerLog.reward.summon ? ` ${concept.resources.summon.emoji}+${towerLog.reward.summon}` : ''}{towerLog.milestone ? ' · 마일스톤!' : ''}</Text>}
+            </View>
+          )}
+          <View style={{ height: 10 }} />
+          <Btn label={`${state.tower.floor}층 도전`} kind="gold" sfx={false} onPress={doTower} />
         </>)}
       </Card>
 
@@ -108,7 +145,7 @@ export default function ArenaGuildScreen({ state, bump, concept }) {
             </View>
           )}
           <View style={{ height: 10 }} />
-          <Btn label={gLeft > 0 ? '보스 공격' : '오늘 공격 소진'} disabled={gLeft <= 0} onPress={doGuild} />
+          <Btn label={gLeft > 0 ? '보스 공격' : '오늘 공격 소진'} disabled={gLeft <= 0} sfx={false} onPress={doGuild} />
           <CompShop state={state} bump={bump} concept={concept} kind="guild" balance={state.guild.coins} unit="🎖️" />
         </>)}
       </Card>

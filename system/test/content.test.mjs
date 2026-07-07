@@ -14,6 +14,7 @@ import { compPurchase } from '../core/compshop.mjs';
 import { fightChapter, CAMPAIGN_CHAPTER_COUNT } from '../core/campaign.mjs';
 import { claimAchievement, achievementList, seasonTier, claimSeason, buySeasonPremium } from '../core/meta.mjs';
 import { nextObjective } from '../core/tutorial.mjs';
+import { climbTower, towerChallenge } from '../core/tower.mjs';
 
 function strongState(peak = 60) {
   const units = [
@@ -116,6 +117,24 @@ test('meta: 업적 수령 1회 + 시즌 프리미엄 게이팅', () => {
     buySeasonPremium(s);
     assert.equal(claimSeason(s, 1, 'premium').ok, true);
   }
+});
+
+test('tower: 승리 시 전진·보상, 층 난이도 단조 증가', () => {
+  const s = strongState(60);
+  s.prestige = 200; // 계정 배수로 상위 층 등반 가능
+  assert.ok(towerChallenge(10).hp > towerChallenge(1).hp, '층 난이도↑');
+  const f0 = s.tower.floor;
+  const r = climbTower(s);
+  assert.equal(r.ok, true);
+  if (r.win) {
+    assert.equal(s.tower.floor, f0 + 1, '승리 시 전진');
+    assert.ok(s.tower.best >= s.tower.floor);
+    assert.ok(r.reward.gem >= 2);
+  }
+  // 5층 마일스톤 보상
+  s.tower.floor = 5;
+  const r5 = climbTower(s);
+  if (r5.win) assert.ok(r5.milestone && r5.reward.summon, '5층 마일스톤');
 });
 
 test('tutorial: 목표 전이 level→summon→party→완료', () => {

@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, ScrollView, Animated } from 'react-native';
 import { T, rarityMeta } from '../theme';
 import { Card, Btn, fmt, Portrait } from '../components';
 import { charImage } from '../charImages';
+import { fx } from '../feedback';
 import { summonOne, summonMulti, PULL_COST } from '../../system/core/gacha.mjs';
 import { identity } from '../../system/concepts/index.mjs';
 import { recordMission } from '../../system/core/daily.mjs';
@@ -43,7 +44,13 @@ export default function GachaScreen({ state, bump, concept }) {
       const r = summonMulti(state, n, Math.random, pool);
       res = r.ok ? r.results : [];
     }
-    if (res.length) { recordMission(state, 'summon', res.length); setResults(res.slice(-20)); setResultsKey((k) => k + 1); }
+    if (res.length) {
+      recordMission(state, 'summon', res.length); setResults(res.slice(-20)); setResultsKey((k) => k + 1);
+      fx('summon');
+      const rank = { N: 0, R: 1, SR: 2, SSR: 3 };
+      const best = res.reduce((m, r) => Math.max(m, rank[r.rarity]), 0);
+      setTimeout(() => fx(best >= 3 ? 'ssr' : best >= 2 ? 'sr' : 'success'), 480);
+    }
     bump();
   };
 
@@ -66,13 +73,13 @@ export default function GachaScreen({ state, bump, concept }) {
 
       <View style={s.btns}>
         <View style={{ flex: 1 }}>
-          <Btn label={`단차 (${PULL_COST.summon})`} disabled={!canOne} onPress={() => pull(1)} />
+          <Btn label={`단차 (${PULL_COST.summon})`} disabled={!canOne} sfx={false} onPress={() => pull(1)} />
         </View>
         <View style={{ flex: 1 }}>
-          <Btn label={`10연차 (${PULL_COST.summon * 10})`} kind="gold" disabled={!canTen} onPress={() => pull(10)} />
+          <Btn label={`10연차 (${PULL_COST.summon * 10})`} kind="gold" disabled={!canTen} sfx={false} onPress={() => pull(10)} />
         </View>
         <View style={{ flex: 1 }}>
-          <Btn label={`100연차 (${fmt(PULL_COST.summon * 100)})`} kind="gold" disabled={!canHundred} onPress={() => pull(100)} />
+          <Btn label={`100연차 (${fmt(PULL_COST.summon * 100)})`} kind="gold" disabled={!canHundred} sfx={false} onPress={() => pull(100)} />
         </View>
       </View>
       <Text style={s.floor}>10연차 이상은 최소 1개 SR 이상 보장 · 100연차는 결과 요약 표시</Text>

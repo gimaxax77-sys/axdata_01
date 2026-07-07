@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView, Platform, StatusBar as RNStatusBar, Modal, Alert } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { LinearGradient } from 'expo-linear-gradient';
 import { T } from './app/theme';
 import { ResourceBar, Btn, fmt } from './app/components';
 import { useGame } from './app/useGame';
+import { setMuted, fx } from './app/feedback';
 import IdleScreen from './app/screens/IdleScreen';
 import RosterScreen from './app/screens/RosterScreen';
 import GachaScreen from './app/screens/GachaScreen';
@@ -38,6 +39,16 @@ export default function App() {
   const [tab, setTab] = useState('idle');
   const Active = TABS.find((t) => t.key === tab).Screen;
 
+  // 음소거 상태를 세이브에서 피드백 엔진에 반영
+  const muted = game.state.settings.muted;
+  useEffect(() => { setMuted(muted); }, [muted]);
+  const toggleMute = () => {
+    game.state.settings.muted = !muted;
+    setMuted(game.state.settings.muted);
+    if (!game.state.settings.muted) fx('tap');
+    game.save(); game.bump();
+  };
+
   const doReset = () => {
     if (Platform.OS === 'web') {
       if (typeof globalThis !== 'undefined' && globalThis.confirm && !globalThis.confirm('정말 처음부터 다시 시작할까요? 저장이 삭제됩니다.')) return;
@@ -60,6 +71,9 @@ export default function App() {
           <Text style={s.title}>{game.concept.title}</Text>
           <Text style={s.subtitle}>방치형 수집 RPG · 자동 저장</Text>
         </View>
+        <TouchableOpacity onPress={toggleMute} style={s.iconBtn} activeOpacity={0.7}>
+          <Text style={s.iconBtnText}>{muted ? '🔇' : '🔊'}</Text>
+        </TouchableOpacity>
         <TouchableOpacity onPress={doReset} style={s.reset} activeOpacity={0.7}>
           <Text style={s.resetText}>초기화</Text>
         </TouchableOpacity>
@@ -123,6 +137,8 @@ const s = StyleSheet.create({
   header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 18, paddingTop: 10, paddingBottom: 4 },
   title: { color: T.accent, fontWeight: '900', fontSize: 22 },
   subtitle: { color: T.muted, fontSize: 12, marginTop: 1 },
+  iconBtn: { borderWidth: 1, borderColor: T.line, borderRadius: 10, paddingHorizontal: 10, paddingVertical: 6, marginRight: 8 },
+  iconBtnText: { fontSize: 15 },
   reset: { borderWidth: 1, borderColor: T.line, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 6 },
   resetText: { color: T.muted, fontSize: 12, fontWeight: '700' },
   resWrap: { paddingHorizontal: 14, paddingVertical: 8 },
