@@ -79,6 +79,29 @@ test('idle: 환생은 sqrt(maxStage) 획득·회차 리셋·peakStage 유지', (
   assert.equal(s.prestige, 5);
 });
 
+test('강화가 실제 수치에 반영: 스킬 레벨·장비 강화 스케일', async () => {
+  const { skillPower } = await import('../core/skills.mjs');
+  const { createGear, gearContribution } = await import('../core/gear.mjs');
+  // 스킬 레벨 배수는 레벨마다 증가
+  assert.equal(skillPower(1), 1);
+  assert.ok(skillPower(2) > skillPower(1));
+  assert.ok(skillPower(10) > skillPower(5));
+  // 장비 강화는 flat 기여를 키운다
+  const gr = createGear('IRON_SWORD'); // level 1
+  const base = gearContribution(gr).flat.atk;
+  gr.level = 5;
+  assert.ok(gearContribution(gr).flat.atk > base, '강화 레벨↑ → flat↑');
+  // 장착 스킬 레벨업이 모디파이어를 키운다
+  const s = createGameState({ units: [], party: [] });
+  earn(s.wallet, { currency: 1e9, growth: 1e9 });
+  const u = createUnit('STRIKER', { level: 10, rank: 2 });
+  s.units.push(u);
+  equipSkill(s, u.uid, 0, 'BERSERK');
+  const atk1 = collectUnitModifiers(u).statPct.atk;
+  u.skills[0].level = 3;
+  assert.ok(collectUnitModifiers(u).statPct.atk > atk1, '스킬 레벨↑ → statPct↑');
+});
+
 test('gameState: getPartyUnits는 유효 uid만 반환', () => {
   const u = createUnit('STRIKER', { level: 1, rank: 1 });
   const s = createGameState({ units: [u], party: [u.uid, 'ghost'] });

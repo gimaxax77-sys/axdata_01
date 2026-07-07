@@ -22,10 +22,15 @@ export const SHOP = {
     { id: 'GEM_GOLD', label: '골드 대량', cost: { gem: 30 }, grant: { currencyStage: 200 } },
     { id: 'GEM_GROWTH', label: '정수 대량', cost: { gem: 30 }, grant: { growthStage: 200 } },
   ],
+  // 금액대별 사다리 — 위로 갈수록 ₩당 다이아 가치가 커진다(고액 유도).
   package: [
-    { id: 'PKG_STARTER', label: '스타터 패키지', krw: '₩4,900', once: true, grant: { gem: 300, summon: 50, currencyStage: 150 } },
-    { id: 'PKG_GROWTH', label: '성장 패키지', krw: '₩11,000', grant: { gem: 500, growthStage: 300 } },
+    { id: 'PKG_STARTER', label: '스타터 패키지', krw: '₩4,900', once: true, tag: '입문', grant: { gem: 300, summon: 50, currencyStage: 150 } },
     { id: 'PKG_MONTHLY', label: '월정액', krw: '₩9,900', once: true, note: '즉시 다이아 + 매일 지급(골격)', grant: { gem: 300 } },
+    { id: 'PKG_GROWTH', label: '성장 패키지', krw: '₩11,000', grant: { gem: 500, growthStage: 300 } },
+    { id: 'PKG_VALUE', label: '특별 가치 패키지', krw: '₩29,000', tag: '인기', grant: { gem: 1800, summon: 150, growthStage: 300 } },
+    { id: 'PKG_PREMIUM', label: '프리미엄 패키지', krw: '₩59,000', grant: { gem: 3800, summon: 350, currencyStage: 400, growthStage: 400 } },
+    { id: 'PKG_LEGEND', label: '레전드 패키지', krw: '₩99,000', tag: '최고 가치', grant: { gem: 6600, summon: 700, growthStage: 800 } },
+    { id: 'PKG_ULTIMATE', label: '궁극 후원 패키지', krw: '₩129,000', tag: '한정', grant: { gem: 9200, summon: 1000, currencyStage: 600, growthStage: 1200 } },
   ],
 };
 

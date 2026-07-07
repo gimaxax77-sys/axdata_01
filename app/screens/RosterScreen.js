@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Modal } from 'react-native';
 import { T } from '../theme';
-import { Card, Btn, fmt, MultiToggle, repeat, Portrait } from '../components';
+import { Card, Btn, fmt, MultiToggle, multLabel, repeat, Portrait } from '../components';
 import { charImage } from '../charImages';
 import { fx } from '../feedback';
 import { togglePartyMember, MAX_PARTY, getPartyUnits } from '../../system/core/gameState.mjs';
@@ -9,9 +9,9 @@ import { teamSynergy } from '../../system/core/synergy.mjs';
 import { computeStats, computePower } from '../../system/core/stats.mjs';
 import { getArchetype } from '../../system/core/archetypes.mjs';
 import { levelCap } from '../../system/core/units.mjs';
-import { skillSlots, SKILL_CATALOG, equippableSkills } from '../../system/core/skills.mjs';
+import { skillSlots, SKILL_CATALOG, equippableSkills, skillPower } from '../../system/core/skills.mjs';
 import { identity, elementMeta } from '../../system/concepts/index.mjs';
-import { GEAR_SLOTS, GEAR_CATALOG, gearEnhanceCost } from '../../system/core/gear.mjs';
+import { GEAR_SLOTS, GEAR_CATALOG, gearEnhanceCost, gearContribution } from '../../system/core/gear.mjs';
 import { levelUp, ascend, enhanceNode, equipSkill, unequipSkill, upgradeSkill, awakenSignature } from '../../system/core/character.mjs';
 import { AWAKEN_MAX, awakenCost } from '../../system/core/skills.mjs';
 import { craftGear, equipGear, enhanceGear, unequipGear } from '../../system/core/gear.mjs';
@@ -30,27 +30,37 @@ import {
 
 const SLOT_KO = { weapon: '무기', armor: '방어구', accessory: '장신구' };
 
-// 효과 객체 → 사람이 읽는 문자열
-function describeEffect(e = {}) {
+// 효과 객체 → 사람이 읽는 문자열 (scale = 스킬 레벨/랭크 배수)
+function describeEffect(e = {}, scale = 1) {
   const p = [];
-  if (e.critChance) p.push(`치명 +${Math.round(e.critChance * 100)}%`);
-  if (e.critDamage) p.push(`치피 +${Math.round(e.critDamage * 100)}%`);
-  if (e.lifesteal) p.push(`흡혈 +${Math.round(e.lifesteal * 100)}%`);
-  if (e.defPierce) p.push(`관통 +${Math.round(e.defPierce * 100)}%`);
+  if (e.critChance) p.push(`치명 +${Math.round(e.critChance * scale * 100)}%`);
+  if (e.critDamage) p.push(`치피 +${Math.round(e.critDamage * scale * 100)}%`);
+  if (e.lifesteal) p.push(`흡혈 +${Math.round(e.lifesteal * scale * 100)}%`);
+  if (e.defPierce) p.push(`관통 +${Math.round(e.defPierce * scale * 100)}%`);
   return p;
 }
-function describeSkill(id) {
+// scale: 스킬 레벨/랭크 배수. 강화 시 실제 반영되는 수치를 그대로 보여준다.
+function describeSkill(id, scale = 1) {
   const s = SKILL_CATALOG[id];
   const p = [];
-  if (s.statPct) for (const [k, v] of Object.entries(s.statPct)) p.push(`${k.toUpperCase()} +${Math.round(v * 100)}%`);
-  p.push(...describeEffect(s.effect));
-  if (s.teamBuff?.atk) p.push(`팀ATK +${Math.round(s.teamBuff.atk * 100)}%`);
+  if (s.statPct) for (const [k, v] of Object.entries(s.statPct)) p.push(`${k.toUpperCase()} +${Math.round(v * scale * 100)}%`);
+  p.push(...describeEffect(s.effect, scale));
+  if (s.teamBuff?.atk) p.push(`팀ATK +${Math.round(s.teamBuff.atk * scale * 100)}%`);
   return p.join(' · ');
 }
+// 설계도 기준(강화 전 Lv1) 표시 — 제작 미리보기용.
 function describeGear(bp) {
   const p = [];
   for (const [k, v] of Object.entries(bp.flat || {})) p.push(`${k.toUpperCase()} +${v}`);
   p.push(...describeEffect(bp.effect));
+  return p.join(' · ');
+}
+// 실제 장비 인스턴스(강화 레벨 반영) 표시 — 장착/보유 항목용.
+function describeGearItem(item) {
+  const c = gearContribution(item);
+  const p = [];
+  for (const [k, v] of Object.entries(c.flat)) p.push(`${k.toUpperCase()} +${Math.round(v)}`);
+  p.push(...describeEffect(c.effect));
   return p.join(' · ');
 }
 // 시그니처 각성 2차 효과 설명
@@ -275,7 +285,7 @@ export default function RosterScreen({ state, bump, concept }) {
               <Text style={g.sigBadge}>시그니처</Text>
             </View>
             <Text style={g.slotName}>{sig.label} <Text style={g.dim}>(R{unit.rank} 강도{boost ? ` · 무기 +${Math.round(boost * 100)}%` : ''})</Text></Text>
-            <Text style={g.slotDesc}>{describeSkill(unit.signature)}</Text>
+            <Text style={g.slotDesc}>{describeSkill(unit.signature, skillPower(unit.rank) * (1 + boost))}</Text>
             {/* 각성 */}
             <View style={g.awHead}>
               <Text style={g.subsec2}>각성 <Text style={g.dim}>{aw}/{AWAKEN_MAX}</Text></Text>
@@ -361,7 +371,7 @@ export default function RosterScreen({ state, bump, concept }) {
                 {locked ? <Text style={g.dim}>슬롯 {i + 1} · 잠김 (돌파 필요)</Text>
                   : sk ? (<>
                     <Text style={g.slotName}>{SKILL_CATALOG[sk.id].label} +{sk.level}</Text>
-                    <Text style={g.slotDesc}>{describeSkill(sk.id)}</Text>
+                    <Text style={g.slotDesc}>{describeSkill(sk.id, skillPower(sk.level))}</Text>
                   </>) : <Text style={g.slotEmpty}>＋ 슬롯 {i + 1} 비어있음</Text>}
               </View>
               {!locked && <Text style={g.chev}>›</Text>}
@@ -381,7 +391,7 @@ export default function RosterScreen({ state, bump, concept }) {
                 <Text style={g.slotTag}>{SLOT_KO[slot]}</Text>
                 {item ? (<>
                   <Text style={g.slotName}>{GEAR_CATALOG[item.blueprint].label} +{item.level - 1}</Text>
-                  <Text style={g.slotDesc}>{describeGear(GEAR_CATALOG[item.blueprint])}</Text>
+                  <Text style={g.slotDesc}>{describeGearItem(item)}</Text>
                 </>) : <Text style={g.slotEmpty}>＋ 비어있음</Text>}
               </View>
               <Text style={g.chev}>›</Text>
@@ -397,10 +407,10 @@ export default function RosterScreen({ state, bump, concept }) {
           <MultiToggle value={mult} onChange={setMult} />
         </View>
         <View style={g.btnRow}>
-          <View style={{ flex: 1 }}><Btn small label={atCap ? '상한 (돌파 필요)' : `레벨업 ×${mult}`} disabled={atCap} onPress={() => grow(() => levelUp(state, unit.uid))} /></View>
-          <View style={{ flex: 1 }}><Btn small kind="ghost" label={`돌파 (랭크↑) ×${mult}`} onPress={() => grow(() => ascend(state, unit.uid))} /></View>
+          <View style={{ flex: 1 }}><Btn small label={atCap ? '상한 (돌파 필요)' : `레벨업 ${multLabel(mult)}`} disabled={atCap} onPress={() => grow(() => levelUp(state, unit.uid))} /></View>
+          <View style={{ flex: 1 }}><Btn small kind="ghost" label={`돌파 (랭크↑) ${multLabel(mult)}`} onPress={() => grow(() => ascend(state, unit.uid))} /></View>
         </View>
-        <Text style={g.subsec}>각인 (특정 스탯 집중) · ×{mult}</Text>
+        <Text style={g.subsec}>각인 (특정 스탯 집중) · {multLabel(mult)}</Text>
         <View style={g.btnRow}>
           {['atk', 'hp', 'def', 'crit'].map((s2) => (
             <View key={s2} style={{ flex: 1 }}>
@@ -419,8 +429,11 @@ export default function RosterScreen({ state, bump, concept }) {
 
 // ── 모달: 스킬/장비/룬 선택 ───────────────────────────────────
 function PickerModal({ picker, unit, state, onClose, onChange, concept }) {
+  const [emult, setEmult] = useState(1); // 강화 배수 (×1/×10/×100/Max)
   if (!picker) return null;
   const apply = (fn) => { fn(); onChange(); };
+  // 강화 전용 — 선택 배수만큼 반복(재화·상한에서 자동 중단).
+  const applyN = (fn) => { const n = repeat(fn, emult); if (n > 0) fx('success'); else fx('error'); onChange(); };
 
   let body;
   if (picker.mode === 'rune') {
@@ -437,9 +450,10 @@ function PickerModal({ picker, unit, state, onClose, onChange, concept }) {
           return (
             <View style={m.equippedRow}>
               <Text style={m.equippedName}>장착: {d.title} · {d.sub}</Text>
+              {!maxed && <MultiToggle value={emult} onChange={setEmult} />}
               <View style={{ flexDirection: 'row', gap: 8 }}>
                 <Btn small kind="gold" disabled={maxed || (state.wallet.currency || 0) < cost.currency}
-                  label={maxed ? 'MAX' : `강화 ${fmt(cost.currency)}`} onPress={() => apply(() => enhanceRune(state, equipped.uid))} />
+                  label={maxed ? 'MAX' : `강화 ${multLabel(emult)} ${fmt(cost.currency)}`} onPress={() => applyN(() => enhanceRune(state, equipped.uid))} />
                 <Btn small kind="ghost" label="해제" onPress={() => apply(() => unequipRune(state, unit.uid, i))} />
               </View>
             </View>
@@ -469,8 +483,10 @@ function PickerModal({ picker, unit, state, onClose, onChange, concept }) {
         {equipped && (
           <View style={m.equippedRow}>
             <Text style={m.equippedName}>장착: {SKILL_CATALOG[equipped.id].label} +{equipped.level}</Text>
+            <Text style={m.equippedDesc}>{describeSkill(equipped.id, skillPower(equipped.level))}</Text>
+            <MultiToggle value={emult} onChange={setEmult} />
             <View style={{ flexDirection: 'row', gap: 8 }}>
-              <Btn small kind="gold" label="강화" onPress={() => apply(() => upgradeSkill(state, unit.uid, i))} />
+              <Btn small kind="gold" label={`강화 ${multLabel(emult)}`} onPress={() => applyN(() => upgradeSkill(state, unit.uid, i))} />
               <Btn small kind="ghost" label="해제" onPress={() => apply(() => unequipSkill(state, unit.uid, i))} />
             </View>
           </View>
@@ -501,8 +517,10 @@ function PickerModal({ picker, unit, state, onClose, onChange, concept }) {
         {item && (
           <View style={m.equippedRow}>
             <Text style={m.equippedName}>장착: {GEAR_CATALOG[item.blueprint].label} +{item.level - 1}</Text>
+            <Text style={m.equippedDesc}>{describeGearItem(item)}</Text>
+            <MultiToggle value={emult} onChange={setEmult} />
             <View style={{ flexDirection: 'row', gap: 8 }}>
-              <Btn small kind="gold" label={`강화 (${fmt(gearEnhanceCost(item.level).currency)})`} onPress={() => apply(() => enhanceGear(state, item.uid))} />
+              <Btn small kind="gold" label={`강화 ${multLabel(emult)} (${fmt(gearEnhanceCost(item.level).currency)})`} onPress={() => applyN(() => enhanceGear(state, item.uid))} />
               <Btn small kind="ghost" label="해제" onPress={() => apply(() => unequipGear(state, unit.uid, slot))} />
             </View>
           </View>
@@ -521,7 +539,7 @@ function PickerModal({ picker, unit, state, onClose, onChange, concept }) {
             <TouchableOpacity key={it.uid} onPress={() => apply(() => { equipGear(state, unit.uid, it.uid); onClose(); })}
               style={m.opt} activeOpacity={0.8}>
               <Text style={m.optName}>{GEAR_CATALOG[it.blueprint].label} +{it.level - 1}</Text>
-              <Text style={m.optDesc}>{describeGear(GEAR_CATALOG[it.blueprint])}</Text>
+              <Text style={m.optDesc}>{describeGearItem(it)}</Text>
             </TouchableOpacity>
           ))}
         </ScrollView>
@@ -624,6 +642,7 @@ const m = StyleSheet.create({
   title: { color: T.text, fontWeight: '900', fontSize: 18, marginBottom: 12 },
   equippedRow: { backgroundColor: T.surface2, borderRadius: 12, padding: 12, marginBottom: 10, gap: 8 },
   equippedName: { color: T.text, fontWeight: '700', fontSize: 14 },
+  equippedDesc: { color: T.muted, fontSize: 12 },
   group: { color: T.muted, fontSize: 12, fontWeight: '700', marginTop: 10, marginBottom: 6 },
   opt: { backgroundColor: T.surface2, borderRadius: 12, padding: 12, marginBottom: 8, borderWidth: 1, borderColor: 'transparent' },
   optOn: { borderColor: T.accent },

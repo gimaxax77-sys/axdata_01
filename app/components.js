@@ -131,8 +131,8 @@ export function LockedPanel({ title, stage, desc }) {
   );
 }
 
-// 배수 선택 토글 (×1 / ×10 / ×100). value/onChange 로 제어.
-export function MultiToggle({ value, onChange, options = [1, 10, 100] }) {
+// 배수 선택 토글 (×1 / ×10 / ×100 / Max). value/onChange 로 제어.
+export function MultiToggle({ value, onChange, options = [1, 10, 100, 'Max'] }) {
   return (
     <View style={s.multi}>
       {options.map((n) => {
@@ -140,7 +140,7 @@ export function MultiToggle({ value, onChange, options = [1, 10, 100] }) {
         return (
           <TouchableOpacity key={n} style={[s.multiCell, on && s.multiOn]} activeOpacity={0.8}
             onPress={() => onChange(n)}>
-            <Text style={[s.multiText, on && s.multiTextOn]}>×{n}</Text>
+            <Text style={[s.multiText, on && s.multiTextOn]}>{multLabel(n)}</Text>
           </TouchableOpacity>
         );
       })}
@@ -148,10 +148,17 @@ export function MultiToggle({ value, onChange, options = [1, 10, 100] }) {
   );
 }
 
+// 배수 라벨 — 'Max'는 그대로, 숫자는 ×N.
+export function multLabel(n) {
+  return n === 'Max' ? 'Max' : `×${n}`;
+}
+
 // 액션 fn 을 최대 n회 반복 실행. { ok:false } 를 받으면 중단.
+// n='Max'(또는 Infinity)이면 재화·상한이 다할 때까지 반복(안전 상한 9999).
 export function repeat(fn, n) {
+  const cap = n === 'Max' || n === Infinity ? 9999 : n;
   let done = 0;
-  for (let i = 0; i < n; i++) {
+  for (let i = 0; i < cap; i++) {
     const r = fn();
     if (r && r.ok === false) break;
     done += 1;

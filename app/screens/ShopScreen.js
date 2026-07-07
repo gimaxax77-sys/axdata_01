@@ -68,7 +68,11 @@ export default function ShopScreen({ state, bump, concept }) {
           return (
             <View key={p.id} style={s.row}>
               <View style={{ flex: 1 }}>
-                <Text style={s.label}>{p.label}{p.once ? <Text style={s.dim}>  1회</Text> : null}</Text>
+                <Text style={s.label}>
+                  {p.label}
+                  {p.tag ? <Text style={s.tag}>  {p.tag}</Text> : null}
+                  {p.once ? <Text style={s.dim}>  1회</Text> : null}
+                </Text>
                 <Text style={s.reward}>{grantText(state, concept, p.grant)}</Text>
                 {p.note ? <Text style={s.note}>{p.note}</Text> : null}
               </View>
@@ -93,5 +97,6 @@ const s = StyleSheet.create({
   label: { color: T.text, fontWeight: '700', fontSize: 14 },
   reward: { color: T.muted, fontSize: 12, marginTop: 3 },
   note: { color: T.accent, fontSize: 11, marginTop: 2 },
+  tag: { color: T.accent, fontSize: 11, fontWeight: '800' },
   disc: { color: T.muted, fontSize: 11, marginTop: 12, lineHeight: 16 },
 });
