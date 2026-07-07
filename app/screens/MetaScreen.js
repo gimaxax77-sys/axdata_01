@@ -1,12 +1,64 @@
-import React from 'react';
-import { View, Text, StyleSheet, ScrollView } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Modal } from 'react-native';
 import { T } from '../theme';
 import { Card, Btn, fmt, Portrait } from '../components';
 import { charImage } from '../charImages';
+import { elementMeta } from '../../system/concepts/index.mjs';
+import { getArchetype } from '../../system/core/archetypes.mjs';
+import { SKILL_CATALOG } from '../../system/core/skills.mjs';
 import {
   achievementList, claimAchievement, collectionList, claimCollection,
   seasonProgress, seasonTierList, claimSeason, buySeasonPremium, ownedCharacterIds, metaGrantPreview,
 } from '../../system/core/meta.mjs';
+
+// 도감 캐릭터 상세 — 서사·직업·전용 스킬 (수집 동기)
+function DexModal({ concept, ch, onClose }) {
+  if (!ch) return null;
+  const arch = concept.archetypes[ch.archetype] || { name: ch.archetype, emoji: '❔' };
+  const role = getArchetype(ch.archetype);
+  const em = ch.element && elementMeta(concept, ch.element);
+  const sig = ch.signature && SKILL_CATALOG[ch.signature];
+  return (
+    <Modal transparent animationType="slide" visible onRequestClose={onClose}>
+      <TouchableOpacity style={dm.backdrop} activeOpacity={1} onPress={onClose}>
+        <TouchableOpacity activeOpacity={1} style={dm.sheet}>
+          <View style={dm.head}>
+            <Portrait emoji={ch.emoji} image={charImage(concept.id, ch.id)} rarity={ch.rarity} size={72} badge />
+            <View style={{ flex: 1 }}>
+              <Text style={dm.name}>{ch.name} <Text style={dm.rarity}>{ch.rarity}</Text></Text>
+              <Text style={dm.title}>{ch.title}{ch.personality ? ` · ${ch.personality}` : ''}</Text>
+              <Text style={dm.sub}>{arch.emoji} {arch.name} · {role.roleLabel}{em ? ` · ${em.emoji}${em.name}` : ''}</Text>
+            </View>
+          </View>
+          <Text style={dm.trait}>{role.trait}</Text>
+          {ch.lines?.greet && <Text style={dm.quote}>“{ch.lines.greet}”</Text>}
+          {sig && (
+            <View style={dm.sigBox}>
+              <Text style={dm.sigLabel}>전용 스킬 · {sig.label}</Text>
+              <Text style={dm.sigDesc}>{sig.desc}</Text>
+            </View>
+          )}
+          <View style={{ height: 10 }} />
+          <Btn label="닫기" onPress={onClose} />
+        </TouchableOpacity>
+      </TouchableOpacity>
+    </Modal>
+  );
+}
+const dm = StyleSheet.create({
+  backdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'flex-end' },
+  sheet: { backgroundColor: T.surface, borderTopLeftRadius: 22, borderTopRightRadius: 22, padding: 20, borderTopWidth: 1, borderColor: T.line },
+  head: { flexDirection: 'row', alignItems: 'center', gap: 14, marginBottom: 12 },
+  name: { color: T.text, fontWeight: '900', fontSize: 20 },
+  rarity: { color: T.accent, fontSize: 13, fontWeight: '800' },
+  title: { color: T.primary, fontSize: 13, fontWeight: '700', marginTop: 2 },
+  sub: { color: T.muted, fontSize: 12, marginTop: 3 },
+  trait: { color: T.text, fontSize: 13, lineHeight: 19 },
+  quote: { color: T.muted, fontSize: 14, fontStyle: 'italic', marginTop: 10 },
+  sigBox: { marginTop: 12, backgroundColor: T.surface2, borderRadius: 12, padding: 12, borderWidth: 1, borderColor: T.accent },
+  sigLabel: { color: T.accent, fontWeight: '800', fontSize: 13 },
+  sigDesc: { color: T.muted, fontSize: 12, marginTop: 4 },
+});
 
 function rewardText(state, concept, reward) {
   const g = metaGrantPreview(state, reward);
@@ -15,6 +67,7 @@ function rewardText(state, concept, reward) {
 
 export default function MetaScreen({ state, bump, concept }) {
   const act = (fn) => { fn(); bump(); };
+  const [dexChar, setDexChar] = useState(null);
   const sp = seasonProgress(state);
   const tiers = seasonTierList(state);
   const achv = achievementList(state);
@@ -72,11 +125,13 @@ export default function MetaScreen({ state, bump, concept }) {
           {concept.roster.map((ch) => {
             const has = owned.has(ch.id);
             return (
-              <View key={ch.id} style={[c.dex, has && c.dexOn]}>
+              <TouchableOpacity key={ch.id} activeOpacity={has ? 0.7 : 1} style={[c.dex, has && c.dexOn]}
+                onPress={() => has && setDexChar(ch)}
+                accessibilityRole="button" accessibilityLabel={has ? `${ch.name} 도감 상세` : '미획득 캐릭터'}>
                 <Portrait emoji={has ? ch.emoji : '❔'} image={has ? charImage(concept.id, ch.id) : null} rarity={has ? ch.rarity : 'N'} size={40} dim={!has} glow={has} />
                 <Text style={c.dexName} numberOfLines={1}>{has ? ch.name : '???'}</Text>
                 {has ? <Text style={c.dexRarity}>{ch.rarity}</Text> : <Text style={c.dexRarity}> </Text>}
-              </View>
+              </TouchableOpacity>
             );
           })}
         </View>
@@ -92,6 +147,8 @@ export default function MetaScreen({ state, bump, concept }) {
           </View>
         ))}
       </Card>
+
+      <DexModal concept={concept} ch={dexChar} onClose={() => setDexChar(null)} />
     </ScrollView>
   );
 }

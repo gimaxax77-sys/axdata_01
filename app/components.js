@@ -1,5 +1,5 @@
-import React from 'react';
-import { View, Text, Image, TouchableOpacity, StyleSheet } from 'react-native';
+import React, { useRef, useEffect } from 'react';
+import { View, Text, Image, TouchableOpacity, StyleSheet, Animated } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { T, rarityMeta } from './theme';
 import { fx } from './feedback';
@@ -31,20 +31,45 @@ export const Portrait = React.memo(function Portrait({ emoji, image = null, rari
   );
 });
 
+// 자원 셀 — 값이 늘면 살짝 튀며 금색으로 번쩍(획득 강조).
+//   방치 골드는 초당 흐르므로 강조 제외. 유의미한 재화(소환권·다이아)만 pulse.
+function ResCell({ emoji, value, pulse }) {
+  const prev = useRef(value);
+  const scale = useRef(new Animated.Value(1)).current;
+  const flash = useRef(new Animated.Value(0)).current;
+  useEffect(() => {
+    if (pulse && value > prev.current) {
+      scale.setValue(1); flash.setValue(1);
+      Animated.parallel([
+        Animated.sequence([
+          Animated.spring(scale, { toValue: 1.25, useNativeDriver: true, speed: 40, bounciness: 14 }),
+          Animated.spring(scale, { toValue: 1, useNativeDriver: true, speed: 20, bounciness: 8 }),
+        ]),
+        Animated.timing(flash, { toValue: 0, duration: 650, useNativeDriver: false }),
+      ]).start();
+    }
+    prev.current = value;
+  }, [value]);
+  const color = pulse
+    ? flash.interpolate({ inputRange: [0, 1], outputRange: [T.text, T.accent] })
+    : T.text;
+  return (
+    <Animated.View style={[s.rescell, { transform: [{ scale }] }]}>
+      <Text style={s.resEmoji}>{emoji}</Text>
+      <Animated.Text style={[s.resVal, { color }]}>{fmt(value)}</Animated.Text>
+    </Animated.View>
+  );
+}
+
 // 상단 자원 바 — 유리질 pill
 export function ResourceBar({ concept, wallet }) {
   const keys = ['currency', 'growth', 'summon', 'gem'];
   return (
     <LinearGradient colors={T.surfaceGrad} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={s.resbar}>
-      {keys.map((k) => {
-        const r = concept.resources[k];
-        return (
-          <View key={k} style={s.rescell}>
-            <Text style={s.resEmoji}>{r.emoji}</Text>
-            <Text style={s.resVal}>{fmt(wallet[k] || 0)}</Text>
-          </View>
-        );
-      })}
+      {keys.map((k) => (
+        <ResCell key={k} emoji={concept.resources[k].emoji} value={wallet[k] || 0}
+          pulse={k === 'summon' || k === 'gem'} />
+      ))}
     </LinearGradient>
   );
 }
