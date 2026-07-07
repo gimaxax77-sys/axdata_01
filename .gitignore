@@ -13,13 +13,15 @@ expo-env.d.ts
 docs/play*.html
 docs/core-system.html
 
-# Native
+# Native / 서명 자격증명 (절대 커밋 금지)
 *.orig.*
 *.jks
+*.keystore
 *.p8
 *.p12
 *.key
 *.mobileprovision
+credentials.json
 
 # Metro
 .metro-health-check*
