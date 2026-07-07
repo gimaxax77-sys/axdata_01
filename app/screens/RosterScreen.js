@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Modal } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Modal, useWindowDimensions } from 'react-native';
 import { T, rarityMeta } from '../theme';
 
 // 등급 순위(정렬용) — 인벤토리 상위 우선.
@@ -109,6 +109,10 @@ export default function RosterScreen({ state, bump, concept }) {
   const [mult, setMult] = useState(1); // 성장 배수 (×1/×10/×100)
   const [recMsg, setRecMsg] = useState(null); // 추천 장착 결과 메시지
   const [showBd, setShowBd] = useState(false); // 전투력 분해 표 펼침
+  // 영웅 그리드 5열 고정 — 화면폭에서 좌우 패딩(14×2)·열간격(10×4)을 뺀 뒤 5등분.
+  const { width: winW } = useWindowDimensions();
+  const GRID_COLS = 5, GRID_GAP = 8;
+  const chipW = Math.floor((winW - 28 - GRID_GAP * (GRID_COLS - 1)) / GRID_COLS);
   // 무거운 하단 카드(씨앗·전용무기·룬·스킬·장비·성장)는 첫 페인트 뒤에 렌더
   // → 탭 전환 시 상단(파티·상세)이 즉시 뜨고 렉이 사라진다.
   const [heavy, setHeavy] = useState(false);
@@ -209,7 +213,7 @@ export default function RosterScreen({ state, bump, concept }) {
           const on = u.uid === unit.uid;
           const party = state.party.includes(u.uid);
           return (
-            <TouchableOpacity key={u.uid} onPress={() => setSel(u.uid)} style={[g.chip, on && g.chipOn]} activeOpacity={0.8}>
+            <TouchableOpacity key={u.uid} onPress={() => setSel(u.uid)} style={[g.chip, { width: chipW }, on && g.chipOn]} activeOpacity={0.8}>
               {party && <Text style={g.chipStar}>⭐</Text>}
               {count > 1 && <Text style={g.chipCount}>×{count}</Text>}
               <Portrait emoji={m.emoji} image={charImage(concept.id, u.characterId)} rarity={u.rarity} size={44} badge />
@@ -695,8 +699,8 @@ const g = StyleSheet.create({
   wrap: { padding: 14, paddingBottom: 30 },
   sec: { color: T.text, fontWeight: '800', fontSize: 15, marginBottom: 8 },
   subsec: { color: T.muted, fontSize: 12, marginTop: 12, marginBottom: 6, fontWeight: '700' },
-  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, paddingVertical: 4 },
-  chip: { width: 84, backgroundColor: T.surface, borderRadius: 14, padding: 10, alignItems: 'center', borderWidth: 1, borderColor: T.line },
+  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, paddingVertical: 4 },
+  chip: { backgroundColor: T.surface, borderRadius: 12, paddingVertical: 8, paddingHorizontal: 4, alignItems: 'center', borderWidth: 1, borderColor: T.line },
   chipOn: { borderColor: T.accent, backgroundColor: T.surface2 },
   chipStar: { position: 'absolute', top: 4, right: 6, fontSize: 12, zIndex: 2 },
   chipCount: { position: 'absolute', top: 4, left: 6, fontSize: 11, fontWeight: '900', color: T.accent, backgroundColor: T.surface2, borderRadius: 6, paddingHorizontal: 4, zIndex: 2, overflow: 'hidden' },
@@ -711,8 +715,8 @@ const g = StyleSheet.create({
   synChip: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: T.surface2, borderRadius: 10, paddingHorizontal: 10, paddingVertical: 6, borderWidth: 1, borderColor: T.accent },
   synChipText: { color: T.accent, fontWeight: '800', fontSize: 12 },
   synChipDesc: { color: T.muted, fontSize: 11, flex: 1 },
-  chipName: { color: T.text, fontSize: 12, fontWeight: '700', marginTop: 8 },
-  chipLv: { color: T.muted, fontSize: 11, marginTop: 2 },
+  chipName: { color: T.text, fontSize: 11, fontWeight: '700', marginTop: 6, maxWidth: '100%' },
+  chipLv: { color: T.muted, fontSize: 10, marginTop: 2 },
   head: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   headName: { color: T.text, fontWeight: '900', fontSize: 20 },
   rarity: { color: T.accent, fontSize: 13, fontWeight: '800' },
