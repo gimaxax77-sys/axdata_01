@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, FlatList, TouchableOpacity, Modal } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Modal } from 'react-native';
 import { T, rarityMeta } from '../theme';
 
 // 등급 순위(정렬용) — 인벤토리 상위 우선.
@@ -10,7 +10,7 @@ import { charImage } from '../charImages';
 import { fx } from '../feedback';
 import { togglePartyMember, MAX_PARTY, getPartyUnits } from '../../system/core/gameState.mjs';
 import { teamSynergy } from '../../system/core/synergy.mjs';
-import { computeStats, computePower } from '../../system/core/stats.mjs';
+import { computeStats, computePower, powerBreakdown } from '../../system/core/stats.mjs';
 import { getArchetype } from '../../system/core/archetypes.mjs';
 import { levelCap } from '../../system/core/units.mjs';
 import { skillSlots, SKILL_CATALOG, equippableSkills, skillPower } from '../../system/core/skills.mjs';
@@ -108,6 +108,7 @@ export default function RosterScreen({ state, bump, concept }) {
   const [bubble, setBubble] = useState(null); // 현재 대사
   const [mult, setMult] = useState(1); // 성장 배수 (×1/×10/×100)
   const [recMsg, setRecMsg] = useState(null); // 추천 장착 결과 메시지
+  const [showBd, setShowBd] = useState(false); // 전투력 분해 표 펼침
   // 무거운 하단 카드(씨앗·전용무기·룬·스킬·장비·성장)는 첫 페인트 뒤에 렌더
   // → 탭 전환 시 상단(파티·상세)이 즉시 뜨고 렉이 사라진다.
   const [heavy, setHeavy] = useState(false);
@@ -131,9 +132,6 @@ export default function RosterScreen({ state, bump, concept }) {
     if (seen.has(key)) seen.get(key).count++;
     else { const gitem = { rep: u, count: 1 }; seen.set(key, gitem); grouped.push(gitem); }
   }
-  // 2행 그리드용: 묶인 목록을 2개씩 열(column)로 묶는다.
-  const rosterColumns = [];
-  for (let i = 0; i < grouped.length; i += 2) rosterColumns.push(grouped.slice(i, i + 2));
   const inParty = state.party.includes(unit.uid);
 
   const act = (fn) => { fn(); bump(); };
@@ -203,37 +201,24 @@ export default function RosterScreen({ state, bump, concept }) {
         })()}
       </Card>
 
-      {/* 보유 유닛 — 2행 그리드(밀도↑) · 가상화(보이는 열만 렌더 → 대량 로스터도 가볍다) */}
+      {/* 보유 유닛 — 세로 나열 그리드(줄바꿈으로 행이 쌓임). 종 단위로 묶여 밀도 유지. */}
       <Text style={g.sec}>보유 {concept.terms.unit} ({grouped.length}종{list.length > grouped.length ? ` · ${list.length}` : ''})</Text>
-      <FlatList
-        horizontal
-        data={rosterColumns}
-        keyExtractor={(col) => col[0].rep.uid}
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={g.hlist}
-        initialNumToRender={8}
-        maxToRenderPerBatch={8}
-        windowSize={5}
-        removeClippedSubviews
-        renderItem={({ item: col }) => (
-          <View style={g.gridCol}>
-            {col.map(({ rep: u, count }) => {
-              const m = identity(concept, u);
-              const on = u.uid === unit.uid;
-              const party = state.party.includes(u.uid);
-              return (
-                <TouchableOpacity key={u.uid} onPress={() => setSel(u.uid)} style={[g.chip, on && g.chipOn]} activeOpacity={0.8}>
-                  {party && <Text style={g.chipStar}>⭐</Text>}
-                  {count > 1 && <Text style={g.chipCount}>×{count}</Text>}
-                  <Portrait emoji={m.emoji} image={charImage(concept.id, u.characterId)} rarity={u.rarity} size={44} badge />
-                  <Text style={g.chipName} numberOfLines={1}>{m.name}</Text>
-                  <Text style={g.chipLv}>Lv.{u.level} · {concept.archetypes[u.archetype]?.emoji}</Text>
-                </TouchableOpacity>
-              );
-            })}
-          </View>
-        )}
-      />
+      <View style={g.grid}>
+        {grouped.map(({ rep: u, count }) => {
+          const m = identity(concept, u);
+          const on = u.uid === unit.uid;
+          const party = state.party.includes(u.uid);
+          return (
+            <TouchableOpacity key={u.uid} onPress={() => setSel(u.uid)} style={[g.chip, on && g.chipOn]} activeOpacity={0.8}>
+              {party && <Text style={g.chipStar}>⭐</Text>}
+              {count > 1 && <Text style={g.chipCount}>×{count}</Text>}
+              <Portrait emoji={m.emoji} image={charImage(concept.id, u.characterId)} rarity={u.rarity} size={44} badge />
+              <Text style={g.chipName} numberOfLines={1}>{m.name}</Text>
+              <Text style={g.chipLv}>Lv.{u.level} · {concept.archetypes[u.archetype]?.emoji}</Text>
+            </TouchableOpacity>
+          );
+        })}
+      </View>
 
       {/* 상세 */}
       <Card style={{ marginTop: 6 }}>
@@ -247,7 +232,9 @@ export default function RosterScreen({ state, bump, concept }) {
                 {meta.element ? ` · ${elementMeta(concept, meta.element).emoji}${elementMeta(concept, meta.element).name}` : ''}
               </Text>
             )}
-            <Text style={g.headSub}>Lv.{unit.level}/{levelCap(unit)} · R{unit.rank} · 전투력 {fmt(computePower(unit))}</Text>
+            <TouchableOpacity onPress={() => setShowBd((v) => !v)} activeOpacity={0.7}>
+              <Text style={g.headSub}>Lv.{unit.level}/{levelCap(unit)} · R{unit.rank} · 전투력 {fmt(computePower(unit))} <Text style={g.bdToggle}>{showBd ? '▲ 분해닫기' : '▼ 분해'}</Text></Text>
+            </TouchableOpacity>
           </View>
           <Btn small kind={inParty ? 'ghost' : 'gold'}
             label={inParty ? '편성 해제' : '편성'}
@@ -259,6 +246,32 @@ export default function RosterScreen({ state, bump, concept }) {
             <View key={k} style={g.stat}><Text style={g.statK}>{k}</Text><Text style={g.statV}>{fmt(v)}</Text></View>
           ))}
         </View>
+
+        {/* 전투력 수치비례표 — 각 요소가 전투력에 기여하는 점수·비율(회피성 효과 포함) */}
+        {showBd && (() => {
+          const bd = powerBreakdown(unit);
+          const EFF_KO = { critChance: '치명', critDamage: '치명피해', lifesteal: '흡혈', defPierce: '관통', dmgReduce: '피해감소(회피)' };
+          const rows = [
+            ['체력', bd.stats.hp], ['공격', bd.stats.atk], ['방어', bd.stats.def], ['속도', bd.stats.spd],
+            ...Object.entries(bd.effects).filter(([, v]) => v > 0).map(([k, v]) => [EFF_KO[k] || k, v]),
+          ].sort((a, b) => b[1] - a[1]);
+          return (
+            <View style={g.bdBox}>
+              <Text style={g.bdTitle}>전투력 기여 분해 <Text style={g.dim}>· 합계 {fmt(bd.total)}</Text></Text>
+              {rows.map(([label, val]) => {
+                const pct = bd.total > 0 ? (val / bd.total) * 100 : 0;
+                return (
+                  <View key={label} style={g.bdRow}>
+                    <Text style={g.bdLabel}>{label}</Text>
+                    <View style={g.bdBarTrack}><View style={[g.bdBarFill, { width: `${Math.min(100, pct)}%` }]} /></View>
+                    <Text style={g.bdVal}>{fmt(Math.round(val))}</Text>
+                    <Text style={g.bdPct}>{pct.toFixed(0)}%</Text>
+                  </View>
+                );
+              })}
+            </View>
+          );
+        })()}
 
         {/* 직업(클래스) · 특성 */}
         <View style={g.jobBox}>
@@ -682,8 +695,7 @@ const g = StyleSheet.create({
   wrap: { padding: 14, paddingBottom: 30 },
   sec: { color: T.text, fontWeight: '800', fontSize: 15, marginBottom: 8 },
   subsec: { color: T.muted, fontSize: 12, marginTop: 12, marginBottom: 6, fontWeight: '700' },
-  hlist: { gap: 10, paddingVertical: 4, paddingRight: 8 },
-  gridCol: { gap: 10 },
+  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, paddingVertical: 4 },
   chip: { width: 84, backgroundColor: T.surface, borderRadius: 14, padding: 10, alignItems: 'center', borderWidth: 1, borderColor: T.line },
   chipOn: { borderColor: T.accent, backgroundColor: T.surface2 },
   chipStar: { position: 'absolute', top: 4, right: 6, fontSize: 12, zIndex: 2 },
@@ -733,6 +745,15 @@ const g = StyleSheet.create({
   stat: { flex: 1, backgroundColor: T.surface2, borderRadius: 10, paddingVertical: 8, alignItems: 'center' },
   statK: { color: T.muted, fontSize: 11 },
   statV: { color: T.text, fontWeight: '800', fontSize: 15, marginTop: 2 },
+  bdToggle: { color: T.accent, fontSize: 12, fontWeight: '700' },
+  bdBox: { marginTop: 12, backgroundColor: T.surface2, borderRadius: 12, padding: 12 },
+  bdTitle: { color: T.text, fontWeight: '800', fontSize: 13, marginBottom: 8 },
+  bdRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 6 },
+  bdLabel: { color: T.muted, fontSize: 12, width: 84 },
+  bdBarTrack: { flex: 1, height: 8, backgroundColor: T.surface, borderRadius: 4, overflow: 'hidden' },
+  bdBarFill: { height: 8, backgroundColor: T.accent, borderRadius: 4 },
+  bdVal: { color: T.text, fontSize: 12, fontWeight: '700', width: 52, textAlign: 'right' },
+  bdPct: { color: T.muted, fontSize: 11, width: 34, textAlign: 'right' },
   jobBox: { marginTop: 14, backgroundColor: T.surface2, borderRadius: 12, padding: 12 },
   jobHead: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   jobEmoji: { fontSize: 20 },

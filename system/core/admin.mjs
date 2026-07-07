@@ -20,6 +20,11 @@ export const ADMIN_FIELDS = [
   { path: 'statPerLevel', label: '레벨당 스탯 %', step: 0.01, min: 0, fmt: (v) => (v * 100).toFixed(0) + '%' },
   { path: 'statPerRank', label: '랭크당 스탯 %', step: 0.05, min: 0, fmt: (v) => (v * 100).toFixed(0) + '%' },
   { path: 'prestigePowerBonus', label: '환생 파워 / pt', step: 0.02, min: 0, fmt: (v) => (v * 100).toFixed(0) + '%' },
+  // 전투력 가중치 (스탯이 전투력에 기여하는 비율)
+  { path: 'powerWeights.hp', label: '전투력: 체력 계수', step: 0.01, min: 0, fmt: (v) => v.toFixed(2) },
+  { path: 'powerWeights.atk', label: '전투력: 공격 계수', step: 0.05, min: 0, fmt: (v) => v.toFixed(2) },
+  { path: 'powerWeights.def', label: '전투력: 방어 계수', step: 0.05, min: 0, fmt: (v) => v.toFixed(2) },
+  { path: 'powerWeights.spd', label: '전투력: 속도 계수', step: 0.05, min: 0, fmt: (v) => v.toFixed(2) },
   { path: 'prestigeIncomeBonus', label: '환생 수입 / pt', step: 0.05, min: 0, fmt: (v) => (v * 100).toFixed(0) + '%' },
   // 난이도 보상 배수 (difficulty 배열 직접 조정)
   { path: 'DIFF.hard.rewardMult', label: '험난 보상 배수', factor: 1.15, fmt: (v) => '×' + Math.round(v) },

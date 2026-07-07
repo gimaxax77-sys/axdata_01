@@ -24,6 +24,15 @@ export const BALANCE = {
   statPerRank: 0.25, // 랭크당 스탯 +25%
   spdPerLevel: 0.01, // 레벨당 속도 +1%
 
+  // 전투력 지표 가중치 — "각 스탯이 전투력 1점에 얼마나 기여하는가"의 단일 소스.
+  //   전투력 = Σ(스탯 × powerWeights) + Σ(전투효과 × powerEffectWeights)
+  // 기존 하드코딩(0.15/1.2/0.6/1.0)을 그대로 옮겨 기본 동작은 동일.
+  powerWeights: { hp: 0.15, atk: 1.2, def: 0.6, spd: 1.0 },
+  // 전투 효과(치명·흡혈·관통·피해감소=회피성)를 전투력에 환산.
+  //   값은 "효과 1.0(=100%)당 전투력 기여". 실제 효과는 소수(0.1~0.5)이므로
+  //   critChance 0.15 → 800×0.15 = +120 전투력 식으로 반영된다.
+  powerEffectWeights: { critChance: 800, critDamage: 400, lifesteal: 600, defPierce: 700, dmgReduce: 900 },
+
   // 성장 비용 (지출 곡선) — 시뮬레이터가 밝혀낸 핵심 튜닝 포인트
   levelCostBase: 50, levelCostGrowth: 1.15, // 레벨업 (growth)
   enhanceCostBase: 40, enhanceCostGrowth: 1.25, // 각인 (currency)

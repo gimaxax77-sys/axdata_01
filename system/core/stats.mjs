@@ -33,10 +33,8 @@ function baseGrownStats(unit) {
   };
 }
 
-// 스킬·강화까지 반영한 최종 스탯.
-export function computeStats(unit) {
-  const g = baseGrownStats(unit);
-  const mods = collectUnitModifiers(unit);
+// 원형 스탯 + 모디파이어 → 최종 스탯 (내부 공용).
+function statsFrom(g, mods) {
   return {
     hp: Math.round(g.hp * (1 + mods.statPct.hp) + mods.statFlat.hp),
     atk: Math.round(g.atk * (1 + mods.statPct.atk) + mods.statFlat.atk),
@@ -45,8 +43,27 @@ export function computeStats(unit) {
   };
 }
 
+// 스킬·강화까지 반영한 최종 스탯.
+export function computeStats(unit) {
+  return statsFrom(baseGrownStats(unit), collectUnitModifiers(unit));
+}
+
+// 스탯·효과별 전투력 기여를 분해해 반환(브리핑·표시·정렬 공용).
+//   { stats:{hp,atk,def,spd}, effects:{...}, total }
+// 각 항목은 이미 가중치를 곱한 "전투력 점수"다 → 합이 곧 전투력.
+export function powerBreakdown(unit) {
+  const mods = collectUnitModifiers(unit);
+  const s = statsFrom(baseGrownStats(unit), mods);
+  const w = BALANCE.powerWeights;
+  const stats = { hp: s.hp * w.hp, atk: s.atk * w.atk, def: s.def * w.def, spd: s.spd * w.spd };
+  const effects = {};
+  const ew = BALANCE.powerEffectWeights || {};
+  for (const k of Object.keys(ew)) effects[k] = (mods.effect[k] || 0) * ew[k];
+  const total = Object.values(stats).reduce((a, b) => a + b, 0) + Object.values(effects).reduce((a, b) => a + b, 0);
+  return { stats, effects, total: Math.round(total), rawStats: s, rawEffects: mods.effect };
+}
+
 // 표시용 단일 전투력 지표(밸런싱/정렬용). 판정 자체는 stats로 한다.
 export function computePower(unit) {
-  const s = computeStats(unit);
-  return Math.round(s.hp * 0.15 + s.atk * 1.2 + s.def * 0.6 + s.spd * 1.0);
+  return powerBreakdown(unit).total;
 }
