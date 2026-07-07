@@ -5,10 +5,10 @@ import { earn } from '../system/core/economy.mjs';
 import { computePower } from '../system/core/stats.mjs';
 import { accountMods } from '../system/core/balance.mjs';
 import { idleGenre } from '../system/genres/idle.mjs';
-import { serialize, deserialize } from '../system/core/save.mjs';
+import { serialize, deserialize, exportCode, importCode } from '../system/core/save.mjs';
 import { fantasyConcept } from '../system/concepts/fantasy.mjs';
 import { CONCEPTS } from '../system/concepts/index.mjs';
-import { loadRawSync, loadRawAsync, saveRaw, clearSave } from './storage';
+import { loadRawSync, loadRawAsync, saveRaw, clearSave, saveBackup, loadBackupSync, loadBackupAsync } from './storage';
 
 // 게임 상태 훅. 저장/복원 + 오프라인 보상 정산 + 방치 틱.
 const TICK_MS = 1000;
@@ -55,7 +55,12 @@ export function useGame() {
   // 웹: 동기 로드로 첫 렌더에 세이브 반영. 네이티브: null → 아래 async 하이드레이트.
   const bootRaw = useRef(loadRawSync());
   if (!ref.current) {
-    const loaded = bootRaw.current ? deserialize(bootRaw.current) : null;
+    let loaded = bootRaw.current ? deserialize(bootRaw.current) : null;
+    // 메인 세이브가 있었는데 파싱 실패(손상) → 마지막 정상 백업으로 복구.
+    if (!loaded && bootRaw.current) {
+      const bk = loadBackupSync();
+      loaded = bk ? deserialize(bk) : null;
+    }
     ref.current = loaded ? applyLoad(loaded, offlineRef) : createFresh();
   }
   const [, force] = useState(0);
@@ -66,6 +71,7 @@ export function useGame() {
   const [hydrated, setHydrated] = useState(bootRaw.current !== null);
 
   const save = useCallback(() => saveRaw(serialize(ref.current)), []);
+  const tickCount = useRef(0);
 
   // 네이티브 비동기 하이드레이트 — 로드 완료 전까지 저장하지 않아 덮어쓰기 방지.
   useEffect(() => {
@@ -75,7 +81,8 @@ export function useGame() {
       const raw = await loadRawAsync();
       if (!alive) return;
       if (raw) {
-        const loaded = deserialize(raw);
+        let loaded = deserialize(raw);
+        if (!loaded) { const bk = await loadBackupAsync(); loaded = bk ? deserialize(bk) : null; }
         if (loaded) {
           ref.current = applyLoad(loaded, offlineRef);
           if (offlineRef.current) setOffline(offlineRef.current);
@@ -98,6 +105,8 @@ export function useGame() {
         growth: Math.round(ref.current.wallet.growth - before.growth),
       });
       save();
+      // 약 30초마다 정상본 백업(손상 복구용) — 매 틱 쓰기 부담 회피.
+      if (++tickCount.current % 30 === 0) saveBackup(serialize(ref.current));
       bump();
     }, TICK_MS);
     return () => clearInterval(id);
@@ -107,7 +116,7 @@ export function useGame() {
   useEffect(() => {
     const w = typeof globalThis !== 'undefined' ? globalThis : null;
     if (!w || !w.addEventListener) return;
-    const onHide = () => save();
+    const onHide = () => { save(); saveBackup(serialize(ref.current)); };
     w.addEventListener('beforeunload', onHide);
     w.addEventListener('visibilitychange', onHide);
     return () => {
@@ -125,7 +134,20 @@ export function useGame() {
     bump();
   }, [bump, save]);
 
-  return { state: ref.current, bump, lastGain, offline, dismissOffline, reset, save, concept: CONCEPT };
+  // 이관 코드 — 내보내기(현재 세이브 → 코드), 불러오기(코드 → 세이브 교체).
+  const exportSave = useCallback(() => exportCode(ref.current), []);
+  const importSave = useCallback((code) => {
+    const loaded = importCode(code);
+    if (!loaded) return false;
+    ref.current = loaded;
+    save();
+    saveBackup(serialize(ref.current));
+    setOffline(null);
+    bump();
+    return true;
+  }, [bump, save]);
+
+  return { state: ref.current, bump, lastGain, offline, dismissOffline, reset, save, exportSave, importSave, concept: CONCEPT };
 }
 
 // 파티 최고 유닛의 "실효 전투력"(환생 배수 포함)

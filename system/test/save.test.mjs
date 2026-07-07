@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { createGameState } from '../core/gameState.mjs';
 import { createUnit } from '../core/units.mjs';
 import { earn } from '../core/economy.mjs';
-import { serialize, deserialize, SAVE_VERSION } from '../core/save.mjs';
+import { serialize, deserialize, SAVE_VERSION, exportCode, importCode } from '../core/save.mjs';
 import { computePower } from '../core/stats.mjs';
 
 test('save: 전체 상태 왕복 무손실', () => {
@@ -25,6 +25,26 @@ test('save: 전체 상태 왕복 무손실', () => {
   assert.equal(back.units[0].sigWeapon.level, 5);
   assert.equal(back.units[0].sigAwaken, 2);
   assert.equal(computePower(back.units[0]), computePower(u), '전투력 동일');
+});
+
+test('save: 이관 코드 왕복(한글 포함) + 잘못된 코드 방어', () => {
+  const u = createUnit('STRIKER', { level: 15, rank: 2, characterId: 'kael' });
+  u.rarity = 'SR';
+  const s = createGameState({ units: [u], party: [u.uid] });
+  earn(s.wallet, { currency: 9999, gem: 42 });
+  s.peakStage = 33;
+  const code = exportCode(s);
+  assert.ok(code.startsWith('ELD1:'), '코드 접두어');
+  const back = importCode(code);
+  assert.ok(back, '코드 복원 성공');
+  assert.equal(back.wallet.currency, 9999);
+  assert.equal(back.peakStage, 33);
+  assert.equal(back.units[0].characterId, 'kael');
+  // 방어: 접두어 없음/깨진 base64/빈값
+  assert.equal(importCode('garbage'), null);
+  assert.equal(importCode('ELD1:@@notbase64@@'), null);
+  assert.equal(importCode(''), null);
+  assert.equal(importCode(null), null);
 });
 
 test('save: 버전 불일치/손상 → null', () => {

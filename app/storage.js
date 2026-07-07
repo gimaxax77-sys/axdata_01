@@ -15,6 +15,7 @@ function conceptId() {
 }
 const _cid = conceptId();
 const KEY = _cid === 'fantasy' ? 'eldria_save_v2' : `eldria_save_v2_${_cid}`;
+const BACKUP_KEY = `${KEY}_backup`; // 마지막 정상본 — 메인 손상 시 복구용
 
 function ls() {
   try {
@@ -43,6 +44,23 @@ export function saveRaw(str) {
 }
 
 export function clearSave() {
-  if (isWeb) { try { ls()?.removeItem(KEY); } catch { /* 무시 */ } return; }
-  if (AsyncStorage) { AsyncStorage.removeItem(KEY).catch(() => {}); }
+  if (isWeb) { try { ls()?.removeItem(KEY); ls()?.removeItem(BACKUP_KEY); } catch { /* 무시 */ } return; }
+  if (AsyncStorage) { AsyncStorage.removeItem(KEY).catch(() => {}); AsyncStorage.removeItem(BACKUP_KEY).catch(() => {}); }
+}
+
+// 마지막 정상본 백업 — 메인 쓰기가 중단/손상돼도 직전 상태를 보존.
+export function saveBackup(str) {
+  if (isWeb) { try { ls()?.setItem(BACKUP_KEY, str); } catch { /* 무시 */ } return; }
+  if (AsyncStorage) { AsyncStorage.setItem(BACKUP_KEY, str).catch(() => {}); }
+}
+
+// 웹 동기 백업 로드 (부팅 시 메인 손상 복구용). 네이티브는 비동기.
+export function loadBackupSync() {
+  if (isWeb) { try { return ls()?.getItem(BACKUP_KEY) ?? null; } catch { return null; } }
+  return null;
+}
+export async function loadBackupAsync() {
+  if (isWeb) return loadBackupSync();
+  if (AsyncStorage) { try { return await AsyncStorage.getItem(BACKUP_KEY); } catch { return null; } }
+  return null;
 }

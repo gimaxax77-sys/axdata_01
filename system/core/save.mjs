@@ -58,6 +58,7 @@ function normalize(state) {
   state.settings.muted = !!state.settings.muted;
   state.settings.haptics = state.settings.haptics !== false; // 기본 on
   state.settings.reduceMotion = !!state.settings.reduceMotion;
+  state.settings.lang = state.settings.lang || 'ko';
   state.tower = state.tower || { floor: 1, best: 1 };
   state.tower.floor = state.tower.floor || 1;
   state.tower.best = state.tower.best || state.tower.floor || 1;
@@ -117,4 +118,36 @@ export function deserialize(json) {
   const state = normalize(obj.state);
   syncSeq(state);
   return state;
+}
+
+// ─── 세이브 이관 코드 ────────────────────────────────────────
+// 백엔드 없이 기기·계정 간 진행을 옮기는 휴대용 코드.
+//   내보내기: 현재 세이브 → "ELD1:<base64>" 문자열(클립보드 공유)
+//   불러오기: 그 코드 → state (검증 실패 시 null)
+// UTF-8 안전 base64 (한글 캐릭터명 포함).
+const CODE_PREFIX = 'ELD1:';
+function toB64(s) {
+  if (typeof Buffer !== 'undefined') return Buffer.from(s, 'utf8').toString('base64');
+  const bytes = new TextEncoder().encode(s);
+  let bin = ''; bytes.forEach((b) => (bin += String.fromCharCode(b)));
+  return btoa(bin);
+}
+function fromB64(b) {
+  if (typeof Buffer !== 'undefined') return Buffer.from(b, 'base64').toString('utf8');
+  const bin = atob(b);
+  const bytes = Uint8Array.from(bin, (c) => c.charCodeAt(0));
+  return new TextDecoder().decode(bytes);
+}
+
+export function exportCode(state) {
+  return CODE_PREFIX + toB64(serialize(state));
+}
+
+export function importCode(code) {
+  if (typeof code !== 'string') return null;
+  const trimmed = code.trim();
+  if (!trimmed.startsWith(CODE_PREFIX)) return null;
+  let json;
+  try { json = fromB64(trimmed.slice(CODE_PREFIX.length)); } catch { return null; }
+  return deserialize(json);
 }

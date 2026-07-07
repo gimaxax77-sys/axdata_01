@@ -4,6 +4,7 @@ import { T } from '../theme';
 import { Card, Btn, fmt, MultiToggle, repeat } from '../components';
 import { SHOP, purchase, adLeft, packageOwned } from '../../system/core/shop.mjs';
 import { getStage } from '../../system/core/progression.mjs';
+import { purchasePackage } from '../iap';
 
 // grant 정의 → 표시용 문자열 (진행도 스케일 반영)
 function grantText(state, concept, grant) {
@@ -21,6 +22,12 @@ export default function ShopScreen({ state, bump, concept }) {
   const [mult, setMult] = useState(1);
   const buy = (id) => { purchase(state, id); bump(); };
   const buyN = (id) => { repeat(() => purchase(state, id), mult); bump(); };
+  // 패키지: 결제 어댑터를 먼저 태우고(스토어 없으면 mock) 보상 지급.
+  const buyPackage = async (id) => {
+    const r = await purchasePackage(id);
+    if (r.ok) purchase(state, id);
+    bump();
+  };
   const gem = concept.resources.gem;
 
   return (
@@ -77,7 +84,7 @@ export default function ShopScreen({ state, bump, concept }) {
                 {p.note ? <Text style={s.note}>{p.note}</Text> : null}
               </View>
               <Btn small kind={owned ? 'ghost' : 'primary'} disabled={owned} label={owned ? '구매완료' : p.krw}
-                onPress={() => buy(p.id)} />
+                onPress={() => buyPackage(p.id)} />
             </View>
           );
         })}

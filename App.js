@@ -7,6 +7,7 @@ import { ResourceBar, Btn, fmt } from './app/components';
 import { useGame } from './app/useGame';
 import { setMuted, setHaptics, fx } from './app/feedback';
 import { setReduceMotion } from './app/motion';
+import { t, setLang } from './app/i18n';
 import { SettingsModal } from './app/screens/Settings';
 import IdleScreen from './app/screens/IdleScreen';
 import RosterScreen from './app/screens/RosterScreen';
@@ -16,6 +17,7 @@ import ArenaGuildScreen from './app/screens/ArenaGuildScreen';
 import MetaScreen from './app/screens/MetaScreen';
 import ShopScreen from './app/screens/ShopScreen';
 import { IntroModal, ObjectiveBanner } from './app/screens/Onboarding';
+import ErrorBoundary from './app/ErrorBoundary';
 
 const TABS = [
   { key: 'idle', label: '방치', icon: '🏰', Screen: IdleScreen },
@@ -37,6 +39,14 @@ function fmtDuration(sec) {
 }
 
 export default function App() {
+  return (
+    <ErrorBoundary>
+      <AppInner />
+    </ErrorBoundary>
+  );
+}
+
+function AppInner() {
   const game = useGame();
   const [tab, setTab] = useState('idle');
   const Active = TABS.find((t) => t.key === tab).Screen;
@@ -44,6 +54,7 @@ export default function App() {
   const [settingsOpen, setSettingsOpen] = useState(false);
   // 설정을 세이브에서 엔진들에 반영
   const st = game.state.settings;
+  setLang(st.lang); // 렌더 중 동기 반영 — 언어 전환이 같은 렌더에 즉시 적용(지연 없음)
   useEffect(() => { setMuted(st.muted); setHaptics(st.haptics); setReduceMotion(st.reduceMotion); }, [st.muted, st.haptics, st.reduceMotion]);
   const changeSetting = (key, val) => {
     game.state.settings[key] = val;
@@ -72,7 +83,7 @@ export default function App() {
       <View style={s.header}>
         <View style={{ flex: 1 }}>
           <Text style={s.title}>{game.concept.title}</Text>
-          <Text style={s.subtitle}>방치형 수집 RPG · 자동 저장</Text>
+          <Text style={s.subtitle}>{t('app_subtitle')}</Text>
         </View>
         <TouchableOpacity onPress={() => { fx('tap'); setSettingsOpen(true); }} style={s.iconBtn} activeOpacity={0.7}
           accessibilityRole="button" accessibilityLabel="설정">
@@ -131,6 +142,8 @@ export default function App() {
         onChange={changeSetting}
         onReset={() => { setSettingsOpen(false); doReset(); }}
         onClose={() => setSettingsOpen(false)}
+        onExport={game.exportSave}
+        onImport={game.importSave}
       />
 
       {/* 첫 실행 소개 — 오프라인 팝업이 없을 때만 노출 */}

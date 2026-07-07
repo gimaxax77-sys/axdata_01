@@ -78,6 +78,7 @@ export function runSimulation(opts = {}) {
     usePrestige = true, // 정체 시 환생 루프 사용
     useAccount = true, // 유물·펫 등 계정 성장 사용
     useAxes = true, // 전용무기·룬·각성(=씨앗 조건) 투자
+    oneTimeGem = 0, // 초기 1회성 결제(패키지) 다이아 — 과금 시나리오
   } = opts;
 
   if (balance) return withBalance(balance, () => runSimulation({ ...opts, balance: null }));
@@ -88,6 +89,8 @@ export function runSimulation(opts = {}) {
   hero.rarity = 'N';
   const state = createGameState({ units: [hero], party: [hero.uid] });
   earn(state.wallet, starter);
+  // 과금 시나리오: 패키지 구매분 다이아를 초반에 1회 투입(펫·룬·소환 전환).
+  if (oneTimeGem > 0) earn(state.wallet, { gem: oneTimeGem });
   pickParty(state);
 
   const daily = [];
@@ -208,6 +211,8 @@ function main() {
     { label: '신규 축 OFF (무기·룬·각성 없음)', opt: { useAxes: false } },
     { label: '기본 (등급+씨앗+신규축)', opt: {} },
     { label: '풀 콘텐츠 파우셋 (아레나·길드·탑·캠페인)', opt: { dailyGem: 80, dailySummon: 120 } },
+    { label: '과금: 스타터 (₩4,900 · 다이아 300)', opt: { oneTimeGem: 300 } },
+    { label: '과금: 고래 (레전드+궁극 · 다이아 15.8k)', opt: { oneTimeGem: 15800, dailyGem: 60 } },
     { label: '계정성장 OFF (유물·펫 없음)', opt: { useAccount: false } },
     { label: '환생 OFF', opt: { balance: { prestigeIncomeBonus: 0 }, usePrestige: false } },
     { label: '비용 완화', opt: { balance: { levelCostGrowth: 1.09, enhanceCostGrowth: 1.16, gearCostGrowth: 1.2 } } },
@@ -227,6 +232,8 @@ function main() {
     );
   }
   console.log('\n  → 여유(resolve 기반)가 0 근처면 타이트, 클수록 과강. 병목 0 + 여유 적당이 이상적.');
+  console.log('  → 과금(고래)은 진행을 앞당기나 여유는 무과금과 비슷 → 적 곡선이 따라붙어');
+  console.log('    벽을 없애지 않음(P2W 런어웨이 없음). 고액 패키지가 경제를 깨지 않음.');
   console.log('');
 }
 

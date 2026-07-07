@@ -102,6 +102,31 @@ test('강화가 실제 수치에 반영: 스킬 레벨·장비 강화 스케일'
   assert.ok(collectUnitModifiers(u).statPct.atk > atk1, '스킬 레벨↑ → statPct↑');
 });
 
+test('추천 빌드: 빈 스킬 슬롯 채움·더 나은 장비 교체(비파괴)', async () => {
+  const { optimizeLoadout } = await import('../core/loadout.mjs');
+  const { skillSlots } = await import('../core/skills.mjs');
+  const s = createGameState({ units: [], party: [] });
+  earn(s.wallet, { currency: 1e6 });
+  const u = createUnit('STRIKER', { level: 20, rank: 2 }); // 슬롯 3개
+  s.units.push(u);
+  // 슬롯 0에 기존 스킬을 두고 레벨업 → 추천이 이를 보존해야 함
+  equipSkill(s, u.uid, 0, 'FORTRESS');
+  u.skills[0].level = 4;
+  // 인벤토리에 약/강 무기 → 강한 것을 장착해야 함
+  const weak = craftGear(s, 'RUNE_BLADE').item; // atk 90
+  const strong = craftGear(s, 'IRON_SWORD').item; // atk 120
+  const r = optimizeLoadout(s, u.uid);
+  assert.equal(r.ok, true);
+  // 슬롯0 보존(레벨 유지)
+  assert.equal(u.skills[0].id, 'FORTRESS');
+  assert.equal(u.skills[0].level, 4, '기존 스킬 레벨 보존');
+  // 나머지 슬롯이 채워짐
+  assert.equal(u.skills.filter(Boolean).length, skillSlots(u));
+  // 더 강한 무기 장착
+  assert.equal(u.gear.weapon.uid, strong.uid, '강한 무기 선택');
+  assert.ok(r.changed.skills >= 1 && r.changed.gear >= 1);
+});
+
 test('gameState: getPartyUnits는 유효 uid만 반환', () => {
   const u = createUnit('STRIKER', { level: 1, rank: 1 });
   const s = createGameState({ units: [u], party: [u.uid, 'ghost'] });

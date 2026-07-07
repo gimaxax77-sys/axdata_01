@@ -15,6 +15,7 @@ import { GEAR_SLOTS, GEAR_CATALOG, gearEnhanceCost, gearContribution } from '../
 import { levelUp, ascend, enhanceNode, equipSkill, unequipSkill, upgradeSkill, awakenSignature } from '../../system/core/character.mjs';
 import { AWAKEN_MAX, awakenCost } from '../../system/core/skills.mjs';
 import { craftGear, equipGear, enhanceGear, unequipGear } from '../../system/core/gear.mjs';
+import { optimizeLoadout } from '../../system/core/loadout.mjs';
 import { recordMission } from '../../system/core/daily.mjs';
 import { intimacyLevel, intimacyProgress, giftCost, giveGift, INTIMACY_MAX } from '../../system/core/intimacy.mjs';
 import { seedConditions, seedProgress } from '../../system/core/seed.mjs';
@@ -360,7 +361,16 @@ export default function RosterScreen({ state, bump, concept }) {
 
       {/* 스킬 편성 (수동) */}
       <Card style={{ marginTop: 12 }}>
-        <Text style={g.sec}>스킬 편성 <Text style={g.dim}>({unit.skills.filter(Boolean).length}/{slots})</Text></Text>
+        <View style={g.intiHead}>
+          <Text style={g.sec}>스킬 편성 <Text style={g.dim}>({unit.skills.filter(Boolean).length}/{slots})</Text></Text>
+          <Btn small kind="gold" label="✨ 추천 장착" sfx={false}
+            onPress={() => {
+              const r = optimizeLoadout(state, unit.uid);
+              const n = r.ok ? r.changed.skills + r.changed.gear + r.changed.runes : 0;
+              fx(n > 0 ? 'success' : 'error');
+              bump();
+            }} />
+        </View>
         {[0, 1, 2].map((i) => {
           const locked = i >= slots;
           const sk = unit.skills[i];
