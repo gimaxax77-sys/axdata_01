@@ -10,7 +10,9 @@ import { setReduceMotion } from './app/motion';
 import { t, setLang } from './app/i18n';
 import { SettingsModal } from './app/screens/Settings';
 import { AdminModal } from './app/screens/Admin';
+import { useFonts } from 'expo-font';
 import IdleScreen from './app/screens/IdleScreen';
+import PixelIdleScreen from './app/screens/PixelIdleScreen';
 import RosterScreen from './app/screens/RosterScreen';
 import GachaScreen from './app/screens/GachaScreen';
 import ContentScreen from './app/screens/ContentScreen';
@@ -51,8 +53,15 @@ export default function App() {
 
 function AppInner() {
   const game = useGame();
+  // 갈무리 픽셀폰트 로드(비차단) — 로딩 전엔 시스템 폰트로 폴백.
+  useFonts({
+    Galmuri11: require('./assets/fonts/Galmuri11.ttf'),
+    'Galmuri11-Bold': require('./assets/fonts/Galmuri11-Bold.ttf'),
+  });
   const [tab, setTab] = useState('idle');
+  const [pixelMode, setPixelMode] = useState(false); // 픽셀 방치 화면 미리보기
   const Active = TABS.find((t) => t.key === tab).Screen;
+  const showPixel = pixelMode && tab === 'idle';
 
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [adminOpen, setAdminOpen] = useState(false);
@@ -83,31 +92,48 @@ function AppInner() {
     <SafeAreaView style={s.safe}>
       <StatusBar style="light" />
       <LinearGradient colors={T.bgGrad} style={StyleSheet.absoluteFill} pointerEvents="none" />
-      {/* 헤더 */}
-      <View style={s.header}>
-        <View style={{ flex: 1 }}>
-          <Text style={s.title}>{game.concept.title}</Text>
-          <Text style={s.subtitle}>{t('app_subtitle')}</Text>
+      {/* 헤더 (픽셀 모드에선 몰입 위해 숨김) */}
+      {!showPixel && (
+        <View style={s.header}>
+          <View style={{ flex: 1 }}>
+            <Text style={s.title}>{game.concept.title}</Text>
+            <Text style={s.subtitle}>{t('app_subtitle')}</Text>
+          </View>
+          <TouchableOpacity onPress={() => { fx('tap'); setPixelMode((v) => !v); }} style={s.iconBtn} activeOpacity={0.7}
+            accessibilityRole="button" accessibilityLabel="픽셀 모드">
+            <Text style={s.iconBtnText}>🎨</Text>
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => { fx('tap'); setSettingsOpen(true); }} style={s.iconBtn} activeOpacity={0.7}
+            accessibilityRole="button" accessibilityLabel="설정">
+            <Text style={s.iconBtnText}>⚙️</Text>
+          </TouchableOpacity>
         </View>
-        <TouchableOpacity onPress={() => { fx('tap'); setSettingsOpen(true); }} style={s.iconBtn} activeOpacity={0.7}
-          accessibilityRole="button" accessibilityLabel="설정">
-          <Text style={s.iconBtnText}>⚙️</Text>
-        </TouchableOpacity>
-      </View>
-      <View style={s.resWrap}>
-        <ResourceBar concept={game.concept} wallet={game.state.wallet} />
-      </View>
+      )}
+      {!showPixel && (
+        <View style={s.resWrap}>
+          <ResourceBar concept={game.concept} wallet={game.state.wallet} />
+        </View>
+      )}
 
       {/* 온보딩 목표 배너 (소개를 본 뒤, 목표가 남아있을 때만) */}
-      {game.state.tutorial.introSeen && (
+      {!showPixel && game.state.tutorial.introSeen && (
         <ObjectiveBanner state={game.state} concept={game.concept} onGo={setTab} />
       )}
 
       {/* 화면 — rev(액션 신호)로만 리렌더. lastGain은 방치 탭에만 전달해
           다른 탭이 초당 리렌더되지 않게 한다. */}
       <View style={s.body}>
-        <Active state={game.state} rev={game.rev} bump={game.bump} concept={game.concept}
-          lastGain={tab === 'idle' ? game.lastGain : undefined} />
+        {showPixel ? (
+          <View style={{ flex: 1 }}>
+            <PixelIdleScreen state={game.state} rev={game.rev} bump={game.bump} concept={game.concept} lastGain={game.lastGain} />
+            <TouchableOpacity onPress={() => { fx('tap'); setPixelMode(false); }} style={s.pixelExit} activeOpacity={0.8}>
+              <Text style={s.pixelExitTxt}>✕ 일반</Text>
+            </TouchableOpacity>
+          </View>
+        ) : (
+          <Active state={game.state} rev={game.rev} bump={game.bump} concept={game.concept}
+            lastGain={tab === 'idle' ? game.lastGain : undefined} />
+        )}
       </View>
 
       {/* 하단 탭 */}
@@ -178,6 +204,8 @@ const s = StyleSheet.create({
   subtitle: { color: T.muted, fontSize: 12, marginTop: 1 },
   iconBtn: { borderWidth: 1, borderColor: T.line, borderRadius: 10, paddingHorizontal: 10, paddingVertical: 6, marginRight: 8 },
   iconBtnText: { fontSize: 15 },
+  pixelExit: { position: 'absolute', top: 8, right: 8, backgroundColor: 'rgba(20,15,40,0.85)', borderWidth: 1, borderColor: '#4a3f88', borderRadius: 4, paddingHorizontal: 8, paddingVertical: 4 },
+  pixelExitTxt: { color: '#e6ecf6', fontSize: 12, fontWeight: '800' },
   resWrap: { paddingHorizontal: 14, paddingVertical: 8 },
   body: { flex: 1 },
   tabbar: { flexDirection: 'row', backgroundColor: T.surface, borderTopWidth: 1, borderTopColor: T.line, paddingBottom: 6 },
