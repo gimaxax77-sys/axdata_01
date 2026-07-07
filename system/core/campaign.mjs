@@ -12,7 +12,7 @@ import { earn } from './economy.mjs';
 // 진행도: state.campaign.cleared (클리어한 챕터 수).
 // ─────────────────────────────────────────────────────────────
 
-export const CAMPAIGN_CHAPTER_COUNT = 8;
+export const CAMPAIGN_CHAPTER_COUNT = 12;
 
 // 챕터 i(0-based)의 보스 난이도 — 진행 스테이지 기반 + 보스 강화.
 function bossStageFor(i) { return 6 + i * 7; } // 6,13,20,…55

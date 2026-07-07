@@ -101,7 +101,7 @@ test('campaign: 챕터 클리어/잠금/보상', () => {
   const r = fightChapter(s, 0);
   assert.equal(r.ok, true);
   if (r.win) { assert.equal(s.campaign.cleared, 1); assert.ok(r.reward); }
-  assert.ok(CAMPAIGN_CHAPTER_COUNT === 8);
+  assert.ok(CAMPAIGN_CHAPTER_COUNT === 12);
 });
 
 test('meta: 업적 수령 1회 + 시즌 프리미엄 게이팅', () => {
