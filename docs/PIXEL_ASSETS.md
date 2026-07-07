@@ -1,62 +1,102 @@
-# 픽셀 에셋 쇼핑 리스트 (큐레이션)
+# 픽셀 에셋 카탈로그 (큐레이션)
 
-풀 비주얼 픽셀 게임에 필요한 카테고리별 추천. **다운로드는 Gim이 itch.io 로그인 후**,
-받은 파일은 제가 우리 규격에 맞게 렌더/통합합니다. **라이선스는 각 페이지에서 최종 확인** 필수.
+풀 비주얼 픽셀 게임용 카테고리별 추천. **다운로드는 Gim이 itch.io 로그인 후**,
+받은 파일은 제가 우리 규격으로 렌더/통합합니다. **라이선스는 각 페이지에서 최종 확인** 필수.
 
 > ⚠️ 3대 주의
-> 1. **스타일 통일** — 여러 작가 팩을 섞으면 그림체가 튑니다. 캐릭터 팩 1개를 기준으로
->    UI·배경을 거기에 맞추는 게 안전. (한 작가/한 스타일 계열로 모으기)
-> 2. **시점** — 우리 전투는 좌우 대치(사이드/정면). 탑다운 걷기 스프라이트는 정면 대기컷만
+> 1. **스타일 통일** — 여러 작가 팩을 섞으면 그림체가 튑니다. **캐릭터 팩 1개를 기준**으로
+>    해상도·톤을 맞춰 UI·몬스터·아이콘을 고르세요.
+> 2. **시점** — 우리 전투는 좌우 대치(정면/사이드). 탑다운 걷기 스프라이트는 정면 대기컷만
 >    쓰거나 부적합할 수 있음.
-> 3. **로스터 수** — 영웅 28종 + 등급 + 적. 무료 팩 하나로 28종은 어려움 → 모듈러(장비 교체)
->    팩 + 색변형으로 확보하거나 우선 소수부터.
+> 3. **로스터 규모** — 영웅 28종 + 등급 + 적 다수. 아래 "대형 팩"으로 한 방에 확보 권장.
 
 ---
 
-## 1. 캐릭터 (영웅·적) — 최우선
+## 1. 캐릭터 (영웅) — 콘텐츠 많은 순
+
+| 팩 | 규모 | 라이선스 | 링크 |
+|---|---|---|---|
+| **RPG Heroes & Classes HUGE Pack** (Beowulf) | **144 캐릭터 · 16 클래스**, 64/128/256px | 상업 허용 | beowulf.itch.io/rpg-heroes-classes-pixel-art-huge-pack |
+| **Cute Fantasy RPG** (Kenmi) | 캐릭+적+동물, 대기/이동/공격 애니, 16×16 | 상업(확인) | kenmi-art.itch.io/cute-fantasy-rpg |
+| **Mana Seed Character Base** (Seliel the Shaper) | 모듈러 베이스(장비 조합으로 무한 변형) | 상업 | seliel-the-shaper.itch.io |
+| **Free Tiny Hero Sprites** (Free Game Assets) | 소형 영웅, 무료 | 상업 | free-game-assets.itch.io/free-tiny-hero-sprites-pixel-art |
+| **Pixel Prototype Player** (Dead Revolver) | 사이드뷰 1캐릭 다수 애니 | **CC0** | deadrevolver.itch.io/pixel-prototype-player-sprites |
+
+→ **28 로스터엔 Beowulf(144종)가 최적** — 한 스타일로 캐릭터 수를 단번에 확보. 등급/속성 배치도 넉넉.
+
+## 2. 몬스터 / 적
+
+| 팩 | 규모 | 라이선스 | 링크 |
+|---|---|---|---|
+| **Pixel 50 Fantasy Monsters** (Cyangmou) | **50종** 고퀄 64×64 | 상업 | cyangmou.itch.io/pixel-rpg-monster |
+| **Action RPG Monsters** (finalbossblues) | 20+종, 다중 애니·엘리트 | 상업 | finalbossblues.itch.io/action-rpg-monsters |
+| **Animated Pixel Monster Pack** (Iphigenia) | 10종 + 30 색변형, 애니 | 상업 | randomizedpixels.itch.io/animated-pixel-monster-pack-level-1 |
+| **32 RPG Monsters** (ProAssets) | 32종 전투 자세 | 상업 | proassets-ia.itch.io/32-rpg-monsters-16-bit-pixel-art-sprite-pack-for-retro-games |
+
+→ 속성별 적/보스에 활용. Cyangmou 50종이면 던전·구역별 다양성 충분.
+
+## 3. UI / GUI
 
 | 팩 | 특징 | 라이선스 | 링크 |
 |---|---|---|---|
-| **Cute Fantasy RPG** (Kenmi) | 캐릭터+적+동물, 대기/이동/공격 애니, 16×16 탑다운. 톤 귀엽고 통일감↑ | 상업 허용(페이지 확인) | kenmi-art.itch.io/cute-fantasy-rpg |
-| **Free Tiny Hero Sprites** (Free Game Assets) | 작은 영웅 스프라이트, 개인·상업 OK | 상업 허용 | free-game-assets.itch.io/free-tiny-hero-sprites-pixel-art |
-| **Pixel Prototype Player** (Dead Revolver) | 사이드뷰 1캐릭 다수 애니, CC0 | CC0 | deadrevolver.itch.io/pixel-prototype-player-sprites |
+| **Pixel UI Kit – Fantasy RPG GUI** | **다크 패널 + 골드 트림** (우리 색감과 딱) | 상업, 출처불요 | amadeva.itch.io/pixel-ui-kit-fantasy-rpg-gui-panels-menus-bars-icons |
+| **Fantasy RPG UI Pixel Pack** (Mounir Tohami) | 버튼·HP바·패널·아이콘·대화창 16×16 | 상업 | veyroa.itch.io/fantasy-minimal-pixel-art-gui |
+| **Fantasy RPG UI (CC0)** (Veyroa) | 완전 CC0 | **CC0** | veyroa.itch.io/fantasy-minimal-pixel-art-gui |
+| **Free Basic Pixel UI** (Free Game Assets) | 무료 기본 세트 | 상업 | free-game-assets.itch.io/free-basic-pixel-art-ui-for-rpg |
 
-→ **추천**: 컬렉션 RPG엔 **Cute Fantasy RPG**가 캐릭+적+애니를 한 스타일로 커버해 통일감이 좋음. 이걸 기준 스타일로.
+## 4. 아이콘 (아이템·스킬·장비) — 대량
 
-## 2. UI / GUI
+| 팩 | 규모 | 라이선스 | 링크 |
+|---|---|---|---|
+| **8000+ Raven Fantasy Icons** (Clockwork Raven) | **8000+** 아이콘·텍스처·스프라이트 | 상업 | clockworkraven.itch.io/raven-fantasy-icons |
+| **5600+ Ultimate RPG Icon Pack** (Clockwork Raven) | **5600+** 올인원 | 상업 | clockworkraven.itch.io/5600-ultimate-pixel-art-fantasy-rpg-icon-pack |
+| **Pixel Art Icon Pack – RPG** (Cainos) | 무료, 수정 자유 | 상업, 무료 | cainos.itch.io/pixel-art-icon-pack-rpg |
+| **Free Skill Icons Pack** (Quintino Pixels) | 스킬 아이콘, 무료 | **CC0** | quintino-pixels.itch.io/free-pixel-art-skill-icons-pack |
+| **RPG Classic Icon Pack** (BuiltDiv) | 136종 32×32 장비/주문/무기 | 상업 | builtdivstudios.itch.io/pixelart-rpg-classc-icon-pack |
+
+→ 재화·장비·스킬·룬·유물 아이콘을 한 번에. Clockwork Raven 대형 팩이면 평생 부족 없음.
+
+## 5. 이펙트 / VFX
+
+| 팩 | 특징 | 라이선스 | 출처 |
+|---|---|---|---|
+| **10 Animated Magic Effects** | **불/땅/바람/물** 각 2종+포탈+폭발 (우리 5속성과 매칭!) | 상업 | itch "10 pixel art magic effects" |
+| **Combat VFX** (25종) | 슬래시·타격·임팩트·먼지 | 상업 | itch "Combat VFX pixel" |
+| **Five Free Pixel Explosions** (unTied Games) | 60FPS 폭발, 무료 | 상업 | untiedgames.itch.io |
+| **Free VFX Asset Pack** (CodeManu) | 로열티프리 다양 효과 | 상업 | codemanu.itch.io |
+
+→ 타격·크리티컬·소환·환생 연출용. 속성 매칭 매직 이펙트가 우리 불/물/숲/빛/어둠에 잘 맞음.
+
+## 6. 배경 / 타일셋
 
 | 팩 | 특징 | 라이선스 | 링크 |
 |---|---|---|---|
-| **Fantasy RPG UI Pixel Pack** (Mounir Tohami) | 버튼·HP바·패널·아이콘·대화창, 16×16 그리드 | 상업 허용 | veyroa.itch.io/fantasy-minimal-pixel-art-gui |
-| **Pixel UI Kit – Fantasy RPG GUI** | **다크 패널 + 골드 트림** (우리 팔레트와 딱!) | 상업, 출처불요 | amadeva.itch.io/pixel-ui-kit-fantasy-rpg-gui-panels-menus-bars-icons |
-| **Fantasy RPG UI (CC0)** (Veyroa) | 완전 CC0 인터페이스 | CC0 | veyroa.itch.io/fantasy-minimal-pixel-art-gui |
+| **16x16 DungeonTileset II** (0x72) | 클래식 던전, 애니, 무료 | 상업, 무료 | 0x72.itch.io |
+| **Castle Dungeon** (aamatniekss) | 성/던전 + 시차 배경 | 상업 | aamatniekss.itch.io/castle-dungeon-f |
+| **2D Pixel Dungeon** (Pixel_Poem) | 던전 에셋, 수정 자유 | 상업 | pixel-poem.itch.io/dungeon-assetpuck |
+| **Oryx Design Lab** | 대규모 고퀄 라이브러리(유료) | 로열티프리 | oryxdesignlab.com |
 
-→ **추천**: **Pixel UI Kit(다크+골드)** — 지금 게임 색감(보라/금)과 바로 맞음.
+→ 속성 구역별 씬(성역·협곡·설원…)을 배경 팩으로. 우선 던전 1종.
 
-## 3. 배경 / 타일셋
-
-| 팩 | 특징 | 라이선스 | 링크 |
-|---|---|---|---|
-| **Castle Dungeon** (aamatniekss) | 성/던전 타일셋 + 시차(parallax) 배경 | 상업 허용 | aamatniekss.itch.io/castle-dungeon-f |
-| **2D Pixel Dungeon** (Pixel_Poem) | 던전 에셋, 수정 자유 | 상업, 수정 OK | pixel-poem.itch.io/dungeon-assetpuck |
-
-→ 속성별 씬(성역·협곡·설원…)은 여러 배경 팩을 등급/구역별로. 우선 던전 1종부터.
-
-## 4. 폰트 — ✅ 확보 완료
-- **Galmuri11** (갈무리, SIL OFL) — 이미 앱에 탑재. 추가 후보: 닐로(Neodgm), 둥근모.
-
-## 5. 이펙트 (후순위)
-- 타격·소환·환생 연출용 픽셀 FX 팩 (itch "pixel effects" 태그). Phase 3에서.
+## 7. 폰트 — ✅ 확보 완료
+- **Galmuri11** (갈무리, SIL OFL) — 앱 탑재 완료. 후보: Neodgm(닐로), 둥근모.
 
 ---
+
+## 추천 "스타일 통일" 세트 (솔로 현실안)
+| 축 | 선택 | 비고 |
+|---|---|---|
+| 캐릭터 | **Beowulf 144종** | 로스터 28 단번 확보, 기준 스타일 |
+| 몬스터 | **Cyangmou 50종** | 64×64로 Beowulf와 해상도 궁합 |
+| UI | **Pixel UI Kit(다크+골드)** | 현 색감과 일치 |
+| 아이콘 | **Clockwork Raven** | 전 아이템/스킬 커버 |
+| 배경 | **Castle Dungeon / 0x72** | 던전부터 |
+| 이펙트 | **10 Magic Effects** | 5속성 연출 |
+| 폰트 | **Galmuri** ✅ | 완료 |
 
 ## 통합 워크플로 (Gim ↔ Claude)
-1. Gim: 위에서 **캐릭터 1팩 + UI 1팩 + 배경 1팩** 우선 다운로드 (스타일 통일 위해 소수 정예).
-2. Gim: 압축 풀어 폴더 통째로 공유(또는 리포에 커밋).
-3. Claude: 우리 규격으로 정리 → `assets/pixel/` 교체, 캐릭터 매핑(28종 ↔ 스프라이트),
-   UI 컴포넌트를 실제 팩 프레임으로 교체.
+1. Gim: 위 세트에서 **캐릭터·UI·배경 우선** 다운로드(소수 정예).
+2. Gim: 압축 풀어 폴더 공유(또는 리포에 커밋).
+3. Claude: 우리 규격으로 정리 → `assets/pixel/` 교체, 캐릭터 28종 ↔ 스프라이트 매핑,
+   UI 컴포넌트를 실제 팩 프레임으로 교체, 아이콘 연결.
 4. 미리보기(play.html) → OTA/빌드 반영.
-
-## 우선순위 추천
-**캐릭터(Cute Fantasy RPG) → UI(Pixel UI Kit 다크+골드) → 배경(Castle Dungeon)** 3개면
-메인 화면을 "진짜 상용 픽셀 게임" 수준으로 끌어올릴 수 있습니다. 나머지는 그다음.
