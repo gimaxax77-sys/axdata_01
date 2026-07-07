@@ -9,6 +9,8 @@ export const ARCHETYPES = {
   VANGUARD: {
     id: 'VANGUARD',
     role: '방어',
+    roleLabel: '방어형',
+    trait: '높은 체력·방어로 전열을 지키는 수호자',
     base: { hp: 1200, atk: 60, def: 80, spd: 90 },
     // 지원형이 아니므로 팀 버프 없음
     teamBuff: null,
@@ -16,12 +18,16 @@ export const ARCHETYPES = {
   STRIKER: {
     id: 'STRIKER',
     role: '공격',
+    roleLabel: '공격형',
+    trait: '높은 공격력·속도로 적을 제압하는 딜러',
     base: { hp: 600, atk: 150, def: 30, spd: 130 },
     teamBuff: null,
   },
   SUPPORT: {
     id: 'SUPPORT',
     role: '지원',
+    roleLabel: '지원형',
+    trait: '팀 전체 공격력을 끌어올리는 지원가',
     base: { hp: 700, atk: 50, def: 40, spd: 110 },
     // 팀 전체 공격력 +15% (지원형의 시스템적 정체성)
     teamBuff: { stat: 'atk', mult: 0.15 },

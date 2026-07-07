@@ -6,6 +6,7 @@ import { charImage } from '../charImages';
 import { togglePartyMember, MAX_PARTY, getPartyUnits } from '../../system/core/gameState.mjs';
 import { teamSynergy } from '../../system/core/synergy.mjs';
 import { computeStats, computePower } from '../../system/core/stats.mjs';
+import { getArchetype } from '../../system/core/archetypes.mjs';
 import { levelCap } from '../../system/core/units.mjs';
 import { skillSlots, SKILL_CATALOG, equippableSkills } from '../../system/core/skills.mjs';
 import { identity, elementMeta } from '../../system/concepts/index.mjs';
@@ -85,6 +86,9 @@ export default function RosterScreen({ state, bump, concept }) {
   const grow = (fn) => { const n = repeat(fn, mult); if (n > 0) recordMission(state, 'upgrade', n); bump(); };
   const st8 = computeStats(unit);
   const meta = identity(concept, unit);
+  const arch = concept.archetypes[unit.archetype] || { name: unit.archetype, emoji: '❔' };
+  const archInfo = getArchetype(unit.archetype);
+  const em = meta.element && elementMeta(concept, meta.element);
   const atCap = unit.level >= levelCap(unit);
   const slots = skillSlots(unit);
 
@@ -139,7 +143,7 @@ export default function RosterScreen({ state, bump, concept }) {
               {party && <Text style={g.chipStar}>⭐</Text>}
               <Portrait emoji={m.emoji} image={charImage(concept.id, u.characterId)} rarity={u.rarity} size={46} badge />
               <Text style={g.chipName} numberOfLines={1}>{m.name}</Text>
-              <Text style={g.chipLv}>Lv.{u.level}</Text>
+              <Text style={g.chipLv}>Lv.{u.level} · {concept.archetypes[u.archetype]?.emoji}</Text>
             </TouchableOpacity>
           );
         })}
@@ -168,6 +172,21 @@ export default function RosterScreen({ state, bump, concept }) {
           {[['HP', st8.hp], ['ATK', st8.atk], ['DEF', st8.def], ['SPD', st8.spd]].map(([k, v]) => (
             <View key={k} style={g.stat}><Text style={g.statK}>{k}</Text><Text style={g.statV}>{fmt(v)}</Text></View>
           ))}
+        </View>
+
+        {/* 직업(클래스) · 특성 */}
+        <View style={g.jobBox}>
+          <View style={g.jobHead}>
+            <Text style={g.jobEmoji}>{arch.emoji}</Text>
+            <Text style={g.jobName}>{arch.name}</Text>
+            <Text style={g.jobRole}>{archInfo.roleLabel}</Text>
+          </View>
+          <Text style={g.jobTrait}>{archInfo.trait}</Text>
+          <View style={g.traitRow}>
+            {em && <View style={g.trait}><Text style={g.traitTxt}>{em.emoji} {em.name} 속성</Text></View>}
+            {meta.personality && <View style={g.trait}><Text style={g.traitTxt}>💬 {meta.personality}</Text></View>}
+            {archInfo.teamBuff && <View style={[g.trait, g.traitHl]}><Text style={g.traitTxtHl}>🤝 팀 공격 +{Math.round(archInfo.teamBuff.mult * 100)}%</Text></View>}
+          </View>
         </View>
       </Card>
 
@@ -576,6 +595,17 @@ const g = StyleSheet.create({
   stat: { flex: 1, backgroundColor: T.surface2, borderRadius: 10, paddingVertical: 8, alignItems: 'center' },
   statK: { color: T.muted, fontSize: 11 },
   statV: { color: T.text, fontWeight: '800', fontSize: 15, marginTop: 2 },
+  jobBox: { marginTop: 14, backgroundColor: T.surface2, borderRadius: 12, padding: 12 },
+  jobHead: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  jobEmoji: { fontSize: 20 },
+  jobName: { color: T.text, fontWeight: '800', fontSize: 15 },
+  jobRole: { color: '#3a2a05', backgroundColor: T.accent, fontSize: 11, fontWeight: '800', paddingHorizontal: 7, paddingVertical: 2, borderRadius: 7, overflow: 'hidden' },
+  jobTrait: { color: T.muted, fontSize: 12, marginTop: 6, lineHeight: 17 },
+  traitRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 10 },
+  trait: { backgroundColor: T.surface, borderRadius: 8, paddingHorizontal: 9, paddingVertical: 4, borderWidth: 1, borderColor: T.line },
+  traitTxt: { color: T.text, fontSize: 12, fontWeight: '600' },
+  traitHl: { borderColor: T.primary, backgroundColor: 'rgba(139,111,214,0.15)' },
+  traitTxtHl: { color: T.primary, fontSize: 12, fontWeight: '800' },
   slotRow: { flexDirection: 'row', alignItems: 'center', backgroundColor: T.surface2, borderRadius: 12, padding: 12, marginBottom: 8 },
   slotLocked: { opacity: 0.5 },
   slotName: { color: T.text, fontWeight: '800', fontSize: 14 },
