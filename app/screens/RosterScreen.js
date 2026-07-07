@@ -520,6 +520,7 @@ export default function RosterScreen({ state, bump, concept }) {
           <View style={{ flex: 1 }}><Btn small label={atCap ? '상한 (돌파 필요)' : `레벨업 ${multLabel(mult)}`} disabled={atCap} onPress={() => grow(() => levelUp(state, unit.uid))} /></View>
           <View style={{ flex: 1 }}><Btn small kind="ghost" label={`돌파 (랭크↑) ${multLabel(mult)}`} onPress={() => grow(() => ascend(state, unit.uid))} /></View>
         </View>
+        <Text style={g.ascHint}>{MATERIAL_META.ascendStone.emoji} 돌파석 {fmt(materialCount(state, 'ascendStone'))} · 이번 돌파 필요 {unit.rank * 2}{materialCount(state, 'ascendStone') < unit.rank * 2 ? ' (부족 시 소환석 대체)' : ''}</Text>
         <Text style={g.subsec}>각인 (특정 스탯 집중) · {multLabel(mult)}</Text>
         <View style={g.btnRow}>
           {['atk', 'hp', 'def', 'crit'].map((s2) => (
@@ -750,6 +751,7 @@ const g = StyleSheet.create({
   statK: { color: T.muted, fontSize: 11 },
   statV: { color: T.text, fontWeight: '800', fontSize: 15, marginTop: 2 },
   bdToggle: { color: T.accent, fontSize: 12, fontWeight: '700' },
+  ascHint: { color: T.muted, fontSize: 11, marginTop: 6 },
   bdBox: { marginTop: 12, backgroundColor: T.surface2, borderRadius: 12, padding: 12 },
   bdTitle: { color: T.text, fontWeight: '800', fontSize: 13, marginBottom: 8 },
   bdRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 6 },
