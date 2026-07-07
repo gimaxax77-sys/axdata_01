@@ -1,19 +1,23 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, Image, TouchableOpacity, StyleSheet } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { T, rarityMeta } from './theme';
 
 // ── 캐릭터 초상 — 등급 프레임 + 글로우. 로스터/파티/소환/도감 공용 ──
-export function Portrait({ emoji, rarity = 'N', size = 56, badge = false, glow = true, dim = false, style }) {
+//   image(있으면): 캐릭터 일러스트를 프레임 안에 렌더. 없으면 emoji 폴백.
+export function Portrait({ emoji, image = null, rarity = 'N', size = 56, badge = false, glow = true, dim = false, style }) {
   const rm = rarityMeta(rarity);
   const radius = size * 0.26;
   const ring = Math.max(2, size * 0.045);
+  const innerR = radius - ring;
   return (
     <View style={[glow && { shadowColor: rm.color, shadowOpacity: rarity === 'N' ? 0 : 0.9, shadowRadius: size * 0.16, shadowOffset: { width: 0, height: 0 } }, style]}>
       <LinearGradient colors={rm.grad} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
         style={{ width: size, height: size, borderRadius: radius, padding: ring, alignItems: 'center', justifyContent: 'center' }}>
-        <LinearGradient colors={[T.surface2, T.surface]} style={{ width: '100%', height: '100%', borderRadius: radius - ring, alignItems: 'center', justifyContent: 'center' }}>
-          <Text style={{ fontSize: size * 0.5, opacity: dim ? 0.4 : 1 }}>{emoji}</Text>
+        <LinearGradient colors={[T.surface2, T.surface]} style={{ width: '100%', height: '100%', borderRadius: innerR, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
+          {image
+            ? <Image source={image} style={{ width: '100%', height: '100%', opacity: dim ? 0.4 : 1 }} resizeMode="cover" />
+            : <Text style={{ fontSize: size * 0.5, opacity: dim ? 0.4 : 1 }}>{emoji}</Text>}
         </LinearGradient>
       </LinearGradient>
       {badge && (

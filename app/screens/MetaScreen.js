@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet, ScrollView } from 'react-native';
 import { T } from '../theme';
 import { Card, Btn, fmt, Portrait } from '../components';
+import { charImage } from '../charImages';
 import {
   achievementList, claimAchievement, collectionList, claimCollection,
   seasonProgress, seasonTierList, claimSeason, buySeasonPremium, ownedCharacterIds, metaGrantPreview,
@@ -72,7 +73,7 @@ export default function MetaScreen({ state, bump, concept }) {
             const has = owned.has(ch.id);
             return (
               <View key={ch.id} style={[c.dex, has && c.dexOn]}>
-                <Portrait emoji={has ? ch.emoji : '❔'} rarity={has ? ch.rarity : 'N'} size={40} dim={!has} glow={has} />
+                <Portrait emoji={has ? ch.emoji : '❔'} image={has ? charImage(concept.id, ch.id) : null} rarity={has ? ch.rarity : 'N'} size={40} dim={!has} glow={has} />
                 <Text style={c.dexName} numberOfLines={1}>{has ? ch.name : '???'}</Text>
                 {has ? <Text style={c.dexRarity}>{ch.rarity}</Text> : <Text style={c.dexRarity}> </Text>}
               </View>

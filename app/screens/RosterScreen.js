@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Modal } from 'react-native';
 import { T } from '../theme';
 import { Card, Btn, fmt, MultiToggle, repeat, Portrait } from '../components';
+import { charImage } from '../charImages';
 import { togglePartyMember, MAX_PARTY, getPartyUnits } from '../../system/core/gameState.mjs';
 import { teamSynergy } from '../../system/core/synergy.mjs';
 import { computeStats, computePower } from '../../system/core/stats.mjs';
@@ -105,7 +106,7 @@ export default function RosterScreen({ state, bump, concept }) {
                 onPress={() => pu && setSel(pu.uid)}
                 style={[g.partySlot, pu && g.partySlotOn, pu && pu.uid === unit.uid && g.partySlotSel]}>
                 {pu ? (<>
-                  <Portrait emoji={pm.emoji} rarity={pu.rarity} size={44} />
+                  <Portrait emoji={pm.emoji} image={charImage(concept.id, pu.characterId)} rarity={pu.rarity} size={44} />
                   <Text style={g.partyName} numberOfLines={1}>{pm.name}</Text>
                 </>) : <Text style={g.partyEmpty}>＋</Text>}
               </TouchableOpacity>
@@ -136,7 +137,7 @@ export default function RosterScreen({ state, bump, concept }) {
           return (
             <TouchableOpacity key={u.uid} onPress={() => setSel(u.uid)} style={[g.chip, on && g.chipOn]} activeOpacity={0.8}>
               {party && <Text style={g.chipStar}>⭐</Text>}
-              <Portrait emoji={m.emoji} rarity={u.rarity} size={46} badge />
+              <Portrait emoji={m.emoji} image={charImage(concept.id, u.characterId)} rarity={u.rarity} size={46} badge />
               <Text style={g.chipName} numberOfLines={1}>{m.name}</Text>
               <Text style={g.chipLv}>Lv.{u.level}</Text>
             </TouchableOpacity>
@@ -147,7 +148,7 @@ export default function RosterScreen({ state, bump, concept }) {
       {/* 상세 */}
       <Card style={{ marginTop: 6 }}>
         <View style={g.head}>
-          <Portrait emoji={meta.emoji} rarity={unit.rarity} size={62} badge style={{ marginRight: 4 }} />
+          <Portrait emoji={meta.emoji} image={charImage(concept.id, unit.characterId)} rarity={unit.rarity} size={62} badge style={{ marginRight: 4 }} />
           <View style={{ flex: 1 }}>
             <Text style={g.headName}>{meta.name}{unit.rarity ? <Text style={g.rarity}>  {unit.rarity}</Text> : null}</Text>
             {(meta.title || meta.personality) && (

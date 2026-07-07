@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, ScrollView, Animated } from 'react-native';
 import { T, rarityMeta } from '../theme';
 import { Card, Btn, fmt, Portrait } from '../components';
+import { charImage } from '../charImages';
 import { summonOne, summonMulti, PULL_COST } from '../../system/core/gacha.mjs';
 import { identity } from '../../system/concepts/index.mjs';
 import { recordMission } from '../../system/core/daily.mjs';
@@ -10,7 +11,7 @@ import { LockedPanel } from '../components';
 
 
 // 소환 결과 한 칸 — 등장 시 페이드+스케일+글로우 (등급 높을수록 늦게=강조).
-function RevealCell({ index, rarity, emoji, name }) {
+function RevealCell({ index, rarity, emoji, image, name }) {
   const rm = rarityMeta(rarity);
   const a = useRef(new Animated.Value(0)).current;
   useEffect(() => {
@@ -21,7 +22,7 @@ function RevealCell({ index, rarity, emoji, name }) {
     <Animated.View style={{ opacity: a, transform: [{ scale: a.interpolate({ inputRange: [0, 1], outputRange: [0.6, 1] }) }] }}>
       <View style={[s.cell, { borderColor: rm.color }]}>
         <Text style={[s.cellRarity, { color: rm.color }]}>{rm.label}</Text>
-        <Portrait emoji={emoji} rarity={rarity} size={52} badge />
+        <Portrait emoji={emoji} image={image} rarity={rarity} size={52} badge />
         <Text style={s.cellName} numberOfLines={1}>{name}</Text>
       </View>
     </Animated.View>
@@ -82,7 +83,8 @@ export default function GachaScreen({ state, bump, concept }) {
           <View style={s.grid}>
             {results.map((r, i) => (
               <RevealCell key={`${resultsKey}-${i}`} index={i} rarity={r.rarity}
-                emoji={identity(concept, r.unit).emoji} name={identity(concept, r.unit).name} />
+                emoji={identity(concept, r.unit).emoji} image={charImage(concept.id, r.unit.characterId)}
+                name={identity(concept, r.unit).name} />
             ))}
           </View>
         </Card>
