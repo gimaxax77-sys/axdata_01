@@ -30,8 +30,14 @@ export const BALANCE = {
   powerWeights: { hp: 0.15, atk: 1.2, def: 0.6, spd: 1.0 },
   // 전투 효과(치명·흡혈·관통·피해감소=회피성)를 전투력에 환산.
   //   값은 "효과 1.0(=100%)당 전투력 기여". 실제 효과는 소수(0.1~0.5)이므로
-  //   critChance 0.15 → 800×0.15 = +120 전투력 식으로 반영된다.
-  powerEffectWeights: { critChance: 800, critDamage: 400, lifesteal: 600, defPierce: 700, dmgReduce: 900 },
+  //   lifesteal 0.15 → 900×0.15 = +135 전투력 식으로 반영된다.
+  //   계수는 resolution.mjs의 실제 전투 기여에 맞춰 산정(감이 아니라 공식 기반):
+  //   · lifesteal(900)/dmgReduce(1000): 순수 생존(유효 HP)축 → 포인트당 최고.
+  //       dmgReduce는 감쇠 1/(1-r)가 가속적이라 흡혈보다 소폭 높게.
+  //   · critChance(500)×critDamage(250): dps=×(1+치명확률·치명피해)로 서로 곱 커플링.
+  //       전형값(치명피해~0.5·치명확률~0.25)을 상대 계수로 반영 → 500/250.
+  //   · defPierce(500): 고방어 적에게만 유효(상황적) → 흡혈 대비 할인.
+  powerEffectWeights: { critChance: 500, critDamage: 250, lifesteal: 900, defPierce: 500, dmgReduce: 1000 },
 
   // 성장 비용 (지출 곡선) — 시뮬레이터가 밝혀낸 핵심 튜닝 포인트
   levelCostBase: 50, levelCostGrowth: 1.15, // 레벨업 (growth)
