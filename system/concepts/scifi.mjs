@@ -61,6 +61,11 @@ export const scifiConcept = {
       lines: { greet: '손상 스캔 개시.', bond: '링크 안정도 최적.', levelup: '수복 효율 상승.' } },
     { id: 'signe', name: '클래리온', emoji: '📯', title: '전술 지휘 유닛', personality: '결연한', element: 'FIRE', archetype: 'SUPPORT', rarity: 'R', signature: 'SIG_WAR_CHANT',
       lines: { greet: '전술 링크 개방.', bond: '지휘 동기화 완료.', levelup: '지휘 대역 확장.' } },
+    // ── P3 신화(UR) ──
+    { id: 'aurel', name: '오리온', emoji: '🌟', title: '여명 프로토타입', personality: '숭고한', element: 'LIGHT', archetype: 'STRIKER', rarity: 'UR', signature: 'SIG_DAWNBREAKER',
+      lines: { greet: '여명 시퀀스 개시.', bond: '수호 대상 최우선 등록.', levelup: '광자 출력 초월.' } },
+    { id: 'nyx', name: '아뷔스', emoji: '🔮', title: '심연 예측 코어', personality: '초월적인', element: 'DARK', archetype: 'SUPPORT', rarity: 'UR', signature: 'SIG_ABYSS_ORACLE',
+      lines: { greet: '심연 연산 접속.', bond: '네 궤적, 상시 추적.', levelup: '예측 심도 확장.' } },
   ],
 
   // 코스튬 — fantasy와 같은 구조(같은 캐릭터 id·해금·보너스), SF 외형.
@@ -77,6 +82,8 @@ export const scifiConcept = {
     frost: { id: 'frost_c1', name: '극저온 코팅', emoji: '❄️', unlock: 5, bonus: { atk: 0.06, hp: 0.06, def: 0.06, spd: 0.06 } },
     marina: { id: 'marina_c1', name: '나노 수복막', emoji: '🌊', unlock: 5, bonus: { atk: 0.06, hp: 0.06, def: 0.06, spd: 0.06 } },
     signe: { id: 'signe_c1', name: '지휘 안테나', emoji: '🎺', unlock: 5, bonus: { atk: 0.06, hp: 0.06, def: 0.06, spd: 0.06 } },
+    aurel: { id: 'aurel_c1', name: '광자 프레임', emoji: '🌟', unlock: 5, bonus: { atk: 0.06, hp: 0.06, def: 0.06, spd: 0.06 } },
+    nyx: { id: 'nyx_c1', name: '심연 코어', emoji: '🌌', unlock: 5, bonus: { atk: 0.06, hp: 0.06, def: 0.06, spd: 0.06 } },
   },
 
   // 스토리 캠페인 — 같은 진행/전투 로직, SF 서사로 교체.

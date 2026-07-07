@@ -27,6 +27,7 @@ export const RARITY_META = {
   R: { label: '레어', color: '#5aa9e6', grad: ['#6cbcf5', '#3a7fc4'], glow: 'rgba(90,169,230,0.45)' },
   SR: { label: '에픽', color: '#c98bff', grad: ['#d9a0ff', '#9b5fe0'], glow: 'rgba(201,139,255,0.5)' },
   SSR: { label: '전설', color: '#f5c542', grad: ['#ffe27a', '#e8a91f'], glow: 'rgba(245,197,66,0.6)' },
+  UR: { label: '신화', color: '#ff5e8a', grad: ['#ff9ec4', '#e0407a'], glow: 'rgba(255,94,138,0.7)' },
 };
 export function rarityMeta(r) {
   return RARITY_META[r] || RARITY_META.N;

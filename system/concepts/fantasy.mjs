@@ -63,6 +63,11 @@ export const fantasyConcept = {
       lines: { greet: '다친 곳은 없나요?', bond: '당신 곁이 제 바다예요.', levelup: '조수가 차오릅니다.' } },
     { id: 'signe', name: '시그네', emoji: '📯', title: '전열의 고수병', personality: '용맹한', element: 'FIRE', archetype: 'SUPPORT', rarity: 'R', signature: 'SIG_WAR_CHANT',
       lines: { greet: '진격 준비!', bond: '너와 함께라면 두렵지 않아!', levelup: '함성이 우렁차진다!' } },
+    // ── P3 신화(UR) ──
+    { id: 'aurel', name: '아우렐', emoji: '🌟', title: '여명의 성검사', personality: '고결한', element: 'LIGHT', archetype: 'STRIKER', rarity: 'UR', signature: 'SIG_DAWNBREAKER',
+      lines: { greet: '여명이 어둠을 가른다.', bond: '너의 곁에서 새벽을 지키겠다.', levelup: '빛이 검에 깃든다!' } },
+    { id: 'nyx', name: '닉스', emoji: '🔮', title: '심연의 대예언자', personality: '초연한', element: 'DARK', archetype: 'SUPPORT', rarity: 'UR', signature: 'SIG_ABYSS_ORACLE',
+      lines: { greet: '심연이 너를 응시한다.', bond: '네 운명, 내가 지켜보마.', levelup: '계시가 깊어진다.' } },
   ],
 
   // 코스튬 — 캐릭터별 외형+소량 보너스. 친밀도 Lv로 해금.
@@ -80,6 +85,8 @@ export const fantasyConcept = {
     frost: { id: 'frost_c1', name: '빙결 예장', emoji: '❄️', unlock: 5, bonus: { atk: 0.06, hp: 0.06, def: 0.06, spd: 0.06 } },
     marina: { id: 'marina_c1', name: '심해 예복', emoji: '🌊', unlock: 5, bonus: { atk: 0.06, hp: 0.06, def: 0.06, spd: 0.06 } },
     signe: { id: 'signe_c1', name: '전열 군장', emoji: '🎺', unlock: 5, bonus: { atk: 0.06, hp: 0.06, def: 0.06, spd: 0.06 } },
+    aurel: { id: 'aurel_c1', name: '여명 성의', emoji: '🌟', unlock: 5, bonus: { atk: 0.06, hp: 0.06, def: 0.06, spd: 0.06 } },
+    nyx: { id: 'nyx_c1', name: '심연 법의', emoji: '🌌', unlock: 5, bonus: { atk: 0.06, hp: 0.06, def: 0.06, spd: 0.06 } },
   },
 
   // 스토리 캠페인 — 월드 서사(챕터별 보스 앞의 이야기). Core가 진행/전투를 담당.

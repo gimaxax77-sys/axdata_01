@@ -11,10 +11,11 @@ import { weightedPick } from './rng.mjs';
 // ─────────────────────────────────────────────────────────────
 
 export const RARITY = {
-  N: { id: 'N', label: '노멀', weight: 50, startRank: 1 },
-  R: { id: 'R', label: '레어', weight: 33, startRank: 1 },
-  SR: { id: 'SR', label: '에픽', weight: 14, startRank: 2 },
-  SSR: { id: 'SSR', label: '전설', weight: 3, startRank: 3 },
+  N: { id: 'N', label: '노멀', weight: 100, startRank: 1 },
+  R: { id: 'R', label: '레어', weight: 66, startRank: 1 },
+  SR: { id: 'SR', label: '에픽', weight: 28, startRank: 2 },
+  SSR: { id: 'SSR', label: '전설', weight: 5, startRank: 3 },
+  UR: { id: 'UR', label: '신화', weight: 1, startRank: 4 }, // 최고 티어 (~0.5%)
 };
 
 const ARCH_IDS = ['VANGUARD', 'STRIKER', 'SUPPORT'];
@@ -71,7 +72,7 @@ export function summonOne(state, rng = Math.random, pool = null) {
     state.gacha.pity = 0;
   } else {
     rarity = rollRarity(rng);
-    if (rarity.id === 'SSR') state.gacha.pity = 0; // SSR 뽑으면 천장 리셋
+    if (rarity.id === 'SSR' || rarity.id === 'UR') state.gacha.pity = 0; // 최고등급 뽑으면 천장 리셋
   }
   return { ok: true, ...grant(state, rarity, rng, pool) };
 }
@@ -83,7 +84,7 @@ export function summonMulti(state, count = 10, rng = Math.random, pool = null) {
     return { ok: false, reason: '소환 재화 부족', cost };
   }
   const results = [];
-  const rank = { N: 0, R: 1, SR: 2, SSR: 3 };
+  const rank = { N: 0, R: 1, SR: 2, SSR: 3, UR: 4 };
   for (let i = 0; i < count; i++) {
     state.gacha.pity += 1;
     let rarity;
@@ -92,7 +93,7 @@ export function summonMulti(state, count = 10, rng = Math.random, pool = null) {
       state.gacha.pity = 0;
     } else {
       rarity = rollRarity(rng);
-      if (rarity.id === 'SSR') state.gacha.pity = 0;
+      if (rarity.id === 'SSR' || rarity.id === 'UR') state.gacha.pity = 0;
     }
     results.push(grant(state, rarity, rng, pool));
   }

@@ -77,6 +77,10 @@ export const SKILL_CATALOG = {
   SIG_GLACIER_EDGE: { id: 'SIG_GLACIER_EDGE', label: '빙하검', desc: '공격+관통·치명피해(처형)', signature: true, statPct: { atk: 0.18 }, effect: { defPierce: 0.15, critDamage: 0.4 }, awaken: { effect: { critChance: 0.05 } } },
   SIG_TIDE_HYMN: { id: 'SIG_TIDE_HYMN', label: '조수 성가', desc: '팀 피해경감+강한 흡혈(수호 치유)', signature: true, teamBuff: { def: 0.15 }, effect: { lifesteal: 0.25 }, awaken: { teamBuff: { def: 0.05 } } },
   SIG_WAR_CHANT: { id: 'SIG_WAR_CHANT', label: '전열 함성', desc: '팀 공격+자신 속도(지휘)', signature: true, teamBuff: { atk: 0.20 }, statPct: { spd: 0.2 }, awaken: { teamBuff: { atk: 0.05 } } },
+
+  // ── P3 신화(UR) 전용 스킬 — 최상위, 복합 강력 ────────────────
+  SIG_DAWNBREAKER: { id: 'SIG_DAWNBREAKER', label: '여명검', desc: '공격+치명+관통+팀치명(초월 딜러)', signature: true, statPct: { atk: 0.25 }, effect: { critChance: 0.25, critDamage: 0.6, defPierce: 0.15 }, teamBuff: { critChance: 0.08 }, awaken: { effect: { critDamage: 0.2 } } },
+  SIG_ABYSS_ORACLE: { id: 'SIG_ABYSS_ORACLE', label: '심연 계시', desc: '팀 공격+피해경감+치명(만능 지원)', signature: true, teamBuff: { atk: 0.18, def: 0.12, critChance: 0.1 }, effect: { lifesteal: 0.1 }, awaken: { teamBuff: { atk: 0.05, def: 0.03 } } },
 };
 
 // 시그니처 각성 상한 + 비용 (같은 캐릭터 조각=소환 재화 + 프리미엄).

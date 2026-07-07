@@ -49,7 +49,7 @@ export default function GachaScreen({ state, bump, concept }) {
     if (res.length) {
       recordMission(state, 'summon', res.length); setResults(res.slice(-20)); setResultsKey((k) => k + 1);
       fx('summon');
-      const rank = { N: 0, R: 1, SR: 2, SSR: 3 };
+      const rank = { N: 0, R: 1, SR: 2, SSR: 3, UR: 4 };
       const best = res.reduce((m, r) => Math.max(m, rank[r.rarity]), 0);
       setTimeout(() => fx(best >= 3 ? 'ssr' : best >= 2 ? 'sr' : 'success'), 480);
     }
@@ -69,7 +69,7 @@ export default function GachaScreen({ state, bump, concept }) {
       <Card style={s.banner}>
         <Text style={s.bannerEmoji}>{concept.resources.summon.emoji}</Text>
         <Text style={s.bannerTitle}>{concept.terms.unit} 소환</Text>
-        <Text style={s.bannerSub}>확률: N 50 · R 33 · SR 14 · SSR 3 (%)</Text>
+        <Text style={s.bannerSub}>확률: N 50 · R 33 · SR 14 · SSR 2.5 · UR 0.5 (%)</Text>
         <Text style={s.pity}>천장까지 {90 - state.gacha.pity}회 · 보유 {concept.resources.summon.emoji} {fmt(state.wallet.summon)}</Text>
       </Card>
 

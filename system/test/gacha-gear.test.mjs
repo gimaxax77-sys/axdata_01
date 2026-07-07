@@ -31,7 +31,7 @@ test('gacha: 소환 재화 부족 시 실패', () => {
 });
 
 test('gacha: 10연차 최소 1개 SR 이상 보장(floor)', () => {
-  const rank = { N: 0, R: 1, SR: 2, SSR: 3 };
+  const rank = { N: 0, R: 1, SR: 2, SSR: 3, UR: 4 };
   for (let seed = 1; seed <= 5; seed++) {
     const s = stateWith({ summon: 100 });
     const r = summonMulti(s, 10, makeRng(seed));
@@ -45,6 +45,20 @@ test('gacha: 90회 천장 안에 SSR 보장', () => {
   let sawSSR = false;
   for (let i = 0; i < 90; i++) { if (summonOne(s, makeRng(999)).rarity === 'SSR') { sawSSR = true; break; } }
   assert.ok(sawSSR, '천장 내 SSR');
+});
+
+test('UR: 새 최고 티어 — 배수·천장(완전SSR<무발현UR)·소환 획득', async () => {
+  const { RARITY_BASE_MULT, SEED_FULL } = await import('../core/seed.mjs');
+  const { RARITY } = await import('../core/gacha.mjs');
+  // 배수 서열
+  assert.ok(RARITY_BASE_MULT.UR > RARITY_BASE_MULT.SSR, 'UR 기본배수 최고');
+  // 천장: 완전 발현 SSR도 무발현 UR을 넘지 못함
+  const effSSR = RARITY_BASE_MULT.SSR * (1 + SEED_FULL.SSR);
+  const effUR = RARITY_BASE_MULT.UR * (1 + 0);
+  assert.ok(effSSR < effUR, `완전SSR(${effSSR.toFixed(3)}) < 무발현UR(${effUR.toFixed(3)})`);
+  // 가챠 등급표에 UR 존재 + 최저 확률
+  assert.ok(RARITY.UR && RARITY.UR.weight < RARITY.SSR.weight, 'UR이 가장 희귀');
+  assert.equal(RARITY.UR.startRank, 4);
 });
 
 test('gear: 제작→장착→강화→해제 왕복', () => {
