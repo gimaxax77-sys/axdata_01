@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { View, Text, ImageBackground, Image, TouchableOpacity, StyleSheet } from 'react-native';
+import React, { useState, useRef, useEffect } from 'react';
+import { View, Text, ImageBackground, Image, TouchableOpacity, StyleSheet, Animated, Easing } from 'react-native';
 import { fmt } from '../components';
 import { effectivePower, powerMultOf } from '../useGame';
 import { idleGenre } from '../../system/genres/idle.mjs';
@@ -44,8 +44,24 @@ function HpBar({ pct, color }) {
   );
 }
 
+// 대기 흔들림(bob) 애니메이션 훅.
+function useBob(range, dur, delay = 0) {
+  const v = useRef(new Animated.Value(0)).current;
+  useEffect(() => {
+    const loop = Animated.loop(Animated.sequence([
+      Animated.timing(v, { toValue: 1, duration: dur, delay, easing: Easing.inOut(Easing.sin), useNativeDriver: true }),
+      Animated.timing(v, { toValue: 0, duration: dur, easing: Easing.inOut(Easing.sin), useNativeDriver: true }),
+    ]));
+    loop.start();
+    return () => loop.stop();
+  }, []);
+  return v.interpolate({ inputRange: [0, 1], outputRange: [0, range] });
+}
+
 export default function PixelIdleScreen({ state, bump, lastGain, concept }) {
   const [boxMsg, setBoxMsg] = useState(null);
+  const heroBob = useBob(-6, 900);
+  const enemyBob = useBob(-9, 1300, 200);
   const power = effectivePower(state);
   const mult = powerMultOf(state);
   const stageDef = playStage(state);
@@ -69,7 +85,8 @@ export default function PixelIdleScreen({ state, bump, lastGain, concept }) {
   ];
 
   return (
-    <ImageBackground source={BG} style={ps.bg} resizeMode="cover">
+    <View style={ps.root}>
+      <ImageBackground source={BG} style={StyleSheet.absoluteFill} resizeMode="cover" />
       <View style={ps.dim} pointerEvents="none" />
 
       {/* 상단: 자원 + 스테이지 배너 */}
@@ -87,18 +104,20 @@ export default function PixelIdleScreen({ state, bump, lastGain, concept }) {
         </Px>
       </View>
 
-      {/* 전투 무대 */}
-      <View style={ps.arena}>
+      {/* 전투 무대 — 바닥(마법진)에 서게 절대배치 */}
+      <View style={ps.arena} pointerEvents="none">
         <View style={ps.fighter}>
           <Text style={ps.crit}>크리티컬!</Text>
-          <Image source={HERO} style={ps.heroImg} resizeMode="contain" />
+          <Animated.Image source={HERO} style={[ps.heroImg, { transform: [{ translateY: heroBob }] }]} resizeMode="contain" />
+          <View style={ps.shadow} />
           <Text style={[ps.name, { color: C.goldL }]}>{leadMeta ? leadMeta.name : '용사'} {lead ? `Lv.${lead.level}` : ''}</Text>
           <HpBar pct={0.78} color={C.good} />
         </View>
-        <Text style={ps.vs}>✦</Text>
+        <Text style={ps.vs}>⚔</Text>
         <View style={ps.fighter}>
           <Text style={ps.dmg}>-{fmt(Math.round(power * 3))}</Text>
-          <Image source={ENEMY} style={ps.enemyImg} resizeMode="contain" />
+          <Animated.Image source={ENEMY} style={[ps.enemyImg, { transform: [{ translateY: enemyBob }] }]} resizeMode="contain" />
+          <View style={ps.shadow} />
           <Text style={[ps.name, { color: C.pink }]}>{enemyEl?.name} 수호자</Text>
           <HpBar pct={0.34} color={C.danger} />
         </View>
@@ -140,17 +159,17 @@ export default function PixelIdleScreen({ state, bump, lastGain, concept }) {
         </TouchableOpacity>
         {boxMsg ? <Text style={ps.box}>{boxMsg}</Text> : null}
       </View>
-    </ImageBackground>
+    </View>
   );
 }
 
 const ps = StyleSheet.create({
-  bg: { flex: 1, justifyContent: 'space-between' },
+  root: { flex: 1 },
   dim: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(8,6,16,0.15)' },
   panel: { backgroundColor: C.panel, borderWidth: 2, borderColor: C.bd, borderRadius: 4, overflow: 'hidden' },
   panelHi: { position: 'absolute', top: 0, left: 0, right: 0, height: 2, backgroundColor: C.bdHi },
 
-  top: { paddingHorizontal: 8, paddingTop: 8, gap: 8 },
+  top: { position: 'absolute', top: 0, left: 0, right: 0, paddingHorizontal: 8, paddingTop: 8, gap: 8 },
   resBar: { flexDirection: 'row', justifyContent: 'space-around', paddingVertical: 7, paddingHorizontal: 6 },
   resTxt: { fontFamily: FB, fontSize: 12 },
   banner: { alignSelf: 'center', paddingHorizontal: 22, paddingVertical: 6, alignItems: 'center', minWidth: 200 },
@@ -158,16 +177,18 @@ const ps = StyleSheet.create({
   bannerStage: { fontFamily: FB, fontSize: 20, color: C.gold, marginTop: 2 },
   diff: { fontFamily: FB, fontSize: 12, color: C.danger },
 
-  arena: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-around', paddingHorizontal: 10, marginBottom: 8 },
-  fighter: { alignItems: 'center', width: 130 },
-  heroImg: { width: 118, height: 118 },
-  enemyImg: { width: 118, height: 118 },
-  name: { fontFamily: FB, fontSize: 11, marginTop: 2, textShadowColor: '#000', textShadowRadius: 3 },
-  crit: { fontFamily: FB, fontSize: 11, color: C.gold, marginBottom: -6, textShadowColor: '#000', textShadowRadius: 3 },
-  dmg: { fontFamily: FB, fontSize: 15, color: C.goldL, marginBottom: -6, textShadowColor: '#000', textShadowRadius: 3 },
-  vs: { fontFamily: FB, fontSize: 20, color: C.goldL, marginBottom: 40 },
+  // 무대: 화면 중앙~하단(배경 바닥/마법진 위)에 발이 닿게 절대배치
+  arena: { position: 'absolute', left: 0, right: 0, top: '40%', flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-around', paddingHorizontal: 6 },
+  fighter: { alignItems: 'center', width: 140 },
+  heroImg: { width: 128, height: 128 },
+  enemyImg: { width: 118, height: 118, marginBottom: 14 },
+  shadow: { width: 62, height: 10, borderRadius: 6, backgroundColor: 'rgba(0,0,0,0.45)', marginTop: -6 },
+  name: { fontFamily: FB, fontSize: 12, marginTop: 4, textShadowColor: '#000', textShadowRadius: 3 },
+  crit: { fontFamily: FB, fontSize: 12, color: C.gold, marginBottom: -4, textShadowColor: '#000', textShadowRadius: 3 },
+  dmg: { fontFamily: FB, fontSize: 16, color: C.goldL, marginBottom: -4, textShadowColor: '#000', textShadowRadius: 3 },
+  vs: { fontFamily: FB, fontSize: 22, color: C.goldL, marginBottom: 60, textShadowColor: '#000', textShadowRadius: 4 },
 
-  bottom: { paddingHorizontal: 8, paddingBottom: 8, gap: 8 },
+  bottom: { position: 'absolute', bottom: 0, left: 0, right: 0, paddingHorizontal: 8, paddingBottom: 8, gap: 8 },
   statRow: { flexDirection: 'row', gap: 8 },
   stat: { flex: 1, alignItems: 'center', paddingVertical: 8 },
   statK: { fontFamily: F, fontSize: 9, color: C.dim },
