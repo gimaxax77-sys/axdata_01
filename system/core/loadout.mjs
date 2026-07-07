@@ -1,7 +1,8 @@
 import { equippableSkills, skillSlots } from './skills.mjs';
-import { GEAR_SLOTS, GEAR_CATALOG, gearContribution, equipGear, craftGear, gearCraftCost } from './gear.mjs';
+import { GEAR_SLOTS, GEAR_CATALOG, equipGear, craftGear, gearCraftCost } from './gear.mjs';
 import { RUNE_SLOTS, runeMainValue, equipRune } from './runes.mjs';
 import { equipSkill } from './character.mjs';
+import { computePower } from './stats.mjs';
 
 // ─────────────────────────────────────────────────────────────
 // 추천 빌드 — 보유 자원 중 최적 조합을 한 번에 장착하는 QoL.
@@ -27,14 +28,14 @@ function skillScore(skill, w) {
   return (p.atk || 0) * w.atk + (p.hp || 0) * w.hp + (p.def || 0) * w.def + (p.spd || 0) * w.spd
     + effectSum(skill.effect) * w.effect + team * w.team;
 }
-// 장비 flat은 스탯 규모가 달라 정규화(hp/40)해서 합산. 부옵션 statPct/effect도 반영.
-function gearScore(item, w) {
-  const c = gearContribution(item);
-  const f = c.flat;
-  const p = c.statPct || {};
-  return (f.atk || 0) * w.atk + ((f.hp || 0) / 40) * w.hp + (f.def || 0) * w.def
-    + (f.spd || 0) * w.spd + effectSum(c.effect) * 120 * w.effect
-    + ((p.atk || 0) + (p.hp || 0) + (p.def || 0) + (p.spd || 0)) * 200; // 부옵션 statPct 가중
+// 장비 후보를 슬롯에 임시 장착했을 때의 실제 전투력(computePower) — 휴리스틱이
+// 아니라 진짜 파워로 비교하므로 "더 강한 장비"를 항상 정확히 고른다.
+function powerWithGear(unit, slot, item) {
+  const prev = unit.gear[slot];
+  unit.gear[slot] = item || null;
+  const p = computePower(unit);
+  unit.gear[slot] = prev; // 원복 (실제 장착은 equipGear가 담당)
+  return p;
 }
 
 // 한 유닛의 스킬·장비·룬을 추천값으로 장착. { ok, changed:{skills,gear,runes} }.
@@ -65,29 +66,32 @@ export function optimizeLoadout(state, unitUid, scope = 'all') {
 
   if (!doGear) return { ok: true, changed };
 
-  // 2) 장비 — 슬롯별로 (a) 인벤토리 최고가 장착품보다 나으면 교체,
-  //    아니면 (b) 감당 가능한 상위 설계도가 장착품보다 나으면 제작·장착.
-  //    → 빈 슬롯은 채우고, 낀 슬롯도 더 좋은 티어가 있으면 업그레이드(항상 개선).
+  // 2) 장비 — 슬롯별로 실제 전투력 기준 최적 선택:
+  //    (a) 인벤토리 후보 중 파워를 가장 높이는 것이 장착품보다 강하면 교체,
+  //    (b) 아니면 감당 가능한 상위 설계도의 신규 아이템이 더 강하면 제작·장착.
+  //    → 빈 슬롯 채움 + 낀 슬롯 업그레이드. 진짜 파워로 비교(휴리스틱 아님).
   for (const slot of GEAR_SLOTS) {
     const equipped = unit.gear[slot];
-    const eqScore = equipped ? gearScore(equipped, w) : -1;
-    // (a) 인벤토리 최고 후보
+    const eqPow = powerWithGear(unit, slot, equipped); // 현재(또는 빈 슬롯) 파워
+    // (a) 인벤토리 최고 파워 후보
     const cands = state.inventory.filter((g) => g.slot === slot);
-    if (cands.length) {
-      const best = cands.reduce((a, b) => (gearScore(b, w) > gearScore(a, w) ? b : a));
-      if (gearScore(best, w) > eqScore) {
-        if (equipGear(state, unitUid, best.uid).ok) { changed.gear++; continue; }
-      }
+    let best = null, bestPow = eqPow;
+    for (const cand of cands) {
+      const pow = powerWithGear(unit, slot, cand);
+      if (pow > bestPow) { bestPow = pow; best = cand; }
     }
-    // (b) 제작 업그레이드: 감당 가능한 상위 티어 설계도가 장착품보다 나으면 제작.
+    if (best) {
+      if (equipGear(state, unitUid, best.uid).ok) { changed.gear++; continue; }
+    }
+    // (b) 제작 업그레이드: 감당 가능한 상위 티어 신규 아이템이 더 강하면 제작.
     const eqCost = equipped ? (GEAR_CATALOG[equipped.blueprint].craftCost || 150) : 0;
     const affordable = Object.values(GEAR_CATALOG)
       .filter((b) => b.slot === slot && (state.wallet.currency || 0) >= gearCraftCost(b.id).currency);
     if (affordable.length) {
       const bp = affordable.reduce((a, b) => ((b.craftCost || 150) > (a.craftCost || 150) ? b : a));
-      // 상위 티어(제작비↑)이고, 신규 R 아이템 점수가 장착품보다 높을 때만(다운그레이드·낭비 방지).
       const mock = { blueprint: bp.id, level: 1, rarity: 'R', subs: [] };
-      if ((bp.craftCost || 150) > eqCost && gearScore(mock, w) > eqScore) {
+      // 상위 티어이고 신규 아이템 파워가 장착품보다 클 때만(다운그레이드·낭비 방지).
+      if ((bp.craftCost || 150) > eqCost && powerWithGear(unit, slot, mock) > eqPow) {
         const c = craftGear(state, bp.id);
         if (c.ok && equipGear(state, unitUid, c.item.uid).ok) changed.gear++;
       }
