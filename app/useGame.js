@@ -14,11 +14,16 @@ import { loadRawSync, loadRawAsync, saveRaw, clearSave } from './storage';
 const TICK_MS = 1000;
 const TICK_GAME_SEC = 24; // 실제 1초 = 게임 24초 (숫자가 눈에 보이게)
 
-// 운영 컨셉 선택 — 빌드/초기화 시점의 운영자 결정(글로벌로 주입).
+// 운영 컨셉 선택 — 빌드/초기화 시점의 운영자 결정.
+//   · 웹    : HTML 셸이 globalThis.__ELDRIA_CONCEPT__ 주입(build-play.mjs scifi)
+//   · 네이티브 : app.config.js가 APP_VARIANT로 extra.concept 설정
 // 같은 코어를 판타지/SF 두 제품으로 배포함을 실증. 기본은 판타지.
 function activeConcept() {
-  const id = (typeof globalThis !== 'undefined' && globalThis.__ELDRIA_CONCEPT__) || 'fantasy';
-  return CONCEPTS[id] || fantasyConcept;
+  let id = (typeof globalThis !== 'undefined' && globalThis.__ELDRIA_CONCEPT__) || null;
+  if (!id) {
+    try { id = require('expo-constants').default?.expoConfig?.extra?.concept; } catch { id = null; }
+  }
+  return CONCEPTS[id || 'fantasy'] || fantasyConcept;
 }
 const CONCEPT = activeConcept();
 

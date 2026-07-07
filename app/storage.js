@@ -8,7 +8,12 @@ let AsyncStorage = null;
 try { AsyncStorage = require('@react-native-async-storage/async-storage').default; } catch { AsyncStorage = null; }
 
 const isWeb = Platform.OS === 'web';
-const _cid = (typeof globalThis !== 'undefined' && globalThis.__ELDRIA_CONCEPT__) || 'fantasy';
+function conceptId() {
+  let id = (typeof globalThis !== 'undefined' && globalThis.__ELDRIA_CONCEPT__) || null;
+  if (!id) { try { id = require('expo-constants').default?.expoConfig?.extra?.concept; } catch { id = null; } }
+  return id || 'fantasy';
+}
+const _cid = conceptId();
 const KEY = _cid === 'fantasy' ? 'eldria_save_v2' : `eldria_save_v2_${_cid}`;
 
 function ls() {
