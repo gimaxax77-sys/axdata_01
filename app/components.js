@@ -6,7 +6,8 @@ import { fx } from './feedback';
 
 // ── 캐릭터 초상 — 등급 프레임 + 글로우. 로스터/파티/소환/도감 공용 ──
 //   image(있으면): 캐릭터 일러스트를 프레임 안에 렌더. 없으면 emoji 폴백.
-export function Portrait({ emoji, image = null, rarity = 'N', size = 56, badge = false, glow = true, dim = false, style }) {
+//   React.memo — 방치 틱(초당 리렌더)에서 그라데이션 재계산을 건너뛴다.
+export const Portrait = React.memo(function Portrait({ emoji, image = null, rarity = 'N', size = 56, badge = false, glow = true, dim = false, style }) {
   const rm = rarityMeta(rarity);
   const radius = size * 0.26;
   const ring = Math.max(2, size * 0.045);
@@ -28,7 +29,7 @@ export function Portrait({ emoji, image = null, rarity = 'N', size = 56, badge =
       )}
     </View>
   );
-}
+});
 
 // 상단 자원 바 — 유리질 pill
 export function ResourceBar({ concept, wallet }) {

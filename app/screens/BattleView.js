@@ -9,7 +9,7 @@ import { T } from '../theme';
 // setInterval + ref 로 가볍게 구동(웹 export에서도 안정).
 // ─────────────────────────────────────────────────────────────
 
-export default function BattleView({ heroEmoji = '⚔️', enemyEmoji = '👹', win = true, margin = 1 }) {
+function BattleView({ heroEmoji = '⚔️', enemyEmoji = '👹', win = true, margin = 1 }) {
   const enemyHp = useRef(1);
   const heroHp = useRef(1);
   const [, force] = useState(0);
@@ -87,6 +87,9 @@ export default function BattleView({ heroEmoji = '⚔️', enemyEmoji = '👹', 
     </View>
   );
 }
+
+// 방치 틱마다 부모가 리렌더돼도 props(이모지·win·margin)가 같으면 건너뛴다.
+export default React.memo(BattleView);
 
 const s = StyleSheet.create({
   arena: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-around', height: 132, marginVertical: 4 },

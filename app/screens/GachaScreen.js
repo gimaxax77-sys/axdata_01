@@ -12,7 +12,7 @@ import { LockedPanel } from '../components';
 
 
 // 소환 결과 한 칸 — 등장 시 페이드+스케일+글로우 (등급 높을수록 늦게=강조).
-function RevealCell({ index, rarity, emoji, image, name }) {
+const RevealCell = React.memo(function RevealCell({ index, rarity, emoji, image, name }) {
   const rm = rarityMeta(rarity);
   const a = useRef(new Animated.Value(0)).current;
   useEffect(() => {
@@ -28,7 +28,7 @@ function RevealCell({ index, rarity, emoji, image, name }) {
       </View>
     </Animated.View>
   );
-}
+});
 
 export default function GachaScreen({ state, bump, concept }) {
   const [results, setResults] = useState([]);
