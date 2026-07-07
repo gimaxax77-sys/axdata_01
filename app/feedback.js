@@ -1,14 +1,33 @@
 import { Platform } from 'react-native';
+import { soundFile } from './soundFiles';
 
 // ─────────────────────────────────────────────────────────────
-// 피드백 엔진 — 사운드(웹 신스) + 햅틱. 에셋 없이 즉시 동작.
-//   · 웹: Web Audio API로 UI 사운드를 합성(오디오 파일 불필요).
-//   · 네이티브: expo-haptics 진동. (실오디오 파일은 추후 expo-av로 확장 가능)
+// 피드백 엔진 — 사운드 + 햅틱. 에셋 없이 즉시 동작.
+//   · 실오디오: assets/sfx에 파일 등록 시 expo-av로 재생(우선).
+//   · 폴백: 없으면 Web Audio API 신스로 합성(오디오 파일 불필요).
+//   · 네이티브: expo-haptics 진동 / 웹: navigator.vibrate.
 //   fx(name) 한 번으로 소리+진동을 함께 재생한다.
 // ─────────────────────────────────────────────────────────────
 
 let Haptics = null;
 try { Haptics = require('expo-haptics'); } catch { Haptics = null; }
+let AV = null;
+try { AV = require('expo-av'); } catch { AV = null; }
+
+// ── 실오디오 파일 재생 (등록된 경우) ─────────────────────────
+const _sndCache = {};
+async function playFile(name, src) {
+  if (!AV) return false;
+  try {
+    let snd = _sndCache[name];
+    if (!snd) {
+      const r = await AV.Audio.Sound.createAsync(src, { volume: 0.85 });
+      snd = r.sound; _sndCache[name] = snd;
+    }
+    await snd.replayAsync();
+    return true;
+  } catch { return false; }
+}
 
 const isWeb = Platform.OS === 'web';
 let muted = false;
@@ -89,8 +108,11 @@ function haptic(name) {
 }
 
 // 이름 있는 피드백 재생 (소리 + 진동).
+//   실오디오 파일이 등록돼 있으면 그걸, 없으면 신스로 폴백.
 export function fx(name) {
   if (muted) return;
-  try { (SOUNDS[name] || SOUNDS.click)(); } catch { /* 무시 */ }
+  const src = soundFile(name);
+  if (src) { playFile(name, src); }
+  else { try { (SOUNDS[name] || SOUNDS.click)(); } catch { /* 무시 */ } }
   haptic(name);
 }
