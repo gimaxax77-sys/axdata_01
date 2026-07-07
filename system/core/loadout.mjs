@@ -38,25 +38,32 @@ function gearScore(item, w) {
 }
 
 // 한 유닛의 스킬·장비·룬을 추천값으로 장착. { ok, changed:{skills,gear,runes} }.
-export function optimizeLoadout(state, unitUid) {
+//   scope: 'all'(기본) | 'skill' | 'gear'(장비+룬) — 카드별 부분 최적화 지원.
+export function optimizeLoadout(state, unitUid, scope = 'all') {
   const unit = state.units.find((u) => u.uid === unitUid);
   if (!unit) return { ok: false, reason: '유닛 없음' };
   const w = weights(unit);
   const changed = { skills: 0, gear: 0, runes: 0 };
+  const doSkill = scope === 'all' || scope === 'skill';
+  const doGear = scope === 'all' || scope === 'gear';
 
   // 1) 스킬 — 빈 슬롯만 최고 점수의 미장착 스킬로 채운다(기존 슬롯·레벨 보존).
-  const slots = skillSlots(unit);
-  const used = new Set((unit.skills || []).filter(Boolean).map((s) => s.id));
-  const ranked = equippableSkills()
-    .filter((s) => !used.has(s.id))
-    .sort((a, b) => skillScore(b, w) - skillScore(a, w));
-  let ri = 0;
-  for (let i = 0; i < slots; i++) {
-    if (unit.skills[i]) continue;
-    const s = ranked[ri++];
-    if (!s) break;
-    if (equipSkill(state, unitUid, i, s.id).ok) changed.skills++;
+  if (doSkill) {
+    const slots = skillSlots(unit);
+    const used = new Set((unit.skills || []).filter(Boolean).map((s) => s.id));
+    const ranked = equippableSkills()
+      .filter((s) => !used.has(s.id))
+      .sort((a, b) => skillScore(b, w) - skillScore(a, w));
+    let ri = 0;
+    for (let i = 0; i < slots; i++) {
+      if (unit.skills[i]) continue;
+      const s = ranked[ri++];
+      if (!s) break;
+      if (equipSkill(state, unitUid, i, s.id).ok) changed.skills++;
+    }
   }
+
+  if (!doGear) return { ok: true, changed };
 
   // 2) 장비 — 슬롯별 인벤토리 최고 후보가 장착품보다 나으면 교체.
   for (const slot of GEAR_SLOTS) {

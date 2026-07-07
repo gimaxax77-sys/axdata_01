@@ -121,6 +121,9 @@ export default function RosterScreen({ state, bump, concept }) {
     const powerOf = (u) => { let v = pw.get(u.uid); if (v === undefined) { v = computePower(u); pw.set(u.uid, v); } return v; };
     return state.units.slice().sort((a, b) => powerOf(b) - powerOf(a));
   })();
+  // 2행 그리드용: 정렬된 목록을 2개씩 열(column)로 묶는다.
+  const rosterColumns = [];
+  for (let i = 0; i < list.length; i += 2) rosterColumns.push(list.slice(i, i + 2));
   const inParty = state.party.includes(unit.uid);
 
   const act = (fn) => { fn(); bump(); };
@@ -173,31 +176,35 @@ export default function RosterScreen({ state, bump, concept }) {
         })()}
       </Card>
 
-      {/* 보유 유닛 — 가상화 목록(화면에 보이는 칩만 렌더 → 대량 로스터도 가볍다) */}
+      {/* 보유 유닛 — 2행 그리드(밀도↑) · 가상화(보이는 열만 렌더 → 대량 로스터도 가볍다) */}
       <Text style={g.sec}>보유 {concept.terms.unit} ({list.length})</Text>
       <FlatList
         horizontal
-        data={list}
-        keyExtractor={(u) => u.uid}
+        data={rosterColumns}
+        keyExtractor={(col) => col[0].uid}
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={g.hlist}
-        initialNumToRender={10}
-        maxToRenderPerBatch={10}
+        initialNumToRender={8}
+        maxToRenderPerBatch={8}
         windowSize={5}
         removeClippedSubviews
-        renderItem={({ item: u }) => {
-          const m = identity(concept, u);
-          const on = u.uid === unit.uid;
-          const party = state.party.includes(u.uid);
-          return (
-            <TouchableOpacity onPress={() => setSel(u.uid)} style={[g.chip, on && g.chipOn]} activeOpacity={0.8}>
-              {party && <Text style={g.chipStar}>⭐</Text>}
-              <Portrait emoji={m.emoji} image={charImage(concept.id, u.characterId)} rarity={u.rarity} size={46} badge />
-              <Text style={g.chipName} numberOfLines={1}>{m.name}</Text>
-              <Text style={g.chipLv}>Lv.{u.level} · {concept.archetypes[u.archetype]?.emoji}</Text>
-            </TouchableOpacity>
-          );
-        }}
+        renderItem={({ item: col }) => (
+          <View style={g.gridCol}>
+            {col.map((u) => {
+              const m = identity(concept, u);
+              const on = u.uid === unit.uid;
+              const party = state.party.includes(u.uid);
+              return (
+                <TouchableOpacity key={u.uid} onPress={() => setSel(u.uid)} style={[g.chip, on && g.chipOn]} activeOpacity={0.8}>
+                  {party && <Text style={g.chipStar}>⭐</Text>}
+                  <Portrait emoji={m.emoji} image={charImage(concept.id, u.characterId)} rarity={u.rarity} size={44} badge />
+                  <Text style={g.chipName} numberOfLines={1}>{m.name}</Text>
+                  <Text style={g.chipLv}>Lv.{u.level} · {concept.archetypes[u.archetype]?.emoji}</Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+        )}
       />
 
       {/* 상세 */}
@@ -408,9 +415,9 @@ export default function RosterScreen({ state, bump, concept }) {
       <Card style={{ marginTop: 12 }}>
         <View style={g.intiHead}>
           <Text style={g.sec}>스킬 편성 <Text style={g.dim}>({unit.skills.filter(Boolean).length}/{slots})</Text></Text>
-          <Btn small kind="gold" label="✨ 추천 장착" sfx={false}
+          <Btn small kind="gold" label="✨ 추천 전체" sfx={false}
             onPress={() => {
-              const r = optimizeLoadout(state, unit.uid);
+              const r = optimizeLoadout(state, unit.uid, 'all');
               const n = r.ok ? r.changed.skills + r.changed.gear + r.changed.runes : 0;
               fx(n > 0 ? 'success' : 'error');
               bump();
@@ -437,7 +444,16 @@ export default function RosterScreen({ state, bump, concept }) {
 
       {/* 장비 (수동) */}
       <Card style={{ marginTop: 12 }}>
-        <Text style={g.sec}>장비</Text>
+        <View style={g.intiHead}>
+          <Text style={g.sec}>장비</Text>
+          <Btn small kind="gold" label="✨ 추천 장착" sfx={false}
+            onPress={() => {
+              const r = optimizeLoadout(state, unit.uid, 'gear');
+              const n = r.ok ? r.changed.gear + r.changed.runes : 0;
+              fx(n > 0 ? 'success' : 'error');
+              bump();
+            }} />
+        </View>
         {GEAR_SLOTS.map((slot) => {
           const item = unit.gear[slot];
           return (
@@ -637,6 +653,7 @@ const g = StyleSheet.create({
   sec: { color: T.text, fontWeight: '800', fontSize: 15, marginBottom: 8 },
   subsec: { color: T.muted, fontSize: 12, marginTop: 12, marginBottom: 6, fontWeight: '700' },
   hlist: { gap: 10, paddingVertical: 4, paddingRight: 8 },
+  gridCol: { gap: 10 },
   chip: { width: 84, backgroundColor: T.surface, borderRadius: 14, padding: 10, alignItems: 'center', borderWidth: 1, borderColor: T.line },
   chipOn: { borderColor: T.accent, backgroundColor: T.surface2 },
   chipStar: { position: 'absolute', top: 4, right: 6, fontSize: 12, zIndex: 2 },
