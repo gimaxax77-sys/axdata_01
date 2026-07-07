@@ -10,6 +10,24 @@ import { BALANCE } from './balance.mjs';
 import { ELEMENTS } from './elements.mjs';
 export { BALANCE }; // 하위호환: 기존 import 경로 유지
 
+// 속성 구역(밴드) — 층을 STAGE_BAND개씩 한 속성으로 묶어 예측 가능하게 나눈다.
+//   층1~3 불 · 4~6 물 · 7~9 숲 · 10~12 빛 · 13~15 어둠 · 16~18 불 …
+export const STAGE_BAND = 3;
+export function stageElement(stage) {
+  return ELEMENTS[Math.floor((stage - 1) / STAGE_BAND) % ELEMENTS.length];
+}
+// 구역 정보 (UI 표시용): 현재 속성, 구역 시작/끝, 다음 구역 속성.
+export function stageZone(stage) {
+  const idx = Math.floor((stage - 1) / STAGE_BAND);
+  const start = idx * STAGE_BAND + 1;
+  return {
+    element: stageElement(stage),
+    start, end: start + STAGE_BAND - 1,
+    within: stage - start + 1, size: STAGE_BAND,
+    nextElement: ELEMENTS[(idx + 1) % ELEMENTS.length],
+  };
+}
+
 // stage: 1부터 시작하는 정수
 export function getStage(stage) {
   const g = Math.pow(BALANCE.enemyGrowth, stage - 1);
@@ -20,7 +38,7 @@ export function getStage(stage) {
       hp: Math.round(BALANCE.enemyBase.hp * g),
       atk: Math.round(BALANCE.enemyBase.atk * g),
       def: Math.round(BALANCE.enemyBase.def * g),
-      element: ELEMENTS[(stage - 1) % ELEMENTS.length], // 스테이지마다 속성 순환
+      element: stageElement(stage), // 속성 구역(밴드)
     },
     rewards: {
       // 컨셉 무관한 자원 키. 컨셉이 표시명을 붙인다.

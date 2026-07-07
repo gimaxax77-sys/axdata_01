@@ -4,6 +4,7 @@ import { getPartyUnits } from '../core/gameState.mjs';
 import { earn } from '../core/economy.mjs';
 import { accountMods } from '../core/balance.mjs';
 import { openPrestigeBox } from '../core/lootbox.mjs';
+import { playStage } from '../core/difficulty.mjs';
 
 // ─────────────────────────────────────────────────────────────
 // 장르 어댑터: 방치형 (자동/누적형)
@@ -31,9 +32,21 @@ export const idleGenre = {
     const gained = { currency: 0, growth: 0 };
     let clears = 0;
 
+    // 난이도 벽 대응: 상위 난이도(험난↑)에서 현재 스테이지가 이길 수 없으면
+    // 이길 수 있는 층까지 하강한다(난이도 전환 시 자동 재정착).
+    // 일반 난이도는 기존 "벽에서 정지" 동작을 유지(하강 안 함).
+    if (state.difficulty && state.difficulty !== 'normal') {
+      let guard = 0;
+      while (state.stage > 1 && guard++ < 500) {
+        const r = resolve(party, playStage(state).challenge, mods);
+        if (r.win && r.duration !== Infinity) break;
+        state.stage -= 1;
+      }
+    }
+
     // 시간 예산이 남는 동안 현재 스테이지를 반복
     while (remaining > 0) {
-      const stageDef = getStage(state.stage);
+      const stageDef = playStage(state);
       const result = resolve(party, stageDef.challenge, mods);
 
       if (!result.win || result.duration === Infinity) break; // 벽에 막힘

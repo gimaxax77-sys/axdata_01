@@ -9,6 +9,7 @@ import { setMuted, setHaptics, fx } from './app/feedback';
 import { setReduceMotion } from './app/motion';
 import { t, setLang } from './app/i18n';
 import { SettingsModal } from './app/screens/Settings';
+import { AdminModal } from './app/screens/Admin';
 import IdleScreen from './app/screens/IdleScreen';
 import RosterScreen from './app/screens/RosterScreen';
 import GachaScreen from './app/screens/GachaScreen';
@@ -54,6 +55,7 @@ function AppInner() {
   const Active = TABS.find((t) => t.key === tab).Screen;
 
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [adminOpen, setAdminOpen] = useState(false);
   // 설정을 세이브에서 엔진들에 반영
   const st = game.state.settings;
   setLang(st.lang); // 렌더 중 동기 반영 — 언어 전환이 같은 렌더에 즉시 적용(지연 없음)
@@ -148,6 +150,15 @@ function AppInner() {
         onClose={() => setSettingsOpen(false)}
         onExport={game.exportSave}
         onImport={game.importSave}
+        onOpenAdmin={() => { setSettingsOpen(false); setAdminOpen(true); }}
+      />
+
+      {/* 운영자 조작 패널 */}
+      <AdminModal
+        visible={adminOpen}
+        state={game.state}
+        onChange={() => { game.save(); game.bump(); }}
+        onClose={() => setAdminOpen(false)}
       />
 
       {/* 첫 실행 소개 — 오프라인 팝업이 없을 때만 노출 */}

@@ -17,6 +17,7 @@ export function createGameState({ units = [], party = [] } = {}) {
     runeBag: [], // 미장착 룬 인스턴스 배열
     wallet: createWallet(),
     stage: 1, // 현재 도전/진행 스테이지 (환생 시 리셋)
+    difficulty: 'normal', // 방치 난이도 (일반/험난/지옥/나락)
     maxStage: 1, // 이번 회차 최고 도달 (환생 시 리셋)
     peakStage: 1, // 역대 최고 도달 (환생해도 유지 — 실제 진행도)
     energy: 60, // RPG 장르가 사용하는 행동력 (방치형은 무시)
@@ -29,6 +30,7 @@ export function createGameState({ units = [], party = [] } = {}) {
     pets: { owned: {}, active: [] }, // 펫 보유(id→레벨) + 장착(최대 3)
     shop: { purchased: {} }, // 1회성 패키지 구매 기록
     rentals: {}, // 기간제 대여 { slotId: { tier, expiresAt } }
+    admin: { overrides: {} }, // 운영자 밸런스 오버라이드 { path: value }
     arena: { points: 0, day: -1, entries: 0 }, // 아레나(경쟁) 랭크·일일 입장
     guild: { coins: 0, day: -1, attacks: 0, tier: 1, bossHp: null }, // 길드 보스 레이드
     meta: { achv: {}, coll: {}, season: { claimed: {}, premium: false } }, // 도감·업적·시즌패스 청구 기록

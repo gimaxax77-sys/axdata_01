@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { T } from '../theme';
 import { Card, Btn, fmt } from '../components';
 import { effectivePower, powerMultOf } from '../useGame';
 import { idleGenre } from '../../system/genres/idle.mjs';
-import { getStage } from '../../system/core/progression.mjs';
+import { getStage, stageZone } from '../../system/core/progression.mjs';
+import { playStage, DIFFICULTIES, difficultyDef, difficultyUnlocked, setDifficulty } from '../../system/core/difficulty.mjs';
 import { computePower } from '../../system/core/stats.mjs';
 import { identity, elementMeta } from '../../system/concepts/index.mjs';
 import { affinityLabel } from '../../system/core/elements.mjs';
@@ -18,7 +19,9 @@ export default function IdleScreen({ state, bump, lastGain, concept }) {
   const [boxMsg, setBoxMsg] = useState(null);
   const power = effectivePower(state);
   const mult = powerMultOf(state);
-  const stageDef = getStage(state.stage);
+  const stageDef = playStage(state); // 난이도 배수 반영
+  const zone = stageZone(state.stage);
+  const curDiff = difficultyDef(state.difficulty);
   const byId = new Map(state.units.map((u) => [u.uid, u]));
   const party = state.party.map((id) => byId.get(id)).filter(Boolean);
   const lead = party.slice().sort((a, b) => computePower(b) - computePower(a))[0];
@@ -31,9 +34,29 @@ export default function IdleScreen({ state, bump, lastGain, concept }) {
 
   return (
     <ScrollView style={st.flex} contentContainerStyle={st.wrap}>
+      {/* 난이도 선택 */}
+      <View style={st.diffRow}>
+        {DIFFICULTIES.map((d) => {
+          const unlocked = difficultyUnlocked(state, d.id);
+          const on = curDiff.id === d.id;
+          return (
+            <TouchableOpacity key={d.id} activeOpacity={0.8} disabled={!unlocked}
+              onPress={() => { if (setDifficulty(state, d.id).ok) bump(); }}
+              style={[st.diffCell, on && st.diffCellOn, !unlocked && st.diffCellLock]}>
+              <Text style={[st.diffLabel, on && st.diffLabelOn]}>{d.emoji} {d.label}</Text>
+              <Text style={st.diffSub}>{unlocked ? `보상 ×${d.rewardMult}` : `${d.unlock}층`}</Text>
+            </TouchableOpacity>
+          );
+        })}
+      </View>
+
       {/* 자동 전투 무대 */}
       <Card style={st.stage}>
-        <Text style={st.stageLabel}>{concept.terms.stage} {state.stage}</Text>
+        <Text style={st.stageLabel}>
+          {concept.terms.stage} {state.stage}
+          {curDiff.id !== 'normal' ? <Text style={st.diffBadge}>  {curDiff.emoji}{curDiff.label} ×{curDiff.rewardMult}</Text> : null}
+        </Text>
+        <Text style={st.zone}>{elementMeta(concept, zone.element)?.emoji}{elementMeta(concept, zone.element)?.name} 구역 ({zone.start}~{zone.end}층) · 다음 {elementMeta(concept, zone.nextElement)?.emoji}</Text>
         <BattleView
           heroEmoji={leadMeta ? leadMeta.emoji : '⚔️'}
           enemyEmoji={elementMeta(concept, stageDef.challenge.element)?.emoji || '👹'}
@@ -122,7 +145,16 @@ const st = StyleSheet.create({
   flex: { flex: 1 },
   wrap: { padding: 14, gap: 12 },
   stage: { alignItems: 'center', backgroundColor: T.surface2 },
-  stageLabel: { color: T.accent, fontWeight: '800', fontSize: 18, marginBottom: 4 },
+  stageLabel: { color: T.accent, fontWeight: '800', fontSize: 18, marginBottom: 2 },
+  diffBadge: { color: T.danger, fontSize: 13, fontWeight: '800' },
+  zone: { color: T.muted, fontSize: 12, marginBottom: 4, fontWeight: '600' },
+  diffRow: { flexDirection: 'row', gap: 6 },
+  diffCell: { flex: 1, backgroundColor: T.surface2, borderRadius: 10, paddingVertical: 8, alignItems: 'center', borderWidth: 1, borderColor: 'transparent' },
+  diffCellOn: { borderColor: T.accent, backgroundColor: T.surface },
+  diffCellLock: { opacity: 0.45 },
+  diffLabel: { color: T.muted, fontSize: 13, fontWeight: '800' },
+  diffLabelOn: { color: T.accent },
+  diffSub: { color: T.muted, fontSize: 10, marginTop: 2 },
   enemy: { color: T.muted, fontSize: 12, marginTop: 8 },
   affinity: { color: T.text, fontSize: 12, marginTop: 6, fontWeight: '600' },
   synRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 10, justifyContent: 'center' },

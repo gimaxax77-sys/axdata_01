@@ -137,6 +137,48 @@ test('tower: 승리 시 전진·보상, 층 난이도 단조 증가', () => {
   if (r5.win) assert.ok(r5.milestone && r5.reward.summon, '5층 마일스톤');
 });
 
+test('난이도: 배수·해금·playStage 적용', async () => {
+  const { DIFFICULTIES, playStage, difficultyUnlocked, setDifficulty, difficultyDef } = await import('../core/difficulty.mjs');
+  const { getStage } = await import('../core/progression.mjs');
+  assert.equal(DIFFICULTIES[0].id, 'normal');
+  const s = strongState(120);
+  s.stage = 20;
+  const base = getStage(20);
+  s.difficulty = 'hell';
+  const hell = playStage(s);
+  const m = difficultyDef('hell');
+  assert.equal(hell.challenge.hp, Math.round(base.challenge.hp * m.enemyMult), '적 배수 반영');
+  assert.equal(hell.rewards.currency, Math.round(base.rewards.currency * m.rewardMult), '보상 배수 반영');
+  // 해금: peak120 → 지옥(60) 해금, 나락(100) 해금
+  assert.equal(difficultyUnlocked(s, 'hell'), true);
+  assert.equal(difficultyUnlocked(strongState(50), 'hell'), false, 'peak50<60 미해금');
+  assert.equal(setDifficulty(strongState(10), 'abyss').ok, false, '미해금 전환 차단');
+});
+
+test('스테이지 속성 구역: 밴드로 나뉜다', async () => {
+  const { stageElement, stageZone, STAGE_BAND } = await import('../core/progression.mjs');
+  assert.equal(stageElement(1), stageElement(STAGE_BAND), '같은 구역 = 같은 속성');
+  assert.notEqual(stageElement(1), stageElement(STAGE_BAND + 1), '다음 구역 = 다른 속성');
+  const z = stageZone(1);
+  assert.equal(z.start, 1); assert.equal(z.end, STAGE_BAND);
+});
+
+test('운영자 조작: adjustField·오버라이드 적용·리셋', async () => {
+  const admin = await import('../core/admin.mjs');
+  const { BALANCE } = await import('../core/balance.mjs');
+  const f = admin.ADMIN_FIELDS.find((x) => x.path === 'enemyGrowth');
+  const before = BALANCE.enemyGrowth;
+  const lowered = admin.adjustField(f, -1);
+  assert.ok(lowered < before, '−1 조정으로 감소');
+  assert.equal(BALANCE.enemyGrowth, lowered, 'BALANCE 즉시 반영');
+  // 오버라이드 재적용
+  admin.setBalanceValue('enemyGrowth', before); // 되돌림
+  admin.applyOverrides({ enemyGrowth: 1.05 });
+  assert.equal(BALANCE.enemyGrowth, 1.05, '오버라이드 적용');
+  admin.resetAll();
+  assert.equal(BALANCE.enemyGrowth, admin.DEFAULTS.enemyGrowth, '전체 리셋 복원');
+});
+
 test('던전: 장비/룬 파밍 던전이 실제 아이템 드롭', async () => {
   const { enterDungeon, dungeonEntriesLeft, DUNGEONS } = await import('../core/daily.mjs');
   const { makeRng } = await import('../core/rng.mjs');

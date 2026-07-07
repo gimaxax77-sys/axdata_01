@@ -6,6 +6,7 @@ import { computePower } from '../system/core/stats.mjs';
 import { accountMods } from '../system/core/balance.mjs';
 import { idleGenre } from '../system/genres/idle.mjs';
 import { serialize, deserialize, exportCode, importCode } from '../system/core/save.mjs';
+import { applyOverrides } from '../system/core/admin.mjs';
 import { fantasyConcept } from '../system/concepts/fantasy.mjs';
 import { CONCEPTS } from '../system/concepts/index.mjs';
 import { loadRawSync, loadRawAsync, saveRaw, clearSave, saveBackup, loadBackupSync, loadBackupAsync } from './storage';
@@ -62,6 +63,7 @@ export function useGame() {
       loaded = bk ? deserialize(bk) : null;
     }
     ref.current = loaded ? applyLoad(loaded, offlineRef) : createFresh();
+    applyOverrides(ref.current.admin && ref.current.admin.overrides); // 운영자 오버라이드 재적용
   }
   // rev = "사용자 액션" 리렌더 신호. 방치 틱은 rev를 올리지 않아(아래) 비활성
   // 화면이 초당 리렌더되지 않는다(React.memo와 결합해 탭 렉 제거).
@@ -87,6 +89,7 @@ export function useGame() {
         if (!loaded) { const bk = await loadBackupAsync(); loaded = bk ? deserialize(bk) : null; }
         if (loaded) {
           ref.current = applyLoad(loaded, offlineRef);
+          applyOverrides(ref.current.admin && ref.current.admin.overrides);
           if (offlineRef.current) setOffline(offlineRef.current);
         }
       }

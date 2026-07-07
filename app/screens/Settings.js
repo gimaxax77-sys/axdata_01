@@ -28,7 +28,7 @@ async function copyText(str) {
   return false;
 }
 
-export function SettingsModal({ visible, settings, onChange, onReset, onClose, onExport, onImport }) {
+export function SettingsModal({ visible, settings, onChange, onReset, onClose, onExport, onImport, onOpenAdmin }) {
   const [code, setCode] = useState('');
   const [msg, setMsg] = useState('');
 
@@ -94,6 +94,11 @@ export function SettingsModal({ visible, settings, onChange, onReset, onClose, o
           <Text style={c.sec}>{t('data')}</Text>
           <Btn label={t('reset')} kind="ghost" onPress={onReset} />
           <Text style={c.note}>{t('reset_note')}</Text>
+
+          {onOpenAdmin && (<>
+            <View style={c.divider} />
+            <Btn label="🛠 운영자 조작 (배수/배율 튜닝)" kind="ghost" onPress={onOpenAdmin} />
+          </>)}
 
           <Text style={c.ver}>엘드리아 연대기 · v1.0.0</Text>
           <View style={{ height: 6 }} />

@@ -36,6 +36,8 @@ function normalize(state) {
   state.shop = state.shop || { purchased: {} };
   state.shop.purchased = state.shop.purchased || {};
   state.rentals = state.rentals || {};
+  state.admin = state.admin || { overrides: {} };
+  state.admin.overrides = state.admin.overrides || {};
   state.arena = state.arena || { points: 0, day: -1, entries: 0 };
   state.arena.points = state.arena.points || 0;
   state.arena.day = state.arena.day ?? -1;
@@ -65,6 +67,7 @@ function normalize(state) {
   state.tower.floor = state.tower.floor || 1;
   state.tower.best = state.tower.best || state.tower.floor || 1;
   state.stage = state.stage || 1;
+  state.difficulty = state.difficulty || 'normal';
   state.maxStage = state.maxStage || 1;
   state.peakStage = state.peakStage || state.maxStage || 1;
   state.energy = state.energy ?? 60;

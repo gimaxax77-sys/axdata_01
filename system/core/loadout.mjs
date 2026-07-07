@@ -1,5 +1,5 @@
 import { equippableSkills, skillSlots } from './skills.mjs';
-import { GEAR_SLOTS, gearContribution, equipGear } from './gear.mjs';
+import { GEAR_SLOTS, GEAR_CATALOG, gearContribution, equipGear, craftGear, gearCraftCost } from './gear.mjs';
 import { RUNE_SLOTS, runeMainValue, equipRune } from './runes.mjs';
 import { equipSkill } from './character.mjs';
 
@@ -66,13 +66,25 @@ export function optimizeLoadout(state, unitUid, scope = 'all') {
   if (!doGear) return { ok: true, changed };
 
   // 2) 장비 — 슬롯별 인벤토리 최고 후보가 장착품보다 나으면 교체.
+  //    빈 슬롯인데 후보가 없으면 감당 가능한 최고 설계도를 제작해 장착(항상 도움).
   for (const slot of GEAR_SLOTS) {
-    const cands = state.inventory.filter((g) => g.slot === slot);
-    if (!cands.length) continue;
-    const best = cands.reduce((a, b) => (gearScore(b, w) > gearScore(a, w) ? b : a));
     const equipped = unit.gear[slot];
-    if (!equipped || gearScore(best, w) > gearScore(equipped, w)) {
-      if (equipGear(state, unitUid, best.uid).ok) changed.gear++;
+    const cands = state.inventory.filter((g) => g.slot === slot);
+    if (cands.length) {
+      const best = cands.reduce((a, b) => (gearScore(b, w) > gearScore(a, w) ? b : a));
+      if (!equipped || gearScore(best, w) > gearScore(equipped, w)) {
+        if (equipGear(state, unitUid, best.uid).ok) { changed.gear++; continue; }
+      }
+    }
+    if (!equipped) {
+      // 슬롯이 비었고 인벤토리 후보 없음 → 제작 가능한 설계도 중 상위 티어 장착.
+      const affordable = Object.values(GEAR_CATALOG)
+        .filter((b) => b.slot === slot && (state.wallet.currency || 0) >= gearCraftCost(b.id).currency);
+      if (affordable.length) {
+        const bp = affordable.reduce((a, b) => ((b.craftCost || 150) > (a.craftCost || 150) ? b : a));
+        const c = craftGear(state, bp.id);
+        if (c.ok && equipGear(state, unitUid, c.item.uid).ok) changed.gear++;
+      }
     }
   }
 
