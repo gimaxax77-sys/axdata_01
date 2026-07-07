@@ -6,8 +6,9 @@ import {
   ATTENDANCE, canClaimAttendance, claimAttendance,
   missionList, claimMission, DUNGEONS, dungeonEntriesLeft, enterDungeon,
 } from '../../system/core/daily.mjs';
-import { RELICS, relicUpgradeCost, upgradeRelic, RELIC_CAP } from '../../system/core/relics.mjs';
-import { PETS, petSummon, equipPet, unequipPet, petEffectLabel, MAX_ACTIVE_PETS, PET_PULL_COST } from '../../system/core/pets.mjs';
+import { RELICS, relicUpgradeCost, upgradeRelic, relicCap } from '../../system/core/relics.mjs';
+import { PETS, petSummon, equipPet, unequipPet, petEffectLabel, MAX_ACTIVE_PETS, PET_PULL_COST,
+  rerollPetOpt, petFuse, petFuseAvail, petOptLabel, PET_FUSE_COST } from '../../system/core/pets.mjs';
 import { getStage } from '../../system/core/progression.mjs';
 import { GEAR_CATALOG, GEAR_RARITY } from '../../system/core/gear.mjs';
 import { isUnlocked, unlockStage } from '../../system/core/unlocks.mjs';
@@ -159,20 +160,38 @@ export default function ContentScreen({ state, bump, concept }) {
         </View>
         {!isUnlocked(state, 'pets') && <Text style={c.sub}>🔒 스테이지 {unlockStage('pets')} 도달 시 해금</Text>}
         {isUnlocked(state, 'pets') && Object.keys(state.pets.owned).length === 0 && <Text style={c.sub}>보유 펫 없음 — 소환으로 획득하세요.</Text>}
+        {/* 합성(승급): 하위 등급 펫 레벨 소모 → 상위 1 */}
+        {isUnlocked(state, 'pets') && Object.keys(state.pets.owned).length > 0 && (
+          <View style={c.fuseRow}>
+            {['R', 'SR', 'SSR'].map((rar) => {
+              const avail = petFuseAvail(state, rar);
+              const can = avail >= PET_FUSE_COST;
+              return (
+                <Btn key={rar} small kind={can ? 'gold' : 'ghost'} disabled={!can}
+                  label={`${rar} 합성 ${Math.min(avail, PET_FUSE_COST)}/${PET_FUSE_COST}`}
+                  onPress={() => act(() => petFuse(state, rar))} />
+              );
+            })}
+          </View>
+        )}
         {isUnlocked(state, 'pets') && Object.entries(state.pets.owned).map(([id, lv]) => {
           const p = PETS[id];
           const active = state.pets.active.includes(id);
           const full = state.pets.active.length >= MAX_ACTIVE_PETS;
+          const opt = state.pets.opts && state.pets.opts[id];
           return (
             <View key={id} style={c.dRow}>
               <Text style={c.petEmoji}>{p.emoji}</Text>
               <View style={{ flex: 1 }}>
                 <Text style={c.mLabel}>{p.label} <Text style={c.dim}>Lv.{lv} · {p.rarity}</Text></Text>
-                <Text style={c.mReward}>{petEffectLabel(p.type, concept)} +{Math.round(p.per * lv * 100)}%</Text>
+                <Text style={c.mReward}>{petEffectLabel(p.type, concept)} +{Math.round(p.per * lv * 100)}%{opt ? ` · 옵션 ${petOptLabel(opt, concept)}` : ''}</Text>
               </View>
-              <Btn small kind={active ? 'ghost' : 'primary'} disabled={!active && full}
-                label={active ? '해제' : full ? '슬롯참' : '장착'}
-                onPress={() => act(() => (active ? unequipPet(state, id) : equipPet(state, id)))} />
+              <View style={{ gap: 5 }}>
+                <Btn small kind={active ? 'ghost' : 'primary'} disabled={!active && full}
+                  label={active ? '해제' : full ? '슬롯참' : '장착'}
+                  onPress={() => act(() => (active ? unequipPet(state, id) : equipPet(state, id)))} />
+                <Btn small kind="ghost" label="옵션재련 💎15" onPress={() => act(() => rerollPetOpt(state, id))} />
+              </View>
             </View>
           );
         })}
@@ -188,11 +207,13 @@ export default function ContentScreen({ state, bump, concept }) {
           const lv = (state.relics && state.relics[r.id]) || 0;
           const cost = relicUpgradeCost(lv);
           const eff = r.kind === 'power' ? '전투력' : r.kind === 'currency' ? `${concept.resources.currency.name} 수입` : `${concept.resources.growth.name} 수입`;
-          const maxed = lv >= RELIC_CAP;
+          const cap = relicCap(r.id);
+          const maxed = lv >= cap;
           return (
             <View key={r.id} style={c.dRow}>
+              <Text style={c.petEmoji}>{r.emoji}</Text>
               <View style={{ flex: 1 }}>
-                <Text style={c.mLabel}>{r.label} <Text style={c.dim}>Lv.{lv}</Text></Text>
+                <Text style={c.mLabel}>{r.label} <Text style={c.dim}>Lv.{lv}/{cap} · {r.rarity}</Text></Text>
                 <Text style={c.mReward}>{eff} +{Math.round(r.per * lv * 100)}%{maxed ? ' (MAX)' : ` → +${Math.round(r.per * (lv + 1) * 100)}%`}</Text>
               </View>
               <Btn small kind="ghost" disabled={maxed} label={maxed ? 'MAX' : `강화 ×${mult} ${concept.resources.currency.emoji}${fmt(cost.currency)}`}
@@ -225,7 +246,8 @@ const c = StyleSheet.create({
   barFill: { height: 6, backgroundColor: T.good, borderRadius: 3 },
   dRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 10, borderTopWidth: 1, borderTopColor: T.line },
   petHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 },
-  petEmoji: { fontSize: 26 },
+  petEmoji: { fontSize: 26, width: 34, textAlign: 'center' },
+  fuseRow: { flexDirection: 'row', gap: 6, marginTop: 8, marginBottom: 6, flexWrap: 'wrap' },
   chTitle: { color: T.accent, fontWeight: '800', fontSize: 14, marginTop: 6 },
   storyText: { color: T.text, fontSize: 13, lineHeight: 19, marginTop: 6, fontStyle: 'italic' },
   bossRow: { marginTop: 10 },

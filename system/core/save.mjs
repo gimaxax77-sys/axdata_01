@@ -24,6 +24,7 @@ function normalize(state) {
   state.pets = state.pets || { owned: {}, active: [] };
   state.pets.owned = state.pets.owned || {};
   state.pets.active = state.pets.active || [];
+  state.pets.opts = state.pets.opts || {};
   state.daily = state.daily || {};
   state.daily.epochDay = state.daily.epochDay || 0;
   state.daily.streak = state.daily.streak || 0;

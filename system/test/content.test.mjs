@@ -155,6 +155,41 @@ test('던전: 장비/룬 파밍 던전이 실제 아이템 드롭', async () => 
   assert.equal(dungeonEntriesLeft(s, 'GEAR'), 0);
 });
 
+test('유물 확장: 등급별 상한 + 강화', async () => {
+  const { RELICS, relicCap, upgradeRelic } = await import('../core/relics.mjs');
+  assert.ok(Object.keys(RELICS).length >= 8, '유물 8종+');
+  assert.equal(relicCap('R_POWER'), 20);
+  assert.equal(relicCap('R_WARLORD'), 30, 'SR 상한 30');
+  assert.equal(relicCap('R_TITAN'), 40, 'SSR 상한 40');
+  const s = strongState();
+  earn(s.wallet, { currency: 1e9 });
+  assert.equal(upgradeRelic(s, 'R_TITAN').ok, true);
+});
+
+test('펫 확장: 개체 옵션 + 합성(승급) + 옵션 재련', async () => {
+  const { PETS, petMods, petFuse, petFuseAvail, PET_FUSE_COST, rerollPetOpt } = await import('../core/pets.mjs');
+  const { makeRng } = await import('../core/rng.mjs');
+  assert.ok(Object.keys(PETS).length >= 12, '펫 12종+');
+  const s = strongState();
+  earn(s.wallet, { gem: 1000 });
+  // R 펫 레벨을 합성 임계까지 확보
+  s.pets.owned = { P_CAT: 3, P_WOLF: 3 };
+  s.pets.opts = { P_CAT: { key: 'currency', value: 0.05 } };
+  s.pets.active = ['P_CAT'];
+  // 개체 옵션이 배수에 반영
+  const before = petMods(s).currency;
+  assert.ok(before > 1 + PETS.P_CAT.per * 3 - 1e-9, '옵션 포함 배수');
+  // 합성: R 6레벨 → SR 1
+  assert.equal(petFuseAvail(s, 'R'), 6);
+  const f = petFuse(s, 'R', makeRng(3));
+  assert.equal(f.ok, true);
+  assert.equal(PETS[f.pet].rarity, 'SR', '상위 등급 획득');
+  // 옵션 재련
+  s.pets.owned.P_FOX = 1;
+  assert.equal(rerollPetOpt(s, 'P_FOX', makeRng(9)).ok, true);
+  assert.ok(s.pets.opts.P_FOX, '옵션 롤됨');
+});
+
 test('환생 상자: 리셋 전 도달치로 장비·룬·재화 지급', async () => {
   const { idleGenre } = await import('../genres/idle.mjs');
   const { makeRng } = await import('../core/rng.mjs');

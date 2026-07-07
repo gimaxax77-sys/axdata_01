@@ -6,13 +6,29 @@ import { spend } from './economy.mjs';
 // 3종 유물이 처음부터 존재(레벨 0)하고 currency로 강화한다(성장 재화 싱크).
 // ─────────────────────────────────────────────────────────────
 
+// 유물 — kind(power/currency/growth)별 계정 배수. rarity가 효율·상한을 정한다.
 export const RELICS = {
-  R_POWER: { id: 'R_POWER', kind: 'power', per: 0.03, label: '전투의 성물' }, // 레벨당 +3% 전투력
-  R_GOLD: { id: 'R_GOLD', kind: 'currency', per: 0.05, label: '황금 우상' }, // 레벨당 +5% 골드 수입
-  R_GROWTH: { id: 'R_GROWTH', kind: 'growth', per: 0.05, label: '정수의 결정' }, // 레벨당 +5% 정수 수입
+  // 기본(R) 3종
+  R_POWER: { id: 'R_POWER', kind: 'power', per: 0.03, rarity: 'R', emoji: '⚔️', label: '전투의 성물' },
+  R_GOLD: { id: 'R_GOLD', kind: 'currency', per: 0.05, rarity: 'R', emoji: '🪙', label: '황금 우상' },
+  R_GROWTH: { id: 'R_GROWTH', kind: 'growth', per: 0.05, rarity: 'R', emoji: '💠', label: '정수의 결정' },
+  // 상위(SR) — 효율↑·상한↑
+  R_WARLORD: { id: 'R_WARLORD', kind: 'power', per: 0.05, rarity: 'SR', emoji: '🗡️', label: '군신의 인장' },
+  R_TREASURY: { id: 'R_TREASURY', kind: 'currency', per: 0.08, rarity: 'SR', emoji: '💰', label: '보물고 열쇠' },
+  R_SAGE: { id: 'R_SAGE', kind: 'growth', per: 0.08, rarity: 'SR', emoji: '📜', label: '현자의 서' },
+  // 전설(SSR) — 최고 효율
+  R_TITAN: { id: 'R_TITAN', kind: 'power', per: 0.08, rarity: 'SSR', emoji: '🔱', label: '거신의 심장' },
+  R_MIDAS: { id: 'R_MIDAS', kind: 'currency', per: 0.11, rarity: 'SSR', emoji: '👑', label: '마이더스의 손' },
 };
 
-export const RELIC_CAP = 20;
+// 등급별 강화 상한 — 상위 유물일수록 더 오래 성장.
+export const RELIC_RARITY_CAP = { R: 20, SR: 30, SSR: 40 };
+export const RELIC_CAP = 20; // 하위호환 기본값
+
+export function relicCap(id) {
+  const r = RELICS[id];
+  return (r && RELIC_RARITY_CAP[r.rarity]) || RELIC_CAP;
+}
 
 export function relicUpgradeCost(level) {
   return { currency: Math.round(500 * Math.pow(1.5, level)) };
@@ -20,8 +36,9 @@ export function relicUpgradeCost(level) {
 
 export function upgradeRelic(state, id) {
   if (!RELICS[id]) return { ok: false, reason: '알 수 없는 유물' };
+  const cap = relicCap(id);
   const lv = (state.relics && state.relics[id]) || 0;
-  if (lv >= RELIC_CAP) return { ok: false, reason: `강화 상한 ${RELIC_CAP}` };
+  if (lv >= cap) return { ok: false, reason: `강화 상한 ${cap}` };
   const cost = relicUpgradeCost(lv);
   if (!spend(state.wallet, cost)) return { ok: false, reason: '재화 부족', cost };
   state.relics = state.relics || {};
