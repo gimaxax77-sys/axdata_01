@@ -129,7 +129,7 @@ test('tower: 승리 시 전진·보상, 층 난이도 단조 증가', () => {
   if (r.win) {
     assert.equal(s.tower.floor, f0 + 1, '승리 시 전진');
     assert.ok(s.tower.best >= s.tower.floor);
-    assert.ok(r.reward.gem >= 2);
+    assert.ok(r.reward.gem >= 1);
   }
   // 5층 마일스톤 보상
   s.tower.floor = 5;

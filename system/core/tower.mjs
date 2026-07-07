@@ -21,8 +21,10 @@ export function towerChallenge(floor) {
   };
 }
 
+// 층이 깊을수록 보상↑. 5층 마일스톤은 소환권까지.
 export function towerReward(floor) {
-  return floor % 5 === 0 ? { gem: 12, summon: 15 } : { gem: 2 };
+  if (floor % 5 === 0) return { gem: 10 + floor, summon: 15 + Math.floor(floor / 2) };
+  return { gem: 1 + Math.floor(floor / 3) };
 }
 
 // 현재 층 도전. 승리 시 보상 + 전진.

@@ -207,6 +207,7 @@ function main() {
   const trials = [
     { label: '신규 축 OFF (무기·룬·각성 없음)', opt: { useAxes: false } },
     { label: '기본 (등급+씨앗+신규축)', opt: {} },
+    { label: '풀 콘텐츠 파우셋 (아레나·길드·탑·캠페인)', opt: { dailyGem: 80, dailySummon: 120 } },
     { label: '계정성장 OFF (유물·펫 없음)', opt: { useAccount: false } },
     { label: '환생 OFF', opt: { balance: { prestigeIncomeBonus: 0 }, usePrestige: false } },
     { label: '비용 완화', opt: { balance: { levelCostGrowth: 1.09, enhanceCostGrowth: 1.16, gearCostGrowth: 1.2 } } },
