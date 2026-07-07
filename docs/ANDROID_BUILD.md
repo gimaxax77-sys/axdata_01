@@ -24,22 +24,29 @@
 
 ---
 
+## ✅ 사전 배선 완료 (리포에 이미 반영됨)
+
+계정이 필요 없는 정적 구성은 전부 끝나 있습니다:
+- `app.json`: `runtimeVersion(appVersion)` + `updates`(OTA, ON_LOAD) 활성
+- `eas.json`: 빌드 프로필별 채널(`development`/`preview`/`production`)
+- `package.json`: `expo-updates` 의존성 + 빌드/OTA 스크립트, SDK 51 버전 정렬(@expo/metro-runtime)
+
+남은 것은 **계정 연결 3단계**뿐입니다(아래).
+
 ## 사전 준비 (PC, 최초 1회)
 
 ```bash
-# Node 18+ 설치 확인
-node -v
+node -v                    # Node 18+ 확인
+npm install                # 의존성 설치(expo-updates 포함)
+npx expo install --check   # 버전 정합성 최종 확인(대부분 이미 정렬됨)
 
-# 프로젝트 의존성 설치
-npm install
-
-# ⚠️ SDK 51 버전 정합성 자동 정렬 (@expo/metro-runtime 등)
-npx expo install --check     # 제안값 적용(y)
-
-# EAS CLI + 로그인 (무료 Expo 계정)
 npm i -g eas-cli
-eas login
+eas login                  # 무료 Expo 계정
+eas init                   # projectId 발급 → app.json extra.eas.projectId 자동 주입
+eas update:configure       # updates.url(=u.expo.dev/<projectId>) 자동 주입
 ```
+> `eas init`·`eas update:configure`가 계정 종속 값(projectId·url)만 채웁니다.
+> 나머지 updates/채널/런타임버전 설정은 이미 리포에 있습니다.
 
 ---
 
@@ -50,11 +57,11 @@ eas login
 eas init
 
 # ── 테스트용 APK (사이드로드/내부 배포) ──
-eas build -p android --profile preview
+npm run build:apk          # = eas build -p android --profile preview
 #   → 완료되면 다운로드 URL 제공. 폰에 바로 설치 가능.
 
 # ── 프로덕션 AAB (Play 스토어 제출용) ──
-eas build -p android --profile production
+npm run build:aab          # = eas build -p android --profile production
 ```
 
 `eas.json`에 프로필이 이미 정의돼 있습니다:
@@ -75,13 +82,14 @@ APP_VARIANT=scifi eas build -p android --profile production
 
 ## B. EAS Update (OTA) — 업데이트의 핵심
 
-```bash
-# 최초 설정
-npx expo install expo-updates
-eas update:configure          # app.json에 updates 설정·runtimeVersion 주입
+> 설정은 이미 완료(`expo-updates` 의존성 + `app.json` updates + `eas.json` 채널).
+> `eas init`/`eas update:configure`로 projectId·url만 연결하면 바로 사용 가능.
 
-# 이후 변경사항을 즉시 배포 (재빌드·심사 불필요)
-eas update --branch production --message "밸런스 조정·아트 교체"
+```bash
+# 변경사항을 즉시 배포 (재빌드·심사 불필요)
+npm run ota -- --message "밸런스 조정·아트 교체"     # = eas update --branch production
+# 또는 프리뷰 채널로 먼저 테스트
+npm run ota:preview -- --message "테스트 배포"
 ```
 
 - 설치된 앱이 다음 실행 시 최신 JS/자산을 자동 다운로드.
@@ -124,4 +132,6 @@ eas submit -p android --profile production
 - ✅ EAS 프로필(preview APK / production AAB) 구성 완료
 - ✅ 듀얼 변형(판타지/SF) 아이콘·스플래시·번들ID 완비
 - ✅ 캐릭터 초상 28종 번들 (실아트 교체는 같은 파일명 덮어쓰기)
-- ⚠️ PC에서 `npx expo install --check` 1회 실행 권장(@expo/metro-runtime 정렬)
+- ✅ OTA(expo-updates) 사전 배선: app.json updates + eas.json 채널 + 의존성/스크립트
+- ✅ SDK 51 버전 정렬(@expo/metro-runtime ~3.2.3), 패키지명 정정
+- ▶ PC에서 남은 것: `npm install` → `eas login` → `eas init` → `eas update:configure` → `npm run build:apk`

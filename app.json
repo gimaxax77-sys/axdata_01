@@ -14,6 +14,12 @@
       "backgroundColor": "#1b1430"
     },
     "assetBundlePatterns": ["**/*"],
+    "runtimeVersion": { "policy": "appVersion" },
+    "updates": {
+      "enabled": true,
+      "fallbackToCacheTimeout": 0,
+      "checkAutomatically": "ON_LOAD"
+    },
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.eldria.idle",
