@@ -7,6 +7,8 @@
     "android": "expo start --android",
     "ios": "expo start --ios",
     "web": "expo start --web",
+    "test": "node --test system/test/*.test.mjs && node system/verify-genres.mjs && node system/verify-character.mjs",
+    "test:smoke": "node system/demo.mjs && node system/demo-build.mjs && node system/demo-gacha.mjs && node system/sim/balance.mjs",
     "build:play": "EXPO_OFFLINE=1 expo export --platform web && node scripts/build-play.mjs"
   },
   "dependencies": {

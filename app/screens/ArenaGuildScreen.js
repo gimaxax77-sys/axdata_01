@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView } from 'react-native';
 import { T } from '../theme';
-import { Card, Btn, fmt, LockedPanel } from '../components';
+import { Card, Btn, fmt } from '../components';
 import { isUnlocked, unlockStage } from '../../system/core/unlocks.mjs';
 import { ARENA_ENTRIES, arenaEntriesLeft, arenaFight, arenaTier } from '../../system/core/arena.mjs';
 import { GUILD_ATTACKS, guildAttacksLeft, guildAttack, guildBossMaxHp } from '../../system/core/guild.mjs';

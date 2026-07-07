@@ -7,7 +7,7 @@ import { idleGenre } from '../../system/genres/idle.mjs';
 import { getStage } from '../../system/core/progression.mjs';
 import { computePower } from '../../system/core/stats.mjs';
 import { identity, elementMeta } from '../../system/concepts/index.mjs';
-import { affinity, affinityLabel } from '../../system/core/elements.mjs';
+import { affinityLabel } from '../../system/core/elements.mjs';
 import { teamSynergy } from '../../system/core/synergy.mjs';
 import { resolve } from '../../system/core/resolution.mjs';
 import { getPartyUnits } from '../../system/core/gameState.mjs';
@@ -109,10 +109,6 @@ const st = StyleSheet.create({
   wrap: { padding: 14, gap: 12 },
   stage: { alignItems: 'center', backgroundColor: T.surface2 },
   stageLabel: { color: T.accent, fontWeight: '800', fontSize: 18, marginBottom: 4 },
-  leadEmoji: { fontSize: 64, marginVertical: 6 },
-  vs: { flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 2 },
-  vsText: { color: T.text, fontWeight: '700', fontSize: 14 },
-  vsMid: { color: T.muted, fontSize: 12 },
   enemy: { color: T.muted, fontSize: 12, marginTop: 8 },
   affinity: { color: T.text, fontSize: 12, marginTop: 6, fontWeight: '600' },
   synRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 10, justifyContent: 'center' },

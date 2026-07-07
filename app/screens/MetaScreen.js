@@ -2,7 +2,6 @@ import React from 'react';
 import { View, Text, StyleSheet, ScrollView } from 'react-native';
 import { T } from '../theme';
 import { Card, Btn, fmt } from '../components';
-import { identity } from '../../system/concepts/index.mjs';
 import {
   achievementList, claimAchievement, collectionList, claimCollection,
   seasonProgress, seasonTierList, claimSeason, buySeasonPremium, ownedCharacterIds, metaGrantPreview,
