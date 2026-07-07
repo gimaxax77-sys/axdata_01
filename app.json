@@ -13,12 +13,17 @@
       "resizeMode": "contain",
       "backgroundColor": "#1b1430"
     },
-    "assetBundlePatterns": ["**/*"],
-    "runtimeVersion": { "policy": "appVersion" },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
     "updates": {
       "enabled": true,
       "fallbackToCacheTimeout": 0,
-      "checkAutomatically": "ON_LOAD"
+      "checkAutomatically": "ON_LOAD",
+      "url": "https://u.expo.dev/f95f8fe3-12c4-43ac-8c6c-e3d0cb60e8c5"
     },
     "ios": {
       "supportsTablet": true,
@@ -36,6 +41,13 @@
     "web": {
       "bundler": "metro",
       "favicon": "./assets/favicon.png"
-    }
+    },
+    "extra": {
+      "concept": "fantasy",
+      "eas": {
+        "projectId": "f95f8fe3-12c4-43ac-8c6c-e3d0cb60e8c5"
+      }
+    },
+    "owner": "gimax77"
   }
 }
