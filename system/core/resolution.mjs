@@ -48,6 +48,11 @@ export function resolve(party, challenge, accountMods = {}) {
     0.9,
     Math.max(0, ...profiles.map((p) => p.effect?.defPierce || 0))
   );
+  // 받는 피해 감소 — 파티 평균(상한 60%). 방어와 별개의 생존 축.
+  const dmgReduce = Math.min(
+    0.6,
+    profiles.reduce((s, p) => s + (p.effect?.dmgReduce || 0), 0) / profiles.length
+  );
 
   const partyHP = profiles.reduce((s, p) => s + p.hp, 0);
   const partyHPeff = partyHP * (1 + lifesteal) * powerMult * syn.hp;
@@ -59,8 +64,8 @@ export function resolve(party, challenge, accountMods = {}) {
   const enemyDefEff = challenge.def * (1 - defPierce);
   // 파티가 적에게 넣는 유효 DPS (적 방어 반영)
   const partyEffDPS = Math.max(1, rawDPS * mitigation(enemyDefEff));
-  // 적이 파티에게 넣는 유효 DPS (파티 평균 방어 + 팀 방어버프 반영)
-  const enemyEffDPS = Math.max(1, challenge.atk * mitigation(avgDef) * (1 - teamDefReduce));
+  // 적이 파티에게 넣는 유효 DPS (파티 평균 방어 + 팀 방어버프 + 받는피해감소 반영)
+  const enemyEffDPS = Math.max(1, challenge.atk * mitigation(avgDef) * (1 - teamDefReduce) * (1 - dmgReduce));
 
   const timeToKillEnemy = challenge.hp / partyEffDPS;
   const timeToKillParty = partyHPeff / enemyEffDPS;

@@ -92,6 +92,7 @@ const SUBSTAT_POOL = [
   { key: 'critDamage', kind: 'effect', min: 0.08, max: 0.20 },
   { key: 'lifesteal', kind: 'effect', min: 0.04, max: 0.10 },
   { key: 'defPierce', kind: 'effect', min: 0.05, max: 0.12 },
+  { key: 'dmgReduce', kind: 'effect', min: 0.03, max: 0.08 },
 ];
 
 function rollSub(rng) {

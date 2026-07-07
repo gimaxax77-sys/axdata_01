@@ -18,7 +18,7 @@ const ROLE_W = {
 function weights(unit) { return ROLE_W[unit.archetype] || ROLE_W.STRIKER; }
 
 function effectSum(e = {}) {
-  return (e.critChance || 0) + (e.critDamage || 0) + (e.lifesteal || 0) + (e.defPierce || 0);
+  return (e.critChance || 0) + (e.critDamage || 0) + (e.lifesteal || 0) + (e.defPierce || 0) + (e.dmgReduce || 0);
 }
 function skillScore(skill, w) {
   const p = skill.statPct || {};

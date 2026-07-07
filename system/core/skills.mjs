@@ -58,6 +58,10 @@ export const SKILL_CATALOG = {
     id: 'PERFECT', label: '완성', desc: '전 스탯 균형 상승',
     statPct: { atk: 0.12, hp: 0.12, def: 0.12, spd: 0.12 },
   },
+  GUARDING: {
+    id: 'GUARDING', label: '철옹', desc: '받는 피해 감소 (생존 특화)',
+    effect: { dmgReduce: 0.18 },
+  },
 
   // ── 전용(시그니처) 스킬 ─────────────────────────────────────
   // 캐릭터 고유 능력. 일반 슬롯에 장착하는 게 아니라 항상 발동하며,

@@ -38,6 +38,7 @@ function describeEffect(e = {}, scale = 1) {
   if (e.critDamage) p.push(`치피 +${Math.round(e.critDamage * scale * 100)}%`);
   if (e.lifesteal) p.push(`흡혈 +${Math.round(e.lifesteal * scale * 100)}%`);
   if (e.defPierce) p.push(`관통 +${Math.round(e.defPierce * scale * 100)}%`);
+  if (e.dmgReduce) p.push(`피해감소 +${Math.round(e.dmgReduce * scale * 100)}%`);
   return p;
 }
 // scale: 스킬 레벨/랭크 배수. 강화 시 실제 반영되는 수치를 그대로 보여준다.
@@ -75,7 +76,7 @@ function describeGearItem(item) {
 }
 // 장비 부옵션만 (재련 대상 강조용).
 function describeSubs(subs = []) {
-  const KO = { atk: 'ATK', hp: 'HP', def: 'DEF', spd: 'SPD', critChance: '치명', critDamage: '치피', lifesteal: '흡혈', defPierce: '관통' };
+  const KO = { atk: 'ATK', hp: 'HP', def: 'DEF', spd: 'SPD', critChance: '치명', critDamage: '치피', lifesteal: '흡혈', defPierce: '관통', dmgReduce: '피해감소' };
   return subs.map((s) => `${KO[s.key] || s.key} +${Math.round(s.value * 100)}%`).join(' · ');
 }
 // 시그니처 각성 2차 효과 설명

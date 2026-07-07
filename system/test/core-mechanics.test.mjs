@@ -102,6 +102,19 @@ test('강화가 실제 수치에 반영: 스킬 레벨·장비 강화 스케일'
   assert.ok(collectUnitModifiers(u).statPct.atk > atk1, '스킬 레벨↑ → statPct↑');
 });
 
+test('받는 피해 감소(dmgReduce): 생존 여유↑', async () => {
+  const { resolve } = await import('../core/resolution.mjs');
+  const { equipSkill } = await import('../core/character.mjs');
+  const base = createUnit('VANGUARD', { level: 50, rank: 3 }); base.rarity = 'SR';
+  const s = createGameState({ units: [base], party: [base.uid] });
+  earn(s.wallet, { growth: 1e6 });
+  const challenge = { hp: 40000, atk: 1200, def: 150, element: null };
+  const before = resolve([base], challenge).margin;
+  equipSkill(s, base.uid, 0, 'GUARDING'); // dmgReduce +18%
+  const after = resolve([base], challenge).margin;
+  assert.ok(after > before, '피해감소가 생존 여유(margin)↑');
+});
+
 test('팀버프 def/crit: 파티 판정에 실제 반영', async () => {
   const { resolve } = await import('../core/resolution.mjs');
   const { getPartyUnits: gpu } = await import('../core/gameState.mjs');
