@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Modal } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, FlatList, TouchableOpacity, Modal } from 'react-native';
 import { T, rarityMeta } from '../theme';
 
 // 등급 순위(정렬용) — 인벤토리 상위 우선.
@@ -106,11 +106,21 @@ export default function RosterScreen({ state, bump, concept }) {
   const [picker, setPicker] = useState(null); // {mode:'skill'|'gear', slot}
   const [bubble, setBubble] = useState(null); // 현재 대사
   const [mult, setMult] = useState(1); // 성장 배수 (×1/×10/×100)
+  // 무거운 하단 카드(씨앗·전용무기·룬·스킬·장비·성장)는 첫 페인트 뒤에 렌더
+  // → 탭 전환 시 상단(파티·상세)이 즉시 뜨고 렉이 사라진다.
+  const [heavy, setHeavy] = useState(false);
+  useEffect(() => { const t = setTimeout(() => setHeavy(true), 0); return () => clearTimeout(t); }, []);
   const unit = state.units.find((u) => u.uid === selId) || state.units[0];
   const lines = unit && linesOf(concept, unit);
   // 선택 캐릭터가 바뀌면 인사 대사로 초기화
   useEffect(() => { setBubble(lines ? lines.greet : null); }, [selId]);
-  const list = state.units.slice().sort((a, b) => computePower(b) - computePower(a));
+  // 전투력 정렬 — computePower를 유닛당 1회만 계산(캐시)해 O(n log n) 중복 제거.
+  // 매 렌더 최신 반영하되 계산은 유닛 수(N)회로 고정.
+  const list = (() => {
+    const pw = new Map();
+    const powerOf = (u) => { let v = pw.get(u.uid); if (v === undefined) { v = computePower(u); pw.set(u.uid, v); } return v; };
+    return state.units.slice().sort((a, b) => powerOf(b) - powerOf(a));
+  })();
   const inParty = state.party.includes(unit.uid);
 
   const act = (fn) => { fn(); bump(); };
@@ -163,23 +173,32 @@ export default function RosterScreen({ state, bump, concept }) {
         })()}
       </Card>
 
-      {/* 보유 유닛 */}
+      {/* 보유 유닛 — 가상화 목록(화면에 보이는 칩만 렌더 → 대량 로스터도 가볍다) */}
       <Text style={g.sec}>보유 {concept.terms.unit} ({list.length})</Text>
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={g.hlist}>
-        {list.map((u) => {
+      <FlatList
+        horizontal
+        data={list}
+        keyExtractor={(u) => u.uid}
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={g.hlist}
+        initialNumToRender={10}
+        maxToRenderPerBatch={10}
+        windowSize={5}
+        removeClippedSubviews
+        renderItem={({ item: u }) => {
           const m = identity(concept, u);
           const on = u.uid === unit.uid;
           const party = state.party.includes(u.uid);
           return (
-            <TouchableOpacity key={u.uid} onPress={() => setSel(u.uid)} style={[g.chip, on && g.chipOn]} activeOpacity={0.8}>
+            <TouchableOpacity onPress={() => setSel(u.uid)} style={[g.chip, on && g.chipOn]} activeOpacity={0.8}>
               {party && <Text style={g.chipStar}>⭐</Text>}
               <Portrait emoji={m.emoji} image={charImage(concept.id, u.characterId)} rarity={u.rarity} size={46} badge />
               <Text style={g.chipName} numberOfLines={1}>{m.name}</Text>
               <Text style={g.chipLv}>Lv.{u.level} · {concept.archetypes[u.archetype]?.emoji}</Text>
             </TouchableOpacity>
           );
-        })}
-      </ScrollView>
+        }}
+      />
 
       {/* 상세 */}
       <Card style={{ marginTop: 6 }}>
@@ -264,6 +283,9 @@ export default function RosterScreen({ state, bump, concept }) {
         </Card>
       )}
 
+      {!heavy && <Text style={g.loadingHint}>불러오는 중…</Text>}
+
+      {heavy && (<>
       {/* 씨앗 — 서사 발현 (등급별 보정, 6조건 달성분 능력치) */}
       {(() => {
         const sp = seedProgress(unit);
@@ -456,6 +478,7 @@ export default function RosterScreen({ state, bump, concept }) {
           ))}
         </View>
       </Card>
+      </>)}
 
       {/* 편성 모달 */}
       <PickerModal picker={picker} unit={unit} state={state} concept={concept}
@@ -682,6 +705,7 @@ const g = StyleSheet.create({
   chev: { color: T.muted, fontSize: 22, marginLeft: 8 },
   dim: { color: T.muted, fontSize: 12, fontWeight: '400' },
   btnRow: { flexDirection: 'row', gap: 8 },
+  loadingHint: { color: T.muted, fontSize: 13, textAlign: 'center', paddingVertical: 24 },
 });
 
 const m = StyleSheet.create({
