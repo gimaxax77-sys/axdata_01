@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView, Platform, StatusBar as RNStatusBar, Modal, Alert } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
+import { LinearGradient } from 'expo-linear-gradient';
 import { T } from './app/theme';
 import { ResourceBar, Btn, fmt } from './app/components';
 import { useGame } from './app/useGame';
@@ -52,6 +53,7 @@ export default function App() {
   return (
     <SafeAreaView style={s.safe}>
       <StatusBar style="light" />
+      <LinearGradient colors={T.bgGrad} style={StyleSheet.absoluteFill} pointerEvents="none" />
       {/* 헤더 */}
       <View style={s.header}>
         <View style={{ flex: 1 }}>

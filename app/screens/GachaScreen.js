@@ -1,17 +1,36 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView } from 'react-native';
-import { T } from '../theme';
-import { Card, Btn, fmt } from '../components';
-import { summonOne, summonMulti, RARITY, PULL_COST } from '../../system/core/gacha.mjs';
+import React, { useState, useEffect, useRef } from 'react';
+import { View, Text, StyleSheet, ScrollView, Animated } from 'react-native';
+import { T, rarityMeta } from '../theme';
+import { Card, Btn, fmt, Portrait } from '../components';
+import { summonOne, summonMulti, PULL_COST } from '../../system/core/gacha.mjs';
 import { identity } from '../../system/concepts/index.mjs';
 import { recordMission } from '../../system/core/daily.mjs';
 import { isUnlocked, unlockStage } from '../../system/core/unlocks.mjs';
 import { LockedPanel } from '../components';
 
-const RARITY_COLOR = { N: '#9aa0b5', R: '#5aa9e6', SR: '#c98bff', SSR: '#f5c542' };
+
+// 소환 결과 한 칸 — 등장 시 페이드+스케일+글로우 (등급 높을수록 늦게=강조).
+function RevealCell({ index, rarity, emoji, name }) {
+  const rm = rarityMeta(rarity);
+  const a = useRef(new Animated.Value(0)).current;
+  useEffect(() => {
+    a.setValue(0);
+    Animated.timing(a, { toValue: 1, duration: 340, delay: Math.min(index, 12) * 70, useNativeDriver: true }).start();
+  }, []);
+  return (
+    <Animated.View style={{ opacity: a, transform: [{ scale: a.interpolate({ inputRange: [0, 1], outputRange: [0.6, 1] }) }] }}>
+      <View style={[s.cell, { borderColor: rm.color }]}>
+        <Text style={[s.cellRarity, { color: rm.color }]}>{rm.label}</Text>
+        <Portrait emoji={emoji} rarity={rarity} size={52} badge />
+        <Text style={s.cellName} numberOfLines={1}>{name}</Text>
+      </View>
+    </Animated.View>
+  );
+}
 
 export default function GachaScreen({ state, bump, concept }) {
   const [results, setResults] = useState([]);
+  const [resultsKey, setResultsKey] = useState(0);
 
   const pool = concept.roster;
   const pull = (n) => {
@@ -23,7 +42,7 @@ export default function GachaScreen({ state, bump, concept }) {
       const r = summonMulti(state, n, Math.random, pool);
       res = r.ok ? r.results : [];
     }
-    if (res.length) { recordMission(state, 'summon', res.length); setResults(res.slice(-20)); }
+    if (res.length) { recordMission(state, 'summon', res.length); setResults(res.slice(-20)); setResultsKey((k) => k + 1); }
     bump();
   };
 
@@ -61,16 +80,10 @@ export default function GachaScreen({ state, bump, concept }) {
         <Card style={{ marginTop: 14 }}>
           <Text style={s.sec}>소환 결과 <Text style={s.floor}>({results.length}건{results.length >= 20 ? ' · 최근 20' : ''})</Text></Text>
           <View style={s.grid}>
-            {results.map((r, i) => {
-              const id = identity(concept, r.unit);
-              return (
-                <View key={i} style={[s.cell, { borderColor: RARITY_COLOR[r.rarity] }]}>
-                  <Text style={[s.cellRarity, { color: RARITY_COLOR[r.rarity] }]}>{RARITY[r.rarity].label}</Text>
-                  <Text style={s.cellEmoji}>{id.emoji}</Text>
-                  <Text style={s.cellName} numberOfLines={1}>{id.name}</Text>
-                </View>
-              );
-            })}
+            {results.map((r, i) => (
+              <RevealCell key={`${resultsKey}-${i}`} index={i} rarity={r.rarity}
+                emoji={identity(concept, r.unit).emoji} name={identity(concept, r.unit).name} />
+            ))}
           </View>
         </Card>
       )}
@@ -94,7 +107,6 @@ const s = StyleSheet.create({
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, justifyContent: 'center' },
   cell: { width: 90, backgroundColor: T.surface2, borderRadius: 12, borderWidth: 2, padding: 8, alignItems: 'center' },
   cellRarity: { fontSize: 11, fontWeight: '900' },
-  cellEmoji: { fontSize: 30, marginVertical: 2 },
   cellName: { color: T.text, fontSize: 12, fontWeight: '700' },
   hint: { color: T.muted, fontSize: 12, marginTop: 16, lineHeight: 18, textAlign: 'center' },
 });

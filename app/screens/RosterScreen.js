@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Modal } from 'react-native';
 import { T } from '../theme';
-import { Card, Btn, fmt, MultiToggle, repeat } from '../components';
+import { Card, Btn, fmt, MultiToggle, repeat, Portrait } from '../components';
 import { togglePartyMember, MAX_PARTY, getPartyUnits } from '../../system/core/gameState.mjs';
 import { teamSynergy } from '../../system/core/synergy.mjs';
 import { computeStats, computePower } from '../../system/core/stats.mjs';
@@ -105,7 +105,7 @@ export default function RosterScreen({ state, bump, concept }) {
                 onPress={() => pu && setSel(pu.uid)}
                 style={[g.partySlot, pu && g.partySlotOn, pu && pu.uid === unit.uid && g.partySlotSel]}>
                 {pu ? (<>
-                  <Text style={g.partyEmoji}>{pm.emoji}</Text>
+                  <Portrait emoji={pm.emoji} rarity={pu.rarity} size={44} />
                   <Text style={g.partyName} numberOfLines={1}>{pm.name}</Text>
                 </>) : <Text style={g.partyEmpty}>＋</Text>}
               </TouchableOpacity>
@@ -136,9 +136,9 @@ export default function RosterScreen({ state, bump, concept }) {
           return (
             <TouchableOpacity key={u.uid} onPress={() => setSel(u.uid)} style={[g.chip, on && g.chipOn]} activeOpacity={0.8}>
               {party && <Text style={g.chipStar}>⭐</Text>}
-              <Text style={g.chipEmoji}>{m.emoji}</Text>
+              <Portrait emoji={m.emoji} rarity={u.rarity} size={46} badge />
               <Text style={g.chipName} numberOfLines={1}>{m.name}</Text>
-              <Text style={g.chipLv}>Lv.{u.level}{u.rarity ? ` · ${u.rarity}` : ''}</Text>
+              <Text style={g.chipLv}>Lv.{u.level}</Text>
             </TouchableOpacity>
           );
         })}
@@ -147,7 +147,7 @@ export default function RosterScreen({ state, bump, concept }) {
       {/* 상세 */}
       <Card style={{ marginTop: 6 }}>
         <View style={g.head}>
-          <Text style={g.headEmoji}>{meta.emoji}</Text>
+          <Portrait emoji={meta.emoji} rarity={unit.rarity} size={62} badge style={{ marginRight: 4 }} />
           <View style={{ flex: 1 }}>
             <Text style={g.headName}>{meta.name}{unit.rarity ? <Text style={g.rarity}>  {unit.rarity}</Text> : null}</Text>
             {(meta.title || meta.personality) && (
@@ -529,24 +529,21 @@ const g = StyleSheet.create({
   hlist: { gap: 10, paddingVertical: 4, paddingRight: 8 },
   chip: { width: 84, backgroundColor: T.surface, borderRadius: 14, padding: 10, alignItems: 'center', borderWidth: 1, borderColor: T.line },
   chipOn: { borderColor: T.accent, backgroundColor: T.surface2 },
-  chipStar: { position: 'absolute', top: 4, right: 6, fontSize: 12 },
-  chipEmoji: { fontSize: 28 },
+  chipStar: { position: 'absolute', top: 4, right: 6, fontSize: 12, zIndex: 2 },
   partyRow: { flexDirection: 'row', gap: 8, marginTop: 4 },
   partySlot: { flex: 1, aspectRatio: 1, backgroundColor: T.surface2, borderRadius: 12, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: 'transparent', padding: 4 },
   partySlotOn: { borderColor: T.line },
   partySlotSel: { borderColor: T.accent },
-  partyEmoji: { fontSize: 26 },
-  partyName: { color: T.text, fontSize: 10, fontWeight: '700', marginTop: 2 },
+  partyName: { color: T.text, fontSize: 10, fontWeight: '700', marginTop: 5 },
   partyEmpty: { color: T.muted, fontSize: 24, fontWeight: '400' },
   synNone: { color: T.muted, fontSize: 12, marginTop: 10 },
   synWrap: { marginTop: 10, gap: 6 },
   synChip: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: T.surface2, borderRadius: 10, paddingHorizontal: 10, paddingVertical: 6, borderWidth: 1, borderColor: T.accent },
   synChipText: { color: T.accent, fontWeight: '800', fontSize: 12 },
   synChipDesc: { color: T.muted, fontSize: 11, flex: 1 },
-  chipName: { color: T.text, fontSize: 12, fontWeight: '700', marginTop: 4 },
+  chipName: { color: T.text, fontSize: 12, fontWeight: '700', marginTop: 8 },
   chipLv: { color: T.muted, fontSize: 11, marginTop: 2 },
   head: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  headEmoji: { fontSize: 44 },
   headName: { color: T.text, fontWeight: '900', fontSize: 20 },
   rarity: { color: T.accent, fontSize: 13, fontWeight: '800' },
   headTitle: { color: T.primary, fontSize: 13, fontWeight: '700', marginTop: 1 },

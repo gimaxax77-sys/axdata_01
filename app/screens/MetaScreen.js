@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, ScrollView } from 'react-native';
 import { T } from '../theme';
-import { Card, Btn, fmt } from '../components';
+import { Card, Btn, fmt, Portrait } from '../components';
 import {
   achievementList, claimAchievement, collectionList, claimCollection,
   seasonProgress, seasonTierList, claimSeason, buySeasonPremium, ownedCharacterIds, metaGrantPreview,
@@ -72,9 +72,9 @@ export default function MetaScreen({ state, bump, concept }) {
             const has = owned.has(ch.id);
             return (
               <View key={ch.id} style={[c.dex, has && c.dexOn]}>
-                <Text style={[c.dexEmoji, !has && c.dexLocked]}>{has ? ch.emoji : '❔'}</Text>
+                <Portrait emoji={has ? ch.emoji : '❔'} rarity={has ? ch.rarity : 'N'} size={40} dim={!has} glow={has} />
                 <Text style={c.dexName} numberOfLines={1}>{has ? ch.name : '???'}</Text>
-                {has && <Text style={c.dexRarity}>{ch.rarity}</Text>}
+                {has ? <Text style={c.dexRarity}>{ch.rarity}</Text> : <Text style={c.dexRarity}> </Text>}
               </View>
             );
           })}
@@ -116,8 +116,6 @@ const c = StyleSheet.create({
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   dex: { width: 72, backgroundColor: T.surface2, borderRadius: 12, padding: 8, alignItems: 'center', borderWidth: 1, borderColor: 'transparent' },
   dexOn: { borderColor: T.accent },
-  dexEmoji: { fontSize: 26 },
-  dexLocked: { opacity: 0.5 },
   dexName: { color: T.text, fontSize: 11, fontWeight: '700', marginTop: 3 },
   dexRarity: { color: T.accent, fontSize: 10, fontWeight: '800', marginTop: 1 },
 });
