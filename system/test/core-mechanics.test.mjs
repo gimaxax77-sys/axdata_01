@@ -102,6 +102,40 @@ test('강화가 실제 수치에 반영: 스킬 레벨·장비 강화 스케일'
   assert.ok(collectUnitModifiers(u).statPct.atk > atk1, '스킬 레벨↑ → statPct↑');
 });
 
+test('팀버프 def/crit: 파티 판정에 실제 반영', async () => {
+  const { resolve } = await import('../core/resolution.mjs');
+  const { getPartyUnits: gpu } = await import('../core/gameState.mjs');
+  const mk = (sig) => {
+    const u = createUnit('SUPPORT', { level: 40, rank: 3, signature: sig });
+    u.rarity = 'SR'; return u;
+  };
+  const dealer = () => { const u = createUnit('STRIKER', { level: 40, rank: 3 }); u.rarity = 'SR'; return u; };
+  const challenge = { hp: 60000, atk: 900, def: 200, element: null };
+  // 팀 치명 버프(빛의 신탁) → dps↑ → 적 처치 빨라짐(margin↑)
+  const critParty = [dealer(), mk('SIG_LIGHT_ORACLE')];
+  const noneParty = [dealer(), createUnit('SUPPORT', { level: 40, rank: 3 })];
+  noneParty[1].rarity = 'SR';
+  const rc = resolve(critParty, challenge);
+  const rn = resolve(noneParty, challenge);
+  assert.ok(rc.partyPower > rn.partyPower, '팀 치명 버프가 파티 파워↑');
+  // 팀 방어 버프(조수 성가) → 파티 생존↑(margin↑)
+  const defParty = [dealer(), mk('SIG_TIDE_HYMN')];
+  const rd = resolve(defParty, challenge);
+  assert.ok(rd.margin > rn.margin, '팀 방어 버프가 생존 여유↑');
+});
+
+test('장비 세트: 2/3피스 보너스가 모디파이어에 합산', async () => {
+  const { gearSetBonus, createGear, GEAR_CATALOG } = await import('../core/gear.mjs');
+  const u = createUnit('STRIKER', { level: 10, rank: 2 });
+  u.gear = { weapon: createGear('DRAGON_FANG'), armor: null, accessory: null };
+  assert.equal(gearSetBonus(u).statPct.atk || 0, 0, '1피스는 미발동');
+  u.gear.armor = createGear('BULWARK_PLATE');
+  assert.ok(gearSetBonus(u).statPct.atk >= 0.08, '2피스 보너스');
+  u.gear.accessory = createGear('OMNI_CHARM');
+  const full = gearSetBonus(u);
+  assert.ok(full.statPct.atk >= 0.15 && full.effect.critChance >= 0.1, '3피스 풀세트');
+});
+
 test('추천 빌드: 빈 스킬 슬롯 채움·더 나은 장비 교체(비파괴)', async () => {
   const { optimizeLoadout } = await import('../core/loadout.mjs');
   const { skillSlots } = await import('../core/skills.mjs');

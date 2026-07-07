@@ -70,5 +70,7 @@ export function toCombatProfile(unit) {
     element: unit.element, // 속성 상성 계산용
     effect: mods.effect, // lifesteal / defPierce 등
     teamBuffAtk: mods.teamBuff.atk,
+    teamBuffDef: mods.teamBuff.def, // 팀 피해경감
+    teamBuffCrit: mods.teamBuff.critChance, // 팀 치명(=dps 배수)
   };
 }

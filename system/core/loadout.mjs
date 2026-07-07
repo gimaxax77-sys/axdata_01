@@ -22,8 +22,10 @@ function effectSum(e = {}) {
 }
 function skillScore(skill, w) {
   const p = skill.statPct || {};
+  const tb = skill.teamBuff || {};
+  const team = (tb.atk || 0) + (tb.def || 0) + (tb.critChance || 0);
   return (p.atk || 0) * w.atk + (p.hp || 0) * w.hp + (p.def || 0) * w.def + (p.spd || 0) * w.spd
-    + effectSum(skill.effect) * w.effect + (skill.teamBuff?.atk || 0) * w.team;
+    + effectSum(skill.effect) * w.effect + team * w.team;
 }
 // 장비 flat은 스탯 규모가 달라 정규화(hp/40)해서 합산.
 function gearScore(item, w) {

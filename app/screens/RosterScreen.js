@@ -14,7 +14,7 @@ import { identity, elementMeta } from '../../system/concepts/index.mjs';
 import { GEAR_SLOTS, GEAR_CATALOG, gearEnhanceCost, gearContribution } from '../../system/core/gear.mjs';
 import { levelUp, ascend, enhanceNode, equipSkill, unequipSkill, upgradeSkill, awakenSignature } from '../../system/core/character.mjs';
 import { AWAKEN_MAX, awakenCost } from '../../system/core/skills.mjs';
-import { craftGear, equipGear, enhanceGear, unequipGear, gearCraftCost } from '../../system/core/gear.mjs';
+import { craftGear, equipGear, enhanceGear, unequipGear, gearCraftCost, activeGearSets } from '../../system/core/gear.mjs';
 import { optimizeLoadout } from '../../system/core/loadout.mjs';
 import { recordMission } from '../../system/core/daily.mjs';
 import { intimacyLevel, intimacyProgress, giftCost, giveGift, INTIMACY_MAX } from '../../system/core/intimacy.mjs';
@@ -46,8 +46,16 @@ function describeSkill(id, scale = 1) {
   const p = [];
   if (s.statPct) for (const [k, v] of Object.entries(s.statPct)) p.push(`${k.toUpperCase()} +${Math.round(v * scale * 100)}%`);
   p.push(...describeEffect(s.effect, scale));
-  if (s.teamBuff?.atk) p.push(`팀ATK +${Math.round(s.teamBuff.atk * scale * 100)}%`);
+  p.push(...describeTeamBuff(s.teamBuff, scale));
   return p.join(' · ');
+}
+// 팀버프 3종 표시 (공격/피해경감/치명)
+function describeTeamBuff(tb = {}, scale = 1) {
+  const p = [];
+  if (tb.atk) p.push(`팀ATK +${Math.round(tb.atk * scale * 100)}%`);
+  if (tb.def) p.push(`팀 피해경감 +${Math.round(tb.def * scale * 100)}%`);
+  if (tb.critChance) p.push(`팀 치명 +${Math.round(tb.critChance * scale * 100)}%`);
+  return p;
 }
 // 설계도 기준(강화 전 Lv1) 표시 — 제작 미리보기용.
 function describeGear(bp) {
@@ -69,7 +77,7 @@ function describeAwaken(a = {}) {
   const p = [];
   if (a.statPct) for (const [k, v] of Object.entries(a.statPct)) p.push(`${k.toUpperCase()} +${Math.round(v * 100)}%`);
   p.push(...describeEffect(a.effect));
-  if (a.teamBuff?.atk) p.push(`팀ATK +${Math.round(a.teamBuff.atk * 100)}%`);
+  p.push(...describeTeamBuff(a.teamBuff));
   return p.join(' · ');
 }
 // 룬 한 개 요약 (메인스탯 + 등급)
@@ -408,6 +416,9 @@ export default function RosterScreen({ state, bump, concept }) {
             </TouchableOpacity>
           );
         })}
+        {activeGearSets(unit).map((s) => (
+          <Text key={s.set} style={g.setBonus}>⚔️ {s.label} 세트 {s.active3 ? '3피스(풀)' : '2피스'} 보너스 활성</Text>
+        ))}
       </Card>
 
       {/* 성장 */}

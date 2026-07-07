@@ -1,7 +1,7 @@
 import { getArchetype } from './archetypes.mjs';
 import { getSkill, skillPower } from './skills.mjs';
 import { ENHANCE_NODES } from './enhance.mjs';
-import { GEAR_SLOTS, gearContribution } from './gear.mjs';
+import { GEAR_SLOTS, gearContribution, gearSetBonus } from './gear.mjs';
 import { intimacyBonus } from './intimacy.mjs';
 import { sigWeaponContribution, sigWeaponBoost } from './sigweapon.mjs';
 import { runeMainContribution, runeSetContribution } from './runes.mjs';
@@ -23,8 +23,17 @@ function emptyMods() {
     statPct: { atk: 0, hp: 0, def: 0, spd: 0 },
     statFlat: { atk: 0, hp: 0, def: 0, spd: 0 },
     effect: { critChance: 0, critDamage: 0, lifesteal: 0, defPierce: 0 },
-    teamBuff: { atk: 0 },
+    // 팀버프 3종: atk(공격)·def(피해경감)·critChance(치명) — 지원형 정체성 분화.
+    teamBuff: { atk: 0, def: 0, critChance: 0 },
   };
+}
+
+// 팀버프 소스(atk/def/critChance)를 배수 반영해 합산.
+function addTeamBuff(mods, tb, scale = 1) {
+  if (!tb) return;
+  for (const k of Object.keys(mods.teamBuff)) {
+    if (tb[k]) mods.teamBuff[k] += tb[k] * scale;
+  }
 }
 
 function addStatPct(mods, src, scale = 1) {
@@ -63,13 +72,13 @@ export function collectUnitModifiers(unit) {
     const scale = skillPower(unit.rank) * (1 + sigWeaponBoost(unit));
     addStatPct(mods, sig.statPct, scale);
     addEffect(mods, sig.effect, scale);
-    if (sig.teamBuff && sig.teamBuff.atk) mods.teamBuff.atk += sig.teamBuff.atk * scale;
+    addTeamBuff(mods, sig.teamBuff, scale);
     // 각성: 2차 효과 (각성 레벨 비례)
     const aw = unit.sigAwaken || 0;
     if (aw && sig.awaken) {
       addStatPct(mods, sig.awaken.statPct, aw);
       addEffect(mods, sig.awaken.effect, aw);
-      if (sig.awaken.teamBuff && sig.awaken.teamBuff.atk) mods.teamBuff.atk += sig.awaken.teamBuff.atk * aw;
+      addTeamBuff(mods, sig.awaken.teamBuff, aw);
     }
   }
 
@@ -80,9 +89,7 @@ export function collectUnitModifiers(unit) {
     const scale = skillPower(slot.level || 1);
     addStatPct(mods, skill.statPct, scale);
     addEffect(mods, skill.effect, scale);
-    if (skill.teamBuff && skill.teamBuff.atk) {
-      mods.teamBuff.atk += skill.teamBuff.atk * scale;
-    }
+    addTeamBuff(mods, skill.teamBuff, scale);
   }
 
   // 3) 강화(각인) — 노드 레벨 × 노드당 증가값
@@ -112,6 +119,10 @@ export function collectUnitModifiers(unit) {
     addStatFlat(mods, c.flat);
     addEffect(mods, c.effect);
   }
+  // 4-b) 장비 세트 보너스 — 같은 세트 2/3피스 착용 시 추가 statPct/효과.
+  const gs = gearSetBonus(unit);
+  addStatPct(mods, gs.statPct);
+  addEffect(mods, gs.effect);
 
   // 5) 전용무기 — 별도 슬롯(일반 장비와 무관)의 flat + 효과
   const sw = sigWeaponContribution(unit);

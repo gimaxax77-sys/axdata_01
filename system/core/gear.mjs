@@ -20,11 +20,53 @@ export const GEAR_CATALOG = {
   AEGIS: { id: 'AEGIS', slot: 'armor', label: '이지스', flat: { hp: 500, def: 40 }, effect: { lifesteal: 0.12 } },
   CRIT_RING: { id: 'CRIT_RING', slot: 'accessory', label: '치명반지', flat: { spd: 30 }, effect: { critChance: 0.12, critDamage: 0.3 } },
   PIERCE_CHARM: { id: 'PIERCE_CHARM', slot: 'accessory', label: '관통부적', flat: { spd: 20 }, effect: { defPierce: 0.25 } },
-  // ── P1 상위 티어 (제작 비용↑, 콘텐츠 진행 후 노림) ──
-  DRAGON_FANG: { id: 'DRAGON_FANG', slot: 'weapon', label: '용아검', flat: { atk: 180 }, effect: { critChance: 0.1 }, craftCost: 600 },
-  BULWARK_PLATE: { id: 'BULWARK_PLATE', slot: 'armor', label: '성벽갑옷', flat: { hp: 1100, def: 85 }, effect: {}, craftCost: 600 },
-  OMNI_CHARM: { id: 'OMNI_CHARM', slot: 'accessory', label: '만능부적', flat: { spd: 35 }, effect: { critChance: 0.1, defPierce: 0.15 }, craftCost: 600 },
+  // ── P1 상위 티어 (제작 비용↑, 콘텐츠 진행 후 노림) · 용사 세트 ──
+  DRAGON_FANG: { id: 'DRAGON_FANG', slot: 'weapon', label: '용아검', flat: { atk: 180 }, effect: { critChance: 0.1 }, craftCost: 600, set: 'CHAMPION' },
+  BULWARK_PLATE: { id: 'BULWARK_PLATE', slot: 'armor', label: '성벽갑옷', flat: { hp: 1100, def: 85 }, effect: {}, craftCost: 600, set: 'CHAMPION' },
+  OMNI_CHARM: { id: 'OMNI_CHARM', slot: 'accessory', label: '만능부적', flat: { spd: 35 }, effect: { critChance: 0.1, defPierce: 0.15 }, craftCost: 600, set: 'CHAMPION' },
 };
+
+// 장비 세트 — 같은 세트를 여러 슬롯에 착용하면 조건부 보너스(룬 세트와 유사).
+export const GEAR_SETS = {
+  CHAMPION: {
+    label: '용사',
+    two: { statPct: { atk: 0.08 } },                       // 2피스
+    three: { statPct: { atk: 0.15 }, effect: { critChance: 0.1 } }, // 3피스(풀세트)
+  },
+};
+
+// 유닛 장착 장비의 세트 보너스 합산 (2/3피스 임계).
+export function gearSetBonus(unit) {
+  const counts = {};
+  for (const slot of GEAR_SLOTS) {
+    const it = unit.gear && unit.gear[slot];
+    const set = it && GEAR_CATALOG[it.blueprint] && GEAR_CATALOG[it.blueprint].set;
+    if (set) counts[set] = (counts[set] || 0) + 1;
+  }
+  const out = { statPct: {}, effect: {} };
+  for (const [set, n] of Object.entries(counts)) {
+    const def = GEAR_SETS[set];
+    if (!def) continue;
+    const tier = n >= 3 ? def.three : n >= 2 ? def.two : null;
+    if (!tier) continue;
+    for (const [k, v] of Object.entries(tier.statPct || {})) out.statPct[k] = (out.statPct[k] || 0) + v;
+    for (const [k, v] of Object.entries(tier.effect || {})) out.effect[k] = (out.effect[k] || 0) + v;
+  }
+  return out;
+}
+
+// 유닛의 활성 세트 목록 (표시용): [{ set, label, pieces, active2, active3 }]
+export function activeGearSets(unit) {
+  const counts = {};
+  for (const slot of GEAR_SLOTS) {
+    const it = unit.gear && unit.gear[slot];
+    const set = it && GEAR_CATALOG[it.blueprint] && GEAR_CATALOG[it.blueprint].set;
+    if (set) counts[set] = (counts[set] || 0) + 1;
+  }
+  return Object.entries(counts)
+    .filter(([set, n]) => GEAR_SETS[set] && n >= 2)
+    .map(([set, n]) => ({ set, label: GEAR_SETS[set].label, pieces: n, active2: n >= 2, active3: n >= 3 }));
+}
 
 const GEAR_ENH_PER = 0.12; // 강화 레벨당 flat +12%
 

@@ -68,14 +68,14 @@ export const SKILL_CATALOG = {
   SIG_FROST_GUARD: { id: 'SIG_FROST_GUARD', label: '서리방벽', desc: '체력·방어 특화', signature: true, statPct: { hp: 0.30, def: 0.25 }, awaken: { effect: { lifesteal: 0.06 } } },
   SIG_WIND_DANCE: { id: 'SIG_WIND_DANCE', label: '바람춤', desc: '속도·공격', signature: true, statPct: { spd: 0.5, atk: 0.1 }, awaken: { statPct: { atk: 0.06 } } },
   SIG_EARTH_AEGIS: { id: 'SIG_EARTH_AEGIS', label: '대지수호', desc: '체력·흡혈', signature: true, statPct: { hp: 0.2 }, effect: { lifesteal: 0.2 }, awaken: { statPct: { def: 0.08 } } },
-  SIG_LIGHT_ORACLE: { id: 'SIG_LIGHT_ORACLE', label: '빛의 신탁', desc: '팀 공격+치명', signature: true, teamBuff: { atk: 0.15 }, effect: { critChance: 0.15 }, awaken: { effect: { critDamage: 0.15 } } },
+  SIG_LIGHT_ORACLE: { id: 'SIG_LIGHT_ORACLE', label: '빛의 신탁', desc: '팀 공격+팀 치명', signature: true, teamBuff: { atk: 0.1, critChance: 0.12 }, effect: { critChance: 0.15 }, awaken: { teamBuff: { critChance: 0.04 } } },
   SIG_STORM_BLADE: { id: 'SIG_STORM_BLADE', label: '폭풍검', desc: '공격·관통', signature: true, statPct: { atk: 0.2 }, effect: { defPierce: 0.2 }, awaken: { effect: { critChance: 0.03 } } },
   SIG_NOVICE: { id: 'SIG_NOVICE', label: '견습 일격', desc: '기본 공격 강화', signature: true, statPct: { atk: 0.12 }, awaken: { statPct: { atk: 0.05 } } },
 
   // ── P1 신규 캐릭터 전용 스킬 ────────────────────────────────
   SIG_EMBER_WALL: { id: 'SIG_EMBER_WALL', label: '잉걸 방벽', desc: '체력·방어+흡혈(불굴 수호)', signature: true, statPct: { hp: 0.25, def: 0.20 }, effect: { lifesteal: 0.12 }, awaken: { statPct: { def: 0.08 } } },
   SIG_GLACIER_EDGE: { id: 'SIG_GLACIER_EDGE', label: '빙하검', desc: '공격+관통·치명피해(처형)', signature: true, statPct: { atk: 0.18 }, effect: { defPierce: 0.15, critDamage: 0.4 }, awaken: { effect: { critChance: 0.05 } } },
-  SIG_TIDE_HYMN: { id: 'SIG_TIDE_HYMN', label: '조수 성가', desc: '팀 공격+강한 흡혈(치유 지원)', signature: true, teamBuff: { atk: 0.15 }, effect: { lifesteal: 0.25 }, awaken: { effect: { lifesteal: 0.08 } } },
+  SIG_TIDE_HYMN: { id: 'SIG_TIDE_HYMN', label: '조수 성가', desc: '팀 피해경감+강한 흡혈(수호 치유)', signature: true, teamBuff: { def: 0.15 }, effect: { lifesteal: 0.25 }, awaken: { teamBuff: { def: 0.05 } } },
   SIG_WAR_CHANT: { id: 'SIG_WAR_CHANT', label: '전열 함성', desc: '팀 공격+자신 속도(지휘)', signature: true, teamBuff: { atk: 0.20 }, statPct: { spd: 0.2 }, awaken: { teamBuff: { atk: 0.05 } } },
 };
 

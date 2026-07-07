@@ -34,6 +34,10 @@ export function resolve(party, challenge, accountMods = {}) {
 
   // 팀 버프 합산 (지원형 원형 + 지휘 스킬 등)
   const atkMult = 1 + profiles.reduce((s, p) => s + (p.teamBuffAtk || 0), 0);
+  // 팀 치명 버프 → 파티 dps 배수 (치명 지원형)
+  const critMult = 1 + profiles.reduce((s, p) => s + (p.teamBuffCrit || 0), 0);
+  // 팀 방어 버프 → 파티 피해경감 (수호 지원형, 상한 60%)
+  const teamDefReduce = Math.min(0.6, profiles.reduce((s, p) => s + (p.teamBuffDef || 0), 0));
   // 흡혈 합산 (상한 60%) → 파티 실효 HP 증가
   const lifesteal = Math.min(
     0.6,
@@ -49,14 +53,14 @@ export function resolve(party, challenge, accountMods = {}) {
   const partyHPeff = partyHP * (1 + lifesteal) * powerMult * syn.hp;
   // 각 유닛의 dps에 속성 상성 배수 적용 (적 속성 대비 유리/불리)
   const rawDPS = profiles.reduce((s, p) => s + p.dps * affinity(p.element, challenge.element), 0)
-    * atkMult * powerMult * syn.atk;
+    * atkMult * critMult * powerMult * syn.atk;
   const avgDef = profiles.reduce((s, p) => s + p.def, 0) / profiles.length * syn.def;
 
   const enemyDefEff = challenge.def * (1 - defPierce);
   // 파티가 적에게 넣는 유효 DPS (적 방어 반영)
   const partyEffDPS = Math.max(1, rawDPS * mitigation(enemyDefEff));
-  // 적이 파티에게 넣는 유효 DPS (파티 평균 방어 반영)
-  const enemyEffDPS = Math.max(1, challenge.atk * mitigation(avgDef));
+  // 적이 파티에게 넣는 유효 DPS (파티 평균 방어 + 팀 방어버프 반영)
+  const enemyEffDPS = Math.max(1, challenge.atk * mitigation(avgDef) * (1 - teamDefReduce));
 
   const timeToKillEnemy = challenge.hp / partyEffDPS;
   const timeToKillParty = partyHPeff / enemyEffDPS;
