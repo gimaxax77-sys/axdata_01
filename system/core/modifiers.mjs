@@ -117,6 +117,7 @@ export function collectUnitModifiers(unit) {
     if (!item) continue;
     const c = gearContribution(item);
     addStatFlat(mods, c.flat);
+    addStatPct(mods, c.statPct); // 부옵션 statPct
     addEffect(mods, c.effect);
   }
   // 4-b) 장비 세트 보너스 — 같은 세트 2/3피스 착용 시 추가 statPct/효과.

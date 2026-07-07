@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView } from 'react-native';
 import { T } from '../theme';
 import { Card, Btn, fmt } from '../components';
@@ -15,6 +15,7 @@ import { accountMods } from '../../system/core/balance.mjs';
 import BattleView from './BattleView';
 
 export default function IdleScreen({ state, bump, lastGain, concept }) {
+  const [boxMsg, setBoxMsg] = useState(null);
   const power = effectivePower(state);
   const mult = powerMultOf(state);
   const stageDef = getStage(state.stage);
@@ -98,8 +99,20 @@ export default function IdleScreen({ state, bump, lastGain, concept }) {
           label={canPrestige ? `환생하기 (+${nextGain})` : '15층 도달 필요'}
           kind="gold"
           disabled={!canPrestige}
-          onPress={() => { idleGenre.prestige(state); bump(); }}
+          onPress={() => {
+            const r = idleGenre.prestige(state);
+            if (r.box) {
+              const parts = [];
+              if (r.box.gear) parts.push(`⚔️장비 ${r.box.gear}`);
+              if (r.box.rune) parts.push(`🔷룬 ${r.box.rune}`);
+              if (r.box.gem) parts.push(`💎${r.box.gem}`);
+              if (r.box.summon) parts.push(`🔮${r.box.summon}`);
+              setBoxMsg(parts.length ? `🎁 전리품 상자: ${parts.join(' · ')}` : null);
+            }
+            bump();
+          }}
         />
+        {boxMsg ? <Text style={st.boxMsg}>{boxMsg}</Text> : null}
       </Card>
     </ScrollView>
   );
@@ -123,4 +136,5 @@ const st = StyleSheet.create({
   gain: { color: T.good, fontWeight: '800', fontSize: 18 },
   hint: { color: T.muted, fontSize: 12, marginTop: 8, lineHeight: 17 },
   prestigeStat: { color: T.text, fontSize: 14, fontWeight: '600' },
+  boxMsg: { color: T.accent, fontSize: 13, fontWeight: '800', marginTop: 10, textAlign: 'center' },
 });

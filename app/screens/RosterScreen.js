@@ -14,7 +14,7 @@ import { identity, elementMeta } from '../../system/concepts/index.mjs';
 import { GEAR_SLOTS, GEAR_CATALOG, gearEnhanceCost, gearContribution } from '../../system/core/gear.mjs';
 import { levelUp, ascend, enhanceNode, equipSkill, unequipSkill, upgradeSkill, awakenSignature } from '../../system/core/character.mjs';
 import { AWAKEN_MAX, awakenCost } from '../../system/core/skills.mjs';
-import { craftGear, equipGear, enhanceGear, unequipGear, gearCraftCost, activeGearSets } from '../../system/core/gear.mjs';
+import { craftGear, equipGear, enhanceGear, unequipGear, gearCraftCost, activeGearSets, rerollGearSubs, GEAR_RARITY } from '../../system/core/gear.mjs';
 import { optimizeLoadout } from '../../system/core/loadout.mjs';
 import { recordMission } from '../../system/core/daily.mjs';
 import { intimacyLevel, intimacyProgress, giftCost, giveGift, INTIMACY_MAX } from '../../system/core/intimacy.mjs';
@@ -26,7 +26,7 @@ import {
 } from '../../system/core/sigweapon.mjs';
 import {
   RUNE_SLOTS, RUNE_SETS, RUNE_RARITY, summonRune, equipRune, unequipRune,
-  enhanceRune, runeMainValue, runeEnhanceCost, RUNE_MAX_LEVEL, RUNE_SUMMON_COST, activeRuneSets,
+  enhanceRune, runeMainValue, runeEnhanceCost, RUNE_MAX_LEVEL, RUNE_SUMMON_COST, activeRuneSets, rerollRuneSubs,
 } from '../../system/core/runes.mjs';
 
 const SLOT_KO = { weapon: '무기', armor: '방어구', accessory: '장신구' };
@@ -64,13 +64,19 @@ function describeGear(bp) {
   p.push(...describeEffect(bp.effect));
   return p.join(' · ');
 }
-// 실제 장비 인스턴스(강화 레벨 반영) 표시 — 장착/보유 항목용.
+// 실제 장비 인스턴스(강화 레벨 + 등급 배수 + 부옵션 반영) 표시.
 function describeGearItem(item) {
   const c = gearContribution(item);
   const p = [];
   for (const [k, v] of Object.entries(c.flat)) p.push(`${k.toUpperCase()} +${Math.round(v)}`);
+  for (const [k, v] of Object.entries(c.statPct)) p.push(`${k.toUpperCase()} +${Math.round(v * 100)}%`);
   p.push(...describeEffect(c.effect));
   return p.join(' · ');
+}
+// 장비 부옵션만 (재련 대상 강조용).
+function describeSubs(subs = []) {
+  const KO = { atk: 'ATK', hp: 'HP', def: 'DEF', spd: 'SPD', critChance: '치명', critDamage: '치피', lifesteal: '흡혈', defPierce: '관통' };
+  return subs.map((s) => `${KO[s.key] || s.key} +${Math.round(s.value * 100)}%`).join(' · ');
 }
 // 시그니처 각성 2차 효과 설명
 function describeAwaken(a = {}) {
@@ -80,13 +86,14 @@ function describeAwaken(a = {}) {
   p.push(...describeTeamBuff(a.teamBuff));
   return p.join(' · ');
 }
-// 룬 한 개 요약 (메인스탯 + 등급)
+// 룬 한 개 요약 (메인스탯 + 등급 + 부옵션)
 function describeRune(rune) {
   const set = RUNE_SETS[rune.set];
   const val = runeMainValue(rune);
   const stat = set.main.stat.toUpperCase();
   const pct = `${(val * 100).toFixed(1)}%`;
-  return { title: `${set.emoji} ${set.label} +${rune.level}`, sub: `${stat} ${pct} · ${RUNE_RARITY[rune.rarity].label}` };
+  const subTxt = (rune.subs || []).length ? ` · ${describeSubs(rune.subs)}` : '';
+  return { title: `${set.emoji} ${set.label} +${rune.level}`, sub: `[${RUNE_RARITY[rune.rarity].label}] ${stat} ${pct}${subTxt}` };
 }
 
 export default function RosterScreen({ state, bump, concept }) {
@@ -475,6 +482,7 @@ function PickerModal({ picker, unit, state, onClose, onChange, concept }) {
               <View style={{ flexDirection: 'row', gap: 8 }}>
                 <Btn small kind="gold" disabled={maxed || (state.wallet.currency || 0) < cost.currency}
                   label={maxed ? 'MAX' : `강화 ${multLabel(emult)} ${fmt(cost.currency)}`} onPress={() => applyN(() => enhanceRune(state, equipped.uid))} />
+                {(equipped.subs || []).length > 0 && <Btn small kind="primary" label="재련 💎15" onPress={() => apply(() => rerollRuneSubs(state, equipped.uid))} />}
                 <Btn small kind="ghost" label="해제" onPress={() => apply(() => unequipRune(state, unit.uid, i))} />
               </View>
             </View>
@@ -537,11 +545,16 @@ function PickerModal({ picker, unit, state, onClose, onChange, concept }) {
         <Text style={m.title}>{SLOT_KO[slot]} 선택</Text>
         {item && (
           <View style={m.equippedRow}>
-            <Text style={m.equippedName}>장착: {GEAR_CATALOG[item.blueprint].label} +{item.level - 1}</Text>
+            <Text style={m.equippedName}>
+              장착: {GEAR_CATALOG[item.blueprint].label} +{item.level - 1}
+              {item.rarity ? <Text style={{ color: (GEAR_RARITY[item.rarity] || {}).mult ? T.accent : T.muted }}>  [{(GEAR_RARITY[item.rarity] || {}).label || item.rarity}]</Text> : null}
+            </Text>
             <Text style={m.equippedDesc}>{describeGearItem(item)}</Text>
+            {(item.subs || []).length > 0 && <Text style={m.subLine}>부옵션: {describeSubs(item.subs)}</Text>}
             <MultiToggle value={emult} onChange={setEmult} />
             <View style={{ flexDirection: 'row', gap: 8 }}>
               <Btn small kind="gold" label={`강화 ${multLabel(emult)} (${fmt(gearEnhanceCost(item.level).currency)})`} onPress={() => applyN(() => enhanceGear(state, item.uid))} />
+              {(item.subs || []).length > 0 && <Btn small kind="primary" label="재련 💎20" onPress={() => apply(() => rerollGearSubs(state, item.uid))} />}
               <Btn small kind="ghost" label="해제" onPress={() => apply(() => unequipGear(state, unit.uid, slot))} />
             </View>
           </View>
@@ -559,7 +572,8 @@ function PickerModal({ picker, unit, state, onClose, onChange, concept }) {
           {owned.map((it) => (
             <TouchableOpacity key={it.uid} onPress={() => apply(() => { equipGear(state, unit.uid, it.uid); onClose(); })}
               style={m.opt} activeOpacity={0.8}>
-              <Text style={m.optName}>{GEAR_CATALOG[it.blueprint].label} +{it.level - 1}</Text>
+              <Text style={m.optName}>{GEAR_CATALOG[it.blueprint].label} +{it.level - 1}
+                {it.rarity ? <Text style={m.optCost}>  [{(GEAR_RARITY[it.rarity] || {}).label || it.rarity}]</Text> : null}</Text>
               <Text style={m.optDesc}>{describeGearItem(it)}</Text>
             </TouchableOpacity>
           ))}
@@ -664,6 +678,7 @@ const m = StyleSheet.create({
   equippedRow: { backgroundColor: T.surface2, borderRadius: 12, padding: 12, marginBottom: 10, gap: 8 },
   equippedName: { color: T.text, fontWeight: '700', fontSize: 14 },
   equippedDesc: { color: T.muted, fontSize: 12 },
+  subLine: { color: T.accent, fontSize: 11, fontWeight: '600' },
   group: { color: T.muted, fontSize: 12, fontWeight: '700', marginTop: 10, marginBottom: 6 },
   opt: { backgroundColor: T.surface2, borderRadius: 12, padding: 12, marginBottom: 8, borderWidth: 1, borderColor: 'transparent' },
   optOn: { borderColor: T.accent },

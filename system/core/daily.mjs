@@ -1,5 +1,7 @@
 import { earn } from './economy.mjs';
 import { getStage } from './progression.mjs';
+import { dropGear } from './gear.mjs';
+import { dropRune } from './runes.mjs';
 
 // ─────────────────────────────────────────────────────────────
 // 일일 콘텐츠 — 출석 · 일일 미션 · 던전. (장르/컨셉 무관)
@@ -24,11 +26,19 @@ export const MISSIONS = [
   { id: 'dungeon', label: '던전 3회', goal: 3, reward: { currency: 800 } },
 ];
 
-// 던전: 자원별 파밍. 하루 입장 제한.
+// 던전: 자원/아이템 파밍. 하루 입장 제한.
+//   kind 'resource' → 재화 대량 지급 · 'gear'/'rune' → 실제 아이템 드롭.
 export const DUNGEONS = {
-  GOLD: { resource: 'currency', entriesPerDay: 3 },
-  ESSENCE: { resource: 'growth', entriesPerDay: 3 },
+  GOLD: { kind: 'resource', resource: 'currency', entriesPerDay: 3 },
+  ESSENCE: { kind: 'resource', resource: 'growth', entriesPerDay: 3 },
+  GEAR: { kind: 'gear', entriesPerDay: 2 },
+  RUNE: { kind: 'rune', entriesPerDay: 2 },
 };
+
+// 진행도(peakStage) → 상위 등급 드롭 확률 luck(0~1).
+function dropLuck(state) {
+  return Math.min(1, (state.peakStage || 1) / 200);
+}
 
 // 하루가 바뀌면 미션/던전 초기화 (출석 streak은 유지).
 export function refreshDaily(state, now = Date.now()) {
@@ -38,7 +48,7 @@ export function refreshDaily(state, now = Date.now()) {
     dl.epochDay = d;
     dl.missions = { summon: 0, upgrade: 0, dungeon: 0 };
     dl.claimed = {};
-    dl.dungeon = { GOLD: 0, ESSENCE: 0 };
+    dl.dungeon = Object.fromEntries(Object.keys(DUNGEONS).map((k) => [k, 0]));
   }
 }
 
@@ -86,13 +96,22 @@ export function dungeonEntriesLeft(state, type, now = Date.now()) {
   refreshDaily(state, now);
   return DUNGEONS[type].entriesPerDay - (state.daily.dungeon[type] || 0);
 }
-export function enterDungeon(state, type, now = Date.now()) {
+export function enterDungeon(state, type, now = Date.now(), rng = Math.random) {
   if (dungeonEntriesLeft(state, type, now) <= 0) return { ok: false, reason: '입장 횟수 소진' };
-  const res = DUNGEONS[type].resource;
-  // 즉시 대량 보상: 현재 진행도(peakStage) 보상 × 40
-  const amount = Math.round(getStage(state.peakStage).rewards[res] * 40);
-  earn(state.wallet, { [res]: amount });
+  const d = DUNGEONS[type];
   state.daily.dungeon[type] = (state.daily.dungeon[type] || 0) + 1;
   recordMission(state, 'dungeon', 1, now);
-  return { ok: true, amount, resource: res };
+  if (d.kind === 'gear') {
+    const r = dropGear(state, rng, dropLuck(state));
+    return { ok: true, kind: 'gear', item: r.item, rarity: r.rarity };
+  }
+  if (d.kind === 'rune') {
+    const r = dropRune(state, rng, dropLuck(state));
+    return { ok: true, kind: 'rune', rune: r.rune, rarity: r.rarity };
+  }
+  // 자원 던전: 즉시 대량 보상 (진행도 보상 × 40)
+  const res = d.resource;
+  const amount = Math.round(getStage(state.peakStage).rewards[res] * 40);
+  earn(state.wallet, { [res]: amount });
+  return { ok: true, kind: 'resource', amount, resource: res };
 }

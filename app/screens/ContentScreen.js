@@ -9,6 +9,7 @@ import {
 import { RELICS, relicUpgradeCost, upgradeRelic, RELIC_CAP } from '../../system/core/relics.mjs';
 import { PETS, petSummon, equipPet, unequipPet, petEffectLabel, MAX_ACTIVE_PETS, PET_PULL_COST } from '../../system/core/pets.mjs';
 import { getStage } from '../../system/core/progression.mjs';
+import { GEAR_CATALOG, GEAR_RARITY } from '../../system/core/gear.mjs';
 import { isUnlocked, unlockStage } from '../../system/core/unlocks.mjs';
 import { campaignChapters, fightChapter, CAMPAIGN_CHAPTER_COUNT } from '../../system/core/campaign.mjs';
 import { elementMeta } from '../../system/concepts/index.mjs';
@@ -19,11 +20,28 @@ function rewardText(concept, reward) {
     .join(' ');
 }
 
+// 던전별 해금 게이트 + 표시.
+const DUNGEON_META = {
+  GOLD: { feature: 'dungeonGold' },
+  ESSENCE: { feature: 'dungeonEssence' },
+  GEAR: { feature: 'dungeonEssence', label: '⚔️ 장비 던전', drop: '장비 드롭(등급 랜덤)' },
+  RUNE: { feature: 'dungeonEssence', label: '🔷 룬 던전', drop: '룬 드롭(등급 랜덤)' },
+};
+
 export default function ContentScreen({ state, bump, concept }) {
   const [mult, setMult] = useState(1);
   const [camResult, setCamResult] = useState(null);
+  const [dropMsg, setDropMsg] = useState(null);
   const act = (fn) => { fn(); bump(); };
   const actN = (fn) => { repeat(fn, mult); bump(); };
+  // 아이템 던전: mult회 입장 → 마지막 드롭 요약 표시.
+  const runDungeon = (type) => {
+    let last = null, count = 0;
+    repeat(() => { const r = enterDungeon(state, type); if (r.ok) { count++; last = r; } return r; }, mult);
+    if (last && last.kind === 'gear') setDropMsg(`⚔️ 장비 ${count}개 · 최근 [${(GEAR_RARITY[last.rarity] || {}).label || last.rarity}] ${GEAR_CATALOG[last.item.blueprint].label}`);
+    else if (last && last.kind === 'rune') setDropMsg(`🔷 룬 ${count}개 · 최근 [${last.rarity}]`);
+    bump();
+  };
 
   const chapters = campaignChapters(state, concept.campaign || []);
   const nextCh = chapters.find((c) => c.isNext);
@@ -102,25 +120,32 @@ export default function ContentScreen({ state, bump, concept }) {
       {/* 던전 */}
       <Card style={{ marginTop: 12 }}>
         <Text style={c.sec}>던전</Text>
-        <Text style={c.sub}>즉시 대량 자원 · 하루 입장 제한</Text>
+        <Text style={c.sub}>자원·아이템 파밍 · 하루 입장 제한</Text>
         {Object.entries(DUNGEONS).map(([type, d]) => {
-          const res = concept.resources[d.resource];
-          const feature = type === 'GOLD' ? 'dungeonGold' : 'dungeonEssence';
-          const unlocked = isUnlocked(state, feature);
+          const meta = DUNGEON_META[type];
+          const unlocked = isUnlocked(state, meta.feature);
           const left = dungeonEntriesLeft(state, type);
-          const amount = Math.round(getStage(state.peakStage).rewards[d.resource] * 40);
+          const isItem = d.kind === 'gear' || d.kind === 'rune';
+          const res = d.resource ? concept.resources[d.resource] : null;
+          const label = isItem ? meta.label : `${res.emoji} ${res.name} 던전`;
+          const amount = res ? Math.round(getStage(state.peakStage).rewards[d.resource] * 40) : 0;
+          const rewardTxt = isItem
+            ? `1회 ${meta.drop} · 입장 ${left}/${d.entriesPerDay}`
+            : `1회 ${res.emoji}+${fmt(amount)} · 입장 ${left}/${d.entriesPerDay}`;
           return (
             <View key={type} style={c.dRow}>
               <View style={{ flex: 1 }}>
-                <Text style={c.mLabel}>{res.emoji} {res.name} 던전</Text>
+                <Text style={c.mLabel}>{label}</Text>
                 {unlocked
-                  ? <Text style={c.mReward}>1회 {res.emoji}+{fmt(amount)} · 입장 {left}/{d.entriesPerDay}</Text>
-                  : <Text style={c.mReward}>🔒 스테이지 {unlockStage(feature)} 해금</Text>}
+                  ? <Text style={c.mReward}>{rewardTxt}</Text>
+                  : <Text style={c.mReward}>🔒 스테이지 {unlockStage(meta.feature)} 해금</Text>}
               </View>
-              <Btn small label={unlocked ? '입장' : '잠김'} disabled={!unlocked || left <= 0} onPress={() => actN(() => enterDungeon(state, type))} />
+              <Btn small label={unlocked ? '입장' : '잠김'} disabled={!unlocked || left <= 0}
+                onPress={() => (isItem ? runDungeon(type) : actN(() => enterDungeon(state, type)))} />
             </View>
           );
         })}
+        {dropMsg ? <Text style={c.dropMsg}>{dropMsg}</Text> : null}
       </Card>
 
       {/* 펫 */}
@@ -195,6 +220,7 @@ const c = StyleSheet.create({
   mRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 8, borderTopWidth: 1, borderTopColor: T.line },
   mLabel: { color: T.text, fontWeight: '700', fontSize: 14 },
   mReward: { color: T.muted, fontSize: 12, marginTop: 3 },
+  dropMsg: { color: T.accent, fontSize: 12, fontWeight: '700', marginTop: 8 },
   bar: { height: 6, backgroundColor: T.surface2, borderRadius: 3, marginTop: 5, overflow: 'hidden' },
   barFill: { height: 6, backgroundColor: T.good, borderRadius: 3 },
   dRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 10, borderTopWidth: 1, borderTopColor: T.line },

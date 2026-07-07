@@ -1,5 +1,6 @@
 import { spend } from './economy.mjs';
 import { BALANCE } from './balance.mjs';
+import { weightedPick } from './rng.mjs';
 
 // ─────────────────────────────────────────────────────────────
 // 장비 시스템 — 슬롯별 장착 + 강화로 유닛을 추가 성장시킨다.
@@ -70,6 +71,57 @@ export function activeGearSets(unit) {
 
 const GEAR_ENH_PER = 0.12; // 강화 레벨당 flat +12%
 
+// ── 장비 등급 + 부옵션 ────────────────────────────────────────
+// 등급이 기본 flat 배수와 부옵션(substat) 개수를 정한다. 등급 없는
+// 레거시 아이템은 배수 1.0(=N)으로 취급 → 기존 세이브 파워 불변.
+export const GEAR_RARITY = {
+  N: { id: 'N', mult: 1.00, subs: 0, weight: 40, label: '노멀' },
+  R: { id: 'R', mult: 1.15, subs: 1, weight: 32, label: '레어' },
+  SR: { id: 'SR', mult: 1.35, subs: 2, weight: 18, label: '에픽' },
+  SSR: { id: 'SSR', mult: 1.60, subs: 3, weight: 8, label: '전설' },
+  UR: { id: 'UR', mult: 1.90, subs: 4, weight: 2, label: '신화' },
+};
+
+// 부옵션 풀 — statPct(자기 스탯%) 또는 effect(전투 효과). [min,max] 롤 범위.
+const SUBSTAT_POOL = [
+  { key: 'atk', kind: 'statPct', min: 0.04, max: 0.10 },
+  { key: 'hp', kind: 'statPct', min: 0.04, max: 0.10 },
+  { key: 'def', kind: 'statPct', min: 0.04, max: 0.10 },
+  { key: 'spd', kind: 'statPct', min: 0.04, max: 0.10 },
+  { key: 'critChance', kind: 'effect', min: 0.03, max: 0.08 },
+  { key: 'critDamage', kind: 'effect', min: 0.08, max: 0.20 },
+  { key: 'lifesteal', kind: 'effect', min: 0.04, max: 0.10 },
+  { key: 'defPierce', kind: 'effect', min: 0.05, max: 0.12 },
+];
+
+function rollSub(rng) {
+  const p = SUBSTAT_POOL[Math.floor(rng() * SUBSTAT_POOL.length)];
+  const v = p.min + rng() * (p.max - p.min);
+  return { key: p.key, kind: p.kind, value: Math.round(v * 1000) / 1000 };
+}
+// 등급별 부옵션 개수만큼 중복 키 없이 롤.
+export function rollGearSubs(rarity, rng) {
+  const n = (GEAR_RARITY[rarity] && GEAR_RARITY[rarity].subs) || 0;
+  const subs = [];
+  const used = new Set();
+  let guard = 0;
+  while (subs.length < n && guard++ < 30) {
+    const s = rollSub(rng);
+    if (used.has(s.key)) continue;
+    used.add(s.key);
+    subs.push(s);
+  }
+  return subs;
+}
+// 드롭 등급 롤 — luck(0~1)이 높을수록 상위 등급 가중↑ (진행도 비례).
+export function rollGearRarity(rng, luck = 0) {
+  const entries = Object.values(GEAR_RARITY).map((d) => ({
+    weight: d.weight * (d.id === 'UR' ? 1 + luck * 4 : d.id === 'SSR' ? 1 + luck * 2 : 1),
+    id: d.id,
+  }));
+  return weightedPick(entries, rng).id;
+}
+
 export function getBlueprint(id) {
   const b = GEAR_CATALOG[id];
   if (!b) throw new Error(`알 수 없는 장비: ${id}`);
@@ -79,18 +131,53 @@ export function getBlueprint(id) {
 let _gseq = 0;
 export function ensureGearSeq(n) { if (n > _gseq) _gseq = n; }
 
-export function createGear(blueprintId) {
+// rarity/rng 주면 등급+부옵션 아이템 생성(드롭·제작). 없으면 레거시(등급없음).
+export function createGear(blueprintId, { rarity, rng } = {}) {
   const b = getBlueprint(blueprintId);
-  return { uid: `g${++_gseq}`, blueprint: blueprintId, slot: b.slot, level: 1 };
+  const item = { uid: `g${++_gseq}`, blueprint: blueprintId, slot: b.slot, level: 1 };
+  if (rarity) {
+    item.rarity = rarity;
+    item.subs = rng ? rollGearSubs(rarity, rng) : [];
+  }
+  return item;
 }
 
-// 장비 한 점이 유닛에 주는 기여분 (강화 레벨 반영).
+// 장비 한 점이 유닛에 주는 기여분 (강화 레벨 + 등급 배수 + 부옵션 반영).
 export function gearContribution(gearItem) {
   const b = getBlueprint(gearItem.blueprint);
-  const scale = 1 + GEAR_ENH_PER * (gearItem.level - 1);
+  const rmult = (GEAR_RARITY[gearItem.rarity] && GEAR_RARITY[gearItem.rarity].mult) || 1.0;
+  const scale = (1 + GEAR_ENH_PER * (gearItem.level - 1)) * rmult;
   const flat = {};
   for (const [k, v] of Object.entries(b.flat || {})) flat[k] = v * scale;
-  return { flat, effect: b.effect || {} };
+  const statPct = {};
+  const effect = { ...(b.effect || {}) };
+  for (const s of gearItem.subs || []) {
+    if (s.kind === 'statPct') statPct[s.key] = (statPct[s.key] || 0) + s.value;
+    else effect[s.key] = (effect[s.key] || 0) + s.value;
+  }
+  return { flat, statPct, effect };
+}
+
+// 아이템(장착/인벤토리) 어디서든 uid로 찾기.
+function findGearAnywhere(state, gearUid) {
+  return (
+    state.inventory.find((g) => g.uid === gearUid) ||
+    state.units.flatMap((u) => GEAR_SLOTS.map((s) => u.gear[s])).find((g) => g && g.uid === gearUid) ||
+    null
+  );
+}
+
+// 부옵션 재련 — 다이아 소모, 등급 개수만큼 부옵션 재롤.
+export function rerollGearSubs(state, gearUid, rng = Math.random) {
+  const item = findGearAnywhere(state, gearUid);
+  if (!item) return { ok: false, reason: '장비 없음' };
+  if (!item.rarity || !(GEAR_RARITY[item.rarity] && GEAR_RARITY[item.rarity].subs)) {
+    return { ok: false, reason: '부옵션 없는 장비' };
+  }
+  const cost = { gem: 20 };
+  if (!spend(state.wallet, cost)) return { ok: false, reason: '다이아 부족', cost };
+  item.subs = rollGearSubs(item.rarity, rng);
+  return { ok: true, subs: item.subs, cost };
 }
 
 // 장비 강화 비용 (currency).
@@ -106,12 +193,23 @@ export function gearEnhanceCost(level) {
 export function gearCraftCost(blueprintId) {
   return { currency: getBlueprint(blueprintId).craftCost || 150 };
 }
-export function craftGear(state, blueprintId) {
+export function craftGear(state, blueprintId, rng = Math.random) {
   const cost = gearCraftCost(blueprintId);
   if (!spend(state.wallet, cost)) return { ok: false, reason: '제작 재화 부족', cost };
-  const item = createGear(blueprintId);
+  // 제작품은 레어(R) 기본 — 부옵션 1개. 드롭은 등급이 굴려짐(dropGear).
+  const item = createGear(blueprintId, { rarity: 'R', rng });
   state.inventory.push(item);
   return { ok: true, item };
+}
+
+// 드롭 — 랜덤 설계도 + 등급 롤로 아이템 생성해 인벤토리에 넣는다(던전/상자).
+export function dropGear(state, rng = Math.random, luck = 0, slot = null) {
+  const pool = Object.values(GEAR_CATALOG).filter((b) => !slot || b.slot === slot);
+  const b = pool[Math.floor(rng() * pool.length)];
+  const rarity = rollGearRarity(rng, luck);
+  const item = createGear(b.id, { rarity, rng });
+  state.inventory.push(item);
+  return { ok: true, item, rarity };
 }
 
 function findUnit(state, uid) {

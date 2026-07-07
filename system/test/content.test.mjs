@@ -137,6 +137,39 @@ test('tower: 승리 시 전진·보상, 층 난이도 단조 증가', () => {
   if (r5.win) assert.ok(r5.milestone && r5.reward.summon, '5층 마일스톤');
 });
 
+test('던전: 장비/룬 파밍 던전이 실제 아이템 드롭', async () => {
+  const { enterDungeon, dungeonEntriesLeft, DUNGEONS } = await import('../core/daily.mjs');
+  const { makeRng } = await import('../core/rng.mjs');
+  const s = strongState(80);
+  assert.ok(DUNGEONS.GEAR && DUNGEONS.RUNE, '장비·룬 던전 존재');
+  const invBefore = s.inventory.length;
+  const rg = enterDungeon(s, 'GEAR', Date.now(), makeRng(1));
+  assert.equal(rg.kind, 'gear');
+  assert.equal(s.inventory.length, invBefore + 1, '장비 인벤토리 증가');
+  const bagBefore = (s.runeBag || []).length;
+  const rr = enterDungeon(s, 'RUNE', Date.now(), makeRng(2));
+  assert.equal(rr.kind, 'rune');
+  assert.equal(s.runeBag.length, bagBefore + 1, '룬 가방 증가');
+  // 입장 제한 소진
+  let n = 2; while (enterDungeon(s, 'GEAR', Date.now(), makeRng(n++)).ok) {}
+  assert.equal(dungeonEntriesLeft(s, 'GEAR'), 0);
+});
+
+test('환생 상자: 리셋 전 도달치로 장비·룬·재화 지급', async () => {
+  const { idleGenre } = await import('../genres/idle.mjs');
+  const { makeRng } = await import('../core/rng.mjs');
+  const s = strongState(100);
+  s.maxStage = 100;
+  const invBefore = s.inventory.length;
+  const bagBefore = (s.runeBag || []).length;
+  const r = idleGenre.prestige(s, makeRng(99));
+  assert.ok(r.prestigeGained >= 1);
+  assert.ok(r.box && r.box.rolls >= 1, '상자 롤 존재');
+  const gained = (s.inventory.length - invBefore) + ((s.runeBag || []).length - bagBefore) + (r.box.gem > 0 ? 1 : 0) + (r.box.summon > 0 ? 1 : 0);
+  assert.ok(gained >= 1, '상자에서 무언가 지급됨');
+  assert.equal(s.maxStage, 1, '회차 리셋');
+});
+
 test('컨셉 정합성: 로스터 시그니처·원형·속성·코스튬 유효(판타지·SF 패리티)', async () => {
   const { CONCEPTS } = await import('../concepts/index.mjs');
   const { SKILL_CATALOG } = await import('../core/skills.mjs');

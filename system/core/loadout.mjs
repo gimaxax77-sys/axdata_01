@@ -27,12 +27,14 @@ function skillScore(skill, w) {
   return (p.atk || 0) * w.atk + (p.hp || 0) * w.hp + (p.def || 0) * w.def + (p.spd || 0) * w.spd
     + effectSum(skill.effect) * w.effect + team * w.team;
 }
-// 장비 flat은 스탯 규모가 달라 정규화(hp/40)해서 합산.
+// 장비 flat은 스탯 규모가 달라 정규화(hp/40)해서 합산. 부옵션 statPct/effect도 반영.
 function gearScore(item, w) {
   const c = gearContribution(item);
   const f = c.flat;
+  const p = c.statPct || {};
   return (f.atk || 0) * w.atk + ((f.hp || 0) / 40) * w.hp + (f.def || 0) * w.def
-    + (f.spd || 0) * w.spd + effectSum(c.effect) * 120 * w.effect;
+    + (f.spd || 0) * w.spd + effectSum(c.effect) * 120 * w.effect
+    + ((p.atk || 0) + (p.hp || 0) + (p.def || 0) + (p.spd || 0)) * 200; // 부옵션 statPct 가중
 }
 
 // 한 유닛의 스킬·장비·룬을 추천값으로 장착. { ok, changed:{skills,gear,runes} }.

@@ -3,6 +3,7 @@ import { getStage } from '../core/progression.mjs';
 import { getPartyUnits } from '../core/gameState.mjs';
 import { earn } from '../core/economy.mjs';
 import { accountMods } from '../core/balance.mjs';
+import { openPrestigeBox } from '../core/lootbox.mjs';
 
 // ─────────────────────────────────────────────────────────────
 // 장르 어댑터: 방치형 (자동/누적형)
@@ -75,13 +76,15 @@ export const idleGenre = {
   // 환생: 이번 회차 진행을 리셋하고 영구 파워/수입 배수를 얻는다.
   // 정통 방치형 루프 — 벽에서 환생 → 배수로 더 깊이 재등반.
   // peakStage(역대 최고)는 유지하므로 "실제 진행도"는 사라지지 않는다.
-  prestige(state) {
+  prestige(state, rng = Math.random) {
     const gain = Math.floor(Math.sqrt(state.maxStage));
     if (gain < 1) return { prestigeGained: 0, totalPrestige: state.prestige };
+    // 리셋 전 도달치로 전리품 상자 지급.
+    const box = openPrestigeBox(state, state.maxStage, rng);
     state.prestige += gain;
     state.peakStage = Math.max(state.peakStage || 1, state.maxStage);
     state.stage = 1;
     state.maxStage = 1; // 이번 회차 리셋 → 재등반
-    return { prestigeGained: gain, totalPrestige: state.prestige };
+    return { prestigeGained: gain, totalPrestige: state.prestige, box };
   },
 };

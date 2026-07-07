@@ -124,6 +124,49 @@ test('팀버프 def/crit: 파티 판정에 실제 반영', async () => {
   assert.ok(rd.margin > rn.margin, '팀 방어 버프가 생존 여유↑');
 });
 
+test('장비 등급+부옵션: 배수·부옵션이 기여에 반영, 재련', async () => {
+  const { createGear, gearContribution, dropGear, GEAR_RARITY, rerollGearSubs } = await import('../core/gear.mjs');
+  const { makeRng } = await import('../core/rng.mjs');
+  const rng = makeRng(42);
+  // 레거시(등급 없음) = 배수 1.0
+  const legacy = createGear('IRON_SWORD');
+  const base = gearContribution(legacy).flat.atk;
+  // SSR = 더 큰 flat + 부옵션 3개
+  const ssr = createGear('IRON_SWORD', { rarity: 'SSR', rng });
+  const cSSR = gearContribution(ssr);
+  assert.ok(cSSR.flat.atk > base, 'SSR 배수 > 레거시');
+  assert.equal(ssr.subs.length, GEAR_RARITY.SSR.subs, 'SSR 부옵션 개수');
+  // 부옵션이 statPct 또는 effect로 흘러감
+  const hasSub = Object.keys(cSSR.statPct).length + Object.keys(cSSR.effect).length > 0;
+  assert.ok(hasSub, '부옵션 기여 존재');
+  // 드롭 → 인벤토리
+  const s = createGameState({ units: [], party: [] });
+  earn(s.wallet, { gem: 100 });
+  const before = s.inventory.length;
+  const d = dropGear(s, rng, 0.5);
+  assert.equal(s.inventory.length, before + 1);
+  assert.ok(GEAR_RARITY[d.rarity], '유효 등급 드롭');
+  // 재련 (다이아 소모)
+  const rr = rerollGearSubs(s, d.item.uid, rng);
+  if (d.item.rarity !== 'N') assert.equal(rr.ok, true, '부옵션 재련');
+});
+
+test('룬 부옵션+신등급: SSR/UR·부옵션 기여·드롭', async () => {
+  const { dropRune, runeMainContribution, RUNE_RARITY, rollRuneSubs } = await import('../core/runes.mjs');
+  const { makeRng } = await import('../core/rng.mjs');
+  const rng = makeRng(7);
+  assert.ok(RUNE_RARITY.SSR && RUNE_RARITY.UR, 'SSR/UR 룬 등급');
+  const subs = rollRuneSubs('UR', rng);
+  assert.equal(subs.length, RUNE_RARITY.UR.subs);
+  const s = createGameState({ units: [], party: [] });
+  const d = dropRune(s, rng, 1);
+  assert.equal(s.runeBag.length, 1);
+  // 부옵션이 기여에 포함
+  const contrib = runeMainContribution([d.rune]);
+  const keys = Object.keys(contrib.statPct).length + Object.keys(contrib.effect).length;
+  assert.ok(keys >= 1, '메인+부옵션 기여');
+});
+
 test('장비 세트: 2/3피스 보너스가 모디파이어에 합산', async () => {
   const { gearSetBonus, createGear, GEAR_CATALOG } = await import('../core/gear.mjs');
   const u = createUnit('STRIKER', { level: 10, rank: 2 });
