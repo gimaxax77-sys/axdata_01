@@ -52,6 +52,15 @@ export const scifiConcept = {
       lines: { greet: '방전 준비.', bond: '…쓸만하군.', levelup: '전압 상승!' } },
     { id: 'mir', name: '루키', emoji: '🗡️', title: '시제기', personality: '미숙한', element: 'WOOD', archetype: 'STRIKER', rarity: 'N', signature: 'SIG_NOVICE',
       lines: { greet: '시운전 시작합니다!', bond: '정식 배치 부탁해요!', levelup: '성능 향상 확인!' } },
+    // ── P1 신규: 속성×원형 공백 보강 ──
+    { id: 'pyra', name: '파이로', emoji: '🛡️', title: '화염 방벽 프레임', personality: '견고한', element: 'FIRE', archetype: 'VANGUARD', rarity: 'SR', signature: 'SIG_EMBER_WALL',
+      lines: { greet: '방열 장갑 전개.', bond: '보호 프로토콜 우선.', levelup: '장갑 출력 상승.' } },
+    { id: 'frost', name: '글레이셔', emoji: '🧊', title: '빙결 어쌔신', personality: '냉철한', element: 'WATER', archetype: 'STRIKER', rarity: 'SR', signature: 'SIG_GLACIER_EDGE',
+      lines: { greet: '…절단 예정.', bond: '너는 대상에서 제외.', levelup: '블레이드 예리화.' } },
+    { id: 'marina', name: '티데', emoji: '🌊', title: '수복 드로이드', personality: '차분한', element: 'WATER', archetype: 'SUPPORT', rarity: 'SR', signature: 'SIG_TIDE_HYMN',
+      lines: { greet: '손상 스캔 개시.', bond: '링크 안정도 최적.', levelup: '수복 효율 상승.' } },
+    { id: 'signe', name: '클래리온', emoji: '📯', title: '전술 지휘 유닛', personality: '결연한', element: 'FIRE', archetype: 'SUPPORT', rarity: 'R', signature: 'SIG_WAR_CHANT',
+      lines: { greet: '전술 링크 개방.', bond: '지휘 동기화 완료.', levelup: '지휘 대역 확장.' } },
   ],
 
   // 코스튬 — fantasy와 같은 구조(같은 캐릭터 id·해금·보너스), SF 외형.
@@ -64,6 +73,10 @@ export const scifiConcept = {
     ael: { id: 'ael_c1', name: '예측 안테나', emoji: '📡', unlock: 5, bonus: { atk: 0.06, hp: 0.06, def: 0.06, spd: 0.06 } },
     ara: { id: 'ara_c1', name: '방전 코일', emoji: '⚙️', unlock: 5, bonus: { atk: 0.06, hp: 0.06, def: 0.06, spd: 0.06 } },
     mir: { id: 'mir_c1', name: '정비 슈트', emoji: '🔧', unlock: 5, bonus: { atk: 0.06, hp: 0.06, def: 0.06, spd: 0.06 } },
+    pyra: { id: 'pyra_c1', name: '방열 장갑', emoji: '🔥', unlock: 5, bonus: { atk: 0.06, hp: 0.06, def: 0.06, spd: 0.06 } },
+    frost: { id: 'frost_c1', name: '극저온 코팅', emoji: '❄️', unlock: 5, bonus: { atk: 0.06, hp: 0.06, def: 0.06, spd: 0.06 } },
+    marina: { id: 'marina_c1', name: '나노 수복막', emoji: '🌊', unlock: 5, bonus: { atk: 0.06, hp: 0.06, def: 0.06, spd: 0.06 } },
+    signe: { id: 'signe_c1', name: '지휘 안테나', emoji: '🎺', unlock: 5, bonus: { atk: 0.06, hp: 0.06, def: 0.06, spd: 0.06 } },
   },
 
   // 스토리 캠페인 — 같은 진행/전투 로직, SF 서사로 교체.

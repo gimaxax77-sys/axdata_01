@@ -137,6 +137,27 @@ test('tower: 승리 시 전진·보상, 층 난이도 단조 증가', () => {
   if (r5.win) assert.ok(r5.milestone && r5.reward.summon, '5층 마일스톤');
 });
 
+test('컨셉 정합성: 로스터 시그니처·원형·속성·코스튬 유효(판타지·SF 패리티)', async () => {
+  const { CONCEPTS } = await import('../concepts/index.mjs');
+  const { SKILL_CATALOG } = await import('../core/skills.mjs');
+  const { ARCHETYPES } = await import('../core/archetypes.mjs');
+  const ELEMENTS = ['FIRE', 'WATER', 'WOOD', 'LIGHT', 'DARK'];
+  const ids = {};
+  for (const cid of ['fantasy', 'scifi']) {
+    const c = CONCEPTS[cid];
+    ids[cid] = c.roster.map((x) => x.id).sort();
+    for (const ch of c.roster) {
+      assert.ok(SKILL_CATALOG[ch.signature]?.signature, `${cid}:${ch.id} 시그니처 유효`);
+      assert.ok(ARCHETYPES[ch.archetype], `${cid}:${ch.id} 원형 유효`);
+      assert.ok(ELEMENTS.includes(ch.element), `${cid}:${ch.id} 속성 유효`);
+      assert.ok(c.costumes[ch.id], `${cid}:${ch.id} 코스튬 존재`);
+      assert.ok(ch.lines?.greet && ch.lines?.bond && ch.lines?.levelup, `${cid}:${ch.id} 대사 3종`);
+    }
+  }
+  assert.deepEqual(ids.fantasy, ids.scifi, '두 컨셉 캐릭터 id 패리티');
+  assert.ok(ids.fantasy.length >= 12, '로스터 확장 반영');
+});
+
 test('tutorial: 목표 전이 level→summon→party→완료', () => {
   const u = createUnit('STRIKER', { level: 1, rank: 2, characterId: 'mir' }); u.rarity = 'N';
   const s = createGameState({ units: [u], party: [u.uid] });

@@ -20,6 +20,10 @@ export const GEAR_CATALOG = {
   AEGIS: { id: 'AEGIS', slot: 'armor', label: '이지스', flat: { hp: 500, def: 40 }, effect: { lifesteal: 0.12 } },
   CRIT_RING: { id: 'CRIT_RING', slot: 'accessory', label: '치명반지', flat: { spd: 30 }, effect: { critChance: 0.12, critDamage: 0.3 } },
   PIERCE_CHARM: { id: 'PIERCE_CHARM', slot: 'accessory', label: '관통부적', flat: { spd: 20 }, effect: { defPierce: 0.25 } },
+  // ── P1 상위 티어 (제작 비용↑, 콘텐츠 진행 후 노림) ──
+  DRAGON_FANG: { id: 'DRAGON_FANG', slot: 'weapon', label: '용아검', flat: { atk: 180 }, effect: { critChance: 0.1 }, craftCost: 600 },
+  BULWARK_PLATE: { id: 'BULWARK_PLATE', slot: 'armor', label: '성벽갑옷', flat: { hp: 1100, def: 85 }, effect: {}, craftCost: 600 },
+  OMNI_CHARM: { id: 'OMNI_CHARM', slot: 'accessory', label: '만능부적', flat: { spd: 35 }, effect: { critChance: 0.1, defPierce: 0.15 }, craftCost: 600 },
 };
 
 const GEAR_ENH_PER = 0.12; // 강화 레벨당 flat +12%
@@ -57,9 +61,11 @@ export function gearEnhanceCost(level) {
 // ── 액션 (장르 무관) ──────────────────────────────────────────
 
 // 설계도로 장비를 제작해 인벤토리에 넣는다.
+export function gearCraftCost(blueprintId) {
+  return { currency: getBlueprint(blueprintId).craftCost || 150 };
+}
 export function craftGear(state, blueprintId) {
-  getBlueprint(blueprintId);
-  const cost = { currency: 150 };
+  const cost = gearCraftCost(blueprintId);
   if (!spend(state.wallet, cost)) return { ok: false, reason: '제작 재화 부족', cost };
   const item = createGear(blueprintId);
   state.inventory.push(item);

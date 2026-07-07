@@ -14,7 +14,7 @@ import { identity, elementMeta } from '../../system/concepts/index.mjs';
 import { GEAR_SLOTS, GEAR_CATALOG, gearEnhanceCost, gearContribution } from '../../system/core/gear.mjs';
 import { levelUp, ascend, enhanceNode, equipSkill, unequipSkill, upgradeSkill, awakenSignature } from '../../system/core/character.mjs';
 import { AWAKEN_MAX, awakenCost } from '../../system/core/skills.mjs';
-import { craftGear, equipGear, enhanceGear, unequipGear } from '../../system/core/gear.mjs';
+import { craftGear, equipGear, enhanceGear, unequipGear, gearCraftCost } from '../../system/core/gear.mjs';
 import { optimizeLoadout } from '../../system/core/loadout.mjs';
 import { recordMission } from '../../system/core/daily.mjs';
 import { intimacyLevel, intimacyProgress, giftCost, giveGift, INTIMACY_MAX } from '../../system/core/intimacy.mjs';
@@ -536,11 +536,11 @@ function PickerModal({ picker, unit, state, onClose, onChange, concept }) {
           </View>
         )}
         <ScrollView style={{ maxHeight: 340 }}>
-          <Text style={m.group}>제작 (150 골드)</Text>
+          <Text style={m.group}>제작</Text>
           {bps.map((b) => (
             <TouchableOpacity key={b.id} onPress={() => apply(() => { const c = craftGear(state, b.id); if (c.ok) { equipGear(state, unit.uid, c.item.uid); onClose(); } })}
               style={m.opt} activeOpacity={0.8}>
-              <Text style={m.optName}>{b.label}</Text>
+              <Text style={m.optName}>{b.label} <Text style={m.optCost}>🪙{fmt(gearCraftCost(b.id).currency)}</Text></Text>
               <Text style={m.optDesc}>{describeGear(b)}</Text>
             </TouchableOpacity>
           ))}
@@ -658,5 +658,6 @@ const m = StyleSheet.create({
   optOn: { borderColor: T.accent },
   optDim: { opacity: 0.4 },
   optName: { color: T.text, fontWeight: '800', fontSize: 14 },
+  optCost: { color: T.accent, fontWeight: '700', fontSize: 12 },
   optDesc: { color: T.muted, fontSize: 12, marginTop: 2 },
 });

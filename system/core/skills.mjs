@@ -38,6 +38,26 @@ export const SKILL_CATALOG = {
     id: 'SWIFT', label: '신속', desc: '속도 상승(공격 빈도)',
     statPct: { spd: 0.40 },
   },
+  RUIN: {
+    id: 'RUIN', label: '파멸', desc: '방어 무시 + 치명 피해 (글래스캐논)',
+    effect: { defPierce: 0.30, critDamage: 0.50 },
+  },
+  UNDYING: {
+    id: 'UNDYING', label: '불굴', desc: '체력 + 흡혈 (브루저 생존)',
+    statPct: { hp: 0.30 }, effect: { lifesteal: 0.25 },
+  },
+  ONSLAUGHT: {
+    id: 'ONSLAUGHT', label: '맹공', desc: '공격 + 속도 (연속 압박)',
+    statPct: { atk: 0.20, spd: 0.30 },
+  },
+  BULWARK: {
+    id: 'BULWARK', label: '철벽', desc: '방어 + 체력 대폭 (순수 탱커)',
+    statPct: { def: 0.30, hp: 0.35 },
+  },
+  PERFECT: {
+    id: 'PERFECT', label: '완성', desc: '전 스탯 균형 상승',
+    statPct: { atk: 0.12, hp: 0.12, def: 0.12, spd: 0.12 },
+  },
 
   // ── 전용(시그니처) 스킬 ─────────────────────────────────────
   // 캐릭터 고유 능력. 일반 슬롯에 장착하는 게 아니라 항상 발동하며,
@@ -51,6 +71,12 @@ export const SKILL_CATALOG = {
   SIG_LIGHT_ORACLE: { id: 'SIG_LIGHT_ORACLE', label: '빛의 신탁', desc: '팀 공격+치명', signature: true, teamBuff: { atk: 0.15 }, effect: { critChance: 0.15 }, awaken: { effect: { critDamage: 0.15 } } },
   SIG_STORM_BLADE: { id: 'SIG_STORM_BLADE', label: '폭풍검', desc: '공격·관통', signature: true, statPct: { atk: 0.2 }, effect: { defPierce: 0.2 }, awaken: { effect: { critChance: 0.03 } } },
   SIG_NOVICE: { id: 'SIG_NOVICE', label: '견습 일격', desc: '기본 공격 강화', signature: true, statPct: { atk: 0.12 }, awaken: { statPct: { atk: 0.05 } } },
+
+  // ── P1 신규 캐릭터 전용 스킬 ────────────────────────────────
+  SIG_EMBER_WALL: { id: 'SIG_EMBER_WALL', label: '잉걸 방벽', desc: '체력·방어+흡혈(불굴 수호)', signature: true, statPct: { hp: 0.25, def: 0.20 }, effect: { lifesteal: 0.12 }, awaken: { statPct: { def: 0.08 } } },
+  SIG_GLACIER_EDGE: { id: 'SIG_GLACIER_EDGE', label: '빙하검', desc: '공격+관통·치명피해(처형)', signature: true, statPct: { atk: 0.18 }, effect: { defPierce: 0.15, critDamage: 0.4 }, awaken: { effect: { critChance: 0.05 } } },
+  SIG_TIDE_HYMN: { id: 'SIG_TIDE_HYMN', label: '조수 성가', desc: '팀 공격+강한 흡혈(치유 지원)', signature: true, teamBuff: { atk: 0.15 }, effect: { lifesteal: 0.25 }, awaken: { effect: { lifesteal: 0.08 } } },
+  SIG_WAR_CHANT: { id: 'SIG_WAR_CHANT', label: '전열 함성', desc: '팀 공격+자신 속도(지휘)', signature: true, teamBuff: { atk: 0.20 }, statPct: { spd: 0.2 }, awaken: { teamBuff: { atk: 0.05 } } },
 };
 
 // 시그니처 각성 상한 + 비용 (같은 캐릭터 조각=소환 재화 + 프리미엄).

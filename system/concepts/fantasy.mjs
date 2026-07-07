@@ -54,6 +54,15 @@ export const fantasyConcept = {
       lines: { greet: '덤벼!', bond: '…너, 나쁘지 않군.', levelup: '더 세졌다!' } },
     { id: 'mir', name: '미르', emoji: '🗡️', title: '견습 검사', personality: '풋풋한', element: 'WOOD', archetype: 'STRIKER', rarity: 'N', signature: 'SIG_NOVICE',
       lines: { greet: '잘 부탁해요!', bond: '저를 제자로 삼아주세요!', levelup: '저 강해졌죠?!' } },
+    // ── P1 신규: 속성×원형 공백 보강 ──
+    { id: 'pyra', name: '피라', emoji: '🛡️', title: '홍염의 방벽', personality: '굳건한', element: 'FIRE', archetype: 'VANGUARD', rarity: 'SR', signature: 'SIG_EMBER_WALL',
+      lines: { greet: '내 뒤는 안전하다.', bond: '내 불꽃으로 널 지키마.', levelup: '방벽이 뜨거워진다!' } },
+    { id: 'frost', name: '프로스트', emoji: '🧊', title: '빙하의 자객', personality: '냉정한', element: 'WATER', archetype: 'STRIKER', rarity: 'SR', signature: 'SIG_GLACIER_EDGE',
+      lines: { greet: '…끝은 한순간이다.', bond: '너에겐 칼끝을 거두지.', levelup: '더 날카로워졌다.' } },
+    { id: 'marina', name: '마리나', emoji: '🌊', title: '조수의 치유사', personality: '온화한', element: 'WATER', archetype: 'SUPPORT', rarity: 'SR', signature: 'SIG_TIDE_HYMN',
+      lines: { greet: '다친 곳은 없나요?', bond: '당신 곁이 제 바다예요.', levelup: '조수가 차오릅니다.' } },
+    { id: 'signe', name: '시그네', emoji: '📯', title: '전열의 고수병', personality: '용맹한', element: 'FIRE', archetype: 'SUPPORT', rarity: 'R', signature: 'SIG_WAR_CHANT',
+      lines: { greet: '진격 준비!', bond: '너와 함께라면 두렵지 않아!', levelup: '함성이 우렁차진다!' } },
   ],
 
   // 코스튬 — 캐릭터별 외형+소량 보너스. 친밀도 Lv로 해금.
@@ -67,6 +76,10 @@ export const fantasyConcept = {
     ael: { id: 'ael_c1', name: '예언자 로브', emoji: '🔮', unlock: 5, bonus: { atk: 0.06, hp: 0.06, def: 0.06, spd: 0.06 } },
     ara: { id: 'ara_c1', name: '폭풍 망토', emoji: '🧥', unlock: 5, bonus: { atk: 0.06, hp: 0.06, def: 0.06, spd: 0.06 } },
     mir: { id: 'mir_c1', name: '수련복', emoji: '🥋', unlock: 5, bonus: { atk: 0.06, hp: 0.06, def: 0.06, spd: 0.06 } },
+    pyra: { id: 'pyra_c1', name: '홍염 판금', emoji: '🔥', unlock: 5, bonus: { atk: 0.06, hp: 0.06, def: 0.06, spd: 0.06 } },
+    frost: { id: 'frost_c1', name: '빙결 예장', emoji: '❄️', unlock: 5, bonus: { atk: 0.06, hp: 0.06, def: 0.06, spd: 0.06 } },
+    marina: { id: 'marina_c1', name: '심해 예복', emoji: '🌊', unlock: 5, bonus: { atk: 0.06, hp: 0.06, def: 0.06, spd: 0.06 } },
+    signe: { id: 'signe_c1', name: '전열 군장', emoji: '🎺', unlock: 5, bonus: { atk: 0.06, hp: 0.06, def: 0.06, spd: 0.06 } },
   },
 
   // 스토리 캠페인 — 월드 서사(챕터별 보스 앞의 이야기). Core가 진행/전투를 담당.

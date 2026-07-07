@@ -61,6 +61,7 @@ export const COLLECTION = [
   { id: 'c3', need: 3, reward: { summon: 20 } },
   { id: 'c5', need: 5, reward: { gem: 60 } },
   { id: 'c8', need: 8, reward: { gem: 150 } },
+  { id: 'c12', need: 12, reward: { gem: 250, summon: 30 } },
 ];
 export function collectionList(state) {
   const owned = ownedCharacterIds(state).size;
