@@ -122,9 +122,17 @@ export default function RosterScreen({ state, bump, concept }) {
     const powerOf = (u) => { let v = pw.get(u.uid); if (v === undefined) { v = computePower(u); pw.set(u.uid, v); } return v; };
     return state.units.slice().sort((a, b) => powerOf(b) - powerOf(a));
   })();
-  // 2행 그리드용: 정렬된 목록을 2개씩 열(column)로 묶는다.
+  // 동일 캐릭터는 한 슬롯으로 묶고 수량 표기(대표=최강 인스턴스). 강한 순 유지.
+  const grouped = [];
+  const seen = new Map();
+  for (const u of list) {
+    const key = u.characterId || u.uid;
+    if (seen.has(key)) seen.get(key).count++;
+    else { const gitem = { rep: u, count: 1 }; seen.set(key, gitem); grouped.push(gitem); }
+  }
+  // 2행 그리드용: 묶인 목록을 2개씩 열(column)로 묶는다.
   const rosterColumns = [];
-  for (let i = 0; i < list.length; i += 2) rosterColumns.push(list.slice(i, i + 2));
+  for (let i = 0; i < grouped.length; i += 2) rosterColumns.push(grouped.slice(i, i + 2));
   const inParty = state.party.includes(unit.uid);
 
   const act = (fn) => { fn(); bump(); };
@@ -195,11 +203,11 @@ export default function RosterScreen({ state, bump, concept }) {
       </Card>
 
       {/* 보유 유닛 — 2행 그리드(밀도↑) · 가상화(보이는 열만 렌더 → 대량 로스터도 가볍다) */}
-      <Text style={g.sec}>보유 {concept.terms.unit} ({list.length})</Text>
+      <Text style={g.sec}>보유 {concept.terms.unit} ({grouped.length}종{list.length > grouped.length ? ` · ${list.length}` : ''})</Text>
       <FlatList
         horizontal
         data={rosterColumns}
-        keyExtractor={(col) => col[0].uid}
+        keyExtractor={(col) => col[0].rep.uid}
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={g.hlist}
         initialNumToRender={8}
@@ -208,13 +216,14 @@ export default function RosterScreen({ state, bump, concept }) {
         removeClippedSubviews
         renderItem={({ item: col }) => (
           <View style={g.gridCol}>
-            {col.map((u) => {
+            {col.map(({ rep: u, count }) => {
               const m = identity(concept, u);
               const on = u.uid === unit.uid;
               const party = state.party.includes(u.uid);
               return (
                 <TouchableOpacity key={u.uid} onPress={() => setSel(u.uid)} style={[g.chip, on && g.chipOn]} activeOpacity={0.8}>
                   {party && <Text style={g.chipStar}>⭐</Text>}
+                  {count > 1 && <Text style={g.chipCount}>×{count}</Text>}
                   <Portrait emoji={m.emoji} image={charImage(concept.id, u.characterId)} rarity={u.rarity} size={44} badge />
                   <Text style={g.chipName} numberOfLines={1}>{m.name}</Text>
                   <Text style={g.chipLv}>Lv.{u.level} · {concept.archetypes[u.archetype]?.emoji}</Text>
@@ -514,10 +523,18 @@ export default function RosterScreen({ state, bump, concept }) {
 // ── 모달: 스킬/장비/룬 선택 ───────────────────────────────────
 function PickerModal({ picker, unit, state, onClose, onChange, concept }) {
   const [emult, setEmult] = useState(1); // 강화 배수 (×1/×10/×100/Max)
+  const [dmsg, setDmsg] = useState(null); // 강화 결과(전투력 증가) 표시
   if (!picker) return null;
   const apply = (fn) => { fn(); onChange(); };
-  // 강화 전용 — 선택 배수만큼 반복(재화·상한에서 자동 중단).
-  const applyN = (fn) => { const n = repeat(fn, emult); if (n > 0) fx('success'); else fx('error'); onChange(); };
+  // 강화 전용 — 선택 배수만큼 반복 + 전투력 증가분을 명확히 표시.
+  const applyN = (fn) => {
+    const before = computePower(unit);
+    const n = repeat(fn, emult);
+    const gained = computePower(unit) - before;
+    if (n > 0) { setDmsg(`⚔️ 전투력 +${fmt(gained)} (강화 ${n}회)`); fx('success'); }
+    else { setDmsg('재화 부족 또는 상한'); fx('error'); }
+    onChange();
+  };
 
   let body;
   if (picker.mode === 'rune') {
@@ -647,6 +664,7 @@ function PickerModal({ picker, unit, state, onClose, onChange, concept }) {
       <TouchableOpacity style={m.backdrop} activeOpacity={1} onPress={onClose}>
         <TouchableOpacity activeOpacity={1} style={m.sheet}>
           {body}
+          {dmsg && <Text style={m.dmsg}>{dmsg}</Text>}
           <View style={{ height: 8 }} />
           <Btn label="닫기" kind="ghost" onPress={onClose} />
         </TouchableOpacity>
@@ -665,6 +683,7 @@ const g = StyleSheet.create({
   chip: { width: 84, backgroundColor: T.surface, borderRadius: 14, padding: 10, alignItems: 'center', borderWidth: 1, borderColor: T.line },
   chipOn: { borderColor: T.accent, backgroundColor: T.surface2 },
   chipStar: { position: 'absolute', top: 4, right: 6, fontSize: 12, zIndex: 2 },
+  chipCount: { position: 'absolute', top: 4, left: 6, fontSize: 11, fontWeight: '900', color: T.accent, backgroundColor: T.surface2, borderRadius: 6, paddingHorizontal: 4, zIndex: 2, overflow: 'hidden' },
   partyRow: { flexDirection: 'row', gap: 8, marginTop: 4 },
   partySlot: { flex: 1, aspectRatio: 1, backgroundColor: T.surface2, borderRadius: 12, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: 'transparent', padding: 4 },
   partySlotOn: { borderColor: T.line },
@@ -749,4 +768,5 @@ const m = StyleSheet.create({
   optName: { color: T.text, fontWeight: '800', fontSize: 14 },
   optCost: { color: T.accent, fontWeight: '700', fontSize: 12 },
   optDesc: { color: T.muted, fontSize: 12, marginTop: 2 },
+  dmsg: { color: T.accent, fontSize: 13, fontWeight: '800', textAlign: 'center', marginTop: 8 },
 });
