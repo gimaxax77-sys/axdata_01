@@ -1,3 +1,8 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>엘드리아 · 픽셀 에셋 & 컨셉 보드</title>
 <style>
   :root{
@@ -86,6 +91,8 @@
   @media (prefers-reduced-motion:reduce){a.card{transition:none}}
 </style>
 
+</head>
+<body>
 <div class="wrap">
   <header class="hd">
     <div class="kicker">Eldria · Pixel Direction</div>
@@ -218,3 +225,5 @@ document.getElementById('genres').innerHTML=
  `<thead><tr><th>장르</th><th>루프</th><th>코어 대비 추가</th></tr></thead><tbody>`+
  G.map(([n,l,x])=>`<tr><td class="cn">${n}</td><td>${l}</td><td><span class="tag">${x}</span></td></tr>`).join('')+`</tbody>`;
 </script>
+</body>
+</html>
