@@ -8,7 +8,9 @@ import {
 } from '../../system/core/daily.mjs';
 import { RELICS, relicUpgradeCost, upgradeRelic, relicCap } from '../../system/core/relics.mjs';
 import { PETS, petSummon, equipPet, unequipPet, petEffectLabel, MAX_ACTIVE_PETS, PET_PULL_COST,
-  rerollPetOpt, petFuse, petFuseAvail, petOptLabel, PET_FUSE_COST } from '../../system/core/pets.mjs';
+  rerollPetOpt, petFuse, petFuseAvail, petOptLabel, PET_FUSE_COST,
+  petShardSummon, SHARD_SUMMON_COST } from '../../system/core/pets.mjs';
+import { MATERIAL_META, SHARD_META, materialCount } from '../../system/core/materials.mjs';
 import { getStage } from '../../system/core/progression.mjs';
 import { GEAR_CATALOG, GEAR_RARITY } from '../../system/core/gear.mjs';
 import { isUnlocked, unlockStage } from '../../system/core/unlocks.mjs';
@@ -27,6 +29,9 @@ const DUNGEON_META = {
   ESSENCE: { feature: 'dungeonEssence' },
   GEAR: { feature: 'dungeonEssence', label: '⚔️ 장비 던전', drop: '장비 드롭(등급 랜덤)' },
   RUNE: { feature: 'dungeonEssence', label: '🔷 룬 던전', drop: '룬 드롭(등급 랜덤)' },
+  WEEKDAY: { feature: 'dungeonGold', label: '📅 요일 던전', drop: '장비/악세 + 돌파석' },
+  ELEMENT: { feature: 'dungeonEssence', label: '🔷 속성 던전', drop: '속성정수(장비 속성 옵션)' },
+  PETSHARD: { feature: 'pets', label: '🧩 펫 던전', drop: '펫조각(등급별)' },
 };
 
 export default function ContentScreen({ state, bump, concept }) {
@@ -35,12 +40,20 @@ export default function ContentScreen({ state, bump, concept }) {
   const [dropMsg, setDropMsg] = useState(null);
   const act = (fn) => { fn(); bump(); };
   const actN = (fn) => { repeat(fn, mult); bump(); };
-  // 아이템 던전: mult회 입장 → 마지막 드롭 요약 표시.
+  // 아이템/재료 던전: mult회 입장 → 마지막 드롭 요약 표시.
   const runDungeon = (type) => {
-    let last = null, count = 0;
-    repeat(() => { const r = enterDungeon(state, type); if (r.ok) { count++; last = r; } return r; }, mult);
-    if (last && last.kind === 'gear') setDropMsg(`⚔️ 장비 ${count}개 · 최근 [${(GEAR_RARITY[last.rarity] || {}).label || last.rarity}] ${GEAR_CATALOG[last.item.blueprint].label}`);
-    else if (last && last.kind === 'rune') setDropMsg(`🔷 룬 ${count}개 · 최근 [${last.rarity}]`);
+    let last = null, count = 0, stone = 0, ess = 0; const shards = {};
+    repeat(() => {
+      const r = enterDungeon(state, type);
+      if (r.ok) { count++; last = r; stone += r.ascendStone || 0; ess += r.elemEssence || 0; if (r.kind === 'petshard') shards[r.grade] = (shards[r.grade] || 0) + r.amount; }
+      return r;
+    }, mult);
+    if (!last) { setDropMsg(null); bump(); return; }
+    if (last.kind === 'gear') setDropMsg(`⚔️ 장비 ${count}개 · 최근 [${(GEAR_RARITY[last.rarity] || {}).label || last.rarity}] ${GEAR_CATALOG[last.item.blueprint].label}`);
+    else if (last.kind === 'rune') setDropMsg(`🔷 룬 ${count}개 · 최근 [${last.rarity}]`);
+    else if (last.kind === 'weekday') setDropMsg(`📅 장비 ${count}개 + 🔶돌파석 ${stone}`);
+    else if (last.kind === 'element') setDropMsg(`🔷 속성정수 +${ess}`);
+    else if (last.kind === 'petshard') setDropMsg(`🧩 펫조각 ${Object.entries(shards).map(([g, n]) => `${g} ${n}`).join(' · ')}`);
     bump();
   };
 
@@ -126,7 +139,7 @@ export default function ContentScreen({ state, bump, concept }) {
           const meta = DUNGEON_META[type];
           const unlocked = isUnlocked(state, meta.feature);
           const left = dungeonEntriesLeft(state, type);
-          const isItem = d.kind === 'gear' || d.kind === 'rune';
+          const isItem = ['gear', 'rune', 'weekday', 'element', 'petshard'].includes(d.kind);
           const res = d.resource ? concept.resources[d.resource] : null;
           const label = isItem ? meta.label : `${res.emoji} ${res.name} 던전`;
           const amount = res ? Math.round(getStage(state.peakStage).rewards[d.resource] * 40) : 0;
@@ -147,6 +160,14 @@ export default function ContentScreen({ state, bump, concept }) {
           );
         })}
         {dropMsg ? <Text style={c.dropMsg}>{dropMsg}</Text> : null}
+        {/* 보유 재료 */}
+        <View style={c.matBar}>
+          <Text style={c.matChip}>{MATERIAL_META.ascendStone.emoji} {MATERIAL_META.ascendStone.label} {fmt(materialCount(state, 'ascendStone'))}</Text>
+          <Text style={c.matChip}>{MATERIAL_META.elemEssence.emoji} {MATERIAL_META.elemEssence.label} {fmt(materialCount(state, 'elemEssence'))}</Text>
+          {['R', 'SR', 'SSR', 'UR'].map((g) => (
+            <Text key={g} style={c.matChip}>{SHARD_META.emoji}{g} {fmt(materialCount(state, 'petShard', g))}</Text>
+          ))}
+        </View>
       </Card>
 
       {/* 펫 */}
@@ -161,6 +182,20 @@ export default function ContentScreen({ state, bump, concept }) {
         )}
         {!isUnlocked(state, 'pets') && <Text style={c.sub}>🔒 스테이지 {unlockStage('pets')} 도달 시 해금</Text>}
         {isUnlocked(state, 'pets') && Object.keys(state.pets.owned).length === 0 && <Text style={c.sub}>보유 펫 없음 — 소환으로 획득하세요.</Text>}
+        {/* 펫조각 소환: 등급별 조각 SHARD_SUMMON_COST개 → 그 등급 랜덤 펫 */}
+        {isUnlocked(state, 'pets') && (
+          <View style={c.fuseRow}>
+            {['R', 'SR', 'SSR', 'UR'].map((g) => {
+              const have = materialCount(state, 'petShard', g);
+              const can = have >= SHARD_SUMMON_COST;
+              return (
+                <Btn key={g} small kind={can ? 'gold' : 'ghost'} disabled={!can}
+                  label={`${SHARD_META.emoji}${g} 소환 ${Math.min(have, SHARD_SUMMON_COST)}/${SHARD_SUMMON_COST}`}
+                  onPress={() => act(() => petShardSummon(state, g))} />
+              );
+            })}
+          </View>
+        )}
         {/* 합성(승급): 하위 등급 펫 레벨 소모 → 상위 1 */}
         {isUnlocked(state, 'pets') && Object.keys(state.pets.owned).length > 0 && (
           <View style={c.fuseRow}>

@@ -1,6 +1,7 @@
 import { spend } from './economy.mjs';
 import { BALANCE } from './balance.mjs';
 import { weightedPick } from './rng.mjs';
+import { spendMaterial } from './materials.mjs';
 
 // ─────────────────────────────────────────────────────────────
 // 장비 시스템 — 슬롯별 장착 + 강화로 유닛을 추가 성장시킨다.
@@ -166,6 +167,21 @@ function findGearAnywhere(state, gearUid) {
     state.units.flatMap((u) => GEAR_SLOTS.map((s) => u.gear[s])).find((g) => g && g.uid === gearUid) ||
     null
   );
+}
+
+// 속성정수로 부옵션 1개 추가(등급 상한을 넘어 GEAR_SUB_MAX까지 확장) — 속성 던전 사용처.
+export const ELEM_OPTION_COST = 5;
+export const GEAR_SUB_MAX = 6;
+export function grantGearElementOption(state, gearUid, rng = Math.random) {
+  const item = findGearAnywhere(state, gearUid);
+  if (!item) return { ok: false, reason: '장비 없음' };
+  item.subs = item.subs || [];
+  if (item.subs.length >= GEAR_SUB_MAX) return { ok: false, reason: `부옵션 상한 ${GEAR_SUB_MAX}` };
+  if (!spendMaterial(state, 'elemEssence', ELEM_OPTION_COST)) return { ok: false, reason: '속성정수 부족', cost: ELEM_OPTION_COST };
+  const used = new Set(item.subs.map((s) => s.key));
+  let guard = 0, added = null;
+  while (guard++ < 30) { const s = rollSub(rng); if (used.has(s.key)) continue; item.subs.push(s); added = s; break; }
+  return { ok: true, sub: added, subs: item.subs };
 }
 
 // 부옵션 재련 — 다이아 소모, 등급 개수만큼 부옵션 재롤.

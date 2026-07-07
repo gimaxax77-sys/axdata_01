@@ -18,7 +18,8 @@ import { identity, elementMeta } from '../../system/concepts/index.mjs';
 import { GEAR_SLOTS, GEAR_CATALOG, gearEnhanceCost, gearContribution } from '../../system/core/gear.mjs';
 import { levelUp, ascend, enhanceNode, equipSkill, unequipSkill, upgradeSkill, awakenSignature } from '../../system/core/character.mjs';
 import { AWAKEN_MAX, awakenCost } from '../../system/core/skills.mjs';
-import { craftGear, equipGear, enhanceGear, unequipGear, gearCraftCost, activeGearSets, rerollGearSubs, GEAR_RARITY } from '../../system/core/gear.mjs';
+import { craftGear, equipGear, enhanceGear, unequipGear, gearCraftCost, activeGearSets, rerollGearSubs, GEAR_RARITY, grantGearElementOption, ELEM_OPTION_COST, GEAR_SUB_MAX } from '../../system/core/gear.mjs';
+import { materialCount, MATERIAL_META } from '../../system/core/materials.mjs';
 import { optimizeLoadout } from '../../system/core/loadout.mjs';
 import { recordMission } from '../../system/core/daily.mjs';
 import { intimacyLevel, intimacyProgress, giftCost, giveGift, INTIMACY_MAX } from '../../system/core/intimacy.mjs';
@@ -632,6 +633,9 @@ function PickerModal({ picker, unit, state, onClose, onChange, concept }) {
             <View style={{ flexDirection: 'row', gap: 8 }}>
               <Btn small kind="gold" label={`강화 ${multLabel(emult)} (${fmt(gearEnhanceCost(item.level).currency)})`} onPress={() => applyN(() => enhanceGear(state, item.uid))} />
               {(item.subs || []).length > 0 && <Btn small kind="primary" label="재련 💎20" onPress={() => apply(() => rerollGearSubs(state, item.uid))} />}
+              <Btn small kind="gold" disabled={materialCount(state, 'elemEssence') < ELEM_OPTION_COST || (item.subs || []).length >= GEAR_SUB_MAX}
+                label={`속성 부여 ${MATERIAL_META.elemEssence.emoji}${ELEM_OPTION_COST}`}
+                onPress={() => apply(() => { const r = grantGearElementOption(state, item.uid); setDmsg(r.ok ? `${MATERIAL_META.elemEssence.emoji} 속성옵션 부여 (부옵션 ${r.subs.length})` : (r.reason || '실패')); })} />
               <Btn small kind="ghost" label="해제" onPress={() => apply(() => unequipGear(state, unit.uid, slot))} />
             </View>
           </View>

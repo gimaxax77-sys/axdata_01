@@ -1,5 +1,6 @@
 import { spend } from './economy.mjs';
 import { weightedPick } from './rng.mjs';
+import { spendMaterial } from './materials.mjs';
 
 // 펫 등급 확률 (gacha와 분리해 순환 의존 방지).
 const PET_RARITY = [
@@ -111,6 +112,20 @@ export function petSummon(state, rng = Math.random) {
     state.pets.active.push(pet.id);
   }
   return { ok: true, pet: pet.id, rarity: rarity.id, level: state.pets.owned[pet.id] };
+}
+
+// 펫조각 소환 — 해당 등급 조각 SHARD_SUMMON_COST개로 그 등급 랜덤 펫 획득.
+export const SHARD_SUMMON_COST = 10;
+export function petShardSummon(state, grade, rng = Math.random) {
+  if (!spendMaterial(state, 'petShard', SHARD_SUMMON_COST, grade)) return { ok: false, reason: '펫조각 부족' };
+  const pool = Object.values(PETS).filter((p) => p.rarity === grade);
+  const from = pool.length ? pool : Object.values(PETS);
+  const pet = from[Math.floor(rng() * from.length)];
+  const first = !state.pets.owned[pet.id];
+  state.pets.owned[pet.id] = (state.pets.owned[pet.id] || 0) + 1;
+  if (first) rollPetOpt(state, pet.id, rng);
+  if (state.pets.active.length < MAX_ACTIVE_PETS && !state.pets.active.includes(pet.id)) state.pets.active.push(pet.id);
+  return { ok: true, pet: pet.id, grade, level: state.pets.owned[pet.id] };
 }
 
 export function equipPet(state, id) {

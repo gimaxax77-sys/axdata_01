@@ -197,6 +197,56 @@ test('던전: 장비/룬 파밍 던전이 실제 아이템 드롭', async () => 
   assert.equal(dungeonEntriesLeft(s, 'GEAR'), 0);
 });
 
+test('재료 던전: 요일/속성/펫 던전이 재료 지급 + 사용처 소모', async () => {
+  const { enterDungeon, DUNGEONS } = await import('../core/daily.mjs');
+  const { makeRng } = await import('../core/rng.mjs');
+  const { materialCount } = await import('../core/materials.mjs');
+  const { ascend } = await import('../core/character.mjs');
+  const { grantGearElementOption, craftGear } = await import('../core/gear.mjs');
+  const { petShardSummon } = await import('../core/pets.mjs');
+  const s = strongState(80);
+  assert.ok(DUNGEONS.WEEKDAY && DUNGEONS.ELEMENT && DUNGEONS.PETSHARD, '재료 던전 3종 존재');
+
+  // 요일 던전 → 돌파석
+  const rw = enterDungeon(s, 'WEEKDAY', Date.now(), makeRng(11));
+  assert.equal(rw.kind, 'weekday');
+  assert.ok(rw.ascendStone > 0 && materialCount(s, 'ascendStone') === rw.ascendStone, '돌파석 지급');
+
+  // 속성 던전 → 속성정수
+  const re = enterDungeon(s, 'ELEMENT', Date.now(), makeRng(12));
+  assert.equal(re.kind, 'element');
+  assert.ok(re.elemEssence > 0 && materialCount(s, 'elemEssence') === re.elemEssence, '속성정수 지급');
+
+  // 펫 던전 → 등급별 펫조각
+  const rp = enterDungeon(s, 'PETSHARD', Date.now(), makeRng(13));
+  assert.equal(rp.kind, 'petshard');
+  assert.ok(rp.amount > 0 && materialCount(s, 'petShard', rp.grade) === rp.amount, '펫조각 지급');
+
+  // 사용처 1: 돌파석으로 돌파(소환 재화 소모 없이)
+  s.materials.ascendStone = 100;
+  const u = s.units[0];
+  const rankBefore = u.rank;
+  const asc = ascend(s, u.uid);
+  assert.equal(asc.ok, true);
+  assert.equal(asc.used, 'ascendStone', '돌파석 우선 소모');
+  assert.equal(u.rank, rankBefore + 1);
+
+  // 사용처 2: 속성정수로 장비 속성옵션 부여
+  s.materials.elemEssence = 100;
+  const cg = craftGear(s, Object.values((await import('../core/gear.mjs')).GEAR_CATALOG)[0].id);
+  const subsBefore = (cg.item.subs || []).length;
+  const go = grantGearElementOption(s, cg.item.uid, makeRng(14));
+  assert.equal(go.ok, true);
+  assert.equal(go.subs.length, subsBefore + 1, '부옵션 1개 추가');
+
+  // 사용처 3: 펫조각으로 소환
+  s.materials.petShard.SSR = 100;
+  const ps = petShardSummon(s, 'SSR', makeRng(15));
+  assert.equal(ps.ok, true);
+  assert.equal(ps.grade, 'SSR');
+  assert.equal(materialCount(s, 'petShard', 'SSR'), 90, '조각 10개 소모');
+});
+
 test('렌트: 결제→활성 배수, 만료→소멸, 업그레이드', async () => {
   const { rent, rentalActive, rentalTier, rentalMods, rentalTierDef } = await import('../core/rentals.mjs');
   const { accountMods } = await import('../core/balance.mjs');

@@ -2,6 +2,7 @@ import { spend } from './economy.mjs';
 import { levelUpCost, levelCap } from './units.mjs';
 import { getSkill, skillSlots, skillUpCost, AWAKEN_MAX, awakenCost } from './skills.mjs';
 import { getEnhanceNode, enhanceCost, ENHANCE_CAP } from './enhance.mjs';
+import { spendMaterial } from './materials.mjs';
 
 // ─────────────────────────────────────────────────────────────
 // 캐릭터 성장 액션 — 장르 무관(RPG도 방치형도 캐릭터를 키운다).
@@ -28,12 +29,19 @@ export function levelUp(state, uid) {
 }
 
 // ── 돌파(랭크업) : 레벨 상한을 열고 스킬 슬롯을 늘린다 ──────────
+// 돌파석(요일 던전)을 우선 소모, 없으면 소환 재화로 대체(하위호환).
+export function ascendCost(unit) { return { ascendStone: unit.rank * 2, summon: unit.rank * 2 }; }
 export function ascend(state, uid) {
   const unit = findUnit(state, uid);
-  const cost = { summon: unit.rank * 2 }; // 중복 유닛/조각 소모 개념
-  if (!spend(state.wallet, cost)) return { ok: false, reason: '돌파 재료 부족', cost };
+  const stones = unit.rank * 2;
+  if (spendMaterial(state, 'ascendStone', stones)) {
+    unit.rank += 1;
+    return { ok: true, rank: unit.rank, used: 'ascendStone', newCap: levelCap(unit), slots: skillSlots(unit) };
+  }
+  // 돌파석 부족 → 소환 재화 대체
+  if (!spend(state.wallet, { summon: unit.rank * 2 })) return { ok: false, reason: '돌파석/소환석 부족' };
   unit.rank += 1;
-  return { ok: true, rank: unit.rank, newCap: levelCap(unit), slots: skillSlots(unit) };
+  return { ok: true, rank: unit.rank, used: 'summon', newCap: levelCap(unit), slots: skillSlots(unit) };
 }
 
 // ── 스킬 장착 ─────────────────────────────────────────────────

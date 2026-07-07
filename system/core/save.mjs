@@ -38,6 +38,11 @@ function normalize(state) {
   state.rentals = state.rentals || {};
   state.admin = state.admin || { overrides: {} };
   state.admin.overrides = state.admin.overrides || {};
+  state.materials = state.materials || {};
+  state.materials.ascendStone = state.materials.ascendStone || 0;
+  state.materials.elemEssence = state.materials.elemEssence || 0;
+  state.materials.petShard = state.materials.petShard || {};
+  for (const gr of ['R', 'SR', 'SSR', 'UR']) state.materials.petShard[gr] = state.materials.petShard[gr] || 0;
   state.arena = state.arena || { points: 0, day: -1, entries: 0 };
   state.arena.points = state.arena.points || 0;
   state.arena.day = state.arena.day ?? -1;

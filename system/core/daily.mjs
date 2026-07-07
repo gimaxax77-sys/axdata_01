@@ -2,6 +2,8 @@ import { earn } from './economy.mjs';
 import { getStage } from './progression.mjs';
 import { dropGear } from './gear.mjs';
 import { dropRune } from './runes.mjs';
+import { addMaterial } from './materials.mjs';
+import { weightedPick } from './rng.mjs';
 
 // ─────────────────────────────────────────────────────────────
 // 일일 콘텐츠 — 출석 · 일일 미션 · 던전. (장르/컨셉 무관)
@@ -33,7 +35,19 @@ export const DUNGEONS = {
   ESSENCE: { kind: 'resource', resource: 'growth', entriesPerDay: 3 },
   GEAR: { kind: 'gear', entriesPerDay: 2 },
   RUNE: { kind: 'rune', entriesPerDay: 2 },
+  // ── 재료 던전 ──
+  WEEKDAY: { kind: 'weekday', entriesPerDay: 2 },   // 장비/악세 + 돌파석
+  ELEMENT: { kind: 'element', entriesPerDay: 2 },   // 속성정수 (장비 속성 옵션)
+  PETSHARD: { kind: 'petshard', entriesPerDay: 2 }, // 펫조각 (등급별)
 };
+
+// 펫조각 등급 확률 (진행도 luck으로 상위 가중).
+function rollShardGrade(rng, luck) {
+  return weightedPick([
+    { id: 'R', weight: 60 }, { id: 'SR', weight: 25 * (1 + luck) },
+    { id: 'SSR', weight: 10 * (1 + luck * 2) }, { id: 'UR', weight: 3 * (1 + luck * 4) },
+  ], rng).id;
+}
 
 // 진행도(peakStage) → 상위 등급 드롭 확률 luck(0~1).
 function dropLuck(state) {
@@ -108,6 +122,24 @@ export function enterDungeon(state, type, now = Date.now(), rng = Math.random) {
   if (d.kind === 'rune') {
     const r = dropRune(state, rng, dropLuck(state));
     return { ok: true, kind: 'rune', rune: r.rune, rarity: r.rarity };
+  }
+  if (d.kind === 'weekday') {
+    // 장비 1점 + 돌파석 (진행도 비례).
+    const g = dropGear(state, rng, dropLuck(state));
+    const stones = 3 + Math.floor((state.peakStage || 1) / 20);
+    addMaterial(state, 'ascendStone', stones);
+    return { ok: true, kind: 'weekday', item: g.item, rarity: g.rarity, ascendStone: stones };
+  }
+  if (d.kind === 'element') {
+    const amount = 3 + Math.floor((state.peakStage || 1) / 25);
+    addMaterial(state, 'elemEssence', amount);
+    return { ok: true, kind: 'element', elemEssence: amount };
+  }
+  if (d.kind === 'petshard') {
+    const grade = rollShardGrade(rng, dropLuck(state));
+    const amount = 4 + Math.floor((state.peakStage || 1) / 20);
+    addMaterial(state, 'petShard', amount, grade);
+    return { ok: true, kind: 'petshard', grade, amount };
   }
   // 자원 던전: 즉시 대량 보상 (진행도 보상 × 40)
   const res = d.resource;
