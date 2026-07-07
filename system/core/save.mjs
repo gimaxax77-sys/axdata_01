@@ -35,6 +35,7 @@ function normalize(state) {
   state.daily.ads = state.daily.ads || {};
   state.shop = state.shop || { purchased: {} };
   state.shop.purchased = state.shop.purchased || {};
+  state.rentals = state.rentals || {};
   state.arena = state.arena || { points: 0, day: -1, entries: 0 };
   state.arena.points = state.arena.points || 0;
   state.arena.day = state.arena.day ?? -1;

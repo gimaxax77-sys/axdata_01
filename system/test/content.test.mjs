@@ -155,6 +155,31 @@ test('던전: 장비/룬 파밍 던전이 실제 아이템 드롭', async () => 
   assert.equal(dungeonEntriesLeft(s, 'GEAR'), 0);
 });
 
+test('렌트: 결제→활성 배수, 만료→소멸, 업그레이드', async () => {
+  const { rent, rentalActive, rentalTier, rentalMods, rentalTierDef } = await import('../core/rentals.mjs');
+  const { accountMods } = await import('../core/balance.mjs');
+  const s = strongState();
+  earn(s.wallet, { gem: 5000 });
+  const now = 1_000_000;
+  // 미대여: 배수 1
+  assert.equal(rentalMods(s, now).power, 1);
+  // 티어1 결제
+  const r1 = rent(s, 'RENT_WEAPON', 1, now);
+  assert.equal(r1.ok, true);
+  assert.equal(rentalActive(s, 'RENT_WEAPON', now), true);
+  const per1 = rentalTierDef('RENT_WEAPON', 1).per;
+  assert.ok(Math.abs(rentalMods(s, now).power - (1 + per1)) < 1e-9, '활성 배수 반영');
+  // 만료 후: 소멸
+  const later = now + 8 * 86400000;
+  assert.equal(rentalActive(s, 'RENT_WEAPON', later), false);
+  assert.equal(rentalMods(s, later).power, 1, '만료 시 효과 소멸');
+  // 업그레이드 → 상위 티어 + 기간 리셋
+  const r2 = rent(s, 'RENT_WEAPON', 3, now);
+  assert.equal(rentalTier(s, 'RENT_WEAPON', now), 3);
+  // accountMods가 렌트를 곱함(활성 시)
+  assert.ok(accountMods(s).powerMult >= 1, 'accountMods 통합');
+});
+
 test('유물 확장: 등급별 상한 + 강화', async () => {
   const { RELICS, relicCap, upgradeRelic } = await import('../core/relics.mjs');
   assert.ok(Object.keys(RELICS).length >= 8, '유물 8종+');

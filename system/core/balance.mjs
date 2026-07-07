@@ -38,6 +38,7 @@ export const BALANCE = {
 
 import { relicMods } from './relics.mjs';
 import { petMods } from './pets.mjs';
+import { rentalMods } from './rentals.mjs';
 
 // 계정 단위 보정 = 환생(prestige) + 유물(relic) + 펫(pet) 합산.
 //   powerMult    : resolve()에 넘겨 전투력에 곱함
@@ -48,9 +49,10 @@ export function accountMods(state) {
   const income = 1 + pr * BALANCE.prestigeIncomeBonus;
   const rm = relicMods(state);
   const pm = petMods(state);
+  const rn = rentalMods(state);
   return {
-    powerMult: (1 + pr * BALANCE.prestigePowerBonus) * rm.power * pm.power,
-    currencyMult: income * rm.currency * pm.currency,
+    powerMult: (1 + pr * BALANCE.prestigePowerBonus) * rm.power * pm.power * rn.power,
+    currencyMult: income * rm.currency * pm.currency * rn.currency,
     growthMult: income * rm.growth * pm.growth,
   };
 }
