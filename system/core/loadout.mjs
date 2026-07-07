@@ -65,23 +65,29 @@ export function optimizeLoadout(state, unitUid, scope = 'all') {
 
   if (!doGear) return { ok: true, changed };
 
-  // 2) 장비 — 슬롯별 인벤토리 최고 후보가 장착품보다 나으면 교체.
-  //    빈 슬롯인데 후보가 없으면 감당 가능한 최고 설계도를 제작해 장착(항상 도움).
+  // 2) 장비 — 슬롯별로 (a) 인벤토리 최고가 장착품보다 나으면 교체,
+  //    아니면 (b) 감당 가능한 상위 설계도가 장착품보다 나으면 제작·장착.
+  //    → 빈 슬롯은 채우고, 낀 슬롯도 더 좋은 티어가 있으면 업그레이드(항상 개선).
   for (const slot of GEAR_SLOTS) {
     const equipped = unit.gear[slot];
+    const eqScore = equipped ? gearScore(equipped, w) : -1;
+    // (a) 인벤토리 최고 후보
     const cands = state.inventory.filter((g) => g.slot === slot);
     if (cands.length) {
       const best = cands.reduce((a, b) => (gearScore(b, w) > gearScore(a, w) ? b : a));
-      if (!equipped || gearScore(best, w) > gearScore(equipped, w)) {
+      if (gearScore(best, w) > eqScore) {
         if (equipGear(state, unitUid, best.uid).ok) { changed.gear++; continue; }
       }
     }
-    if (!equipped) {
-      // 슬롯이 비었고 인벤토리 후보 없음 → 제작 가능한 설계도 중 상위 티어 장착.
-      const affordable = Object.values(GEAR_CATALOG)
-        .filter((b) => b.slot === slot && (state.wallet.currency || 0) >= gearCraftCost(b.id).currency);
-      if (affordable.length) {
-        const bp = affordable.reduce((a, b) => ((b.craftCost || 150) > (a.craftCost || 150) ? b : a));
+    // (b) 제작 업그레이드: 감당 가능한 상위 티어 설계도가 장착품보다 나으면 제작.
+    const eqCost = equipped ? (GEAR_CATALOG[equipped.blueprint].craftCost || 150) : 0;
+    const affordable = Object.values(GEAR_CATALOG)
+      .filter((b) => b.slot === slot && (state.wallet.currency || 0) >= gearCraftCost(b.id).currency);
+    if (affordable.length) {
+      const bp = affordable.reduce((a, b) => ((b.craftCost || 150) > (a.craftCost || 150) ? b : a));
+      // 상위 티어(제작비↑)이고, 신규 R 아이템 점수가 장착품보다 높을 때만(다운그레이드·낭비 방지).
+      const mock = { blueprint: bp.id, level: 1, rarity: 'R', subs: [] };
+      if ((bp.craftCost || 150) > eqCost && gearScore(mock, w) > eqScore) {
         const c = craftGear(state, bp.id);
         if (c.ok && equipGear(state, unitUid, c.item.uid).ok) changed.gear++;
       }

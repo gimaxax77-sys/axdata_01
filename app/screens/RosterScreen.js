@@ -106,6 +106,7 @@ export default function RosterScreen({ state, bump, concept }) {
   const [picker, setPicker] = useState(null); // {mode:'skill'|'gear', slot}
   const [bubble, setBubble] = useState(null); // 현재 대사
   const [mult, setMult] = useState(1); // 성장 배수 (×1/×10/×100)
+  const [recMsg, setRecMsg] = useState(null); // 추천 장착 결과 메시지
   // 무거운 하단 카드(씨앗·전용무기·룬·스킬·장비·성장)는 첫 페인트 뒤에 렌더
   // → 탭 전환 시 상단(파티·상세)이 즉시 뜨고 렉이 사라진다.
   const [heavy, setHeavy] = useState(false);
@@ -129,6 +130,23 @@ export default function RosterScreen({ state, bump, concept }) {
   const act = (fn) => { fn(); bump(); };
   // 성장 액션은 일일 미션(강화) 진행에 카운트. mult 배수만큼 반복 실행.
   const grow = (fn) => { const n = repeat(fn, mult); if (n > 0) { recordMission(state, 'upgrade', n); fx('success'); } else { fx('error'); } bump(); };
+  // 추천 장착 — 결과를 명확히 메시지로 알려준다("왜 안 됐는지" 포함).
+  const runRecommend = (scope) => {
+    const r = optimizeLoadout(state, unit.uid, scope);
+    const c = r.ok ? r.changed : { skills: 0, gear: 0, runes: 0 };
+    const parts = [];
+    if (c.skills) parts.push(`스킬 ${c.skills}`);
+    if (c.gear) parts.push(`장비 ${c.gear}`);
+    if (c.runes) parts.push(`룬 ${c.runes}`);
+    if (parts.length) { setRecMsg(`✅ ${parts.join(' · ')} 최적 장착!`); fx('success'); }
+    else {
+      const emptyGear = GEAR_SLOTS.filter((s) => !unit.gear[s]).length;
+      if (scope !== 'skill' && emptyGear > 0) setRecMsg('⚠ 골드가 부족해 장비를 제작할 수 없어요');
+      else setRecMsg('이미 최적입니다 · 던전/제작으로 더 나은 장비를 구해보세요');
+      fx('error');
+    }
+    bump();
+  };
   const st8 = computeStats(unit);
   const meta = identity(concept, unit);
   const arch = concept.archetypes[unit.archetype] || { name: unit.archetype, emoji: '❔' };
@@ -415,14 +433,9 @@ export default function RosterScreen({ state, bump, concept }) {
       <Card style={{ marginTop: 12 }}>
         <View style={g.intiHead}>
           <Text style={g.sec}>스킬 편성 <Text style={g.dim}>({unit.skills.filter(Boolean).length}/{slots})</Text></Text>
-          <Btn small kind="gold" label="✨ 추천 전체" sfx={false}
-            onPress={() => {
-              const r = optimizeLoadout(state, unit.uid, 'all');
-              const n = r.ok ? r.changed.skills + r.changed.gear + r.changed.runes : 0;
-              fx(n > 0 ? 'success' : 'error');
-              bump();
-            }} />
+          <Btn small kind="gold" label="✨ 추천 전체" sfx={false} onPress={() => runRecommend('all')} />
         </View>
+        {recMsg && <Text style={g.recMsg}>{recMsg}</Text>}
         {[0, 1, 2].map((i) => {
           const locked = i >= slots;
           const sk = unit.skills[i];
@@ -446,14 +459,9 @@ export default function RosterScreen({ state, bump, concept }) {
       <Card style={{ marginTop: 12 }}>
         <View style={g.intiHead}>
           <Text style={g.sec}>장비</Text>
-          <Btn small kind="gold" label="✨ 추천 장착" sfx={false}
-            onPress={() => {
-              const r = optimizeLoadout(state, unit.uid, 'gear');
-              const n = r.ok ? r.changed.gear + r.changed.runes : 0;
-              fx(n > 0 ? 'success' : 'error');
-              bump();
-            }} />
+          <Btn small kind="gold" label="✨ 추천 장착" sfx={false} onPress={() => runRecommend('gear')} />
         </View>
+        {recMsg && <Text style={g.recMsg}>{recMsg}</Text>}
         {GEAR_SLOTS.map((slot) => {
           const item = unit.gear[slot];
           return (
@@ -723,6 +731,7 @@ const g = StyleSheet.create({
   dim: { color: T.muted, fontSize: 12, fontWeight: '400' },
   btnRow: { flexDirection: 'row', gap: 8 },
   loadingHint: { color: T.muted, fontSize: 13, textAlign: 'center', paddingVertical: 24 },
+  recMsg: { color: T.accent, fontSize: 12, fontWeight: '700', marginTop: 8, marginBottom: 2 },
 });
 
 const m = StyleSheet.create({
