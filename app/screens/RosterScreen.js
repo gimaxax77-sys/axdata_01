@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Modal, useWindowDimensions } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Modal, TextInput, useWindowDimensions } from 'react-native';
 import { T, rarityMeta } from '../theme';
 
 // 등급 순위(정렬용) — 인벤토리 상위 우선.
@@ -27,6 +27,11 @@ import { intimacyLevel, intimacyProgress, giftCost, giveGift, INTIMACY_MAX } fro
 import { seedConditions, seedProgress } from '../../system/core/seed.mjs';
 import { linesOf, sigWeaponOf } from '../../system/concepts/index.mjs';
 import { costumesFor, equipCostume as equipSkin, unequipCostume as unequipSkin, refreshCostumeUnlocks, SOURCE_LABEL } from '../../system/core/costumes.mjs';
+import { combatContributions } from '../../system/core/resolution.mjs';
+import { playStage } from '../../system/core/difficulty.mjs';
+import { accountMods } from '../../system/core/balance.mjs';
+import { dismantlePreview, dismantleUnit } from '../../system/core/dismantle.mjs';
+import { exportBuild, encodeBuild, applyBuildCode } from '../../system/core/buildcopy.mjs';
 import {
   hasSigWeapon, canOwnSigWeapon, unlockSigWeapon, enhanceSigWeapon,
   sigWeaponUnlockCost, sigWeaponEnhanceCost, sigWeaponBoost, SIGWEAPON_MAX,
@@ -136,6 +141,9 @@ export default function RosterScreen({ state, bump, concept }) {
   const [mult, setMult] = useState(1); // 성장 배수 (×1/×10/×100)
   const [recMsg, setRecMsg] = useState(null); // 추천 장착 결과 메시지
   const [showBd, setShowBd] = useState(false); // 전투력 분해 표 펼침
+  const [showDps, setShowDps] = useState(false); // DPS 미터 펼침
+  const [deckMsg, setDeckMsg] = useState(null); // 덱 복사/붙여넣기 결과
+  const [deckCode, setDeckCode] = useState(''); // 붙여넣기 입력 코드
   // 영웅 그리드 5열 고정 — 화면폭에서 좌우 패딩(14×2)·열간격(10×4)을 뺀 뒤 5등분.
   const { width: winW } = useWindowDimensions();
   const GRID_COLS = 5, GRID_GAP = 8;
@@ -167,6 +175,34 @@ export default function RosterScreen({ state, bump, concept }) {
   refreshCostumeUnlocks(state); // 조건 충족 코스튬 자동 지급(퀘스트/VIP/전투력)
 
   const act = (fn) => { fn(); bump(); };
+  // 유닛 분해(100% 자원 환급) — 편성 해제 후에만.
+  const doDismantle = () => {
+    const r = dismantleUnit(state, unit.uid);
+    if (r.ok) {
+      const parts = [];
+      if (r.refund.growth) parts.push(`💠${fmt(r.refund.growth)}`);
+      if (r.refund.currency) parts.push(`🪙${fmt(r.refund.currency)}`);
+      if (r.refund.summon) parts.push(`🎟️${fmt(r.refund.summon)}`);
+      if (r.refund.gem) parts.push(`💎${fmt(r.refund.gem)}`);
+      if (r.refund.ascendStone) parts.push(`🔶${r.refund.ascendStone}`);
+      if (r.gearBack) parts.push(`⚔️회수${r.gearBack}`);
+      fx('success'); setDeckMsg(`♻️ 분해 · 환급 ${parts.join(' ') || '없음'}`);
+      setSel(state.party[0] || state.units[0]?.uid);
+    } else { fx('error'); setDeckMsg(r.reason); }
+    bump();
+  };
+  // 덱 복사(내 편성 → 코드) / 붙여넣기(코드 → 내 파티 위치별 적용).
+  const doCopyDeck = () => {
+    const code = encodeBuild(exportBuild(state));
+    setDeckCode(code); setDeckMsg('📋 현재 덱 코드를 아래 칸에 생성 — 복사해 공유하세요');
+    fx('success');
+  };
+  const doPasteDeck = () => {
+    const r = applyBuildCode(state, deckCode.trim());
+    if (r.ok) { fx('success'); setDeckMsg(`✅ 덱 적용 · 자리 ${r.applied} · 스킬 ${r.skills}`); }
+    else { fx('error'); setDeckMsg('❌ 잘못된 덱 코드'); }
+    bump();
+  };
   // 성장 액션은 일일 미션(강화) 진행에 카운트. mult 배수만큼 반복 실행.
   const grow = (fn) => { const n = repeat(fn, mult); if (n > 0) { recordMission(state, 'upgrade', n); fx('success'); } else { fx('error'); } bump(); };
   // 추천 장착 — 결과를 명확히 메시지로 알려준다("왜 안 됐는지" 포함).
@@ -262,6 +298,43 @@ export default function RosterScreen({ state, bump, concept }) {
             </View>
           );
         })()}
+        {/* DPS 미터 — 누가 딜/생존을 담당하는지 분석(덱 수정 근거) */}
+        {getPartyUnits(state).length > 0 && (
+          <View style={g.dpsWrap}>
+            <TouchableOpacity activeOpacity={0.8} onPress={() => setShowDps((v) => !v)}>
+              <Text style={g.dpsToggle}>📊 전투 통계(DPS) {showDps ? '▲' : '▼'}</Text>
+            </TouchableOpacity>
+            {showDps && (() => {
+              const cc = combatContributions(getPartyUnits(state), playStage(state).challenge, accountMods(state), state.formation);
+              return (
+                <View style={{ marginTop: 6 }}>
+                  {cc.units.map((r) => {
+                    const u = state.units.find((x) => x.uid === r.uid);
+                    const pm = u && identity(concept, u);
+                    return (
+                      <View key={r.uid} style={g.dpsRow}>
+                        <Text style={g.dpsName} numberOfLines={1}>{pm ? pm.name : r.uid}</Text>
+                        <View style={g.dpsBarTrack}><View style={[g.dpsBarFill, { width: `${Math.round(r.dpsShare * 100)}%` }]} /></View>
+                        <Text style={g.dpsPct}>{Math.round(r.dpsShare * 100)}%</Text>
+                      </View>
+                    );
+                  })}
+                  <Text style={g.dim}>딜 비중 · 상성 반영. 낮은 딜러는 육성/교체 대상.</Text>
+                </View>
+              );
+            })()}
+          </View>
+        )}
+        {/* 원클릭 덱 복사/붙여넣기(로컬) */}
+        <View style={g.deckWrap}>
+          <View style={g.deckBtns}>
+            <Btn small kind="ghost" label="📋 덱 복사" onPress={doCopyDeck} />
+            <Btn small kind="ghost" label="📥 덱 적용" disabled={!deckCode.trim()} onPress={doPasteDeck} />
+          </View>
+          <TextInput style={g.deckInput} value={deckCode} onChangeText={setDeckCode}
+            placeholder="덱 코드 붙여넣기(DECK1:...)" placeholderTextColor={T.muted} autoCapitalize="none" />
+          {deckMsg ? <Text style={g.deckMsg}>{deckMsg}</Text> : null}
+        </View>
       </Card>
 
       {/* 보유 유닛 — 세로 나열 그리드(줄바꿈으로 행이 쌓임). 종 단위로 묶여 밀도 유지. */}
@@ -309,6 +382,27 @@ export default function RosterScreen({ state, bump, concept }) {
             <View key={k} style={g.stat}><Text style={g.statK}>{k}</Text><Text style={g.statV}>{fmt(v)}</Text></View>
           ))}
         </View>
+        {/* 분해(100% 자원 환급) — 편성 해제 & 2명 이상일 때만 */}
+        {(() => {
+          const pv = dismantlePreview(state, unit.uid);
+          const blocked = inParty || state.units.length <= 1;
+          const parts = pv.ok ? [
+            pv.refund.growth && `💠${fmt(pv.refund.growth)}`,
+            pv.refund.currency && `🪙${fmt(pv.refund.currency)}`,
+            pv.refund.summon && `🎟️${fmt(pv.refund.summon)}`,
+            pv.refund.gem && `💎${fmt(pv.refund.gem)}`,
+            pv.refund.ascendStone && `🔶${pv.refund.ascendStone}`,
+          ].filter(Boolean) : [];
+          return (
+            <View style={g.dismRow}>
+              <Text style={g.dismInfo} numberOfLines={1}>
+                {blocked ? (inParty ? '편성 해제 후 분해 가능' : '마지막 유닛은 분해 불가') : `환급: ${parts.join(' ') || '없음'}${pv.gearBack ? ` · ⚔️회수${pv.gearBack}` : ''}`}
+              </Text>
+              <Btn small kind="ghost" label="♻️ 분해" disabled={blocked} onPress={doDismantle} />
+            </View>
+          );
+        })()}
+        {deckMsg ? <Text style={g.deckMsg}>{deckMsg}</Text> : null}
 
         {/* 전투력 수치비례표 — 각 요소가 전투력에 기여하는 점수·비율(회피성 효과 포함) */}
         {showBd && (() => {
@@ -808,6 +902,19 @@ const g = StyleSheet.create({
   formWarn: { color: T.danger, fontSize: 11, fontWeight: '700', marginTop: 8 },
   formOk: { color: T.good, fontSize: 11, marginTop: 8 },
   synNone: { color: T.muted, fontSize: 12, marginTop: 10 },
+  dpsWrap: { marginTop: 12, borderTopWidth: 1, borderTopColor: T.line, paddingTop: 10 },
+  dpsToggle: { color: T.accent, fontSize: 12, fontWeight: '800' },
+  dpsRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 5 },
+  dpsName: { color: T.text, fontSize: 12, fontWeight: '700', width: 78 },
+  dpsBarTrack: { flex: 1, height: 8, backgroundColor: T.surface2, borderRadius: 4, overflow: 'hidden' },
+  dpsBarFill: { height: 8, backgroundColor: T.accent, borderRadius: 4 },
+  dpsPct: { color: T.muted, fontSize: 11, fontWeight: '800', width: 36, textAlign: 'right' },
+  deckWrap: { marginTop: 12, borderTopWidth: 1, borderTopColor: T.line, paddingTop: 10 },
+  deckBtns: { flexDirection: 'row', gap: 8 },
+  deckInput: { marginTop: 8, backgroundColor: T.surface2, borderRadius: 8, borderWidth: 1, borderColor: T.line, color: T.text, paddingHorizontal: 10, paddingVertical: 8, fontSize: 12 },
+  deckMsg: { color: T.accent, fontSize: 11, fontWeight: '700', marginTop: 8 },
+  dismRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginTop: 8 },
+  dismInfo: { color: T.muted, fontSize: 11, flex: 1 },
   synWrap: { marginTop: 10, gap: 6 },
   synChip: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: T.surface2, borderRadius: 10, paddingHorizontal: 10, paddingVertical: 6, borderWidth: 1, borderColor: T.accent },
   synChipText: { color: T.accent, fontWeight: '800', fontSize: 12 },

@@ -18,8 +18,10 @@ import { MATERIAL_META, SHARD_META, materialCount } from '../../system/core/mate
 import { getStage } from '../../system/core/progression.mjs';
 import { GEAR_CATALOG, GEAR_RARITY } from '../../system/core/gear.mjs';
 import { isUnlocked, unlockStage } from '../../system/core/unlocks.mjs';
-import { campaignChapters, fightChapter, CAMPAIGN_CHAPTER_COUNT } from '../../system/core/campaign.mjs';
+import { campaignChapters, fightChapter, CAMPAIGN_CHAPTER_COUNT, storyLog } from '../../system/core/campaign.mjs';
 import { elementMeta } from '../../system/concepts/index.mjs';
+import { weeklyEvent, claimWeekly } from '../../system/core/events.mjs';
+import { seasonInfo, seasonChallenge, SEASON_FLOORS } from '../../system/core/season.mjs';
 
 function rewardText(concept, reward) {
   return Object.entries(reward)
@@ -82,10 +84,23 @@ export default function ContentScreen({ state, bump, concept }) {
     if (r.ok) { fx('success'); } else { fx('error'); }
     bump();
   };
-  // QoL: 자동 펫 합성 — 승급 가능한 모든 등급 연쇄 합성.
-  const doAutoFuse = () => {
-    const r = autoFusePets(state);
-    if (r.ok) { fx('success'); setDropMsg(`🔁 자동 합성 ${r.fused}회`); } else { fx('error'); }
+  // QoL: 자동 펫 합성 — 스마트 필터(아끼는 등급 보호) 옵션.
+  const doAutoFuse = (opts) => {
+    const r = autoFusePets(state, Math.random, opts);
+    if (r.ok) { fx('success'); setDropMsg(`🔁 자동 합성 ${r.fused}회${opts && opts.stopAt ? ` (${opts.stopAt} 보호)` : ''}`); } else { fx('error'); }
+    bump();
+  };
+  // 주간 테마 이벤트 보상 청구.
+  const doClaimWeekly = () => {
+    const r = claimWeekly(state);
+    if (r.ok) { fx('success'); setDropMsg('🎁 주간 이벤트 보상 획득'); } else { fx('error'); }
+    bump();
+  };
+  // 시즌 던전 다음 층 도전(평준화 조건).
+  const doSeasonFight = () => {
+    const r = seasonChallenge(state);
+    if (r.ok) { fx('success'); setDropMsg(`🏔️ 시즌 ${r.floor}층 클리어!`); }
+    else { fx('error'); setDropMsg(r.reason || '시즌 도전 실패'); }
     bump();
   };
 
@@ -96,6 +111,12 @@ export default function ContentScreen({ state, bump, concept }) {
   const streakIdx = state.daily.streak % ATTENDANCE.length;
   const canAtt = canClaimAttendance(state);
   const missions = missionList(state);
+  const wev = weeklyEvent(state);
+  const sInfo = seasonInfo(state);
+  const sLog = storyLog(state, concept.campaign || []);
+  const [showStory, setShowStory] = useState(false);
+  const hrs = (ms) => Math.max(0, Math.floor(ms / 3600000));
+  const days = (ms) => Math.max(0, Math.floor(ms / 86400000));
 
   return (
     <ScrollView style={c.flex} contentContainerStyle={c.wrap}>
@@ -129,6 +150,39 @@ export default function ContentScreen({ state, bump, concept }) {
             <View key={ch.index} style={[c.dot, ch.cleared && c.dotDone, ch.isNext && c.dotNext]} />
           ))}
         </View>
+        {/* 스토리 정주행 도감 */}
+        {sLog.readable.length > 0 && (
+          <View style={{ marginTop: 10 }}>
+            <Btn small kind="ghost" label={showStory ? '스토리 도감 닫기 ▲' : `📚 스토리 정주행 (${sLog.readable.length}) ▼`} onPress={() => setShowStory((v) => !v)} />
+            {showStory && sLog.readable.map((e) => (
+              <View key={e.index} style={c.logEntry}>
+                <Text style={c.logTitle}>Ch.{e.index + 1} · {e.title}</Text>
+                <Text style={c.logStory}>{e.story}</Text>
+              </View>
+            ))}
+          </View>
+        )}
+      </Card>
+
+      {/* 주간 테마 이벤트(미니 로드맵) */}
+      <Card style={{ marginTop: 12, borderColor: T.accent }}>
+        <Text style={c.sec}>{wev.emoji} 이번 주 · {wev.label} <Text style={c.dim}>{days(wev.endsInMs)}일 남음</Text></Text>
+        <Text style={c.sub}>{wev.hint}</Text>
+        <View style={c.mBar}><View style={[c.mBarFill, { width: `${Math.min(100, (wev.progress / wev.goal) * 100)}%` }]} /></View>
+        <Text style={c.sub}>진행 {wev.progress}/{wev.goal}</Text>
+        <View style={{ height: 8 }} />
+        <Btn kind={wev.done && !wev.claimed ? 'gold' : 'ghost'} disabled={!wev.done || wev.claimed}
+          label={wev.claimed ? '이번 주 수령 완료' : wev.done ? '🎁 보상 받기' : '목표 진행 중'} onPress={doClaimWeekly} />
+      </Card>
+
+      {/* 시즌 소프트리셋 던전(평준화 랭킹) */}
+      <Card style={{ marginTop: 12 }}>
+        <Text style={c.sec}>🏔️ 시즌 던전 <Text style={c.dim}>시즌 {sInfo.season} · {days(sInfo.endsInMs)}일 남음</Text></Text>
+        <Text style={c.sub}>모두 평준화된 조건에서 겨루는 층 등반 — 스펙보다 편성·운영. (계정 배수 미적용)</Text>
+        <Text style={c.sub}>도달 {sInfo.floor}/{SEASON_FLOORS}층 · 최고 {sInfo.best}층 · 평준화 전투력 {fmt(sInfo.power)}</Text>
+        <View style={c.mBar}><View style={[c.mBarFill, { width: `${(sInfo.floor / SEASON_FLOORS) * 100}%` }]} /></View>
+        <View style={{ height: 8 }} />
+        <Btn kind="gold" disabled={sInfo.floor >= SEASON_FLOORS} label={sInfo.floor >= SEASON_FLOORS ? '최고 층 달성' : `${sInfo.floor + 1}층 도전`} onPress={doSeasonFight} />
       </Card>
 
       {/* 출석 */}
@@ -253,7 +307,11 @@ export default function ContentScreen({ state, bump, concept }) {
             })}
             <Btn small kind="primary"
               disabled={!['R', 'SR', 'SSR'].some((rar) => petFuseAvail(state, rar) >= PET_FUSE_COST)}
-              label="🔁 자동 합성" onPress={doAutoFuse} />
+              label="🔁 자동 합성" onPress={() => doAutoFuse()} />
+            {/* 스마트 필터: 상위 등급을 아끼며 하위만 합성 */}
+            <Btn small kind="ghost"
+              disabled={!['R', 'SR'].some((rar) => petFuseAvail(state, rar) >= PET_FUSE_COST)}
+              label="🛡️ SSR 보호 합성" onPress={() => doAutoFuse({ stopAt: 'SSR' })} />
           </View>
         )}
         {isUnlocked(state, 'pets') && Object.entries(state.pets.owned).map(([id, lv]) => {
@@ -372,6 +430,11 @@ const c = StyleSheet.create({
   sec: { color: T.text, fontWeight: '800', fontSize: 15, marginBottom: 4 },
   sub: { color: T.muted, fontSize: 12, marginBottom: 12 },
   dim: { color: T.muted, fontSize: 12, fontWeight: '400' },
+  mBar: { height: 8, backgroundColor: T.surface2, borderRadius: 4, overflow: 'hidden', marginVertical: 6 },
+  mBarFill: { height: 8, backgroundColor: T.good, borderRadius: 4 },
+  logEntry: { backgroundColor: T.surface2, borderRadius: 10, padding: 10, marginTop: 8 },
+  logTitle: { color: T.accent, fontWeight: '800', fontSize: 13, marginBottom: 4 },
+  logStory: { color: T.text, fontSize: 12, lineHeight: 18 },
   attRow: { flexDirection: 'row', gap: 6, marginBottom: 14 },
   attCell: { flex: 1, backgroundColor: T.surface2, borderRadius: 10, paddingVertical: 8, alignItems: 'center', borderWidth: 1, borderColor: 'transparent' },
   attToday: { borderColor: T.accent },

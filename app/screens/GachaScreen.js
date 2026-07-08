@@ -25,11 +25,12 @@ const RANK = { N: 0, R: 1, SR: 2, SSR: 3, UR: 4 };
 const SLOT_EMOJI = { weapon: '⚔️', armor: '🛡️', accessory: '💍' };
 
 // 소환 결과 한 칸 — 등장 시 페이드+스케일 (등급 높을수록 늦게=강조).
-const RevealCell = React.memo(function RevealCell({ index, rarity, emoji, image, name }) {
+const RevealCell = React.memo(function RevealCell({ index, rarity, emoji, image, name, skip }) {
   const rm = rarityMeta(rarity);
-  const a = useRef(new Animated.Value(reducedMotion() ? 1 : 0)).current;
+  const instant = skip || reducedMotion();
+  const a = useRef(new Animated.Value(instant ? 1 : 0)).current;
   useEffect(() => {
-    if (reducedMotion()) { a.setValue(1); return; }
+    if (instant) { a.setValue(1); return; }
     a.setValue(0);
     Animated.timing(a, { toValue: 1, duration: 340, delay: Math.min(index, 12) * 70, useNativeDriver: true }).start();
   }, []);
@@ -80,6 +81,8 @@ export default function GachaScreen({ state, bump, concept }) {
   };
   const b = BANNERS[banner];
   const bal = state.wallet[b.curr] || 0;
+  const skipAnim = !!(state.settings && state.settings.skipGachaAnim);
+  const toggleSkip = () => { state.settings = state.settings || {}; state.settings.skipGachaAnim = !state.settings.skipGachaAnim; bump(); };
 
   // 단일 소환 실행 → { cell, spent }. spent=재화 소모 여부(숙련도 카운트용).
   function pullOnce() {
@@ -124,7 +127,8 @@ export default function GachaScreen({ state, bump, concept }) {
       setResults(cells.slice(-20)); setResultsKey((k) => k + 1);
       fx('summon');
       const best = cells.reduce((m, c) => Math.max(m, RANK[c.rarity] ?? 0), 0);
-      setTimeout(() => fx(best >= 3 ? 'ssr' : best >= 2 ? 'sr' : 'success'), 480);
+      const bestFx = () => fx(best >= 3 ? 'ssr' : best >= 2 ? 'sr' : 'success');
+      if (skipAnim) bestFx(); else setTimeout(bestFx, 480); // 스킵 시 즉시 결과음
     }
     bump();
   };
@@ -213,10 +217,15 @@ export default function GachaScreen({ state, bump, concept }) {
 
       {results.length > 0 && (
         <Card style={{ marginTop: 14 }}>
-          <Text style={s.sec}>소환 결과 <Text style={s.floor}>({results.length}건{results.length >= 20 ? ' · 최근 20' : ''})</Text></Text>
+          <View style={s.resHead}>
+            <Text style={s.sec}>소환 결과 <Text style={s.floor}>({results.length}건{results.length >= 20 ? ' · 최근 20' : ''})</Text></Text>
+            <TouchableOpacity onPress={toggleSkip} activeOpacity={0.8} style={[s.skipToggle, skipAnim && s.skipToggleOn]}>
+              <Text style={[s.skipText, skipAnim && s.skipTextOn]}>{skipAnim ? '⚡ 연출 스킵 ON' : '연출 스킵 OFF'}</Text>
+            </TouchableOpacity>
+          </View>
           <View style={s.grid}>
             {results.map((c, i) => (
-              <RevealCell key={`${resultsKey}-${i}`} index={i} rarity={c.rarity} emoji={c.emoji} image={c.image} name={c.name} />
+              <RevealCell key={`${resultsKey}-${i}`} index={i} rarity={c.rarity} emoji={c.emoji} image={c.image} name={c.name} skip={skipAnim} />
             ))}
           </View>
         </Card>
@@ -250,6 +259,11 @@ const s = StyleSheet.create({
   mSub: { color: T.muted, fontSize: 11, marginTop: 6 },
   mNote: { color: T.muted, fontSize: 10, marginTop: 4 },
   sec: { color: T.text, fontWeight: '800', fontSize: 15, marginBottom: 10 },
+  resHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  skipToggle: { paddingVertical: 5, paddingHorizontal: 10, borderRadius: 8, backgroundColor: T.surface2, borderWidth: 1, borderColor: 'transparent', marginBottom: 10 },
+  skipToggleOn: { borderColor: T.accent, backgroundColor: T.surface },
+  skipText: { color: T.muted, fontSize: 11, fontWeight: '800' },
+  skipTextOn: { color: T.accent },
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, justifyContent: 'center' },
   cell: { width: 90, backgroundColor: T.surface2, borderRadius: 12, borderWidth: 2, padding: 8, alignItems: 'center' },
   cellRarity: { fontSize: 11, fontWeight: '900' },

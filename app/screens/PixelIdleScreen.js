@@ -7,6 +7,7 @@ import { playStage, difficultyDef } from '../../system/core/difficulty.mjs';
 import { stageZone } from '../../system/core/progression.mjs';
 import { computePower } from '../../system/core/stats.mjs';
 import { identity, elementMeta } from '../../system/concepts/index.mjs';
+import { villageTier } from '../../system/core/village.mjs';
 
 // ─────────────────────────────────────────────────────────────
 // 픽셀 방치 화면 (미리보기) — 풀아트 방향의 실장 시범.
@@ -101,6 +102,15 @@ export default function PixelIdleScreen({ state, bump, lastGain, concept }) {
           <Text style={ps.bannerStage}>{concept.terms.stage} {state.stage}
             {curDiff.id !== 'normal' ? <Text style={ps.diff}>  {curDiff.emoji}×{curDiff.rewardMult}</Text> : null}
           </Text>
+          {/* 본진 발전 단계 — 진행할수록 거점이 성장(소유의 만족감) */}
+          {(() => {
+            const vt = villageTier(state.peakStage || state.maxStage || 1);
+            return (
+              <Text style={ps.village}>{vt.emoji} 본진: {vt.label}
+                {vt.next ? <Text style={ps.villageDim}>  → {vt.next.label} {Math.round(vt.progress * 100)}%</Text> : <Text style={ps.villageDim}>  · 최종</Text>}
+              </Text>
+            );
+          })()}
         </Px>
       </View>
 
@@ -176,6 +186,8 @@ const ps = StyleSheet.create({
   bannerZone: { fontFamily: F, fontSize: 10, color: C.dim },
   bannerStage: { fontFamily: FB, fontSize: 20, color: C.gold, marginTop: 2 },
   diff: { fontFamily: FB, fontSize: 12, color: C.danger },
+  village: { fontFamily: F, fontSize: 10, color: C.goldL, marginTop: 3 },
+  villageDim: { fontFamily: F, fontSize: 10, color: C.dim },
 
   // 무대: 화면 중앙~하단(배경 바닥/마법진 위)에 발이 닿게 절대배치
   arena: { position: 'absolute', left: 0, right: 0, top: '40%', flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-around', paddingHorizontal: 6 },
