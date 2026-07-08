@@ -9,6 +9,8 @@ import {
   sweepDungeon, claimAllDaily,
 } from '../../system/core/daily.mjs';
 import { RELICS, relicUpgradeCost, upgradeRelic, relicCap } from '../../system/core/relics.mjs';
+import { EMBLEMS, emblemUpgradeCost, upgradeEmblem, emblemCap, emblemComplete, EMBLEM_COMPLETE_BONUS } from '../../system/core/emblems.mjs';
+import { GUARDIANS, guardianSummon, equipGuardian, unequipGuardian, guardianEffectLabel, GUARDIAN_SUMMON_COST, MAX_ACTIVE_GUARDIANS } from '../../system/core/guardians.mjs';
 import { PETS, petSummon, equipPet, unequipPet, petEffectLabel, MAX_ACTIVE_PETS, PET_PULL_COST,
   rerollPetOpt, petFuse, petFuseAvail, petOptLabel, PET_FUSE_COST,
   petShardSummon, SHARD_SUMMON_COST, autoFusePets } from '../../system/core/pets.mjs';
@@ -298,6 +300,60 @@ export default function ContentScreen({ state, bump, concept }) {
               </View>
               <Btn small kind="ghost" disabled={maxed} label={maxed ? 'MAX' : `강화 ×${mult} ${concept.resources.currency.emoji}${fmt(cost.currency)}`}
                 onPress={() => actN(() => upgradeRelic(state, r.id))} />
+            </View>
+          );
+        })}
+      </Card>
+
+      {/* 엠블럼(문장) — 다이아로 강화하는 계정 공유 버프 */}
+      <Card style={{ marginTop: 12 }}>
+        <View style={c.petHead}>
+          <Text style={c.sec}>엠블럼 <Text style={c.dim}>(문장 · 계정 공유)</Text></Text>
+          <MultiToggle value={mult} onChange={setMult} />
+        </View>
+        <Text style={c.sub}>{emblemComplete(state) ? `✨ 도감 완성 · 전투력 +${Math.round(EMBLEM_COMPLETE_BONUS * 100)}%` : '전 문장 1레벨↑ 수집 시 완성 보너스'}</Text>
+        {Object.values(EMBLEMS).map((e) => {
+          const lv = (state.emblems && state.emblems[e.id]) || 0;
+          const cost = emblemUpgradeCost(lv);
+          const eff = e.kind === 'power' ? '전투력' : e.kind === 'currency' ? `${concept.resources.currency.name} 수입` : `${concept.resources.growth.name} 수입`;
+          const cap = emblemCap(e.id);
+          const maxed = lv >= cap;
+          return (
+            <View key={e.id} style={c.dRow}>
+              <Text style={c.petEmoji}>{e.emoji}</Text>
+              <View style={{ flex: 1 }}>
+                <Text style={c.mLabel}>{e.label} <Text style={c.dim}>Lv.{lv}/{cap}</Text> <Text style={{ color: rarityMeta(e.rarity).color, fontWeight: '900', fontSize: 12 }}>{e.rarity}</Text></Text>
+                <Text style={c.mReward}>{eff} +{Math.round(e.per * lv * 100)}%{maxed ? ' (MAX)' : ` → +${Math.round(e.per * (lv + 1) * 100)}%`}</Text>
+              </View>
+              <Btn small kind="ghost" disabled={maxed} label={maxed ? 'MAX' : `강화 ×${mult} ${concept.resources.gem.emoji}${fmt(cost.gem)}`}
+                onPress={() => actN(() => upgradeEmblem(state, e.id))} />
+            </View>
+          );
+        })}
+      </Card>
+
+      {/* 정령/가디언 — 소환수(최대 3 장착) */}
+      <Card style={{ marginTop: 12, marginBottom: 24 }}>
+        <View style={c.petHead}>
+          <Text style={c.sec}>정령 <Text style={c.dim}>(장착 {state.guardians.active.length}/{MAX_ACTIVE_GUARDIANS})</Text></Text>
+        </View>
+        <Btn small kind="gold" label={`정령 소환 ${multLabel(mult)} ${concept.resources.gem.emoji}${mult === 'Max' ? '' : fmt(GUARDIAN_SUMMON_COST.gem * mult)}`}
+          disabled={(state.wallet.gem || 0) < GUARDIAN_SUMMON_COST.gem} onPress={() => actN(() => guardianSummon(state))} />
+        {Object.keys(state.guardians.owned).length === 0 && <Text style={c.sub}>보유 정령 없음 — 소환으로 획득하세요.</Text>}
+        {Object.entries(state.guardians.owned).map(([id, lv]) => {
+          const gd = GUARDIANS[id];
+          const active = state.guardians.active.includes(id);
+          const full = state.guardians.active.length >= MAX_ACTIVE_GUARDIANS;
+          return (
+            <View key={id} style={c.dRow}>
+              <Text style={c.petEmoji}>{gd.emoji}</Text>
+              <View style={{ flex: 1 }}>
+                <Text style={c.mLabel}>{gd.label} <Text style={c.dim}>Lv.{lv}</Text> <Text style={{ color: rarityMeta(gd.rarity).color, fontWeight: '900', fontSize: 12 }}>{gd.rarity}</Text></Text>
+                <Text style={c.mReward}>{guardianEffectLabel(gd.kind, concept)} +{Math.round(gd.per * lv * 100)}%</Text>
+              </View>
+              <Btn small kind={active ? 'ghost' : 'primary'} disabled={!active && full}
+                label={active ? '해제' : full ? '슬롯참' : '장착'}
+                onPress={() => act(() => (active ? unequipGuardian(state, id) : equipGuardian(state, id)))} />
             </View>
           );
         })}

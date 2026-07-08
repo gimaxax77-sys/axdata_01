@@ -21,6 +21,10 @@ function normalize(state) {
   state.wallet = { ...createWallet(), ...(state.wallet || {}) };
   state.gacha = state.gacha || { pity: 0 };
   state.relics = state.relics || {};
+  state.emblems = state.emblems || {};
+  state.guardians = state.guardians || { owned: {}, active: [] };
+  state.guardians.owned = state.guardians.owned || {};
+  state.guardians.active = state.guardians.active || [];
   state.pets = state.pets || { owned: {}, active: [] };
   state.pets.owned = state.pets.owned || {};
   state.pets.active = state.pets.active || [];

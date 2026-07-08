@@ -59,6 +59,8 @@ import { relicMods } from './relics.mjs';
 import { petMods } from './pets.mjs';
 import { rentalMods } from './rentals.mjs';
 import { summonMasteryPower } from './summonMastery.mjs';
+import { emblemMods } from './emblems.mjs';
+import { guardianMods } from './guardians.mjs';
 
 // 계정 단위 보정 = 환생(prestige) + 유물(relic) + 펫(pet) 합산.
 //   powerMult    : resolve()에 넘겨 전투력에 곱함
@@ -71,9 +73,11 @@ export function accountMods(state) {
   const pm = petMods(state);
   const rn = rentalMods(state);
   const sm = summonMasteryPower(state); // 소환 숙련도(홀수 레벨 능력치 보상)
+  const em = emblemMods(state); // 엠블럼(문장)
+  const gd = guardianMods(state); // 정령/가디언
   return {
-    powerMult: (1 + pr * BALANCE.prestigePowerBonus) * rm.power * pm.power * rn.power * sm,
-    currencyMult: income * rm.currency * pm.currency * rn.currency,
-    growthMult: income * rm.growth * pm.growth,
+    powerMult: (1 + pr * BALANCE.prestigePowerBonus) * rm.power * pm.power * rn.power * sm * em.power * gd.power,
+    currencyMult: income * rm.currency * pm.currency * rn.currency * em.currency * gd.currency,
+    growthMult: income * rm.growth * pm.growth * em.growth * gd.growth,
   };
 }
