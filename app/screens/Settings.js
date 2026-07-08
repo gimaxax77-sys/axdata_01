@@ -28,7 +28,7 @@ async function copyText(str) {
   return false;
 }
 
-export function SettingsModal({ visible, settings, onChange, onReset, onClose, onExport, onImport, onOpenAdmin }) {
+export function SettingsModal({ visible, settings, onChange, onReset, onClose, onExport, onImport, onOpenAdmin, cloud, onSync, onSignOut }) {
   const [code, setCode] = useState('');
   const [msg, setMsg] = useState('');
 
@@ -69,6 +69,19 @@ export function SettingsModal({ visible, settings, onChange, onReset, onClose, o
               })}
             </View>
           </View>
+
+          {/* 클라우드 세이브 (Phase 1) */}
+          {cloud && cloud.available && (<>
+            <View style={c.divider} />
+            <Text style={c.sec}>☁️ 클라우드 세이브</Text>
+            <Text style={c.note}>
+              {cloud.user ? `로그인됨 · ${cloud.status === 'syncing' ? '동기화 중…' : (cloud.msg || '동기화 완료')}` : '기기 밖에 진행을 백업합니다. 로그인 후 자동 동기화됩니다.'}
+            </Text>
+            <View style={c.transferRow}>
+              <View style={{ flex: 1 }}><Btn small kind="gold" label={cloud.user ? '지금 동기화' : '클라우드 로그인'} onPress={onSync} /></View>
+              {cloud.user && <View style={{ flex: 1 }}><Btn small kind="ghost" label="로그아웃" onPress={onSignOut} /></View>}
+            </View>
+          </>)}
 
           {/* 세이브 이관 */}
           <View style={c.divider} />

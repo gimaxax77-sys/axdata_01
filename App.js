@@ -186,6 +186,9 @@ function AppInner() {
         onExport={game.exportSave}
         onImport={game.importSave}
         onOpenAdmin={() => { setSettingsOpen(false); setAdminOpen(true); }}
+        cloud={game.cloud}
+        onSync={game.syncNow}
+        onSignOut={game.signOutCloud}
       />
 
       {/* 운영자 조작 패널 */}

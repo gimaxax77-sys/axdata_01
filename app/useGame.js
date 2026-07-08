@@ -8,6 +8,9 @@ import { idleGenre } from '../system/genres/idle.mjs';
 import { serialize, deserialize, exportCode, importCode } from '../system/core/save.mjs';
 import { applyOverrides } from '../system/core/admin.mjs';
 import { hasPremium } from '../system/core/cosmetics.mjs';
+import { cloudAvailable, cloudUser, cloudSignIn, cloudSignOut, cloudPull, cloudPush } from './backend/cloud';
+import { chooseSave, makeEnvelope, saveProgress } from './backend/sync.mjs';
+import { SAVE_VERSION } from '../system/core/save.mjs';
 import { fantasyConcept } from '../system/concepts/fantasy.mjs';
 import { CONCEPTS } from '../system/concepts/index.mjs';
 import { loadRawSync, loadRawAsync, saveRaw, clearSave, saveBackup, loadBackupSync, loadBackupAsync } from './storage';
@@ -177,7 +180,52 @@ export function useGame() {
     return true;
   }, [bump, save]);
 
-  return { state: ref.current, rev, bump, lastGain, offline, dismissOffline, claimOfflineBonus, reset, save, exportSave, importSave, concept: CONCEPT };
+  // ── 클라우드 세이브(Phase 1) — 미설정이면 전부 no-op(로컬 전용) ──
+  const [cloud, setCloud] = useState({ available: cloudAvailable(), user: cloudUser(), status: 'idle', msg: null });
+  const envOf = useCallback(() => makeEnvelope({
+    blob: serialize(ref.current), version: SAVE_VERSION, progress: saveProgress(ref.current),
+  }), []);
+  // 수동/자동 동기화: 로그인 → 원격 pull → 충돌 해결 → 채택 또는 push.
+  const syncNow = useCallback(async () => {
+    if (!cloudAvailable()) { setCloud((c) => ({ ...c, available: false, msg: '클라우드 미설정' })); return { ok: false }; }
+    setCloud((c) => ({ ...c, status: 'syncing', msg: null }));
+    let u = cloudUser();
+    if (!u) { const r = await cloudSignIn(); if (!r.ok) { setCloud((c) => ({ ...c, status: 'error', msg: r.reason || '로그인 실패' })); return { ok: false }; } u = cloudUser(); }
+    const remote = await cloudPull();
+    const local = envOf();
+    const pick = chooseSave(local, remote);
+    if (pick.pick === 'remote') {
+      const loaded = deserialize(remote.blob);
+      if (loaded) { ref.current = loaded; applyOverrides(ref.current.admin && ref.current.admin.overrides); save(); saveBackup(remote.blob); bump(); }
+      setCloud((c) => ({ ...c, status: 'ok', user: u, msg: '원격 진행 불러옴' }));
+    } else {
+      await cloudPush(local);
+      setCloud((c) => ({ ...c, status: 'ok', user: u, msg: '클라우드 저장됨' }));
+    }
+    return { ok: true, pick: pick.pick };
+  }, [envOf, save, bump]);
+  const signOutCloud = useCallback(async () => { await cloudSignOut(); setCloud((c) => ({ ...c, user: null, status: 'idle', msg: '로그아웃' })); }, []);
+
+  // 하이드레이트 완료 후 1회 자동 동기화(설정된 경우만).
+  const didSync = useRef(false);
+  useEffect(() => {
+    if (!hydrated || didSync.current || !cloudAvailable()) return;
+    didSync.current = true;
+    syncNow();
+  }, [hydrated, syncNow]);
+
+  // 주기적 원격 백업(60초) — 로그인된 경우만. 비용·쿼터를 위해 저빈도.
+  useEffect(() => {
+    if (!cloudAvailable()) return;
+    const id = setInterval(() => { if (cloudUser()) cloudPush(envOf()); }, 60000);
+    return () => clearInterval(id);
+  }, [envOf]);
+
+  return {
+    state: ref.current, rev, bump, lastGain, offline, dismissOffline, claimOfflineBonus,
+    reset, save, exportSave, importSave, concept: CONCEPT,
+    cloud, syncNow, signOutCloud,
+  };
 }
 
 // 파티 최고 유닛의 "실효 전투력"(환생 배수 포함)

@@ -1,0 +1,12 @@
+rules_version = '2';
+// Firestore 보안 규칙 — 본인 문서만 read/write. (Firebase 콘솔 또는 CLI로 배포)
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // 유저 세이브: 로그인한 본인(uid)만 접근
+    match /users/{uid} {
+      allow read, write: if request.auth != null && request.auth.uid == uid;
+    }
+    // 리더보드(Phase 2) 등 공개 읽기 전용 컬렉션은 별도 규칙으로 추가
+    // match /leaderboards/{doc} { allow read: if true; allow write: if false; }
+  }
+}
