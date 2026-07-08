@@ -89,6 +89,10 @@ function normalize(state) {
     const m = state.summonMastery[bn] || {};
     state.summonMastery[bn] = { count: m.count || 0, claimed: m.claimed || 0 };
   }
+  state.costumes = state.costumes || { owned: {} };
+  state.costumes.owned = state.costumes.owned || {};
+  state.vip = state.vip || { spend: 0 };
+  state.vip.spend = state.vip.spend || 0;
   state.stage = state.stage || 1;
   state.difficulty = state.difficulty || 'normal';
   state.maxStage = state.maxStage || 1;
@@ -118,6 +122,7 @@ function normalize(state) {
     if (u.intimacy === undefined) u.intimacy = 0;
     if (u.costume === undefined) u.costume = null;
     if (!u.costumeBonus) u.costumeBonus = {};
+    if (u.skin === undefined) u.skin = null;
     if (!u.sigWeapon) u.sigWeapon = { level: 0 };
     if (u.sigAwaken === undefined) u.sigAwaken = 0;
     if (!u.runes) u.runes = [null, null, null];

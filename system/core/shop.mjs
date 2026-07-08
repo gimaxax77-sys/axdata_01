@@ -91,5 +91,8 @@ export function purchase(state, id, now = Date.now()) {
   state.shop = state.shop || { purchased: {} };
   if (p.once) state.shop.purchased[id] = true;
   if (p.premium) grantPremium(state); // 광고제거 패스 활성화
+  // 과금 등급(VIP) — 누적 결제액 적립(코스튬 해금용). krw 문자열에서 숫자만 추출.
+  const krw = parseInt(String(p.krw || '').replace(/[^0-9]/g, ''), 10) || 0;
+  if (krw) { state.vip = state.vip || { spend: 0 }; state.vip.spend += krw; }
   return { ok: true, grant: g, mock: true, premium: !!p.premium };
 }

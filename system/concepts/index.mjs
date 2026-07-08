@@ -1,6 +1,7 @@
 import { fantasyConcept } from './fantasy.mjs';
 import { scifiConcept } from './scifi.mjs';
 import { intimacyLevel } from '../core/intimacy.mjs';
+import { COSTUMES } from '../core/costumes.mjs';
 
 export const CONCEPTS = { fantasy: fantasyConcept, scifi: scifiConcept };
 
@@ -12,15 +13,19 @@ export function characterOf(concept, id) {
 // 유닛의 표시 정체성: 캐릭터가 있으면 이름/이모지/칭호/성격, 없으면 원형 fallback.
 export function identity(concept, unit) {
   const ch = unit.characterId && characterOf(concept, unit.characterId);
+  // 외형 우선순위: 코스튬 스킨(unit.skin) > 레거시 컨셉 코스튬 > 기본
+  const skin = unit.skin && COSTUMES[unit.skin];
   if (ch) {
-    // 코스튬 장착 시 외형(이모지) 교체
     let emoji = ch.emoji;
-    const cos = concept.costumes && concept.costumes[unit.characterId];
-    if (unit.costume && cos && cos.id === unit.costume) emoji = cos.emoji;
+    if (skin) emoji = skin.emoji;
+    else {
+      const cos = concept.costumes && concept.costumes[unit.characterId];
+      if (unit.costume && cos && cos.id === unit.costume) emoji = cos.emoji;
+    }
     return { name: ch.name, emoji, title: ch.title, personality: ch.personality, element: ch.element };
   }
   const a = concept.archetypes[unit.archetype];
-  return { name: a.name, emoji: a.emoji, title: null, personality: null, element: unit.element || null };
+  return { name: a.name, emoji: skin ? skin.emoji : a.emoji, title: null, personality: null, element: unit.element || null };
 }
 
 // 유닛의 코스튬 목록 (해금 여부 포함).

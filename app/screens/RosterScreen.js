@@ -25,7 +25,8 @@ import { optimizeLoadout } from '../../system/core/loadout.mjs';
 import { recordMission } from '../../system/core/daily.mjs';
 import { intimacyLevel, intimacyProgress, giftCost, giveGift, INTIMACY_MAX } from '../../system/core/intimacy.mjs';
 import { seedConditions, seedProgress } from '../../system/core/seed.mjs';
-import { linesOf, costumesOf, equipCostume, unequipCostume, sigWeaponOf } from '../../system/concepts/index.mjs';
+import { linesOf, sigWeaponOf } from '../../system/concepts/index.mjs';
+import { costumesFor, equipCostume as equipSkin, unequipCostume as unequipSkin, refreshCostumeUnlocks, SOURCE_LABEL } from '../../system/core/costumes.mjs';
 import {
   hasSigWeapon, canOwnSigWeapon, unlockSigWeapon, enhanceSigWeapon,
   sigWeaponUnlockCost, sigWeaponEnhanceCost, sigWeaponBoost, SIGWEAPON_MAX,
@@ -43,6 +44,20 @@ const GEAR_CATS = [
   { cat: 'accessory', label: '장신구' },
   { cat: 'mount', label: '탈것' },
 ];
+
+// 코스튬 미보유 시 획득 조건 안내.
+function costumeNeedText(cos, concept) {
+  const n = cos.need || {};
+  if (cos.source === 'summon') return '코스튬 소환으로 획득';
+  if (cos.source === 'quest') return `스토리 ${n.campaign}챕터 클리어`;
+  if (cos.source === 'vip') return `과금 등급 VIP ${n.vip}`;
+  if (cos.source === 'power') return `영웅 전투력 ${fmt(n.power)}`;
+  if (cos.source === 'element') {
+    const em = elementMeta(concept, n.element);
+    return `${em?.emoji || ''}${em?.name || n.element} 속성 전투력 ${fmt(n.power)}`;
+  }
+  return SOURCE_LABEL[cos.source] || cos.source;
+}
 
 // 효과 객체 → 사람이 읽는 문자열 (scale = 스킬 레벨/랭크 배수)
 function describeEffect(e = {}, scale = 1) {
@@ -149,6 +164,7 @@ export default function RosterScreen({ state, bump, concept }) {
     else { const gitem = { rep: u, count: 1 }; seen.set(key, gitem); grouped.push(gitem); }
   }
   const inParty = state.party.includes(unit.uid);
+  refreshCostumeUnlocks(state); // 조건 충족 코스튬 자동 지급(퀘스트/VIP/전투력)
 
   const act = (fn) => { fn(); bump(); };
   // 성장 액션은 일일 미션(강화) 진행에 카운트. mult 배수만큼 반복 실행.
@@ -359,24 +375,25 @@ export default function RosterScreen({ state, bump, concept }) {
         </Card>
       )}
 
-      {/* 코스튬 — 외형 변경 + 소량 보너스 (친밀도로 해금) */}
-      {costumesOf(concept, unit).length > 0 && (
-        <Card style={{ marginTop: 12 }}>
-          <Text style={g.sec}>코스튬</Text>
-          {costumesOf(concept, unit).map((cos) => (
+      {/* 코스튬(스킨) — 캐릭터 외형 변경. 순수 외형(능력치 무관) */}
+      <Card style={{ marginTop: 12 }}>
+        <Text style={g.sec}>코스튬 <Text style={g.dim}>(외형 · 능력치 무관)</Text></Text>
+        {costumesFor(state, unit).map((cos) => {
+          const needTxt = costumeNeedText(cos, concept);
+          return (
             <View key={cos.id} style={g.slotRow}>
-              <Text style={g.cosEmoji}>{cos.unlocked ? cos.emoji : '🔒'}</Text>
+              <Text style={g.cosEmoji}>{cos.owned ? cos.emoji : '🔒'}</Text>
               <View style={{ flex: 1 }}>
-                <Text style={g.slotName}>{cos.name}</Text>
-                <Text style={g.slotDesc}>전 스탯 +{Math.round((cos.bonus.atk || 0) * 100)}%{cos.unlocked ? '' : ` · 친밀도 Lv.${cos.unlock} 필요`}</Text>
+                <Text style={g.slotName}>{cos.label} <Text style={{ color: rarityColor(cos.rarity), fontWeight: '900', fontSize: 12 }}>{cos.rarity}</Text>{cos.char ? <Text style={g.dim}>  전용</Text> : null}</Text>
+                <Text style={g.slotDesc}>{cos.owned ? `획득: ${cos.sourceLabel}` : `🔒 ${needTxt}`}</Text>
               </View>
-              <Btn small kind={cos.equipped ? 'ghost' : 'gold'} disabled={!cos.unlocked}
-                label={cos.equipped ? '해제' : cos.unlocked ? '장착' : '잠김'}
-                onPress={() => act(() => (cos.equipped ? unequipCostume(unit) : equipCostume(concept, unit, cos.id)))} />
+              <Btn small kind={cos.equipped ? 'ghost' : cos.owned ? 'gold' : 'ghost'} disabled={!cos.owned}
+                label={cos.equipped ? '해제' : cos.owned ? '장착' : '미보유'}
+                onPress={() => act(() => (cos.equipped ? unequipSkin(unit) : equipSkin(state, unit, cos.id)))} />
             </View>
-          ))}
-        </Card>
-      )}
+          );
+        })}
+      </Card>
 
       {!heavy && <Text style={g.loadingHint}>불러오는 중…</Text>}
 

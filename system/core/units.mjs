@@ -24,8 +24,9 @@ export function createUnit(archetype, { level = 1, rank = 1, characterId = null,
     signature, // 전용 스킬 id (항상 발동). null 가능.
     element, // 속성 ID (FIRE/WATER/…). null 가능.
     intimacy: 0, // 친밀도 포인트 (선물로 상승)
-    costume: null, // 장착 코스튬 id (Concept가 정의). null = 기본
-    costumeBonus: {}, // 장착 코스튬의 statPct (장착 시 Concept가 세팅)
+    costume: null, // (레거시) 컨셉 코스튬 id. null = 기본
+    costumeBonus: {}, // (레거시) 컨셉 코스튬 statPct
+    skin: null, // 장착 코스튬(스킨) id — 순수 외형(core costumes.mjs). null = 기본
     sigWeapon: { level: 0 }, // 전용무기 (0 = 미획득)
     sigAwaken: 0, // 시그니처 각성 레벨
     runes: [null, null, null], // 룬 슬롯 (각 원소는 null 또는 룬 인스턴스)

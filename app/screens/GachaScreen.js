@@ -99,8 +99,9 @@ export default function GachaScreen({ state, bump, concept }) {
     }
     if (banner === 'cosmetic') {
       const r = summonCosmetic(state); if (!r.ok) return { cell: null, spent: false };
-      if (r.duplicate) { setMsg(`모든 외형 보유 · ${gemE}${r.refund.gem} 환급`); return { cell: null, spent: true }; }
-      return { cell: { rarity: 'SSR', emoji: r.item.emoji, name: r.item.label }, spent: true };
+      if (r.duplicate) { setMsg(`모든 코스튬 보유 · ${gemE}${r.refund.gem} 환급`); return { cell: null, spent: true }; }
+      setMsg('캐릭터 탭 › 코스튬에서 장착하세요');
+      return { cell: { rarity: r.item.rarity || 'SSR', emoji: r.item.emoji, name: r.item.label }, spent: true };
     }
     return { cell: null, spent: false }; // hero handled separately
   }

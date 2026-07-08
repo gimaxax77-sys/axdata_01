@@ -47,6 +47,8 @@ export function createGameState({ units = [], party = [] } = {}) {
     profile: { name: '조련사', avatarUid: null, frame: 'none', title: 'none', premium: false, owned: { frame: {}, title: {} } },
     // 소환 숙련도 — 배너별 누적 소환 횟수·청구 레벨 (최대 15)
     summonMastery: { hero: { count: 0, claimed: 0 }, pet: { count: 0, claimed: 0 }, gear: { count: 0, claimed: 0 }, rune: { count: 0, claimed: 0 }, cosmetic: { count: 0, claimed: 0 } },
+    costumes: { owned: {} }, // 캐릭터 코스튬(스킨) 보유 — 능력치 무관 순수 외형
+    vip: { spend: 0 },       // 누적 결제액(원) — 과금 등급(VIP) 코스튬 해금용
   };
 }
 

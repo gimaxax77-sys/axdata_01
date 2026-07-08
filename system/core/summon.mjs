@@ -1,7 +1,7 @@
 import { spend, earn } from './economy.mjs';
 import { dropGear, GEAR_CATALOG } from './gear.mjs';
 import { dropRune } from './runes.mjs';
-import { PROFILE_FRAMES, PROFILE_TITLES, ownsCosmetic, grantCosmetic } from './cosmetics.mjs';
+import { summonCostumePool, grantCostume } from './costumes.mjs';
 
 // ─────────────────────────────────────────────────────────────
 // 통합 소환 — 영웅 외 자원도 "뽑기"로 제공하는 파밍 경로.
@@ -33,21 +33,15 @@ export function summonRune(state, rng = Math.random) {
   return { ok: true, kind: 'rune', rune: r.rune, rarity: r.rarity };
 }
 
-// 코스튬(외형) 소환 — 미보유 프레임/칭호 무작위 지급. 전부 보유 시 다이아 일부 환급.
+// 코스튬(캐릭터 스킨) 소환 — 미보유 소환 코스튬 무작위 지급. 전부 보유 시 다이아 일부 환급.
 export function summonCosmetic(state, rng = Math.random) {
   if (!spend(state.wallet, COSTUME_PULL_COST)) return { ok: false, reason: '다이아 부족', cost: COSTUME_PULL_COST };
-  const pool = [];
-  for (const f of Object.values(PROFILE_FRAMES)) {
-    if (f.cost && !ownsCosmetic(state, 'frame', f.id)) pool.push({ kind: 'frame', id: f.id, label: f.label, emoji: f.emoji });
-  }
-  for (const t of Object.values(PROFILE_TITLES)) {
-    if (t.cost && !ownsCosmetic(state, 'title', t.id)) pool.push({ kind: 'title', id: t.id, label: t.label, emoji: '🎖️' });
-  }
+  const pool = summonCostumePool(state);
   if (!pool.length) {
     earn(state.wallet, COSTUME_DUP_REFUND);
-    return { ok: true, kind: 'cosmetic', duplicate: true, refund: COSTUME_DUP_REFUND };
+    return { ok: true, kind: 'costume', duplicate: true, refund: COSTUME_DUP_REFUND };
   }
   const pick = pool[Math.floor(rng() * pool.length)];
-  grantCosmetic(state, pick.kind, pick.id);
-  return { ok: true, kind: 'cosmetic', item: pick };
+  grantCostume(state, pick.id);
+  return { ok: true, kind: 'costume', item: { id: pick.id, label: pick.label, emoji: pick.emoji, rarity: pick.rarity } };
 }
