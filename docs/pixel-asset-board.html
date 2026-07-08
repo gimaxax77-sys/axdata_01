@@ -7,222 +7,215 @@
 <style>
   :root{
     --bg:#f4f2fb; --surface:#ffffff; --line:#d9d3ee; --ink:#221a3e; --dim:#6b6190;
-    --accent:#b8890c; --accentSoft:#8a6a12; --violet:#6a4fd0;
-    --free:#1f9d57; --paid:#b8760c; --cc0:#2b8fd0;
+    --accent:#b8890c; --violet:#6a4fd0;
+    --free:#1f9d57; --paid:#b8760c; --cc0:#2b8fd0; --warn:#c23b52;
     --shadow:0 1px 0 rgba(34,26,62,.04), 0 8px 24px rgba(60,40,120,.07);
     --mono:ui-monospace,"SFMono-Regular",Menlo,Consolas,monospace;
     --sans:system-ui,-apple-system,"Segoe UI",Roboto,"Apple SD Gothic Neo","Noto Sans KR",sans-serif;
   }
   @media (prefers-color-scheme:dark){
-    :root{
-      --bg:#100c22; --surface:#1a1536; --line:#332a5e; --ink:#eae6fb; --dim:#a99fce;
-      --accent:#f5c542; --accentSoft:#ffe27a; --violet:#b4a0ff;
-      --free:#5fe08a; --paid:#f5c542; --cc0:#7ad0ff;
-      --shadow:0 1px 0 rgba(0,0,0,.3), 0 10px 30px rgba(0,0,0,.4);
-    }
+    :root{--bg:#100c22;--surface:#1a1536;--line:#332a5e;--ink:#eae6fb;--dim:#a99fce;
+      --accent:#f5c542;--violet:#b4a0ff;--free:#5fe08a;--paid:#f5c542;--cc0:#7ad0ff;--warn:#ff7a90;
+      --shadow:0 1px 0 rgba(0,0,0,.3), 0 10px 30px rgba(0,0,0,.4);}
   }
-  :root[data-theme="light"]{
-    --bg:#f4f2fb; --surface:#ffffff; --line:#d9d3ee; --ink:#221a3e; --dim:#6b6190;
-    --accent:#b8890c; --accentSoft:#8a6a12; --violet:#6a4fd0;
-    --free:#1f9d57; --paid:#b8760c; --cc0:#2b8fd0;
-    --shadow:0 1px 0 rgba(34,26,62,.04), 0 8px 24px rgba(60,40,120,.07);
-  }
-  :root[data-theme="dark"]{
-    --bg:#100c22; --surface:#1a1536; --line:#332a5e; --ink:#eae6fb; --dim:#a99fce;
-    --accent:#f5c542; --accentSoft:#ffe27a; --violet:#b4a0ff;
-    --free:#5fe08a; --paid:#f5c542; --cc0:#7ad0ff;
-    --shadow:0 1px 0 rgba(0,0,0,.3), 0 10px 30px rgba(0,0,0,.4);
-  }
+  :root[data-theme="light"]{--bg:#f4f2fb;--surface:#ffffff;--line:#d9d3ee;--ink:#221a3e;--dim:#6b6190;
+    --accent:#b8890c;--violet:#6a4fd0;--free:#1f9d57;--paid:#b8760c;--cc0:#2b8fd0;--warn:#c23b52;
+    --shadow:0 1px 0 rgba(34,26,62,.04), 0 8px 24px rgba(60,40,120,.07);}
+  :root[data-theme="dark"]{--bg:#100c22;--surface:#1a1536;--line:#332a5e;--ink:#eae6fb;--dim:#a99fce;
+    --accent:#f5c542;--violet:#b4a0ff;--free:#5fe08a;--paid:#f5c542;--cc0:#7ad0ff;--warn:#ff7a90;
+    --shadow:0 1px 0 rgba(0,0,0,.3), 0 10px 30px rgba(0,0,0,.4);}
   *{box-sizing:border-box}
-  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);line-height:1.5;
-    -webkit-font-smoothing:antialiased}
-  .wrap{max-width:1080px;margin:0 auto;padding:40px 20px 80px}
-  header.hd{border:2px solid var(--line);border-radius:6px;background:var(--surface);
-    padding:26px 26px 22px;box-shadow:var(--shadow);position:relative;overflow:hidden}
-  header.hd::before{content:"";position:absolute;inset:0 auto 0 0;width:5px;
-    background:linear-gradient(var(--accent),var(--violet))}
-  .kicker{font-family:var(--mono);font-size:12px;letter-spacing:.18em;text-transform:uppercase;
-    color:var(--accent);font-weight:700}
-  h1{font-size:clamp(26px,4.5vw,40px);margin:.28em 0 .1em;line-height:1.08;text-wrap:balance;letter-spacing:-.01em}
-  .sub{color:var(--dim);font-size:15px;max-width:60ch}
-  .legend{display:flex;flex-wrap:wrap;gap:8px 16px;margin-top:16px;font-size:12.5px;color:var(--dim);
-    font-family:var(--mono)}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);line-height:1.5;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:1080px;margin:0 auto;padding:36px 20px 80px}
+  header.hd{border:2px solid var(--line);border-radius:6px;background:var(--surface);padding:24px 24px 20px;box-shadow:var(--shadow);position:relative;overflow:hidden}
+  header.hd::before{content:"";position:absolute;inset:0 auto 0 0;width:5px;background:linear-gradient(var(--accent),var(--violet))}
+  .kicker{font-family:var(--mono);font-size:12px;letter-spacing:.18em;text-transform:uppercase;color:var(--accent);font-weight:700}
+  h1{font-size:clamp(24px,4.2vw,36px);margin:.28em 0 .1em;line-height:1.08;text-wrap:balance;letter-spacing:-.01em}
+  .sub{color:var(--dim);font-size:15px;max-width:62ch}
+  .legend{display:flex;flex-wrap:wrap;gap:8px 14px;margin-top:16px;font-size:12.5px;color:var(--dim);font-family:var(--mono)}
   .legend b{display:inline-flex;align-items:center;gap:6px;font-weight:500;color:var(--ink)}
-  .chip{font-family:var(--mono);font-size:11px;font-weight:700;padding:2px 8px;border-radius:3px;
-    border:1px solid;letter-spacing:.03em;white-space:nowrap}
-  .c-free{color:var(--free);border-color:var(--free)}
-  .c-cc0{color:var(--cc0);border-color:var(--cc0)}
-  .c-paid{color:var(--paid);border-color:var(--paid)}
-  .c-com{color:var(--violet);border-color:var(--violet)}
+  .chip{font-family:var(--mono);font-size:11px;font-weight:700;padding:2px 8px;border-radius:3px;border:1px solid;letter-spacing:.03em;white-space:nowrap}
+  .c-free{color:var(--free);border-color:var(--free)} .c-cc0{color:var(--cc0);border-color:var(--cc0)}
+  .c-paid{color:var(--paid);border-color:var(--paid)} .c-com{color:var(--violet);border-color:var(--violet)}
+  .res{font-family:var(--mono);font-size:10.5px;font-weight:700;color:var(--dim);border:1px dashed var(--line);border-radius:3px;padding:1px 6px}
 
-  h2.sec{font-size:13px;font-family:var(--mono);text-transform:uppercase;letter-spacing:.16em;
-    color:var(--dim);margin:44px 0 4px;display:flex;align-items:center;gap:10px}
-  h2.sec .no{color:var(--accent);font-weight:700}
-  h2.sec::after{content:"";flex:1;height:1px;background:var(--line)}
+  .callout{border:2px solid var(--line);border-radius:6px;background:var(--surface);padding:16px 18px;margin-top:16px;box-shadow:var(--shadow)}
+  .callout.rec{border-color:var(--accent)} .callout.warn{border-color:var(--warn)}
+  .callout h3{margin:0 0 8px;font-size:15px;display:flex;align-items:center;gap:8px}
+  .callout.warn h3{color:var(--warn)}
+  .callout ul{margin:6px 0 0;padding-left:18px;font-size:13.5px} .callout li{margin:3px 0}
+  .callout .set{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;margin-top:10px}
+  .callout .set div{font-size:13px} .callout .set b{display:block;font-family:var(--mono);font-size:10.5px;color:var(--dim);text-transform:uppercase;letter-spacing:.06em}
+
+  h2.sec{font-size:13px;font-family:var(--mono);text-transform:uppercase;letter-spacing:.14em;color:var(--dim);margin:40px 0 4px;display:flex;align-items:center;gap:10px}
+  h2.sec .no{color:var(--accent);font-weight:700} h2.sec::after{content:"";flex:1;height:1px;background:var(--line)}
   .catnote{color:var(--dim);font-size:13.5px;margin:6px 0 16px}
   .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px}
-  a.card{display:flex;flex-direction:column;gap:8px;text-decoration:none;color:inherit;
-    background:var(--surface);border:2px solid var(--line);border-radius:6px;padding:15px 16px;
-    box-shadow:var(--shadow);transition:transform .12s ease,border-color .12s ease}
+  a.card{display:flex;flex-direction:column;gap:8px;text-decoration:none;color:inherit;background:var(--surface);border:2px solid var(--line);border-radius:6px;padding:15px 16px;box-shadow:var(--shadow);transition:transform .12s ease,border-color .12s ease}
   a.card:hover{transform:translateY(-2px);border-color:var(--accent)}
   a.card:focus-visible{outline:3px solid var(--violet);outline-offset:2px}
   .card .row1{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
   .card .name{font-weight:800;font-size:16px;letter-spacing:-.01em}
   .card .by{font-family:var(--mono);font-size:12px;color:var(--dim);margin-top:1px}
-  .card .desc{font-size:13.5px;color:var(--ink);opacity:.9}
-  .card .url{font-family:var(--mono);font-size:11.5px;color:var(--violet);word-break:break-all;
-    margin-top:auto;padding-top:4px;border-top:1px dashed var(--line);display:flex;align-items:center;gap:6px}
+  .card .tags{display:flex;gap:5px;flex-wrap:wrap;align-items:center;justify-content:flex-end}
+  .card .desc{font-size:13.5px;opacity:.92}
+  .card .url{font-family:var(--mono);font-size:11.5px;color:var(--violet);word-break:break-all;margin-top:auto;padding-top:4px;border-top:1px dashed var(--line);display:flex;align-items:center;gap:6px}
   .card .url::before{content:"↗";font-weight:700}
 
-  table.concepts{width:100%;border-collapse:collapse;font-size:14px;margin-top:4px}
-  table.concepts th,table.concepts td{text-align:left;padding:10px 12px;border-bottom:1px solid var(--line);vertical-align:top}
-  table.concepts th{font-family:var(--mono);font-size:11.5px;text-transform:uppercase;letter-spacing:.1em;color:var(--dim);font-weight:600}
-  table.concepts td.cn{font-weight:800;white-space:nowrap}
-  table.concepts td .tag{font-family:var(--mono);font-size:11px;color:var(--accent)}
-  table.concepts a{color:var(--violet);text-decoration:none;font-family:var(--mono);font-size:12px;border-bottom:1px dotted}
+  table.tb{width:100%;border-collapse:collapse;font-size:14px;margin-top:4px}
+  table.tb th,table.tb td{text-align:left;padding:10px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+  table.tb th{font-family:var(--mono);font-size:11.5px;text-transform:uppercase;letter-spacing:.1em;color:var(--dim);font-weight:600}
+  table.tb td.cn{font-weight:800;white-space:nowrap} table.tb td .tag{font-family:var(--mono);font-size:11px;color:var(--accent)}
+  table.tb a{color:var(--violet);text-decoration:none;font-family:var(--mono);font-size:12px;border-bottom:1px dotted}
   .scroller{overflow-x:auto}
-  .starter{background:var(--surface);border:2px solid var(--accent);border-radius:6px;padding:18px 20px;
-    margin-top:16px;box-shadow:var(--shadow)}
-  .starter h3{margin:0 0 4px;font-size:16px}
-  .starter .set{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;margin-top:12px}
-  .starter .set div{font-size:13px}
-  .starter .set b{display:block;font-family:var(--mono);font-size:11px;color:var(--dim);text-transform:uppercase;letter-spacing:.08em}
-  footer{margin-top:48px;color:var(--dim);font-size:12.5px;font-family:var(--mono);text-align:center}
+  footer{margin-top:44px;color:var(--dim);font-size:12.5px;font-family:var(--mono);text-align:center}
   @media (prefers-reduced-motion:reduce){a.card{transition:none}}
 </style>
-
 </head>
 <body>
 <div class="wrap">
   <header class="hd">
-    <div class="kicker">Eldria · Pixel Direction</div>
+    <div class="kicker">Eldria · Pixel Direction v2</div>
     <h1>픽셀 에셋 &amp; 컨셉 보드</h1>
-    <p class="sub">코어 시스템(수집·오토배틀·방치)을 그대로 두고 갈아끼울 픽셀 에셋과, 같은 엔진으로 만들 수 있는 컨셉·장르를 한 곳에. 카드를 누르면 해당 페이지로 바로 이동합니다.</p>
+    <p class="sub">해상도·편집성·라이선스를 정리한 최신판. 코어(수집·오토배틀·방치)는 그대로 두고 아트만 갈아끼웁니다. 카드를 누르면 해당 페이지로 이동합니다.</p>
     <div class="legend">
-      <b><span class="chip c-cc0">CC0</span> 저작권 없음·표기 불요</b>
-      <b><span class="chip c-free">FREE</span> 무료·상업 허용</b>
-      <b><span class="chip c-com">상업</span> 상업 허용(구매/조건)</b>
-      <b><span class="chip c-paid">유료</span> 구매 필요</b>
+      <b><span class="chip c-cc0">CC0</span> 저작권 없음</b>
+      <b><span class="chip c-free">FREE</span> 무료·상업</b>
+      <b><span class="chip c-com">상업</span> 상업 허용</b>
+      <b><span class="chip c-paid">유료</span> 구매</b>
+      <b><span class="res">64/128</span> 해상도</b>
     </div>
   </header>
 
-  <div id="assets"></div>
-
-  <h2 class="sec"><span class="no">◇</span> 코어로 만들 수 있는 컨셉 · 장르</h2>
-  <p class="catnote">엔진(<code>system/core</code>)은 사실상 <b>수집형 오토배틀 + 방치/환생 엔진</b>입니다. 로스터·테마·아트만 바꾸면 아래 컨셉으로 리스킨되고(엔진 무변경), 판정 노출 방식을 바꾸면 장르도 확장됩니다.</p>
-  <div class="scroller">
-    <table class="concepts" id="concepts"></table>
-  </div>
-
-  <h2 class="sec"><span class="no">◇</span> 장르 확장 (코어 재사용)</h2>
-  <div class="scroller">
-    <table class="concepts" id="genres"></table>
-  </div>
-
-  <div class="starter">
-    <h3>⚑ 추천 시작 세트 <span style="font-weight:400;color:var(--dim);font-size:13px">— 스타일 통일 · 솔로 현실안</span></h3>
+  <div class="callout rec">
+    <h3>⚑ 추천 세트 <span style="font-weight:400;color:var(--dim);font-size:13px">— 고해상 · 크게 띄우기 · 수정 용이</span></h3>
     <div class="set">
-      <div><b>캐릭터</b>Beowulf 144종</div>
+      <div><b>초상</b>indieartifex 700+ (다중팔레트)</div>
+      <div><b>배틀러</b>Beowulf 144 (64/128/256)</div>
+      <div><b>몬스터</b>Cyangmou 50</div>
       <div><b>UI</b>Pixel UI Kit(다크+골드)</div>
+      <div><b>아이콘</b>Clockwork Raven</div>
       <div><b>배경</b>0x72 Dungeon (CC0)</div>
-      <div><b>아이콘</b>Cainos (무료)</div>
       <div><b>이펙트</b>CodeManu (무료)</div>
       <div><b>폰트</b>Galmuri ✓ 적용됨</div>
     </div>
   </div>
 
-  <footer>다운로드는 itch.io 로그인 필요 · 선정=Claude, 통합=Claude · 라이선스는 각 페이지에서 최종 확인</footer>
+  <div class="callout warn">
+    <h3>⚠ 고를 때 주의 (수정작업 감안)</h3>
+    <ul>
+      <li><b>저해상 모듈러 제외</b> — Mana Seed·xiaosuzaoshui·LPC는 캐릭터가 작아(16~32px) 크게 띄우면 뭉개짐. 확대해도 디테일 안 늘어남.</li>
+      <li><b>"256px ≠ 항상 고디테일"</b> — 네이티브 대형(PixelDuck)은 진짜 고디테일, 확대본(Beowulf 256)은 64의 정수배(같은 디테일·큰 크기). <b>실제 디테일</b>을 보고 고르기.</li>
+      <li><b>LPC 라이선스 함정</b> — GPL/CC-BY-SA + 출처표기 + DRM/앱스토어 충돌 → 상업 모바일 부적합. 편해도 회피.</li>
+      <li><b>안전 등급</b> — CC0 &gt; 무료·상업(표기불요) &gt; 상업(표기). CC-BY-SA·GPL은 배제.</li>
+    </ul>
+  </div>
+
+  <div id="assets"></div>
+
+  <h2 class="sec"><span class="no">◇</span> 코어로 만들 수 있는 컨셉 · 장르</h2>
+  <p class="catnote">엔진(<code>system/core</code>)은 <b>수집형 오토배틀 + 방치/환생 엔진</b>. 로스터·아트만 바꾸면 리스킨, 판정 노출을 바꾸면 장르 확장.</p>
+  <div class="scroller"><table class="tb" id="concepts"></table></div>
+
+  <h2 class="sec"><span class="no">◇</span> 장르 확장 (코어 재사용)</h2>
+  <div class="scroller"><table class="tb" id="genres"></table></div>
+
+  <footer>다운로드=itch 로그인 · 선정/통합=Claude · 라이선스는 각 페이지 최종 확인 · v2 (해상도·편집성 반영)</footer>
 </div>
 
 <script>
 const L={cc0:'<span class="chip c-cc0">CC0</span>',free:'<span class="chip c-free">FREE</span>',com:'<span class="chip c-com">상업</span>',paid:'<span class="chip c-paid">유료</span>'};
+const R=(t)=>`<span class="res">${t}</span>`;
+// [이름, 작가, 설명, 태그(html), url]
 const A=[
- ['1 · 캐릭터 (영웅)','로스터 28종을 한 스타일로 확보하는 게 관건. 대형 팩 1개 기준으로 나머지 톤을 맞추세요.',[
-  ['RPG Heroes & Classes','Beowulf','144 캐릭터 · 16 클래스 · 64~256px',L.paid,'https://beowulf.itch.io/rpg-heroes-classes-pixel-art-huge-pack'],
-  ['Mana Seed Character Base','Seliel the Shaper','모듈러 베이스 — 장비/헤어 조합 무한 변형',L.free,'https://seliel-the-shaper.itch.io/character-base'],
-  ['Cute Fantasy RPG','Kenmi','캐릭+적+동물, 대기/이동/공격 애니 16px',L.free,'https://kenmi-art.itch.io/cute-fantasy-rpg'],
-  ['Free Tiny Hero Sprites','Free Game Assets','소형 영웅 스프라이트',L.free,'https://free-game-assets.itch.io/free-tiny-hero-sprites-pixel-art'],
-  ['Pixel Prototype Player','Dead Revolver','사이드뷰 1캐릭 다수 애니',L.cc0,'https://deadrevolver.itch.io/pixel-prototype-player-sprites'],
-  ['Beowulf (작가 전체)','Beowulf','SF Space Shooter·Dwarves 등 동일 스타일 확장',L.com,'https://beowulf.itch.io/'],
+ ['1 · 캐릭터 — 초상 (로스터·소환 카드)','64px 초상. 등급/속성 색변형에 팔레트 친화적일수록 좋음.',[
+  ['700+ RPG Character Portraits','indieartifex','700+ 초상 · <b>다중 팔레트 포함</b> → 색변형 최적',R('64')+L.com,'https://indieartifex.itch.io/pixel-art-rpg-character-portraits-pack'],
+  ['36 RPG Fantasy Portraits','CaptainSkolot','엘프·시계태엽술사 등 36종',R('64')+L.com,'https://captainskolot.itch.io/36-rpg-fantasy-portrait-pixelart-pixel-art-sprite-portrait-pack-for-rpg-fanta'],
  ]],
- ['2 · 몬스터 / 적','속성별 적·보스. 정면 전투용 스프라이트가 우리 대치 구도에 맞음.',[
-  ['Pixel 50 Fantasy Monsters','Cyangmou','50종 고퀄 64px · 정면 전투용',L.paid,'https://cyangmou.itch.io/pixel-rpg-monster'],
-  ['finalbossblues (작가)','finalbossblues','Action RPG Monsters 등 애니 몬스터 다수',L.com,'https://finalbossblues.itch.io/'],
-  ['몬스터 태그 둘러보기','itch.io','픽셀 몬스터 에셋 전체',L.free,'https://itch.io/game-assets/tag-monsters/tag-pixel-art'],
+ ['2 · 캐릭터 — 배틀러 (전투 무대 풀바디)','크게 띄우므로 고해상 우선. 네이티브 디테일 확인.',[
+  ['RPG Heroes & Classes','Beowulf','144종 · 16클래스 · 64/128/256 제공',R('64/128/256')+L.paid,'https://beowulf.itch.io/rpg-heroes-classes-pixel-art-huge-pack'],
+  ['400+ Battlers','indieartifex','풀바디 전투용(오크·스켈레톤·데몬…)',R('고')+L.com,'https://indieartifex.itch.io/pixel-art-rpg-character-sprites-battlers-pack'],
+  ['25 Fantasy Characters','Cyangmou','최고 디테일 아티스트',R('고')+L.com,'https://cyangmou.itch.io/25-pixel-art-fantasy-characters'],
+  ['PixelDuck (작가 전체)','PixelDuck','<b>256px 네이티브 손그림</b> · 일부 무료',R('256')+L.free,'https://pixelduck.itch.io/'],
+  ['Pixel-art Battlers','gilgaphoenixignis','배틀러 세트',R('중~대')+L.com,'https://gilgaphoenixignis.itch.io/pixel-art-battlers'],
  ]],
- ['3 · UI / GUI','전 화면 프레임·버튼·바. 현재 색감(보라+금)과 맞는 것을 고르면 통합이 쉬움.',[
-  ['Pixel UI Kit — Fantasy RPG GUI','amadeva','다크 패널 + 골드 트림 (우리 색감과 일치)',L.com,'https://amadeva.itch.io/pixel-ui-kit-fantasy-rpg-gui-panels-menus-bars-icons'],
-  ['Fantasy Minimal Pixel UI','Veyroa','버튼·HP바·패널·아이콘 16px',L.cc0,'https://veyroa.itch.io/fantasy-minimal-pixel-art-gui'],
-  ['Free Basic Pixel UI','Free Game Assets','무료 기본 인터페이스 세트',L.free,'https://free-game-assets.itch.io/free-basic-pixel-art-ui-for-rpg'],
+ ['3 · 몬스터 / 적','속성별 적·보스. 정면 전투용이 우리 대치 구도에 맞음.',[
+  ['Pixel 50 Fantasy Monsters','Cyangmou','50종 고퀄',R('64')+L.paid,'https://cyangmou.itch.io/pixel-rpg-monster'],
+  ['finalbossblues (작가)','finalbossblues','Action RPG Monsters 등 애니',R('중')+L.com,'https://finalbossblues.itch.io/'],
+  ['배틀러 컬렉션(모음)','itch.io','128 배틀러 등 모음',L.free,'https://itch.io/c/3413374/battlerspixel'],
  ]],
- ['4 · 아이콘 (아이템·스킬·장비)','재화·장비·스킬·룬·유물 아이콘. 대형 팩이면 평생 부족 없음.',[
-  ['8000+ Raven Fantasy Icons','Clockwork Raven','8000+ 아이콘·텍스처·스프라이트',L.paid,'https://clockworkraven.itch.io/raven-fantasy-icons'],
-  ['5600+ Ultimate RPG Icons','Clockwork Raven','올인원 5600+',L.paid,'https://clockworkraven.itch.io/5600-ultimate-pixel-art-fantasy-rpg-icon-pack'],
-  ['Pixel Art Icon Pack — RPG','Cainos','무료·수정 자유',L.free,'https://cainos.itch.io/pixel-art-icon-pack-rpg'],
-  ['Free Skill Icons Pack','Quintino Pixels','스킬 아이콘',L.cc0,'https://quintino-pixels.itch.io/free-pixel-art-skill-icons-pack'],
-  ['RPG Classic Icon Pack','BuiltDiv','136종 32px 장비/주문/무기',L.paid,'https://builtdivstudios.itch.io/pixelart-rpg-classc-icon-pack'],
-  ['RPG Icon Pack','Franuka','장비·아이템 아이콘',L.com,'https://franuka.itch.io/rpg-icon-pack'],
+ ['4 · UI / GUI','현재 색감(보라+금)과 맞는 것 우선.',[
+  ['Pixel UI Kit — Fantasy RPG GUI','amadeva','다크 패널 + 골드 트림(색감 일치)',L.com,'https://amadeva.itch.io/pixel-ui-kit-fantasy-rpg-gui-panels-menus-bars-icons'],
+  ['Fantasy Minimal Pixel UI','Veyroa','버튼·바·패널·아이콘',L.cc0,'https://veyroa.itch.io/fantasy-minimal-pixel-art-gui'],
+  ['Free Basic Pixel UI','Free Game Assets','무료 기본 세트',L.free,'https://free-game-assets.itch.io/free-basic-pixel-art-ui-for-rpg'],
  ]],
- ['5 · 이펙트 / VFX','타격·크리티컬·소환·환생 연출. 속성 매칭 이펙트가 좋음.',[
-  ['Free Pixel Effects Pack','CodeManu','타격·마법 이펙트 무료',L.free,'https://codemanu.itch.io/pixelart-effect-pack'],
-  ['Free VFX Asset Pack','CodeManu','로열티프리 다양 효과',L.cc0,'https://codemanu.itch.io/vfx-free-pack'],
+ ['5 · 아이콘 (아이템·스킬·장비)','재화·장비·스킬·룬·유물 아이콘.',[
+  ['8000+ Raven Fantasy Icons','Clockwork Raven','8000+ 올인원',L.paid,'https://clockworkraven.itch.io/raven-fantasy-icons'],
+  ['5600+ Ultimate RPG Icons','Clockwork Raven','5600+',L.paid,'https://clockworkraven.itch.io/5600-ultimate-pixel-art-fantasy-rpg-icon-pack'],
+  ['Icon Pack — RPG','Cainos','무료·수정 자유',L.free,'https://cainos.itch.io/pixel-art-icon-pack-rpg'],
+  ['Free Skill Icons','Quintino Pixels','스킬 아이콘',L.cc0,'https://quintino-pixels.itch.io/free-pixel-art-skill-icons-pack'],
+  ['RPG Classic Icons','BuiltDiv','136종 32px',L.paid,'https://builtdivstudios.itch.io/pixelart-rpg-classc-icon-pack'],
+ ]],
+ ['6 · 이펙트 / VFX','타격·크리티컬·소환·환생 연출.',[
+  ['Free Pixel Effects Pack','CodeManu','타격·마법 무료',L.free,'https://codemanu.itch.io/pixelart-effect-pack'],
+  ['Free VFX Asset Pack','CodeManu','로열티프리',L.cc0,'https://codemanu.itch.io/vfx-free-pack'],
   ['unTied Games (작가)','unTied Games','폭발·이펙트 기가팩',L.com,'https://untiedgames.itch.io/'],
  ]],
- ['6 · 배경 / 타일셋','속성 구역별 씬(성역·협곡·설원…). 우선 던전 1종부터.',[
-  ['16x16 DungeonTileset II','0x72','클래식 던전, 애니 포함',L.cc0,'https://0x72.itch.io/dungeontileset-ii'],
-  ['Castle Dungeon','aamatniekss','성/던전 + 시차(parallax) 배경',L.com,'https://aamatniekss.itch.io/castle-dungeon-f'],
-  ['Oryx Design Lab','Oryx','대규모 고퀄 라이브러리',L.paid,'https://www.oryxdesignlab.com/'],
+ ['7 · 배경 / 타일셋','속성 구역별 씬. 우선 던전 1종.',[
+  ['16x16 DungeonTileset II','0x72','클래식 던전, 애니',L.cc0,'https://0x72.itch.io/dungeontileset-ii'],
+  ['Castle Dungeon','aamatniekss','성/던전 + 시차 배경',L.com,'https://aamatniekss.itch.io/castle-dungeon-f'],
+  ['2D Pixel Dungeon','Pixel_Poem','던전 에셋, 수정 자유',L.com,'https://pixel-poem.itch.io/dungeon-assetpuck'],
+  ['Oryx Design Lab','Oryx','대규모 고퀄',L.paid,'https://www.oryxdesignlab.com/'],
  ]],
- ['7 · 폰트 · 3D 대안','',[
-  ['Galmuri (갈무리)','Quiple','한글 픽셀폰트 · 이미 앱 적용됨',L.free,'https://galmuri.quiple.dev/'],
-  ['KayKit Adventurers','Kay Lousberg','3D 저폴리 — 2D 렌더 시 대안',L.cc0,'https://kaylousberg.itch.io/kaykit-adventurers'],
-  ['Kay Lousberg (작가)','KayKit','3D 캐릭·환경 팩 전체',L.cc0,'https://kaylousberg.itch.io/'],
+ ['8 · 폰트 · 3D 대안','',[
+  ['Galmuri (갈무리)','Quiple','한글 픽셀폰트 · 앱 적용됨',L.free,'https://galmuri.quiple.dev/'],
+  ['KayKit Adventurers','Kay Lousberg','3D 저폴리 — 2D 렌더 대안',L.cc0,'https://kaylousberg.itch.io/kaykit-adventurers'],
  ]],
- ['↗ 카테고리 둘러보기','팩을 직접 더 찾을 때 (itch 태그 허브)',[
-  ['캐릭터 · 픽셀아트','itch.io','무료 캐릭터 스프라이트',L.free,'https://itch.io/game-assets/free/tag-characters/tag-pixel-art'],
-  ['UI · 픽셀아트','itch.io','GUI/UI 팩',L.free,'https://itch.io/game-assets/tag-gui/tag-pixel-art'],
+ ['⚠ 저해상 · 회피 (참고용)','크게 띄우면 부적합하거나 라이선스 위험. 도트 감성·작은 표시에만.',[
+  ['Mana Seed Character Base','Seliel the Shaper','모듈러·편집 쉬우나 <b>저해상</b>',R('~32')+L.free,'https://seliel-the-shaper.itch.io/character-base'],
+  ['Free Pixel Art (레이어드)','xiaosuzaoshui','무료·편집 쉬우나 저해상',R('저')+L.free,'https://xiaosuzaoshui.itch.io/pixel-art'],
+  ['LPC Generator','Liberated Pixel Cup','강력하나 <b>GPL/CC-BY-SA 함정</b>',L.com,'https://liberatedpixelcup.github.io/Universal-LPC-Spritesheet-Character-Generator/'],
+ ]],
+ ['↗ 둘러보기 허브','직접 더 찾을 때.',[
+  ['128×128 · 픽셀아트','itch.io','고해상 128 에셋',L.free,'https://itch.io/game-assets/tag-128x128/tag-pixel-art'],
+  ['배틀러 · 픽셀아트','itch.io','전투용 스프라이트',L.free,'https://itch.io/game-assets/tag-battlers/tag-pixel-art'],
+  ['초상 · 픽셀아트','itch.io','포트레이트',L.free,'https://itch.io/game-assets/tag-pixel-art/tag-portraits'],
   ['아이콘 · 픽셀아트','itch.io','아이콘 팩',L.free,'https://itch.io/game-assets/tag-icons/tag-pixel-art'],
-  ['이펙트 · 픽셀아트','itch.io','VFX 팩',L.free,'https://itch.io/game-assets/tag-effects/tag-pixel-art'],
  ]],
 ];
 const short=(u)=>u.replace(/^https?:\/\//,'').replace(/\/$/,'');
 document.getElementById('assets').innerHTML=A.map(([sec,note,items])=>{
-  const no=sec.split(' · ')[0];
-  const title=sec.includes(' · ')?sec.split(' · ').slice(1).join(' · '):sec;
+  const no=sec.split(' · ')[0]; const title=sec.includes(' · ')?sec.split(' · ').slice(1).join(' · '):sec;
   return `<h2 class="sec"><span class="no">${no}</span> ${title}</h2>`+
-   (note?`<p class="catnote">${note}</p>`:'<div style="height:10px"></div>')+
-   `<div class="grid">`+items.map(([n,by,d,lic,url])=>
+   (note?`<p class="catnote">${note}</p>`:'<div style="height:8px"></div>')+
+   `<div class="grid">`+items.map(([n,by,d,tags,url])=>
      `<a class="card" href="${url}" target="_blank" rel="noopener">
-        <div class="row1"><div><div class="name">${n}</div><div class="by">${by}</div></div>${lic}</div>
-        <div class="desc">${d}</div>
-        <div class="url">${short(url)}</div>
+        <div class="row1"><div><div class="name">${n}</div><div class="by">${by}</div></div><div class="tags">${tags}</div></div>
+        <div class="desc">${d}</div><div class="url">${short(url)}</div>
       </a>`).join('')+`</div>`;
 }).join('');
 
 const C=[
- ['무협 · 선협','검객·문파·기공',"오행(불/물/숲/빛/어둠)→속성 그대로. 검·장삼 스프라이트","ninja samurai wuxia pixel"],
- ['사이버펑크','해커·안드로이드·의체',"네온 도시 배경 + 사이버 캐릭","cyberpunk pixel character"],
- ['몬스터 테이밍','몬스터 수집·진화',"★속성 상성 이미 구현 — 몬스터=수집대상. Cyangmou 50종","monster collection pixel"],
- ['신화','올림포스·북유럽 신·영웅',"신전 배경 + 신화 캐릭","mythology greek norse pixel"],
- ['좀비 서바이벌','생존자·변종·거점',"폐허 배경 + 서바이버","zombie survivor pixel"],
- ['해적 · 대항해','선원·함선·보물',"바다/섬 배경 + 해적 캐릭","pirate pixel character"],
- ['메카 · 로봇','파일럿 + 기체',"Beowulf Space Shooter + 메카 스프라이트","mecha robot pixel"],
- ['아이돌 · 학원','수집 중심(전투→공연)',"무대 배경 + 캐릭터 컬렉션","anime idol pixel character"],
+ ['무협 · 선협','검객·문파·기공','오행→속성 그대로. 검·장삼','ninja samurai wuxia pixel'],
+ ['사이버펑크','해커·안드로이드','네온 도시 + 사이버 캐릭','cyberpunk pixel character'],
+ ['몬스터 테이밍','몬스터 수집·진화','★속성 상성 이미 구현. Cyangmou 50','monster collection pixel'],
+ ['신화','올림포스·북유럽','신전 + 신화 영웅','mythology greek norse pixel'],
+ ['좀비 서바이벌','생존자·변종','폐허 + 서바이버','zombie survivor pixel'],
+ ['해적 · 대항해','선원·함선','바다/섬 + 해적','pirate pixel character'],
+ ['메카 · 로봇','파일럿+기체','Beowulf Space Shooter + 메카','mecha robot pixel'],
+ ['아이돌 · 학원','수집(전투→공연)','무대 + 캐릭터 컬렉션','anime idol pixel character'],
 ];
-document.getElementById('concepts').innerHTML=
- `<thead><tr><th>컨셉</th><th>정체성</th><th>코어 매핑 · 아트 방향</th><th>에셋 검색</th></tr></thead><tbody>`+
- C.map(([n,id,map,q])=>`<tr><td class="cn">${n}</td><td>${id}</td><td>${map}</td>
-   <td><a href="https://itch.io/game-assets/tag-pixel-art?q=${encodeURIComponent(q)}" target="_blank" rel="noopener">${q} ↗</a></td></tr>`).join('')+`</tbody>`;
+document.getElementById('concepts').innerHTML=`<thead><tr><th>컨셉</th><th>정체성</th><th>코어 매핑·아트</th><th>검색</th></tr></thead><tbody>`+
+ C.map(([n,id,m,q])=>`<tr><td class="cn">${n}</td><td>${id}</td><td>${m}</td><td><a href="https://itch.io/game-assets/tag-pixel-art?q=${encodeURIComponent(q)}" target="_blank" rel="noopener">${q} ↗</a></td></tr>`).join('')+`</tbody>`;
 
 const G=[
- ['방치형 (현재)','시간이 스스로 굴러가는 자동 전투 + 환생','기본 — 그대로'],
- ['턴제 RPG','resolve()를 턴 단위로 노출, win 판정 사용','전투 UI만 추가'],
- ['오토배틀러 · 디펜스','파티 배치 + 웨이브 반복','배치/웨이브 레이어'],
- ['로그라이크 던전','층별 진행·랜덤 보상 (무한의 탑 확장)','tower 확장'],
- ['머지 · 합성','유닛/장비 합성으로 성장','펫·장비 합성 이미 있음'],
+ ['방치형 (현재)','자동 전투 + 환생','기본 — 그대로'],
+ ['턴제 RPG','resolve() 턴 노출, win 판정','전투 UI만'],
+ ['오토배틀러·디펜스','배치 + 웨이브','배치/웨이브 레이어'],
+ ['로그라이크 던전','층별 진행·랜덤 보상','tower 확장'],
+ ['머지·합성','유닛/장비 합성','펫·장비 합성 이미 있음'],
 ];
-document.getElementById('genres').innerHTML=
- `<thead><tr><th>장르</th><th>루프</th><th>코어 대비 추가</th></tr></thead><tbody>`+
+document.getElementById('genres').innerHTML=`<thead><tr><th>장르</th><th>루프</th><th>추가</th></tr></thead><tbody>`+
  G.map(([n,l,x])=>`<tr><td class="cn">${n}</td><td>${l}</td><td><span class="tag">${x}</span></td></tr>`).join('')+`</tbody>`;
 </script>
 </body>
