@@ -49,3 +49,10 @@ export async function cloudPush(envelope) {
   if (!p || !p.push) return { ok: false, reason: 'cloud-off' };
   try { return await p.push(envelope); } catch (e) { return { ok: false, reason: String(e && e.message || e) }; }
 }
+
+// 인앱결제 영수증 서버 검증. payload: { platform, productId, token }.
+export async function cloudVerifyPurchase(payload) {
+  const p = provider();
+  if (!p || !p.verifyPurchase) return { ok: false, reason: 'cloud-off' };
+  try { return await p.verifyPurchase(payload); } catch (e) { return { ok: false, reason: String(e && e.message || e) }; }
+}

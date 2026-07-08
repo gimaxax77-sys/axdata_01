@@ -34,12 +34,14 @@ function grantText(state, concept, grant) {
 
 export default function ShopScreen({ state, bump, concept }) {
   const [mult, setMult] = useState(1);
+  const [pkgMsg, setPkgMsg] = useState(null);
   const buy = (id) => { purchase(state, id); bump(); };
   const buyN = (id) => { repeat(() => purchase(state, id), mult); bump(); };
-  // 패키지: 결제 어댑터를 먼저 태우고(스토어 없으면 mock) 보상 지급.
+  // 패키지: 결제 → (설정 시)서버 검증 → 검증 통과(grant) 시에만 지급.
   const buyPackage = async (id) => {
     const r = await purchasePackage(id);
-    if (r.ok) purchase(state, id);
+    if (r.grant) purchase(state, id);
+    setPkgMsg(r.text || null);
     bump();
   };
   const gem = concept.resources.gem;
@@ -132,7 +134,8 @@ export default function ShopScreen({ state, bump, concept }) {
 
       {/* 패키지 (모의 결제) */}
       <Card style={{ marginTop: 12, marginBottom: 24 }}>
-        <Text style={s.sec}>🎁 패키지 <Text style={s.dim}>(결제 연동 골격 · 모의)</Text></Text>
+        <Text style={s.sec}>🎁 패키지 <Text style={s.dim}>(결제 → 서버 검증 → 지급)</Text></Text>
+        {pkgMsg ? <Text style={s.msg}>{pkgMsg}</Text> : null}
         {SHOP.package.map((p) => {
           const owned = p.once && packageOwned(state, p.id);
           return (
@@ -206,6 +209,7 @@ const s = StyleSheet.create({
   row: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 10, borderTopWidth: 1, borderTopColor: T.line },
   label: { color: T.text, fontWeight: '700', fontSize: 14 },
   reward: { color: T.muted, fontSize: 12, marginTop: 3 },
+  msg: { color: T.accent, fontSize: 12, fontWeight: '700', marginBottom: 6 },
   note: { color: T.accent, fontSize: 11, marginTop: 2 },
   tag: { color: T.accent, fontSize: 11, fontWeight: '800' },
   rentBlock: { paddingVertical: 10, borderTopWidth: 1, borderTopColor: T.line },

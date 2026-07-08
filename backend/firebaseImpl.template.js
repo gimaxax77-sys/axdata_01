@@ -17,6 +17,7 @@ import Constants from 'expo-constants';
 import { initializeApp } from 'firebase/app';
 import { getAuth, signInAnonymously, onAuthStateChanged } from 'firebase/auth';
 import { getFirestore, doc, getDoc, setDoc } from 'firebase/firestore';
+import { getFunctions, httpsCallable } from 'firebase/functions';
 
 const cfg = (Constants.expoConfig?.extra || Constants.manifest?.extra || {}).firebase;
 
@@ -24,6 +25,7 @@ if (cfg && cfg.projectId) {
   const app = initializeApp(cfg);
   const auth = getAuth(app);
   const db = getFirestore(app);
+  const fns = getFunctions(app);
   let currentUser = null;
   onAuthStateChanged(auth, (u) => { currentUser = u; });
 
@@ -45,6 +47,13 @@ if (cfg && cfg.projectId) {
       if (!currentUser) return { ok: false, reason: 'no-user' };
       await setDoc(doc(db, 'users', currentUser.uid), envelope, { merge: true });
       return { ok: true };
+    },
+    // 인앱결제 영수증 서버 검증 → Cloud Function iapVerify 호출.
+    async verifyPurchase({ platform, productId, token }) {
+      if (!currentUser) return { ok: false, reason: 'no-user' };
+      const call = httpsCallable(fns, 'iapVerify');
+      const res = await call({ platform, productId, token });
+      return res.data; // { ok, reason?, productId? }
     },
   };
 }
