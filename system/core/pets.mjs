@@ -93,8 +93,15 @@ export function petFuse(state, rarity, rng = Math.random) {
 }
 
 // ── QoL: 자동 합성 — 합성 가능한 모든 등급을 한 번에 승급(하위→상위 연쇄). ──
-export function autoFusePets(state, rng = Math.random) {
-  const order = ['R', 'SR', 'SSR'];
+// 스마트 필터(opts): 원하는 등급만 골라 합성해 "아끼는 등급"이 휩쓸리지 않게 한다.
+//   · opts.stopAt: 이 등급부터는 합성 안 함(그 아래만). 예 stopAt:'SSR' → R·SR만.
+//   · opts.only:   합성할 등급 화이트리스트(부분집합). 지정 시 그 등급만.
+// 기본(옵션 없음)은 기존 동작(R·SR·SSR 전부)과 동일 — 하위호환.
+export function autoFusePets(state, rng = Math.random, opts = {}) {
+  const ALL = ['R', 'SR', 'SSR'];
+  const stopIdx = opts.stopAt ? ALL.indexOf(opts.stopAt) : ALL.length;
+  let order = ALL.filter((_, i) => stopIdx < 0 ? true : i < stopIdx);
+  if (opts.only && opts.only.length) order = order.filter((r) => opts.only.includes(r));
   let fused = 0, guard = 0, progressed = true;
   while (progressed && guard++ < 100) {
     progressed = false;

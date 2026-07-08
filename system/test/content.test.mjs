@@ -296,6 +296,27 @@ test('QoL: 자동 펫 합성이 가능한 모든 등급 승급', async () => {
   assert.ok(r.fused >= 1, '최소 1회 합성');
 });
 
+test('스마트 합성 필터: stopAt/only로 특정 등급 보호', async () => {
+  const { autoFusePets, PETS, PET_FUSE_COST } = await import('../core/pets.mjs');
+  const rPetId = Object.values(PETS).find((p) => p.rarity === 'R').id;
+  const srPetId = Object.values(PETS).find((p) => p.rarity === 'SR').id;
+  const mk = () => {
+    const s = strongState();
+    s.pets = { owned: { [rPetId]: PET_FUSE_COST, [srPetId]: PET_FUSE_COST }, active: [], opts: {} };
+    return s;
+  };
+  // stopAt:'SR' → R만 합성, SR은 보호(그대로).
+  const s1 = mk();
+  autoFusePets(s1, () => 0.5, { stopAt: 'SR' });
+  assert.equal(s1.pets.owned[srPetId], PET_FUSE_COST, 'SR 미소모(보호)');
+  assert.ok(!s1.pets.owned[rPetId] || s1.pets.owned[rPetId] < PET_FUSE_COST, 'R은 합성됨');
+  // only:['SR'] → SR만 합성, R은 보호.
+  const s2 = mk();
+  autoFusePets(s2, () => 0.5, { only: ['SR'] });
+  assert.equal(s2.pets.owned[rPetId], PET_FUSE_COST, 'R 미소모(보호)');
+  assert.ok(!s2.pets.owned[srPetId] || s2.pets.owned[srPetId] < PET_FUSE_COST, 'SR은 합성됨');
+});
+
 test('렌트: 결제→활성 배수, 만료→소멸, 업그레이드', async () => {
   const { rent, rentalActive, rentalTier, rentalMods, rentalTierDef } = await import('../core/rentals.mjs');
   const { accountMods } = await import('../core/balance.mjs');

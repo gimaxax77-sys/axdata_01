@@ -111,6 +111,51 @@ export function resolve(party, challenge, accountMods = {}, formation = null) {
 }
 
 // ─────────────────────────────────────────────────────────────
+// 전투 통계(DPS 미터) — 유저가 "누가 딜을 못 넣나"를 분석하도록 유닛별 기여를 노출.
+//   판정 엔진과 같은 규약(진형·속성 상성·치명)을 써서 화면에 그대로 신뢰할 수 있게 한다.
+//   반환: { units:[{uid, dps, hp, dpsShare, hpShare, element, affinity}], totalDPS, totalHP }
+//   dpsShare/hpShare = 파티 내 비중(0~1). 덱 수정의 근거를 제공한다.
+// ─────────────────────────────────────────────────────────────
+export function combatContributions(party, challenge = {}, accountMods = {}, formation = null) {
+  if (!party || !party.length) return { units: [], totalDPS: 0, totalHP: 0 };
+  const powerMult = accountMods.powerMult || 1;
+  const profiles = party.map(toCombatProfile);
+  if (formationActive(formation, party)) {
+    const hasFront = party.some((u) => formation[u.uid] !== 'back');
+    for (const p of profiles) {
+      const m = formation[p.uid] === 'back'
+        ? (hasFront ? FORMATION_MODS.back : FORMATION_MODS.backExposed)
+        : FORMATION_MODS.front;
+      p.dps *= m.dps || 1; p.def *= m.def || 1; p.hp *= m.hp || 1;
+    }
+  }
+  const syn = teamSynergy(party).mult;
+  const atkMult = (1 + profiles.reduce((s, p) => s + (p.teamBuffAtk || 0), 0))
+    * (1 + profiles.reduce((s, p) => s + (p.teamBuffCrit || 0), 0));
+  const rows = profiles.map((p) => {
+    const aff = affinity(p.element, challenge.element);
+    return {
+      uid: p.uid,
+      element: p.element,
+      affinity: aff, // 속성 상성 배수(>1 유리, <1 불리)
+      dps: p.dps * aff * atkMult * powerMult * syn.atk,
+      hp: p.hp * powerMult * syn.hp,
+    };
+  });
+  const totalDPS = rows.reduce((s, r) => s + r.dps, 0) || 1;
+  const totalHP = rows.reduce((s, r) => s + r.hp, 0) || 1;
+  for (const r of rows) {
+    r.dpsShare = r.dps / totalDPS;
+    r.hpShare = r.hp / totalHP;
+    r.dps = Math.round(r.dps);
+    r.hp = Math.round(r.hp);
+  }
+  // 딜 비중 내림차순(주력·비주력 즉시 식별).
+  rows.sort((a, b) => b.dpsShare - a.dpsShare);
+  return { units: rows, totalDPS: Math.round(totalDPS), totalHP: Math.round(totalHP) };
+}
+
+// ─────────────────────────────────────────────────────────────
 // PvP 판정 — 파티 vs 파티(비동기). resolve()와 "완전히 같은" 스탯 공식을 쓰되,
 // 스칼라 적 대신 방어 파티를 집계해 대칭으로 겨룬다.
 //   양측 유효 DPS·유효 HP를 구해 서로의 처치시간을 비교(짧은 쪽 승).
