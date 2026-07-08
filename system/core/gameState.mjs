@@ -37,6 +37,8 @@ export function createGameState({ units = [], party = [] } = {}) {
     admin: { overrides: {} }, // 운영자 밸런스 오버라이드 { path: value }
     materials: { ascendStone: 0, elemEssence: 0, petShard: { R: 0, SR: 0, SSR: 0, UR: 0 } }, // 던전 재료
     arena: { points: 0, day: -1, entries: 0 }, // 아레나(경쟁) 랭크·일일 입장
+    ladders: {}, // 3중 리그(주간/격주/월간) 포인트·주기
+    mail: [], // 우편함(순위 정산·이벤트 보상)
     guild: { coins: 0, day: -1, attacks: 0, tier: 1, bossHp: null }, // 길드 보스 레이드
     meta: { achv: {}, coll: {}, season: { claimed: {}, premium: false } }, // 도감·업적·시즌패스 청구 기록
     campaign: { cleared: 0 }, // 스토리 캠페인 클리어 챕터 수

@@ -1,6 +1,7 @@
 import { ensureUnitSeq } from './units.mjs';
 import { ensureGearSeq, emptyGearSet } from './gear.mjs';
 import { ensureRuneSeq } from './runes.mjs';
+import { ensureMailSeq } from './mailbox.mjs';
 import { createWallet } from './economy.mjs';
 
 // ─────────────────────────────────────────────────────────────
@@ -51,6 +52,8 @@ function normalize(state) {
   state.arena.points = state.arena.points || 0;
   state.arena.day = state.arena.day ?? -1;
   state.arena.entries = state.arena.entries || 0;
+  state.ladders = state.ladders || {};
+  state.mail = Array.isArray(state.mail) ? state.mail : [];
   state.guild = state.guild || { coins: 0, day: -1, attacks: 0, tier: 1, bossHp: null };
   state.guild.coins = state.guild.coins || 0;
   state.guild.day = state.guild.day ?? -1;
@@ -144,9 +147,12 @@ function syncSeq(state) {
   }
   for (const it of state.inventory || []) maxG = Math.max(maxG, num(it.uid, 'g'));
   for (const r of state.runeBag || []) maxR = Math.max(maxR, num(r.uid, 'r'));
+  let maxM = 0;
+  for (const m of state.mail || []) maxM = Math.max(maxM, num(m.id, 'm'));
   ensureUnitSeq(maxU);
   ensureGearSeq(maxG);
   ensureRuneSeq(maxR);
+  ensureMailSeq(maxM);
 }
 
 // json → state (실패/버전불일치 시 null).
