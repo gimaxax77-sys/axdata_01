@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView, Platform, StatusBar as RNStatusBar, Modal, Alert } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView, Platform, StatusBar as RNStatusBar, Modal, Alert, useWindowDimensions } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { LinearGradient } from 'expo-linear-gradient';
 import { T } from './app/theme';
 import { ResourceBar, Btn, fmt } from './app/components';
 import { useGame } from './app/useGame';
 import { setMuted, setHaptics, fx } from './app/feedback';
-import { setReduceMotion } from './app/motion';
+import { setReduceMotion, setEco } from './app/motion';
 import { t, setLang } from './app/i18n';
 import { SettingsModal } from './app/screens/Settings';
 import { AdminModal } from './app/screens/Admin';
@@ -69,7 +69,10 @@ function AppInner() {
   // 설정을 세이브에서 엔진들에 반영
   const st = game.state.settings;
   setLang(st.lang); // 렌더 중 동기 반영 — 언어 전환이 같은 렌더에 즉시 적용(지연 없음)
-  useEffect(() => { setMuted(st.muted); setHaptics(st.haptics); setReduceMotion(st.reduceMotion); }, [st.muted, st.haptics, st.reduceMotion]);
+  useEffect(() => { setMuted(st.muted); setHaptics(st.haptics); setReduceMotion(st.reduceMotion); setEco(st.ecoMode); }, [st.muted, st.haptics, st.reduceMotion, st.ecoMode]);
+  // 가로 wide(PC/태블릿) — 넓은 화면에서 콘텐츠를 폰 폭으로 가운데 정렬(늘어짐 방지).
+  const { width: winW } = useWindowDimensions();
+  const wide = winW >= 720;
   const changeSetting = (key, val) => {
     game.state.settings[key] = val;
     // 엔진 반영은 위 useEffect가 담당(settings 값 변화 감지). 여기선 상태만 갱신.
@@ -93,6 +96,8 @@ function AppInner() {
     <SafeAreaView style={s.safe}>
       <StatusBar style="light" />
       <LinearGradient colors={T.bgGrad} style={StyleSheet.absoluteFill} pointerEvents="none" />
+      {/* 가로 wide: 넓은 화면에선 폰 폭으로 가운데 정렬한 프레임 안에 배치 */}
+      <View style={[s.frame, wide && s.frameWide]}>
       {/* 헤더 (픽셀 모드에선 몰입 위해 숨김) */}
       {!showPixel && (
         <View style={s.header}>
@@ -160,6 +165,7 @@ function AppInner() {
           );
         })}
       </View>
+      </View>{/* /frame */}
 
       {/* 오프라인 보상 팝업 */}
       <Modal transparent animationType="fade" visible={!!game.offline} onRequestClose={game.dismissOffline}>
@@ -222,6 +228,9 @@ function AppInner() {
 
 const s = StyleSheet.create({
   safe: { flex: 1, backgroundColor: T.bg, paddingTop: Platform.OS === 'android' ? RNStatusBar.currentHeight : 0 },
+  frame: { flex: 1 },
+  // 넓은 화면(PC/태블릿 가로): 폰 폭으로 가운데 정렬 + 좌우 경계선으로 프레임감.
+  frameWide: { width: '100%', maxWidth: 720, alignSelf: 'center', borderLeftWidth: 1, borderRightWidth: 1, borderColor: T.line },
   header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 18, paddingTop: 10, paddingBottom: 4 },
   notice: { flexDirection: 'row', alignItems: 'center', gap: 10, marginHorizontal: 14, marginTop: 6, paddingHorizontal: 12, paddingVertical: 8, borderRadius: 10, backgroundColor: T.surface2, borderWidth: 1, borderColor: T.accent },
   noticeText: { color: T.text, fontSize: 12, fontWeight: '700', flex: 1 },

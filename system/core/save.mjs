@@ -75,6 +75,7 @@ function normalize(state) {
   state.settings.haptics = state.settings.haptics !== false; // 기본 on
   state.settings.reduceMotion = !!state.settings.reduceMotion;
   state.settings.skipGachaAnim = !!state.settings.skipGachaAnim; // 가챠 연출 스킵(기본 off)
+  state.settings.ecoMode = !!state.settings.ecoMode; // 절전 모드(발열/배터리, 기본 off)
   state.settings.lang = state.settings.lang || 'ko';
   state.tower = state.tower || { floor: 1, best: 1 };
   state.tower.floor = state.tower.floor || 1;

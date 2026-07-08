@@ -92,6 +92,7 @@ export function useGame() {
 
   const save = useCallback(() => saveRaw(serialize(ref.current)), []);
   const tickCount = useRef(0);
+  const gainAcc = useRef({ currency: 0, growth: 0 }); // 절전 모드: 표시 갱신 사이 누적
 
   // 네이티브 비동기 하이드레이트 — 로드 완료 전까지 저장하지 않아 덮어쓰기 방지.
   useEffect(() => {
@@ -120,14 +121,24 @@ export function useGame() {
     if (!hydrated) return;
     const id = setInterval(() => {
       const before = { ...ref.current.wallet };
+      // 방치 누적은 매 틱 수행(경과시간 기반) → 절전 모드여도 진행 손실 없음.
       idleGenre.tick(ref.current, TICK_GAME_SEC);
-      setLastGain({
-        currency: Math.round(ref.current.wallet.currency - before.currency),
-        growth: Math.round(ref.current.wallet.growth - before.growth),
-      });
-      save();
+      gainAcc.current.currency += ref.current.wallet.currency - before.currency;
+      gainAcc.current.growth += ref.current.wallet.growth - before.growth;
+      tickCount.current += 1;
+      // 절전 모드: 화면 갱신·저장을 stride마다만(리렌더/쓰기 5배↓ → 발열·배터리↓).
+      const eco = !!(ref.current.settings && ref.current.settings.ecoMode);
+      const stride = eco ? 5 : 1;
+      if (tickCount.current % stride === 0) {
+        setLastGain({
+          currency: Math.round(gainAcc.current.currency),
+          growth: Math.round(gainAcc.current.growth),
+        });
+        gainAcc.current = { currency: 0, growth: 0 };
+        save();
+      }
       // 약 30초마다 정상본 백업(손상 복구용) — 매 틱 쓰기 부담 회피.
-      if (++tickCount.current % 30 === 0) saveBackup(serialize(ref.current));
+      if (tickCount.current % 30 === 0) saveBackup(serialize(ref.current));
       // rev를 올리지 않는다 → 비활성 화면은 리렌더 안 됨. setLastGain이 App만
       // 리렌더시켜 상단 자원바/방치 화면만 실시간 갱신.
     }, TICK_MS);

@@ -53,6 +53,7 @@ export function SettingsModal({ visible, settings, onChange, onReset, onClose, o
           <Toggle label={t('sound')} desc={t('sound_desc')} value={!settings.muted} onChange={(v) => onChange('muted', !v)} />
           <Toggle label={t('haptic')} desc={t('haptic_desc')} value={settings.haptics} onChange={(v) => onChange('haptics', v)} />
           <Toggle label={t('battle_fx')} desc={t('battle_fx_desc')} value={!settings.reduceMotion} onChange={(v) => onChange('reduceMotion', !v)} />
+          <Toggle label={t('eco_mode')} desc={t('eco_mode_desc')} value={!!settings.ecoMode} onChange={(v) => onChange('ecoMode', v)} />
 
           {/* 언어 */}
           <View style={c.langRow}>

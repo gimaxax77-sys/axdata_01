@@ -8,6 +8,7 @@ import { stageZone } from '../../system/core/progression.mjs';
 import { computePower } from '../../system/core/stats.mjs';
 import { identity, elementMeta } from '../../system/concepts/index.mjs';
 import { villageTier } from '../../system/core/village.mjs';
+import { reducedMotion } from '../motion';
 
 // ─────────────────────────────────────────────────────────────
 // 픽셀 방치 화면 (미리보기) — 풀아트 방향의 실장 시범.
@@ -45,10 +46,11 @@ function HpBar({ pct, color }) {
   );
 }
 
-// 대기 흔들림(bob) 애니메이션 훅.
+// 대기 흔들림(bob) 애니메이션 훅. 절전/연출끔이면 애니메이션 정지(정적 렌더).
 function useBob(range, dur, delay = 0) {
   const v = useRef(new Animated.Value(0)).current;
   useEffect(() => {
+    if (reducedMotion()) { v.setValue(0); return; } // 절전 모드: 루프 미시작(발열↓)
     const loop = Animated.loop(Animated.sequence([
       Animated.timing(v, { toValue: 1, duration: dur, delay, easing: Easing.inOut(Easing.sin), useNativeDriver: true }),
       Animated.timing(v, { toValue: 0, duration: dur, easing: Easing.inOut(Easing.sin), useNativeDriver: true }),
