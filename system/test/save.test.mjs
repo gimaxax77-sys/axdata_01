@@ -77,6 +77,46 @@ test('save: 구버전(신규 필드 누락) 세이브를 안전하게 정규화'
   assert.ok(computePower(u) > 0);
 });
 
+// 회귀 가드: 최신 세션에서 normalize가 새로 채우는 필드들
+// (formation/profile/summonMastery/costumes/vip/ladders/mail/u.skin)이
+// 구버전 세이브에서도 안전한 기본값으로 채워지는지 잠근다.
+// 라이브 유저의 옛 세이브 로드가 최대 크래시 지점이므로 명시 검증한다.
+test('save: 구버전 세이브 → 신규 시스템 필드 정규화(라이브 마이그레이션)', () => {
+  const old = {
+    units: [{ uid: 'u1', archetype: 'STRIKER', level: 10, rank: 2 }],
+    party: ['u1'],
+    wallet: { currency: 500, gem: 100 },
+    stage: 5, maxStage: 5,
+    // formation/profile/summonMastery/costumes/vip/ladders/mail/skin 전부 없음
+  };
+  const back = deserialize(JSON.stringify({ v: SAVE_VERSION, ts: Date.now(), state: old }));
+  assert.ok(back, '로드 성공');
+  // 진형: 객체로 존재(빈 편성 허용)
+  assert.ok(back.formation && typeof back.formation === 'object');
+  // 프로필: 기본 이름/외형/미보유 구조
+  assert.equal(back.profile.name, '조련사');
+  assert.equal(back.profile.frame, 'none');
+  assert.equal(back.profile.title, 'none');
+  assert.equal(back.profile.premium, false);
+  assert.ok(back.profile.owned.frame && back.profile.owned.title);
+  // 소환 마스터리: 배너별 {count,claimed} 기본값
+  assert.ok(back.summonMastery && typeof back.summonMastery === 'object');
+  for (const bn of Object.keys(back.summonMastery)) {
+    assert.equal(back.summonMastery[bn].count, 0);
+    assert.equal(back.summonMastery[bn].claimed, 0);
+  }
+  // 코스튬/VIP/리그/우편
+  assert.ok(back.costumes && back.costumes.owned && typeof back.costumes.owned === 'object');
+  assert.equal(back.vip.spend, 0);
+  assert.ok(back.ladders && typeof back.ladders === 'object');
+  assert.ok(Array.isArray(back.mail));
+  // 유닛 코스튬(외형) 슬롯 기본값
+  assert.equal(back.units[0].skin, null);
+  // 정규화 후 전투력 계산/직렬화 왕복 크래시 없음
+  assert.ok(computePower(back.units[0]) > 0);
+  assert.ok(deserialize(serialize(back)), '재직렬화 왕복 성공');
+});
+
 test('save: 빈/유령 파티 최소 1명 보정', () => {
   const st = { units: [{ uid: 'u1', archetype: 'STRIKER', level: 1, rank: 1 }], party: ['ghost'], wallet: {}, stage: 1, maxStage: 1 };
   const back = deserialize(JSON.stringify({ v: SAVE_VERSION, ts: 1, state: st }));
