@@ -42,6 +42,17 @@ export function campaignChapters(state, conceptCampaign = []) {
   return out;
 }
 
+// 스토리 정주행 도감 — 클리어한 챕터의 서사만 모아 다시 읽는 로그.
+//   플레이 중엔 성장을 위해 스킵하지만, 나중에 여유가 생겼을 때 모아본다.
+//   반환: { readable:[{index,title,story}], lockedCount, total }
+export function storyLog(state, conceptCampaign = []) {
+  const chapters = campaignChapters(state, conceptCampaign);
+  const readable = chapters
+    .filter((c) => c.cleared && c.story) // 클리어한 챕터만 정주행 가능
+    .map((c) => ({ index: c.index, title: c.title, story: c.story }));
+  return { readable, lockedCount: chapters.length - readable.length, total: chapters.length };
+}
+
 // 챕터 도전. 승리 & 최초 클리어면 보상 + 진행.
 export function fightChapter(state, i) {
   const cleared = (state.campaign && state.campaign.cleared) || 0;
