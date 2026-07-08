@@ -12,20 +12,67 @@ import { spendMaterial } from './materials.mjs';
 // 장비 인스턴스는 unit.gear[slot] 또는 state.inventory 에 존재한다.
 // ─────────────────────────────────────────────────────────────
 
-export const GEAR_SLOTS = ['weapon', 'armor', 'accessory'];
+// 장비 슬롯 — 3계열(무기/방어구/장신구) + 탈것. 계열은 세트/UI 그룹핑에 쓴다.
+//   ⚠ 슬롯 id는 세이브에 박히므로 기존 weapon/armor/accessory는 그대로 유지(하위호환).
+export const GEAR_SLOTS = [
+  'weapon', 'offhand',                         // 무기
+  'helmet', 'armor', 'gloves', 'pants',        // 방어구
+  'necklace', 'earring', 'accessory', 'cloak', // 장신구
+  'mount',                                     // 탈것
+];
+
+// 슬롯 표시 메타 (라벨·이모지·계열). UI/드롭 요약 공용.
+export const SLOT_META = {
+  weapon: { label: '무기', emoji: '⚔️', cat: 'weapon' },
+  offhand: { label: '보조무기', emoji: '🛡️', cat: 'weapon' },
+  helmet: { label: '투구', emoji: '🪖', cat: 'armor' },
+  armor: { label: '갑옷', emoji: '🥋', cat: 'armor' },
+  gloves: { label: '장갑', emoji: '🧤', cat: 'armor' },
+  pants: { label: '바지', emoji: '👖', cat: 'armor' },
+  necklace: { label: '목걸이', emoji: '📿', cat: 'accessory' },
+  earring: { label: '귀걸이', emoji: '💠', cat: 'accessory' },
+  accessory: { label: '반지', emoji: '💍', cat: 'accessory' },
+  cloak: { label: '망토', emoji: '🦋', cat: 'accessory' },
+  mount: { label: '탈것', emoji: '🐎', cat: 'mount' },
+};
+
+// 빈 장비 세트(전 슬롯 null) — 유닛 생성/세이브 보정 공용(슬롯 목록 단일 소스).
+export function emptyGearSet() {
+  return Object.fromEntries(GEAR_SLOTS.map((s) => [s, null]));
+}
 
 // 장비 설계도(blueprint). flat=고정 스탯, effect=전투 효과.
 export const GEAR_CATALOG = {
+  // ── 무기(주) : 종류별 개성 — 검/단검/활/도끼/양손검 ──
   IRON_SWORD: { id: 'IRON_SWORD', slot: 'weapon', label: '강철검', flat: { atk: 120 } },
   RUNE_BLADE: { id: 'RUNE_BLADE', slot: 'weapon', label: '룬블레이드', flat: { atk: 90 }, effect: { critChance: 0.08 } },
+  DAGGER: { id: 'DAGGER', slot: 'weapon', label: '단검', flat: { atk: 70, spd: 45 }, effect: { critChance: 0.06 } },
+  BOW: { id: 'BOW', slot: 'weapon', label: '장궁', flat: { atk: 110, spd: 15 }, effect: { critDamage: 0.15 } },
+  AXE: { id: 'AXE', slot: 'weapon', label: '전투도끼', flat: { atk: 155 }, effect: { defPierce: 0.1 } },
+  GREATSWORD: { id: 'GREATSWORD', slot: 'weapon', label: '양손대검', flat: { atk: 200 }, craftCost: 300 },
+  // ── 보조무기 : 방패/마도서 ──
+  TOWER_SHIELD: { id: 'TOWER_SHIELD', slot: 'offhand', label: '타워실드', flat: { hp: 500, def: 45 }, effect: { dmgReduce: 0.05 } },
+  ARCANE_TOME: { id: 'ARCANE_TOME', slot: 'offhand', label: '비전서', flat: { atk: 55, spd: 15 }, effect: { critChance: 0.06 } },
+  // ── 방어구 : 투구/갑옷/장갑/바지 ──
+  IRON_HELM: { id: 'IRON_HELM', slot: 'helmet', label: '강철투구', flat: { hp: 420, def: 32 } },
   PLATE_ARMOR: { id: 'PLATE_ARMOR', slot: 'armor', label: '판금갑옷', flat: { hp: 800, def: 60 } },
   AEGIS: { id: 'AEGIS', slot: 'armor', label: '이지스', flat: { hp: 500, def: 40 }, effect: { lifesteal: 0.12 } },
+  BATTLE_GLOVES: { id: 'BATTLE_GLOVES', slot: 'gloves', label: '전투장갑', flat: { atk: 55, spd: 22 } },
+  GREAVES: { id: 'GREAVES', slot: 'pants', label: '판금각반', flat: { hp: 520, def: 38 } },
+  // ── 장신구 : 목걸이/귀걸이/반지/망토 ──
+  VITAL_AMULET: { id: 'VITAL_AMULET', slot: 'necklace', label: '생명목걸이', flat: { hp: 380, spd: 12 }, effect: { lifesteal: 0.08 } },
+  FOCUS_EARRING: { id: 'FOCUS_EARRING', slot: 'earring', label: '집중귀걸이', flat: { spd: 26 }, effect: { critChance: 0.08 } },
   CRIT_RING: { id: 'CRIT_RING', slot: 'accessory', label: '치명반지', flat: { spd: 30 }, effect: { critChance: 0.12, critDamage: 0.3 } },
   PIERCE_CHARM: { id: 'PIERCE_CHARM', slot: 'accessory', label: '관통부적', flat: { spd: 20 }, effect: { defPierce: 0.25 } },
+  SWIFT_CLOAK: { id: 'SWIFT_CLOAK', slot: 'cloak', label: '질풍망토', flat: { spd: 40, hp: 250 }, effect: { dmgReduce: 0.05 } },
+  // ── 탈것 : 기동 + 소폭 생존 ──
+  WAR_STEED: { id: 'WAR_STEED', slot: 'mount', label: '군마', flat: { spd: 55, hp: 350, atk: 30 } },
   // ── P1 상위 티어 (제작 비용↑, 콘텐츠 진행 후 노림) · 용사 세트 ──
   DRAGON_FANG: { id: 'DRAGON_FANG', slot: 'weapon', label: '용아검', flat: { atk: 180 }, effect: { critChance: 0.1 }, craftCost: 600, set: 'CHAMPION' },
   BULWARK_PLATE: { id: 'BULWARK_PLATE', slot: 'armor', label: '성벽갑옷', flat: { hp: 1100, def: 85 }, effect: {}, craftCost: 600, set: 'CHAMPION' },
   OMNI_CHARM: { id: 'OMNI_CHARM', slot: 'accessory', label: '만능부적', flat: { spd: 35 }, effect: { critChance: 0.1, defPierce: 0.15 }, craftCost: 600, set: 'CHAMPION' },
+  VALIANT_HELM: { id: 'VALIANT_HELM', slot: 'helmet', label: '용사투구', flat: { hp: 650, def: 55 }, effect: { dmgReduce: 0.04 }, craftCost: 600, set: 'CHAMPION' },
+  VALIANT_CLOAK: { id: 'VALIANT_CLOAK', slot: 'cloak', label: '용사망토', flat: { spd: 45, hp: 400 }, effect: { dmgReduce: 0.06 }, craftCost: 600, set: 'CHAMPION' },
 };
 
 // 장비 세트 — 같은 세트를 여러 슬롯에 착용하면 조건부 보너스(룬 세트와 유사).

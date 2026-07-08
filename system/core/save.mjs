@@ -1,5 +1,5 @@
 import { ensureUnitSeq } from './units.mjs';
-import { ensureGearSeq } from './gear.mjs';
+import { ensureGearSeq, emptyGearSet } from './gear.mjs';
 import { ensureRuneSeq } from './runes.mjs';
 import { createWallet } from './economy.mjs';
 
@@ -106,7 +106,8 @@ function normalize(state) {
   for (const u of state.units || []) {
     if (!u.skills) u.skills = [null, null, null];
     if (!u.enhance) u.enhance = { atk: 0, hp: 0, def: 0, crit: 0 };
-    if (!u.gear) u.gear = { weapon: null, armor: null, accessory: null };
+    // 장비: 전 슬롯 보장(신규 슬롯 backfill). 기존 장착품은 유지.
+    u.gear = { ...emptyGearSet(), ...(u.gear || {}) };
     if (u.characterId === undefined) u.characterId = null;
     if (u.signature === undefined) u.signature = null;
     if (u.element === undefined) u.element = null;

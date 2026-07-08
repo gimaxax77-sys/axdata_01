@@ -2,6 +2,7 @@ import { getArchetype } from './archetypes.mjs';
 import { computeStats } from './stats.mjs';
 import { collectUnitModifiers } from './modifiers.mjs';
 import { createEnhance } from './enhance.mjs';
+import { emptyGearSet } from './gear.mjs';
 import { BALANCE } from './balance.mjs';
 
 // ─────────────────────────────────────────────────────────────
@@ -34,8 +35,8 @@ export function createUnit(archetype, { level = 1, rank = 1, characterId = null,
     skills: [null, null, null],
     // 강화(각인) 노드 레벨
     enhance: createEnhance(),
-    // 장비 슬롯: 각 원소는 null 또는 장비 인스턴스
-    gear: { weapon: null, armor: null, accessory: null },
+    // 장비 슬롯: 각 원소는 null 또는 장비 인스턴스 (전 슬롯 — gear.mjs 단일 소스)
+    gear: emptyGearSet(),
   };
 }
 

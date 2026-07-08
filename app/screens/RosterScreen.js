@@ -16,7 +16,7 @@ import { getArchetype } from '../../system/core/archetypes.mjs';
 import { levelCap } from '../../system/core/units.mjs';
 import { skillSlots, SKILL_CATALOG, equippableSkills, skillPower } from '../../system/core/skills.mjs';
 import { identity, elementMeta } from '../../system/concepts/index.mjs';
-import { GEAR_SLOTS, GEAR_CATALOG, gearEnhanceCost, gearContribution } from '../../system/core/gear.mjs';
+import { GEAR_SLOTS, GEAR_CATALOG, SLOT_META, gearEnhanceCost, gearContribution } from '../../system/core/gear.mjs';
 import { levelUp, ascend, enhanceNode, equipSkill, unequipSkill, upgradeSkill, awakenSignature } from '../../system/core/character.mjs';
 import { AWAKEN_MAX, awakenCost } from '../../system/core/skills.mjs';
 import { craftGear, equipGear, enhanceGear, unequipGear, gearCraftCost, activeGearSets, rerollGearSubs, GEAR_RARITY, grantGearElementOption, ELEM_OPTION_COST, GEAR_SUB_MAX } from '../../system/core/gear.mjs';
@@ -35,7 +35,14 @@ import {
   enhanceRune, runeMainValue, runeEnhanceCost, RUNE_MAX_LEVEL, RUNE_SUMMON_COST, activeRuneSets, rerollRuneSubs,
 } from '../../system/core/runes.mjs';
 
-const SLOT_KO = { weapon: '무기', armor: '방어구', accessory: '장신구' };
+const SLOT_KO = Object.fromEntries(Object.entries(SLOT_META).map(([k, v]) => [k, v.label]));
+// 장비 카드 계열 그룹핑(표시 순서·소제목).
+const GEAR_CATS = [
+  { cat: 'weapon', label: '무기' },
+  { cat: 'armor', label: '방어구' },
+  { cat: 'accessory', label: '장신구' },
+  { cat: 'mount', label: '탈것' },
+];
 
 // 효과 객체 → 사람이 읽는 문자열 (scale = 스킬 레벨/랭크 배수)
 function describeEffect(e = {}, scale = 1) {
@@ -521,22 +528,31 @@ export default function RosterScreen({ state, bump, concept }) {
           <Btn small kind="gold" label="✨ 추천 장착" sfx={false} onPress={() => runRecommend('gear')} />
         </View>
         {recMsg && <Text style={g.recMsg}>{recMsg}</Text>}
-        {GEAR_SLOTS.map((slot) => {
-          const item = unit.gear[slot];
-          return (
-            <TouchableOpacity key={slot} onPress={() => setPicker({ mode: 'gear', slot })} style={g.slotRow} activeOpacity={0.8}>
-              <View style={{ flex: 1 }}>
-                <Text style={g.slotTag}>{SLOT_KO[slot]}</Text>
-                {item ? (<>
-                  <Text style={g.slotName}>{GEAR_CATALOG[item.blueprint].label} +{item.level - 1}
-                    {item.rarity ? <Text style={{ color: rarityColor(item.rarity), fontWeight: '900' }}>  {(GEAR_RARITY[item.rarity] || {}).label || item.rarity}</Text> : null}</Text>
-                  <Text style={g.slotDesc}>{describeGearItem(item)}</Text>
-                </>) : <Text style={g.slotEmpty}>＋ 비어있음</Text>}
-              </View>
-              <Text style={g.chev}>›</Text>
-            </TouchableOpacity>
-          );
-        })}
+        {(() => {
+          const equipped = GEAR_SLOTS.filter((s) => unit.gear[s]).length;
+          return <Text style={g.slotDesc}>장착 {equipped}/{GEAR_SLOTS.length}</Text>;
+        })()}
+        {GEAR_CATS.map(({ cat, label }) => (
+          <View key={cat}>
+            <Text style={g.gearCat}>{label}</Text>
+            {GEAR_SLOTS.filter((slot) => SLOT_META[slot].cat === cat).map((slot) => {
+              const item = unit.gear[slot];
+              return (
+                <TouchableOpacity key={slot} onPress={() => setPicker({ mode: 'gear', slot })} style={g.slotRow} activeOpacity={0.8}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={g.slotTag}>{SLOT_META[slot].emoji} {SLOT_META[slot].label}</Text>
+                    {item ? (<>
+                      <Text style={g.slotName}>{GEAR_CATALOG[item.blueprint].label} +{item.level - 1}
+                        {item.rarity ? <Text style={{ color: rarityColor(item.rarity), fontWeight: '900' }}>  {(GEAR_RARITY[item.rarity] || {}).label || item.rarity}</Text> : null}</Text>
+                      <Text style={g.slotDesc}>{describeGearItem(item)}</Text>
+                    </>) : <Text style={g.slotEmpty}>＋ 비어있음</Text>}
+                  </View>
+                  <Text style={g.chev}>›</Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+        ))}
         {activeGearSets(unit).map((s) => (
           <Text key={s.set} style={g.setBonus}>⚔️ {s.label} 세트 {s.active3 ? '3피스(풀)' : '2피스'} 보너스 활성</Text>
         ))}
@@ -819,6 +835,7 @@ const g = StyleSheet.create({
   slotDesc: { color: T.muted, fontSize: 12, marginTop: 2 },
   slotEmpty: { color: T.primary, fontWeight: '700', fontSize: 14 },
   slotTag: { color: T.accent, fontSize: 11, fontWeight: '700', marginBottom: 2 },
+  gearCat: { color: T.muted, fontSize: 12, fontWeight: '800', marginTop: 10, marginBottom: 2 },
   chev: { color: T.muted, fontSize: 22, marginLeft: 8 },
   dim: { color: T.muted, fontSize: 12, fontWeight: '400' },
   btnRow: { flexDirection: 'row', gap: 8 },
