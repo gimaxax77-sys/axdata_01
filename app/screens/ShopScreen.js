@@ -1,11 +1,15 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TextInput } from 'react-native';
 import { T } from '../theme';
 import { Card, Btn, fmt, MultiToggle, repeat } from '../components';
 import { SHOP, purchase, adLeft, packageOwned } from '../../system/core/shop.mjs';
 import { getStage } from '../../system/core/progression.mjs';
 import { purchasePackage } from '../iap';
 import { RENTAL_CATALOG, rent, rentalTier, rentalMsLeft } from '../../system/core/rentals.mjs';
+import {
+  PROFILE_FRAMES, PROFILE_TITLES, getProfile, setProfileName,
+  buyCosmetic, equipCosmetic, ownsCosmetic, hasPremium, PROFILE_NAME_MAX,
+} from '../../system/core/cosmetics.mjs';
 
 // 남은 대여 기간 → "N일 M시간".
 function fmtLeft(ms) {
@@ -39,12 +43,61 @@ export default function ShopScreen({ state, bump, concept }) {
     bump();
   };
   const gem = concept.resources.gem;
+  const prof = getProfile(state);
+  const [name, setName] = useState(prof.name);
+  const buyCos = (kind, id) => { const r = buyCosmetic(state, kind, id); if (r.ok) equipCosmetic(state, kind, id); bump(); };
+  const equipCos = (kind, id) => { equipCosmetic(state, kind, id); bump(); };
+  const saveName = () => { setProfileName(state, name); bump(); };
 
   return (
     <ScrollView style={s.flex} contentContainerStyle={s.wrap}>
-      {/* 광고 보상 */}
+      {/* 개성 — 프로필 · 코스메틱(순수 외형, 능력치 무관) */}
       <Card>
-        <Text style={s.sec}>📺 광고 보상 <Text style={s.dim}>(무료 · 일일 제한)</Text></Text>
+        <Text style={s.sec}>🎭 개성 <Text style={s.dim}>(외형 전용 · 전투력 무관)</Text></Text>
+        <View style={s.profHead}>
+          <Text style={s.profFrame}>{(PROFILE_FRAMES[prof.frame] || PROFILE_FRAMES.none).emoji}</Text>
+          <View style={{ flex: 1 }}>
+            <TextInput style={s.nameInput} value={name} onChangeText={setName}
+              maxLength={PROFILE_NAME_MAX} placeholder="닉네임" placeholderTextColor={T.muted}
+              onBlur={saveName} onSubmitEditing={saveName} />
+            <Text style={s.profTitle}>{(PROFILE_TITLES[prof.title] || PROFILE_TITLES.none).label}
+              {prof.premium ? '  ·  ✨광고제거' : ''}</Text>
+          </View>
+          <Btn small kind="ghost" label="저장" onPress={saveName} />
+        </View>
+
+        <Text style={s.subsec}>프로필 테두리</Text>
+        <View style={s.cosRow}>
+          {Object.values(PROFILE_FRAMES).map((f) => {
+            const owned = ownsCosmetic(state, 'frame', f.id);
+            const on = prof.frame === f.id;
+            return (
+              <Btn key={f.id} small kind={on ? 'gold' : owned ? 'primary' : 'ghost'}
+                disabled={on}
+                label={owned ? `${f.emoji} ${f.label}` : `${f.emoji} ${gem.emoji}${f.cost.gem}`}
+                onPress={() => (owned ? equipCos('frame', f.id) : buyCos('frame', f.id))} />
+            );
+          })}
+        </View>
+
+        <Text style={s.subsec}>칭호</Text>
+        <View style={s.cosRow}>
+          {Object.values(PROFILE_TITLES).map((t) => {
+            const owned = ownsCosmetic(state, 'title', t.id);
+            const on = prof.title === t.id;
+            return (
+              <Btn key={t.id} small kind={on ? 'gold' : owned ? 'primary' : 'ghost'}
+                disabled={on}
+                label={owned ? t.label : `${t.label} ${gem.emoji}${t.cost.gem}`}
+                onPress={() => (owned ? equipCos('title', t.id) : buyCos('title', t.id))} />
+            );
+          })}
+        </View>
+      </Card>
+
+      {/* 광고 보상 */}
+      <Card style={{ marginTop: 12 }}>
+        <Text style={s.sec}>📺 광고 보상 <Text style={s.dim}>(무료 · 일일 제한){hasPremium(state) ? ' · ✨패스 보유' : ''}</Text></Text>
         {SHOP.ad.map((p) => {
           const left = adLeft(state, p.id);
           return (
@@ -161,4 +214,10 @@ const s = StyleSheet.create({
   tierRow: { flexDirection: 'row', gap: 6 },
   tierInfo: { color: T.muted, fontSize: 9, textAlign: 'center', marginTop: 3 },
   disc: { color: T.muted, fontSize: 11, marginTop: 12, lineHeight: 16 },
+  subsec: { color: T.text, fontWeight: '700', fontSize: 12, marginTop: 12, marginBottom: 2 },
+  profHead: { flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 8 },
+  profFrame: { fontSize: 30 },
+  nameInput: { color: T.text, fontWeight: '800', fontSize: 16, borderBottomWidth: 1, borderBottomColor: T.line, paddingVertical: 2 },
+  profTitle: { color: T.accent, fontSize: 12, marginTop: 3, fontWeight: '700' },
+  cosRow: { flexDirection: 'row', gap: 6, flexWrap: 'wrap', marginTop: 4 },
 });

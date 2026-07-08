@@ -71,6 +71,15 @@ function normalize(state) {
   state.tower = state.tower || { floor: 1, best: 1 };
   state.tower.floor = state.tower.floor || 1;
   state.tower.best = state.tower.best || state.tower.floor || 1;
+  state.profile = state.profile || {};
+  state.profile.name = state.profile.name || '조련사';
+  if (state.profile.avatarUid === undefined) state.profile.avatarUid = null;
+  state.profile.frame = state.profile.frame || 'none';
+  state.profile.title = state.profile.title || 'none';
+  state.profile.premium = !!state.profile.premium;
+  state.profile.owned = state.profile.owned || {};
+  state.profile.owned.frame = state.profile.owned.frame || {};
+  state.profile.owned.title = state.profile.owned.title || {};
   state.stage = state.stage || 1;
   state.difficulty = state.difficulty || 'normal';
   state.maxStage = state.maxStage || 1;

@@ -161,8 +161,17 @@ function AppInner() {
               <Text style={s.offGain}>{game.concept.resources.currency.emoji} +{fmt(game.offline?.gained?.currency || 0)}</Text>
               <Text style={s.offGain}>{game.concept.resources.growth.emoji} +{fmt(game.offline?.gained?.growth || 0)}</Text>
             </View>
+            {game.offline?.doubled ? (
+              <Text style={s.offBonus}>✨ 2배 적용됨{game.state.profile?.premium ? ' (광고제거 패스)' : ''}</Text>
+            ) : null}
             <View style={{ height: 14 }} />
-            <Btn label="받기" kind="gold" onPress={game.dismissOffline} />
+            {!game.offline?.doubled && (
+              <>
+                <Btn label="📺 광고 보고 2배" kind="gold" onPress={game.claimOfflineBonus} />
+                <View style={{ height: 8 }} />
+              </>
+            )}
+            <Btn label="받기" kind={game.offline?.doubled ? 'gold' : 'ghost'} onPress={game.dismissOffline} />
           </View>
         </View>
       </Modal>
@@ -221,4 +230,5 @@ const s = StyleSheet.create({
   offSub: { color: T.muted, fontSize: 13, textAlign: 'center', marginTop: 8, lineHeight: 19 },
   offGains: { flexDirection: 'row', gap: 20, marginTop: 16 },
   offGain: { color: T.good, fontWeight: '800', fontSize: 20 },
+  offBonus: { color: T.accent, fontWeight: '800', fontSize: 13, marginTop: 12 },
 });

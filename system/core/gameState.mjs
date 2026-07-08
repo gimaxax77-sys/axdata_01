@@ -41,6 +41,8 @@ export function createGameState({ units = [], party = [] } = {}) {
     tutorial: { introSeen: false }, // 온보딩: 첫 소개 확인 여부
     settings: { muted: false, haptics: true, reduceMotion: false, lang: 'ko' }, // 사운드·햅틱·전투연출·언어
     tower: { floor: 1, best: 1 }, // 무한의 탑 현재/최고 층
+    // 개성(코스메틱) — 능력치 무관. 닉네임·대표영웅·프레임·칭호 + 광고제거 패스
+    profile: { name: '조련사', avatarUid: null, frame: 'none', title: 'none', premium: false, owned: { frame: {}, title: {} } },
   };
 }
 

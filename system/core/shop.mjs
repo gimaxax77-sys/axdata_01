@@ -1,6 +1,7 @@
 import { earn, spend } from './economy.mjs';
 import { getStage } from './progression.mjs';
 import { refreshDaily } from './daily.mjs';
+import { grantPremium } from './cosmetics.mjs';
 
 // ─────────────────────────────────────────────────────────────
 // BM/상점 골격 — 3종 구매 경로:
@@ -24,6 +25,7 @@ export const SHOP = {
   ],
   // 금액대별 사다리 — 위로 갈수록 ₩당 다이아 가치가 커진다(고액 유도).
   package: [
+    { id: 'PKG_ADFREE', label: '광고 제거 패스', krw: '₩5,500', once: true, tag: '편의', premium: true, note: '광고 없이 광고보상·오프라인 2배 자동', grant: { gem: 100 } },
     { id: 'PKG_STARTER', label: '스타터 패키지', krw: '₩4,900', once: true, tag: '입문', grant: { gem: 300, summon: 50, currencyStage: 150 } },
     { id: 'PKG_MONTHLY', label: '월정액', krw: '₩9,900', once: true, note: '즉시 다이아 + 매일 지급(골격)', grant: { gem: 300 } },
     { id: 'PKG_GROWTH', label: '성장 패키지', krw: '₩11,000', grant: { gem: 500, growthStage: 300 } },
@@ -88,5 +90,6 @@ export function purchase(state, id, now = Date.now()) {
   earn(state.wallet, g);
   state.shop = state.shop || { purchased: {} };
   if (p.once) state.shop.purchased[id] = true;
-  return { ok: true, grant: g, mock: true };
+  if (p.premium) grantPremium(state); // 광고제거 패스 활성화
+  return { ok: true, grant: g, mock: true, premium: !!p.premium };
 }

@@ -7,6 +7,7 @@ import { accountMods } from '../system/core/balance.mjs';
 import { idleGenre } from '../system/genres/idle.mjs';
 import { serialize, deserialize, exportCode, importCode } from '../system/core/save.mjs';
 import { applyOverrides } from '../system/core/admin.mjs';
+import { hasPremium } from '../system/core/cosmetics.mjs';
 import { fantasyConcept } from '../system/concepts/fantasy.mjs';
 import { CONCEPTS } from '../system/concepts/index.mjs';
 import { loadRawSync, loadRawAsync, saveRaw, clearSave, saveBackup, loadBackupSync, loadBackupAsync } from './storage';
@@ -45,7 +46,18 @@ function createFresh() {
 function applyLoad(loaded, offlineRef) {
   const rew = idleGenre.collectOffline(loaded, Date.now());
   if (rew.gained && (rew.gained.currency > 0 || rew.gained.growth > 0)) {
-    offlineRef.current = { ...rew, seconds: rew.seconds };
+    // 광고제거 패스: 오프라인 2배를 광고 없이 자동 지급.
+    let doubled = false;
+    if (hasPremium(loaded)) {
+      const b = idleGenre.applyOfflineBonus(loaded, rew.gained, 1);
+      doubled = !!b.ok;
+    }
+    offlineRef.current = {
+      ...rew, seconds: rew.seconds, doubled,
+      gained: doubled
+        ? { currency: (rew.gained.currency || 0) * 2, growth: (rew.gained.growth || 0) * 2 }
+        : rew.gained,
+    };
   }
   return loaded;
 }
@@ -132,6 +144,18 @@ export function useGame() {
   }, [save]);
 
   const dismissOffline = useCallback(() => setOffline(null), []);
+  // 오프라인 2배 수령 (광고 시청 등). 원본 gained 기준으로 1배 추가 지급 → 총 2배.
+  const claimOfflineBonus = useCallback(() => {
+    const off = offlineRef.current;
+    if (!off || off.doubled) return;
+    const base = { currency: (off.gained.currency || 0), growth: (off.gained.growth || 0) };
+    const b = idleGenre.applyOfflineBonus(ref.current, base, 1);
+    if (b.ok) {
+      offlineRef.current = { ...off, doubled: true, gained: { currency: base.currency * 2, growth: base.growth * 2 } };
+      setOffline(offlineRef.current);
+      save();
+    }
+  }, [save]);
   const reset = useCallback(() => {
     clearSave();
     ref.current = createFresh();
@@ -153,7 +177,7 @@ export function useGame() {
     return true;
   }, [bump, save]);
 
-  return { state: ref.current, rev, bump, lastGain, offline, dismissOffline, reset, save, exportSave, importSave, concept: CONCEPT };
+  return { state: ref.current, rev, bump, lastGain, offline, dismissOffline, claimOfflineBonus, reset, save, exportSave, importSave, concept: CONCEPT };
 }
 
 // 파티 최고 유닛의 "실효 전투력"(환생 배수 포함)
