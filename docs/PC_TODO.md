@@ -24,15 +24,22 @@
 
 > 이번 세션 변경은 전부 **다음 빌드부터** 실기기에 반영됩니다.
 > 특히 네이티브 의존(expo-font 등) 때문에 **OTA로는 기존 APK를 갱신 불가** → 리빌드 필요.
+> **📖 상세 실행 가이드: `docs/BUILD_APK.md` (그대로 복붙 실행)**
 
 - [ ] 최신 브랜치 pull: `git pull origin claude/git-connection-status-rkjuko`
 - [ ] 의존성: `npm install`
-- [ ] 테스트 확인: `npm test` (132/17/37 통과 확인)
+- [ ] 테스트 확인: `npm test` (**유닛 188 / 장르 17 / 캐릭터 37** 통과 확인)
+- [ ] EAS 로그인: `eas login` (계정 `gimax77`)
 - [ ] APK(내부 테스트): `npm run build:apk`  (EAS preview)
-- [ ] 기기 설치 후 신규 기능 육안 확인(장비 11슬롯·소환레벨·아레나 리그·엠블럼/정령·인챈트)
+- [ ] 기기 설치 후 신규 기능 육안 확인 (트랙1: DPS 미터·분해환급·주간이벤트·시즌던전·
+      덱복사·본진발전·가챠스킵 / 기존: 장비 11슬롯·소환레벨·아레나 리그·엠블럼/정령·인챈트)
 - [ ] (배포용) AAB: `npm run build:aab`  (EAS production)
 
-메모: EAS·키스토어·EXPO_TOKEN은 이미 설정됨(이전 세션). 추가 설정 불필요.
+**한 줄 실행:**
+`git pull origin claude/git-connection-status-rkjuko && npm install && npm test && eas login && npm run build:apk`
+
+메모: EAS 프로젝트·키스토어는 이미 설정됨(projectId `f95f8fe3-…`, owner `gimax77`).
+버전은 이번에 **1.1.0 / versionCode 2**로 올려둠(기존 설치 위 덮어쓰기 업데이트 가능).
 
 ---
 
