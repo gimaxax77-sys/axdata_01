@@ -73,6 +73,18 @@ export const GEAR_CATALOG = {
   OMNI_CHARM: { id: 'OMNI_CHARM', slot: 'accessory', label: '만능부적', flat: { spd: 35 }, effect: { critChance: 0.1, defPierce: 0.15 }, craftCost: 600, set: 'CHAMPION' },
   VALIANT_HELM: { id: 'VALIANT_HELM', slot: 'helmet', label: '용사투구', flat: { hp: 650, def: 55 }, effect: { dmgReduce: 0.04 }, craftCost: 600, set: 'CHAMPION' },
   VALIANT_CLOAK: { id: 'VALIANT_CLOAK', slot: 'cloak', label: '용사망토', flat: { spd: 45, hp: 400 }, effect: { dmgReduce: 0.06 }, craftCost: 600, set: 'CHAMPION' },
+  // ── 광전사 세트(딜러) ──
+  RAGE_BLADE: { id: 'RAGE_BLADE', slot: 'weapon', label: '광란검', flat: { atk: 135 }, effect: { critChance: 0.06 }, craftCost: 500, set: 'BERSERKER' },
+  RAGE_GAUNTLET: { id: 'RAGE_GAUNTLET', slot: 'gloves', label: '광란건틀릿', flat: { atk: 65, spd: 22 }, craftCost: 500, set: 'BERSERKER' },
+  RAGE_MANTLE: { id: 'RAGE_MANTLE', slot: 'cloak', label: '광란망토', flat: { spd: 38 }, effect: { critDamage: 0.15 }, craftCost: 500, set: 'BERSERKER' },
+  // ── 수호 세트(탱커) ──
+  BASTION_HELM: { id: 'BASTION_HELM', slot: 'helmet', label: '수호투구', flat: { hp: 560, def: 46 }, craftCost: 500, set: 'BASTION' },
+  BASTION_WALL: { id: 'BASTION_WALL', slot: 'offhand', label: '수호방벽', flat: { hp: 620, def: 56 }, effect: { dmgReduce: 0.05 }, craftCost: 500, set: 'BASTION' },
+  BASTION_LEGS: { id: 'BASTION_LEGS', slot: 'pants', label: '수호각반', flat: { hp: 600, def: 46 }, craftCost: 500, set: 'BASTION' },
+  // ── 현자 세트(서포터) ──
+  SAGE_PENDANT: { id: 'SAGE_PENDANT', slot: 'necklace', label: '현자펜던트', flat: { spd: 22, hp: 300 }, effect: { lifesteal: 0.08 }, craftCost: 500, set: 'ARCANIST' },
+  SAGE_STUD: { id: 'SAGE_STUD', slot: 'earring', label: '현자귀걸이', flat: { spd: 28 }, effect: { critChance: 0.07 }, craftCost: 500, set: 'ARCANIST' },
+  SPIRIT_MOUNT: { id: 'SPIRIT_MOUNT', slot: 'mount', label: '정령마', flat: { spd: 60, hp: 320 }, craftCost: 500, set: 'ARCANIST' },
 };
 
 // 장비 세트 — 같은 세트를 여러 슬롯에 착용하면 조건부 보너스(룬 세트와 유사).
@@ -81,6 +93,22 @@ export const GEAR_SETS = {
     label: '용사',
     two: { statPct: { atk: 0.08 } },                       // 2피스
     three: { statPct: { atk: 0.15 }, effect: { critChance: 0.1 } }, // 3피스(풀세트)
+  },
+  // ── 역할 지향 세트 3종 ──
+  BERSERKER: {
+    label: '광전사', // 딜러
+    two: { statPct: { atk: 0.10 } },
+    three: { statPct: { atk: 0.18 }, effect: { critDamage: 0.25 } },
+  },
+  BASTION: {
+    label: '수호', // 탱커
+    two: { statPct: { hp: 0.12, def: 0.10 } },
+    three: { statPct: { hp: 0.18, def: 0.15 }, effect: { dmgReduce: 0.10 } },
+  },
+  ARCANIST: {
+    label: '현자', // 서포터
+    two: { statPct: { spd: 0.12 } },
+    three: { statPct: { spd: 0.18, atk: 0.08 }, effect: { lifesteal: 0.10 } },
   },
 };
 
