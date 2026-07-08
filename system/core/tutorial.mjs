@@ -24,6 +24,21 @@ export function nextObjective(state) {
   if (units.length >= 2 && (state.party || []).length < Math.min(2, MAX_PARTY)) {
     return { id: 'party', tab: 'roster' };
   }
-  // 4) 완료
+  // ── 중반 힌트: 신규 시스템 발견성 (해금됐지만 아직 안 쓴 경우 1회성 안내) ──
+  // 4) 환생 가능한데 미실행 → 영구 성장 안내
+  if ((state.maxStage || 1) >= 15 && (state.prestige || 0) === 0) {
+    return { id: 'prestige', tab: 'idle' };
+  }
+  // 5) 파티 2+ · 진형 미설정 → 전열/후열 전략 안내
+  const formationSet = state.formation && Object.keys(state.formation).length > 0;
+  if ((state.party || []).length >= 2 && !formationSet && (state.peakStage || 1) >= 20) {
+    return { id: 'formation', tab: 'roster' };
+  }
+  // 6) 아레나 열림 · 한 번도 대전 안 함 → 전투력 리그 안내
+  const ladderPts = state.ladders && Object.values(state.ladders).some((l) => (l && l.points) > 0);
+  if (isUnlocked(state, 'arena') && (state.arena && state.arena.points || 0) === 0 && !ladderPts) {
+    return { id: 'arena', tab: 'arena' };
+  }
+  // 7) 완료
   return null;
 }

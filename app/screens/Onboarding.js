@@ -55,6 +55,9 @@ export function ObjectiveBanner({ state, concept, onGo }) {
     level: `🎯 ${eul(U)} 레벨업하세요 — ${S} ${obj.target} 도달 시 소환 해금`,
     summon: `🎯 소환 탭에서 ${eul(U)} 뽑아 파티를 모으세요`,
     party: `🎯 캐릭터 탭에서 파티를 편성하세요 (전투력 합산)`,
+    prestige: `✨ 환생으로 영구 배수를 얻고 더 깊이 도전하세요 (방치 탭)`,
+    formation: `⚔️ 진형(전열/후열)으로 전략을 세우세요 — 캐릭터 탭 파티 카드`,
+    arena: `🏆 아레나 전투력 리그에 도전하세요 (약자 보호 매칭)`,
   };
   return (
     <TouchableOpacity style={c.banner} activeOpacity={0.8} onPress={() => onGo(obj.tab)}>
