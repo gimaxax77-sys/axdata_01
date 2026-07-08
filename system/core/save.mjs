@@ -74,6 +74,7 @@ function normalize(state) {
   state.settings.muted = !!state.settings.muted;
   state.settings.haptics = state.settings.haptics !== false; // 기본 on
   state.settings.reduceMotion = !!state.settings.reduceMotion;
+  state.settings.skipGachaAnim = !!state.settings.skipGachaAnim; // 가챠 연출 스킵(기본 off)
   state.settings.lang = state.settings.lang || 'ko';
   state.tower = state.tower || { floor: 1, best: 1 };
   state.tower.floor = state.tower.floor || 1;
@@ -96,6 +97,13 @@ function normalize(state) {
   state.costumes.owned = state.costumes.owned || {};
   state.vip = state.vip || { spend: 0 };
   state.vip.spend = state.vip.spend || 0;
+  // 주간 테마 이벤트(미니 로드맵) 진행 상태.
+  state.events = state.events || { week: -1, progress: 0, claimed: false };
+  state.events.progress = state.events.progress || 0;
+  // 시즌 소프트리셋 던전 진행(평준화 랭킹).
+  state.season2 = state.season2 || { idx: -1, floor: 0, best: 0 };
+  state.season2.floor = state.season2.floor || 0;
+  state.season2.best = state.season2.best || 0;
   state.stage = state.stage || 1;
   state.difficulty = state.difficulty || 'normal';
   state.maxStage = state.maxStage || 1;
