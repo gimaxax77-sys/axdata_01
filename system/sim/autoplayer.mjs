@@ -4,7 +4,7 @@ import { skillSlots } from '../core/skills.mjs';
 import {
   levelUp, ascend, equipSkill, upgradeSkill, enhanceNode,
 } from '../core/character.mjs';
-import { craftGear, equipGear, enhanceGear, GEAR_SLOTS } from '../core/gear.mjs';
+import { craftGear, equipGear, enhanceGear, GEAR_SLOTS, GEAR_CATALOG } from '../core/gear.mjs';
 import { RELICS, upgradeRelic } from '../core/relics.mjs';
 import { petSummon, PET_PULL_COST } from '../core/pets.mjs';
 import { MAX_PARTY } from '../core/gameState.mjs';
@@ -36,7 +36,11 @@ const ENHANCE_ORDER = {
   SUPPORT: ['atk', 'hp', 'crit', 'def'],
 };
 // 슬롯별 기본 장비
-const DEFAULT_GEAR = { weapon: 'RUNE_BLADE', armor: 'PLATE_ARMOR', accessory: 'CRIT_RING' };
+// 슬롯별 기본 설계도 — 슬롯이 늘어도 자동 대응(카탈로그 첫 매칭). 선호값은 덮어씀.
+const PREFER = { weapon: 'RUNE_BLADE', armor: 'PLATE_ARMOR', accessory: 'CRIT_RING' };
+const DEFAULT_GEAR = Object.fromEntries(GEAR_SLOTS.map((slot) => [
+  slot, PREFER[slot] || (Object.values(GEAR_CATALOG).find((b) => b.slot === slot) || {}).id,
+]));
 
 const CAP_ITERS = 5000; // 무한루프 방지
 
