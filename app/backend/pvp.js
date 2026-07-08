@@ -1,5 +1,6 @@
 import { getPartyUnits } from '../../system/core/gameState.mjs';
 import { partyPowerEff, arenaPowerTier } from '../../system/core/arena.mjs';
+import { accountMods } from '../../system/core/balance.mjs';
 import { getProfile } from '../../system/core/cosmetics.mjs';
 
 // ─────────────────────────────────────────────────────────────
@@ -29,8 +30,8 @@ export function buildDefenseSnapshot(state) {
     power: Math.round(power),
     tierIndex: arenaPowerTier(power).index,
     party: getPartyUnits(state),           // 편성 유닛 인스턴스(장비/룬/스킨/각인 포함)
+    powerMult: accountMods(state).powerMult, // 환생·유물·펫·엠블럼·정령 합산(서버 재-시뮬용)
     formation: state.formation || {},
-    // powerMult는 서버가 accountMods로 재계산하거나, 필요 시 스냅샷에 포함
   };
 }
 

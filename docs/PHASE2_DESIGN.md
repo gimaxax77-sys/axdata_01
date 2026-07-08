@@ -185,7 +185,7 @@ Phase 1과 동일 패턴:
 
 | Phase 2 필요 | 기존 코드 | 재사용 방식 |
 |--------------|-----------|-------------|
-| 승패 판정 | `resolution.resolve()` | 서버에서 그대로 import |
+| PvP 승패 판정 | `resolution.resolvePvP()` | 파티 vs 파티 대칭 판정(스칼라 축약 없이 방어팀 그대로). resolve()와 동일 스탯 공식·상성(대표속성)·진형 반영. 서버가 그대로 import |
 | 전투력·리그 | `arena.partyPowerEff` / `arenaPowerTier` | 클라·서버 공용 |
 | 약자 보호 밴드 | `arena.OPP_CAP_MULT`(1.12) | 매칭 규칙 이식 |
 | 계정 배수 | `balance.accountMods` | 스냅샷에 powerMult 포함 |

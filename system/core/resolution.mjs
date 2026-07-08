@@ -109,3 +109,74 @@ export function resolve(party, challenge, accountMods = {}, formation = null) {
       : `패배 (${timeToKillParty.toFixed(1)}초 버팀)`,
   };
 }
+
+// ─────────────────────────────────────────────────────────────
+// PvP 판정 — 파티 vs 파티(비동기). resolve()와 "완전히 같은" 스탯 공식을 쓰되,
+// 스칼라 적 대신 방어 파티를 집계해 대칭으로 겨룬다.
+//   양측 유효 DPS·유효 HP를 구해 서로의 처치시간을 비교(짧은 쪽 승).
+//   속성 상성은 각 파티의 "대표(최다) 속성"으로 근사한다(결정론 유지).
+// ─────────────────────────────────────────────────────────────
+
+// 한 파티를 전투 집계로 환산(공격·생존 지표). resolve() 내부 로직과 동일 규약.
+function aggregateSide(party, accountMods = {}, formation = null) {
+  const powerMult = accountMods.powerMult || 1;
+  const profiles = party.map(toCombatProfile);
+  if (formationActive(formation, party)) {
+    const hasFront = party.some((u) => formation[u.uid] !== 'back');
+    for (const p of profiles) {
+      const m = formation[p.uid] === 'back'
+        ? (hasFront ? FORMATION_MODS.back : FORMATION_MODS.backExposed)
+        : FORMATION_MODS.front;
+      p.dps *= m.dps || 1; p.def *= m.def || 1; p.hp *= m.hp || 1;
+    }
+  }
+  const syn = teamSynergy(party).mult;
+  const n = profiles.length || 1;
+  const atkMult = 1 + profiles.reduce((s, p) => s + (p.teamBuffAtk || 0), 0);
+  const critMult = 1 + profiles.reduce((s, p) => s + (p.teamBuffCrit || 0), 0);
+  const teamDefReduce = Math.min(0.6, profiles.reduce((s, p) => s + (p.teamBuffDef || 0), 0));
+  const lifesteal = Math.min(0.6, profiles.reduce((s, p) => s + (p.effect?.lifesteal || 0), 0));
+  const defPierce = Math.min(0.9, Math.max(0, ...profiles.map((p) => p.effect?.defPierce || 0)));
+  const dmgReduce = Math.min(0.6, profiles.reduce((s, p) => s + (p.effect?.dmgReduce || 0), 0) / n);
+  const trueDamage = Math.min(0.9, Math.max(0, ...profiles.map((p) => p.effect?.trueDamage || 0)));
+  const accuracy = Math.max(0, ...profiles.map((p) => p.effect?.accuracy || 0));
+  const evasion = profiles.reduce((s, p) => s + (p.effect?.evasion || 0), 0) / n;
+  const absDef = Math.min(0.5, profiles.reduce((s, p) => s + (p.effect?.absDef || 0), 0) / n);
+  const ehp = profiles.reduce((s, p) => s + p.hp, 0) * (1 + lifesteal) * powerMult * syn.hp;
+  const avgDef = profiles.reduce((s, p) => s + p.def, 0) / n * syn.def;
+  const baseDPS = profiles.reduce((s, p) => s + p.dps, 0) * atkMult * critMult * powerMult * syn.atk;
+  // 대표 속성(최다). 동률이면 먼저 나온 것.
+  const elem = {};
+  for (const p of profiles) if (p.element) elem[p.element] = (elem[p.element] || 0) + 1;
+  let dominant = null, best = 0;
+  for (const [e, c] of Object.entries(elem)) if (c > best) { best = c; dominant = e; }
+  return { baseDPS, ehp, avgDef, defPierce, dmgReduce, teamDefReduce, trueDamage, accuracy, evasion, absDef, dominant };
+}
+
+// A가 B에게 실제로 넣는 유효 DPS (방어감쇠·절대공격·회피·상성·받는피해감소·절대방어 반영).
+function effDPSbetween(atk, def) {
+  const mitig = mitigation(def.avgDef * (1 - atk.defPierce));
+  const throughput = mitig + atk.trueDamage * (1 - mitig);
+  const enemyEva = Math.min(0.5, Math.max(0, def.evasion - atk.accuracy));
+  const aff = affinity(atk.dominant, def.dominant);
+  const incoming = (1 - def.teamDefReduce) * (1 - def.dmgReduce) * (1 - def.absDef);
+  return Math.max(1, atk.baseDPS * throughput * (1 - enemyEva) * aff * incoming);
+}
+
+export function resolvePvP(attacker, defender, aMods = {}, dMods = {}, aForm = null, dForm = null) {
+  if (!attacker || !attacker.length) return { win: false, margin: 0, log: '공격 파티 없음' };
+  if (!defender || !defender.length) return { win: true, margin: Infinity, log: '방어 파티 없음' };
+  const A = aggregateSide(attacker, aMods, aForm);
+  const D = aggregateSide(defender, dMods, dForm);
+  const aEff = effDPSbetween(A, D); // 공격자가 방어자에게
+  const dEff = effDPSbetween(D, A); // 방어자가 공격자에게
+  const ta = D.ehp / aEff; // 공격자가 방어자를 처치하는 시간
+  const td = A.ehp / dEff; // 방어자가 공격자를 처치하는 시간
+  const win = ta <= td;    // 동률은 선공(공격자) 승
+  return {
+    win, margin: td / ta,
+    attackerPower: Math.round(A.baseDPS), defenderPower: Math.round(D.baseDPS),
+    ta, td,
+    log: win ? `공격 승리 (${ta.toFixed(1)}초)` : `방어 성공 (${td.toFixed(1)}초)`,
+  };
+}

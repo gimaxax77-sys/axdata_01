@@ -62,11 +62,15 @@ exports.matchmakePvp = functions.https.onCall(async (data, ctx) => {
   const picked = arena.pickOpponent(myPower, candidates) || null;
   const defender = picked || { name: 'AI 수련상대', power: Math.round(myPower * 0.95), party: null };
 
-  // 서버 권위적 판정: 코어 resolve()로 재-시뮬(클라와 동일 결과).
+  // 서버 권위적 판정: 코어 resolvePvP()로 파티 vs 파티 재-시뮬(클라와 동일 결과).
   let win;
   if (defender.party) {
-    const mods = { powerMult: Number(me.powerMult) || 1 };
-    const r = resolution.resolve(me.party, defenderChallengeFrom(defender.party), mods, me.formation);
+    const r = resolution.resolvePvP(
+      me.party, defender.party,
+      { powerMult: Number(me.powerMult) || 1 },
+      { powerMult: Number(defender.powerMult) || 1 },
+      me.formation, defender.formation,
+    );
     win = r.win;
   } else {
     win = myPower >= defender.power; // 봇: 파워 비교 폴백
@@ -147,9 +151,4 @@ async function setMax(ref, field, value, extra) {
     if (value > prev) tx.set(ref, { [field]: value, ...extra, updatedAt: Date.now() }, { merge: true });
   });
 }
-// 방어 스냅샷 party → resolve()가 받는 challenge 형태로 축약(간이).
-// 실제로는 방어팀을 그대로 상대 유닛으로 두고 대칭 판정하거나, 대표 스탯으로 집계.
-function defenderChallengeFrom(party) {
-  // TODO: 방어팀 전투 프로필 합산 → { hp, atk, def, element }. 여기선 골격만.
-  return { hp: 1, atk: 1, def: 1, element: null };
-}
+// (방어팀은 resolvePvP가 파티 그대로 대칭 판정 → 별도 challenge 축약 불필요)
