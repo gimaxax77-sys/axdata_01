@@ -13,10 +13,6 @@ import { getStage } from './progression.mjs';
 export const SUMMON_LEVEL_MAX = 15;
 export const SUMMON_BANNERS = ['hero', 'pet', 'gear', 'rune', 'cosmetic'];
 
-// 배너별 "뽑기권" 재화 — 그 배너에서 실제 소환에 쓰는 재화로 지급.
-//   영웅은 소환권(summon), 나머지(펫·장비·룬·코스튬)는 다이아(gem)로 소환하므로 gem.
-export const BANNER_TICKET = { hero: 'summon', pet: 'gem', gear: 'gem', rune: 'gem', cosmetic: 'gem' };
-
 // 레벨 L 도달에 필요한 누적 소환 횟수 (index 0 = 레벨1).
 export const SUMMON_LEVEL_THRESHOLDS = [3, 8, 15, 25, 40, 60, 85, 115, 150, 190, 235, 285, 340, 400, 465];
 
@@ -47,13 +43,11 @@ export function recordSummon(state, banner, n = 1) {
   m.count += n;
 }
 
-// 레벨 보상 정의 (표시·지급 공용). 뽑기권은 배너 재화, 재화는 진행도(peakStage) 비례.
-//   · 홀수 : 뽑기권 + 능력치(계정 파워 %)
-//   · 짝수 : 뽑기권 + 재화(골드·정수)
+// 레벨 보상 정의 (표시·지급 공용). 모든 배너 공통 기본보상 = 소환권 + 다이아.
+//   · 홀수 : 기본(소환권+다이아) + 능력치(계정 파워 %)
+//   · 짝수 : 기본(소환권+다이아) + 재화(골드·정수, 진행도 비례)
 export function levelReward(state, banner, level) {
-  const ticket = BANNER_TICKET[banner] || 'summon';
-  const ticketAmt = (ticket === 'summon' ? 10 : 8) + level * 2; // 다이아는 소폭 낮게
-  const base = { ticket, [ticket]: ticketAmt };
+  const base = { summon: 10 + level * 2, gem: 6 + level * 2 };
   if (level % 2 === 1) {
     return { type: 'stat', ...base, power: levelPowerBonus(level) };
   }

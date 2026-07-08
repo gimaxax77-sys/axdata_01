@@ -35,44 +35,40 @@ test('숙련도: 레벨 미달이면 청구 실패, 도달 시 순차 청구', (
   assert.equal(claimSummonLevel(s, 'gear').ok, false, 'Lv2 미도달 → 재청구 불가');
 });
 
-test('숙련도: 홀수=뽑기권+능력치, 짝수=뽑기권+재화', () => {
+test('숙련도: 홀수=기본+능력치, 짝수=기본+재화', () => {
   const s = fresh();
   const r1 = levelReward(s, 'hero', 1);
   assert.equal(r1.type, 'stat');
-  assert.ok(r1.summon > 0 && r1.power > 0);
+  assert.ok(r1.summon > 0 && r1.gem > 0 && r1.power > 0);
   assert.equal(r1.currency, undefined);
   const r2 = levelReward(s, 'hero', 2);
   assert.equal(r2.type, 'currency');
-  assert.ok(r2.summon > 0 && r2.currency > 0 && r2.growth > 0);
+  assert.ok(r2.summon > 0 && r2.gem > 0 && r2.currency > 0 && r2.growth > 0);
   assert.equal(r2.power, undefined);
 });
 
-test('숙련도: 배너별 뽑기권 재화 (영웅=소환권, 그 외=다이아)', () => {
+test('숙련도: 모든 배너 기본보상 = 소환권 + 다이아', () => {
   const s = fresh();
-  assert.equal(levelReward(s, 'hero', 1).ticket, 'summon');
-  assert.ok(levelReward(s, 'hero', 1).summon > 0);
-  for (const bn of ['pet', 'gear', 'rune', 'cosmetic']) {
-    const r = levelReward(s, bn, 1);
-    assert.equal(r.ticket, 'gem', `${bn} 뽑기권=다이아`);
-    assert.ok(r.gem > 0);
-    assert.equal(r.summon, undefined, `${bn}은 소환권 아님`);
+  for (const bn of ['hero', 'pet', 'gear', 'rune', 'cosmetic']) {
+    for (const lv of [1, 2]) {
+      const r = levelReward(s, bn, lv);
+      assert.ok(r.summon > 0, `${bn} Lv${lv} 소환권`);
+      assert.ok(r.gem > 0, `${bn} Lv${lv} 다이아`);
+    }
   }
 });
 
-test('숙련도: 청구 시 배너 재화로 지급', () => {
+test('숙련도: 청구 시 소환권+다이아 함께 지급', () => {
   const s = fresh();
-  // 영웅 → 소환권 지급
-  recordSummon(s, 'hero', SUMMON_LEVEL_THRESHOLDS[0]);
-  const sumBefore = s.wallet.summon || 0;
-  const rh = claimSummonLevel(s, 'hero');
-  assert.equal(rh.ok, true);
-  assert.equal(s.wallet.summon, sumBefore + rh.reward.summon, '영웅=소환권 지급');
-  // 펫 → 다이아 지급
-  recordSummon(s, 'pet', SUMMON_LEVEL_THRESHOLDS[0]);
-  const gemBefore = s.wallet.gem || 0;
-  const rp = claimSummonLevel(s, 'pet');
-  assert.equal(rp.ok, true);
-  assert.equal(s.wallet.gem, gemBefore + rp.reward.gem, '펫=다이아 지급');
+  for (const bn of ['gear', 'cosmetic']) {
+    recordSummon(s, bn, SUMMON_LEVEL_THRESHOLDS[0]);
+    const sumBefore = s.wallet.summon || 0;
+    const gemBefore = s.wallet.gem || 0;
+    const r = claimSummonLevel(s, bn);
+    assert.equal(r.ok, true);
+    assert.equal(s.wallet.summon, sumBefore + r.reward.summon, `${bn} 소환권 지급`);
+    assert.equal(s.wallet.gem, gemBefore + r.reward.gem, `${bn} 다이아 지급`);
+  }
 });
 
 test('숙련도: 능력치 보상이 계정 파워에 반영', () => {

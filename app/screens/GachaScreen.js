@@ -133,9 +133,8 @@ export default function GachaScreen({ state, bump, concept }) {
 
   // 소환 숙련도(소환 레벨) 현황·청구.
   const info = summonMasteryInfo(state, banner);
-  const tickEmoji = (rw) => (rw.ticket === 'gem' ? gemE : sumE);
   const rewardParts = (rw) => {
-    const parts = [`${tickEmoji(rw)}${fmt(rw[rw.ticket])}`];
+    const parts = [`${sumE}${fmt(rw.summon)}`, `${gemE}${fmt(rw.gem)}`]; // 기본: 소환권+다이아
     if (rw.type === 'stat') parts.push(`전투력 +${Math.round(rw.power * 100)}%`);
     else { parts.push(`${concept.resources.currency.emoji}${fmt(rw.currency)}`); parts.push(`${concept.resources.growth.emoji}${fmt(rw.growth)}`); }
     return parts;
@@ -192,7 +191,7 @@ export default function GachaScreen({ state, bump, concept }) {
           {nextThr ? `누적 ${info.count}/${nextThr}회` : `누적 ${info.count}회 · 최대`}
           {'  ·  '}다음: {nrText}
         </Text>
-        <Text style={s.mNote}>홀수 레벨 뽑기권+능력치 · 짝수 레벨 뽑기권+재화</Text>
+        <Text style={s.mNote}>기본 소환권+다이아 · 홀수 레벨 능력치 / 짝수 레벨 재화 추가</Text>
       </Card>
 
       <View style={s.btns}>
