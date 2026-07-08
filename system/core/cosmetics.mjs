@@ -85,6 +85,14 @@ export function buyCosmetic(state, kind, id) {
   return { ok: true, kind, id, cost: item.cost || null };
 }
 
+// 소유권만 부여 (소환/보상 지급용 — 재화 소모 없음).
+export function grantCosmetic(state, kind, id) {
+  if (!(CATALOG[kind] && CATALOG[kind][id])) return { ok: false, reason: '없는 항목' };
+  const first = !ownsCosmetic(state, kind, id);
+  ensure(state).owned[kind][id] = true;
+  return { ok: true, kind, id, first };
+}
+
 // 장착 — 보유 항목만.
 export function equipCosmetic(state, kind, id) {
   if (!(CATALOG[kind] && CATALOG[kind][id])) return { ok: false, reason: '없는 항목' };
