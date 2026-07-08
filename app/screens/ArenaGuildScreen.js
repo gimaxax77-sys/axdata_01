@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, ScrollView } from 'react-native';
 import { T } from '../theme';
 import { Card, Btn, fmt, MultiToggle, multLabel, repeat } from '../components';
 import { isUnlocked, unlockStage } from '../../system/core/unlocks.mjs';
-import { ARENA_ENTRIES, arenaEntriesLeft, arenaFight, arenaTier } from '../../system/core/arena.mjs';
+import { ARENA_ENTRIES, arenaEntriesLeft, arenaFight, arenaInfo } from '../../system/core/arena.mjs';
 import { GUILD_ATTACKS, guildAttacksLeft, guildAttack, guildBossMaxHp } from '../../system/core/guild.mjs';
 import { COMP_SHOP, compPurchase, compGrantPreview } from '../../system/core/compshop.mjs';
 import { climbTower, towerChallenge } from '../../system/core/tower.mjs';
@@ -74,20 +74,24 @@ export default function ArenaGuildScreen({ state, bump, concept }) {
       {/* ── 아레나 ───────────────────────────────── */}
       <Card>
         <View style={c.head}>
-          <Text style={c.sec}>⚔️ 아레나 <Text style={c.dim}>랭크전</Text></Text>
-          {arenaOpen && <Text style={c.tier}>{arenaTier(state.arena.points)} · {state.arena.points}p</Text>}
+          <Text style={c.sec}>⚔️ 아레나 <Text style={c.dim}>전투력 리그</Text></Text>
+          {arenaOpen && (() => { const ai = arenaInfo(state); return (
+            <Text style={c.tier}>{ai.tier.emoji} {ai.tier.name} · {state.arena.points}p</Text>
+          ); })()}
         </View>
         {!arenaOpen ? (
           <Text style={c.lock}>🔒 스테이지 {unlockStage('arena')} 도달 시 해금</Text>
         ) : (<>
-          <Text style={c.sub}>내 파티 전투력으로 상대와 겨뤄 랭크 포인트를 얻습니다. 승리 시 {concept.resources.gem.emoji}다이아 + {concept.resources.currency.emoji}골드.</Text>
+          {(() => { const ai = arenaInfo(state); return (
+            <Text style={c.sub}>내 전투력 <Text style={{ color: T.accent, fontWeight: '800' }}>{fmt(ai.power)}</Text> · {ai.tier.emoji} {ai.tier.name} 리그. 같은 리그 상대와만 매칭되며, 상대 전투력은 내 전투력의 1.12배를 넘지 않습니다(약자 보호). 승리 시 {concept.resources.gem.emoji}다이아 + {concept.resources.currency.emoji}골드.</Text>
+          ); })()}
           <Text style={c.left}>오늘 입장 {aLeft}/{ARENA_ENTRIES}</Text>
           {arenaLog && (
             <View style={[c.result, { borderColor: arenaLog.win ? T.good : T.danger }]}>
               <Text style={[c.resultTitle, { color: arenaLog.win ? T.good : T.danger }]}>
                 {arenaLog.win ? '승리! +25p' : '패배 −12p'}
               </Text>
-              <Text style={c.resultSub}>내 {fmt(arenaLog.myPower)} vs 상대 {fmt(arenaLog.oppPower)} · 현재 {arenaLog.points}p ({arenaLog.tier})</Text>
+              <Text style={c.resultSub}>내 {fmt(arenaLog.myPower)} vs 상대 {fmt(arenaLog.oppPower)} · {arenaLog.tierEmoji} {arenaLog.tier} · {arenaLog.points}p</Text>
               {arenaLog.win && <Text style={c.resultReward}>보상 {concept.resources.gem.emoji}+{arenaLog.reward.gem} {concept.resources.currency.emoji}+{fmt(arenaLog.reward.currency)}</Text>}
             </View>
           )}
