@@ -40,7 +40,9 @@ export const BALANCE = {
   //   · critChance(500)×critDamage(250): dps=×(1+치명확률·치명피해)로 서로 곱 커플링.
   //       전형값(치명피해~0.5·치명확률~0.25)을 상대 계수로 반영 → 500/250.
   //   · defPierce(500): 고방어 적에게만 유효(상황적) → 흡혈 대비 할인.
-  powerEffectWeights: { critChance: 500, critDamage: 250, lifesteal: 900, defPierce: 500, dmgReduce: 1000 },
+  //   신규축: evasion/absDef(생존, 상한 50%) ~ dmgReduce급 · trueDamage(고정딜, 상한90%)
+  //   ~ defPierce보다 강 · accuracy(적 회피 상쇄, 상황형) 저계수.
+  powerEffectWeights: { critChance: 500, critDamage: 250, lifesteal: 900, defPierce: 500, dmgReduce: 1000, evasion: 1000, absDef: 1000, trueDamage: 700, accuracy: 200 },
 
   // 성장 비용 (지출 곡선) — 시뮬레이터가 밝혀낸 핵심 튜닝 포인트
   levelCostBase: 50, levelCostGrowth: 1.15, // 레벨업 (growth)

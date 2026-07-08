@@ -52,6 +52,10 @@ function describeEffect(e = {}, scale = 1) {
   if (e.lifesteal) p.push(`흡혈 +${Math.round(e.lifesteal * scale * 100)}%`);
   if (e.defPierce) p.push(`관통 +${Math.round(e.defPierce * scale * 100)}%`);
   if (e.dmgReduce) p.push(`피해감소 +${Math.round(e.dmgReduce * scale * 100)}%`);
+  if (e.evasion) p.push(`회피 +${Math.round(e.evasion * scale * 100)}%`);
+  if (e.accuracy) p.push(`명중 +${Math.round(e.accuracy * scale * 100)}%`);
+  if (e.trueDamage) p.push(`절대공격 +${Math.round(e.trueDamage * scale * 100)}%`);
+  if (e.absDef) p.push(`절대방어 +${Math.round(e.absDef * scale * 100)}%`);
   return p;
 }
 // scale: 스킬 레벨/랭크 배수. 강화 시 실제 반영되는 수치를 그대로 보여준다.
@@ -89,7 +93,7 @@ function describeGearItem(item) {
 }
 // 장비 부옵션만 (재련 대상 강조용).
 function describeSubs(subs = []) {
-  const KO = { atk: 'ATK', hp: 'HP', def: 'DEF', spd: 'SPD', critChance: '치명', critDamage: '치피', lifesteal: '흡혈', defPierce: '관통', dmgReduce: '피해감소' };
+  const KO = { atk: 'ATK', hp: 'HP', def: 'DEF', spd: 'SPD', critChance: '치명', critDamage: '치피', lifesteal: '흡혈', defPierce: '관통', dmgReduce: '피해감소', evasion: '회피', accuracy: '명중', trueDamage: '절대공격', absDef: '절대방어' };
   return subs.map((s) => `${KO[s.key] || s.key} +${Math.round(s.value * 100)}%`).join(' · ');
 }
 // 시그니처 각성 2차 효과 설명
@@ -293,7 +297,7 @@ export default function RosterScreen({ state, bump, concept }) {
         {/* 전투력 수치비례표 — 각 요소가 전투력에 기여하는 점수·비율(회피성 효과 포함) */}
         {showBd && (() => {
           const bd = powerBreakdown(unit);
-          const EFF_KO = { critChance: '치명', critDamage: '치명피해', lifesteal: '흡혈', defPierce: '관통', dmgReduce: '피해감소(회피)' };
+          const EFF_KO = { critChance: '치명', critDamage: '치명피해', lifesteal: '흡혈', defPierce: '관통', dmgReduce: '피해감소', evasion: '회피', accuracy: '명중', trueDamage: '절대공격', absDef: '절대방어' };
           const rows = [
             ['체력', bd.stats.hp], ['공격', bd.stats.atk], ['방어', bd.stats.def], ['속도', bd.stats.spd],
             ...Object.entries(bd.effects).filter(([, v]) => v > 0).map(([k, v]) => [EFF_KO[k] || k, v]),

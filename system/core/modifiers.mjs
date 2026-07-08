@@ -22,7 +22,7 @@ function emptyMods() {
   return {
     statPct: { atk: 0, hp: 0, def: 0, spd: 0 },
     statFlat: { atk: 0, hp: 0, def: 0, spd: 0 },
-    effect: { critChance: 0, critDamage: 0, lifesteal: 0, defPierce: 0, dmgReduce: 0 },
+    effect: { critChance: 0, critDamage: 0, lifesteal: 0, defPierce: 0, dmgReduce: 0, evasion: 0, accuracy: 0, trueDamage: 0, absDef: 0 },
     // 팀버프 3종: atk(공격)·def(피해경감)·critChance(치명) — 지원형 정체성 분화.
     teamBuff: { atk: 0, def: 0, critChance: 0 },
   };

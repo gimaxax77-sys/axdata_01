@@ -65,6 +65,11 @@ export const GEAR_CATALOG = {
   CRIT_RING: { id: 'CRIT_RING', slot: 'accessory', label: '치명반지', flat: { spd: 30 }, effect: { critChance: 0.12, critDamage: 0.3 } },
   PIERCE_CHARM: { id: 'PIERCE_CHARM', slot: 'accessory', label: '관통부적', flat: { spd: 20 }, effect: { defPierce: 0.25 } },
   SWIFT_CLOAK: { id: 'SWIFT_CLOAK', slot: 'cloak', label: '질풍망토', flat: { spd: 40, hp: 250 }, effect: { dmgReduce: 0.05 } },
+  // ── 신규 능력치 특화 ──
+  SHADE_CLOAK: { id: 'SHADE_CLOAK', slot: 'cloak', label: '그림자망토', flat: { spd: 35 }, effect: { evasion: 0.10 } },
+  HAWK_EARRING: { id: 'HAWK_EARRING', slot: 'earring', label: '매눈귀걸이', flat: { spd: 18 }, effect: { accuracy: 0.15 } },
+  VOID_EDGE: { id: 'VOID_EDGE', slot: 'weapon', label: '공허검', flat: { atk: 120 }, effect: { trueDamage: 0.12 }, craftCost: 400 },
+  GUARDIAN_WALL: { id: 'GUARDIAN_WALL', slot: 'offhand', label: '수호벽', flat: { hp: 460, def: 40 }, effect: { absDef: 0.10 }, craftCost: 400 },
   // ── 탈것 : 기동 + 소폭 생존 ──
   WAR_STEED: { id: 'WAR_STEED', slot: 'mount', label: '군마', flat: { spd: 55, hp: 350, atk: 30 } },
   // ── P1 상위 티어 (제작 비용↑, 콘텐츠 진행 후 노림) · 용사 세트 ──
@@ -169,6 +174,10 @@ const SUBSTAT_POOL = [
   { key: 'lifesteal', kind: 'effect', min: 0.04, max: 0.10 },
   { key: 'defPierce', kind: 'effect', min: 0.05, max: 0.12 },
   { key: 'dmgReduce', kind: 'effect', min: 0.03, max: 0.08 },
+  { key: 'evasion', kind: 'effect', min: 0.03, max: 0.08 },
+  { key: 'accuracy', kind: 'effect', min: 0.05, max: 0.12 },
+  { key: 'trueDamage', kind: 'effect', min: 0.04, max: 0.10 },
+  { key: 'absDef', kind: 'effect', min: 0.03, max: 0.08 },
 ];
 
 function rollSub(rng) {
@@ -233,6 +242,10 @@ export const ENCHANT_POOL = [
   { key: 'lifesteal', kind: 'effect', per: 0.02, label: '흡혈' },
   { key: 'defPierce', kind: 'effect', per: 0.025, label: '관통' },
   { key: 'dmgReduce', kind: 'effect', per: 0.015, label: '피해감소' },
+  { key: 'evasion', kind: 'effect', per: 0.015, label: '회피' },
+  { key: 'accuracy', kind: 'effect', per: 0.025, label: '명중' },
+  { key: 'trueDamage', kind: 'effect', per: 0.02, label: '절대공격' },
+  { key: 'absDef', kind: 'effect', per: 0.015, label: '절대방어' },
 ];
 function enchantDef(key) { return ENCHANT_POOL.find((e) => e.key === key) || null; }
 
