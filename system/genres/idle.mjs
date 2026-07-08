@@ -86,6 +86,16 @@ export const idleGenre = {
     return { ...this.tick(state, dt), seconds: Math.min(dt, OFFLINE_CAP_SEC) };
   },
 
+  // QoL: 오프라인 보상 2배 — 광고 시청 등으로 정산된 보상만큼 한 번 더 지급.
+  //   rew.gained(정산 결과)를 그대로 넘기면 순증 = 2배가 된다.
+  applyOfflineBonus(state, gained, factor = 1) {
+    if (!gained) return { ok: false };
+    const bonus = { currency: Math.round((gained.currency || 0) * factor), growth: Math.round((gained.growth || 0) * factor) };
+    if (bonus.currency <= 0 && bonus.growth <= 0) return { ok: false };
+    earn(state.wallet, bonus);
+    return { ok: true, bonus };
+  },
+
   // 환생: 이번 회차 진행을 리셋하고 영구 파워/수입 배수를 얻는다.
   // 정통 방치형 루프 — 벽에서 환생 → 배수로 더 깊이 재등반.
   // peakStage(역대 최고)는 유지하므로 "실제 진행도"는 사라지지 않는다.

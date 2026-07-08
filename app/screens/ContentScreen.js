@@ -2,14 +2,16 @@ import React, { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView } from 'react-native';
 import { T, rarityMeta } from '../theme';
 import { Card, Btn, fmt, MultiToggle, multLabel, repeat } from '../components';
+import { fx } from '../feedback';
 import {
   ATTENDANCE, canClaimAttendance, claimAttendance,
   missionList, claimMission, DUNGEONS, dungeonEntriesLeft, enterDungeon,
+  sweepDungeon, claimAllDaily,
 } from '../../system/core/daily.mjs';
 import { RELICS, relicUpgradeCost, upgradeRelic, relicCap } from '../../system/core/relics.mjs';
 import { PETS, petSummon, equipPet, unequipPet, petEffectLabel, MAX_ACTIVE_PETS, PET_PULL_COST,
   rerollPetOpt, petFuse, petFuseAvail, petOptLabel, PET_FUSE_COST,
-  petShardSummon, SHARD_SUMMON_COST } from '../../system/core/pets.mjs';
+  petShardSummon, SHARD_SUMMON_COST, autoFusePets } from '../../system/core/pets.mjs';
 import { MATERIAL_META, SHARD_META, materialCount } from '../../system/core/materials.mjs';
 import { getStage } from '../../system/core/progression.mjs';
 import { GEAR_CATALOG, GEAR_RARITY } from '../../system/core/gear.mjs';
@@ -54,6 +56,34 @@ export default function ContentScreen({ state, bump, concept }) {
     else if (last.kind === 'weekday') setDropMsg(`📅 장비 ${count}개 + 🔶돌파석 ${stone}`);
     else if (last.kind === 'element') setDropMsg(`🔷 속성정수 +${ess}`);
     else if (last.kind === 'petshard') setDropMsg(`🧩 펫조각 ${Object.entries(shards).map(([g, n]) => `${g} ${n}`).join(' · ')}`);
+    bump();
+  };
+  // QoL: 소탕 — 남은 입장 전부 한 번에.
+  const doSweep = (type) => {
+    const r = sweepDungeon(state, type);
+    if (!r.ok) { setDropMsg('입장 횟수 소진'); bump(); return; }
+    const parts = [`🧹 소탕 ${r.count}회`];
+    if (r.items) parts.push(`⚔️${r.items}`);
+    if (r.runes) parts.push(`🔷룬${r.runes}`);
+    if (r.ascendStone) parts.push(`🔶${r.ascendStone}`);
+    if (r.elemEssence) parts.push(`🔷정수${r.elemEssence}`);
+    const sh = Object.entries(r.shards || {}).map(([g, n]) => `🧩${g}${n}`);
+    if (sh.length) parts.push(sh.join(' '));
+    if (r.currency) parts.push(`🪙${fmt(r.currency)}`);
+    if (r.growth) parts.push(`💠${fmt(r.growth)}`);
+    setDropMsg(parts.join(' · '));
+    bump();
+  };
+  // QoL: 원탭 일일 전체수령.
+  const doClaimAll = () => {
+    const r = claimAllDaily(state);
+    if (r.ok) { fx('success'); } else { fx('error'); }
+    bump();
+  };
+  // QoL: 자동 펫 합성 — 승급 가능한 모든 등급 연쇄 합성.
+  const doAutoFuse = () => {
+    const r = autoFusePets(state);
+    if (r.ok) { fx('success'); setDropMsg(`🔁 자동 합성 ${r.fused}회`); } else { fx('error'); }
     bump();
   };
 
@@ -117,7 +147,12 @@ export default function ContentScreen({ state, bump, concept }) {
 
       {/* 일일 미션 */}
       <Card style={{ marginTop: 12 }}>
-        <Text style={c.sec}>일일 미션</Text>
+        <View style={c.rowBetween}>
+          <Text style={c.sec}>일일 미션</Text>
+          <Btn small kind="gold" label="⚡ 전체 수령"
+            disabled={!canAtt && !missions.some((m) => m.done && !m.claimed)}
+            onPress={doClaimAll} />
+        </View>
         {missions.map((m) => (
           <View key={m.id} style={c.mRow}>
             <View style={{ flex: 1 }}>
@@ -154,8 +189,14 @@ export default function ContentScreen({ state, bump, concept }) {
                   ? <Text style={c.mReward}>{rewardTxt}</Text>
                   : <Text style={c.mReward}>🔒 스테이지 {unlockStage(meta.feature)} 해금</Text>}
               </View>
-              <Btn small label={unlocked ? '입장' : '잠김'} disabled={!unlocked || left <= 0}
-                onPress={() => (isItem ? runDungeon(type) : actN(() => enterDungeon(state, type)))} />
+              <View style={c.dBtns}>
+                <Btn small label={unlocked ? '입장' : '잠김'} disabled={!unlocked || left <= 0}
+                  onPress={() => (isItem ? runDungeon(type) : actN(() => enterDungeon(state, type)))} />
+                {unlocked && (
+                  <Btn small kind="ghost" label={`🧹 소탕 ${left}`} disabled={left <= 0}
+                    onPress={() => doSweep(type)} />
+                )}
+              </View>
             </View>
           );
         })}
@@ -208,6 +249,9 @@ export default function ContentScreen({ state, bump, concept }) {
                   onPress={() => act(() => petFuse(state, rar))} />
               );
             })}
+            <Btn small kind="primary"
+              disabled={!['R', 'SR', 'SSR'].some((rar) => petFuseAvail(state, rar) >= PET_FUSE_COST)}
+              label="🔁 자동 합성" onPress={doAutoFuse} />
           </View>
         )}
         {isUnlocked(state, 'pets') && Object.entries(state.pets.owned).map(([id, lv]) => {
@@ -281,6 +325,8 @@ const c = StyleSheet.create({
   bar: { height: 6, backgroundColor: T.surface2, borderRadius: 3, marginTop: 5, overflow: 'hidden' },
   barFill: { height: 6, backgroundColor: T.good, borderRadius: 3 },
   dRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 10, borderTopWidth: 1, borderTopColor: T.line },
+  rowBetween: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 },
+  dBtns: { gap: 5 },
   petHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 },
   petEmoji: { fontSize: 26, width: 34, textAlign: 'center' },
   fuseRow: { flexDirection: 'row', gap: 6, marginTop: 8, marginBottom: 6, flexWrap: 'wrap' },

@@ -147,3 +147,39 @@ export function enterDungeon(state, type, now = Date.now(), rng = Math.random) {
   earn(state.wallet, { [res]: amount });
   return { ok: true, kind: 'resource', amount, resource: res };
 }
+
+// ── QoL: 소탕(sweep) — 남은 입장 횟수를 한 번에 소진하고 보상 합산. ──
+export function sweepDungeon(state, type, now = Date.now(), rng = Math.random) {
+  const left = dungeonEntriesLeft(state, type, now);
+  if (left <= 0) return { ok: false, reason: '입장 횟수 소진' };
+  const acc = { count: 0, ascendStone: 0, elemEssence: 0, items: 0, runes: 0, shards: {}, currency: 0, growth: 0 };
+  let last = null;
+  for (let i = 0; i < left; i++) {
+    const r = enterDungeon(state, type, now, rng);
+    if (!r.ok) break;
+    last = r; acc.count++;
+    acc.ascendStone += r.ascendStone || 0;
+    acc.elemEssence += r.elemEssence || 0;
+    if (r.kind === 'petshard') acc.shards[r.grade] = (acc.shards[r.grade] || 0) + (r.amount || 0);
+    else if (r.kind === 'resource') acc[r.resource] = (acc[r.resource] || 0) + (r.amount || 0);
+    else if (r.kind === 'gear' || r.kind === 'weekday') acc.items++;
+    else if (r.kind === 'rune') acc.runes++;
+  }
+  return { ok: acc.count > 0, kind: DUNGEONS[type].kind, ...acc, last };
+}
+
+// ── QoL: 원탭 일일 전체수령 — 출석 + 완료 미션 일괄 수령. ──
+export function claimAllDaily(state, now = Date.now()) {
+  const got = { attendance: null, missions: [] };
+  if (canClaimAttendance(state, now)) {
+    const a = claimAttendance(state, now);
+    if (a.ok) got.attendance = a.reward;
+  }
+  for (const m of missionList(state, now)) {
+    if (m.done && !m.claimed) {
+      const r = claimMission(state, m.id);
+      if (r.ok) got.missions.push({ id: m.id, reward: r.reward });
+    }
+  }
+  return { ok: !!got.attendance || got.missions.length > 0, ...got };
+}

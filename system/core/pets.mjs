@@ -92,6 +92,23 @@ export function petFuse(state, rarity, rng = Math.random) {
   return { ok: true, pet: pet.id, rarity: next };
 }
 
+// ── QoL: 자동 합성 — 합성 가능한 모든 등급을 한 번에 승급(하위→상위 연쇄). ──
+export function autoFusePets(state, rng = Math.random) {
+  const order = ['R', 'SR', 'SSR'];
+  let fused = 0, guard = 0, progressed = true;
+  while (progressed && guard++ < 100) {
+    progressed = false;
+    for (const rar of order) {
+      while (petFuseAvail(state, rar) >= PET_FUSE_COST) {
+        const r = petFuse(state, rar, rng);
+        if (!r.ok) break;
+        fused++; progressed = true;
+      }
+    }
+  }
+  return { ok: fused > 0, fused };
+}
+
 export function petEffectLabel(type, concept) {
   if (type === 'power') return '전투력';
   if (type === 'currency') return `${concept ? concept.resources.currency.name : '골드'} 수입`;
