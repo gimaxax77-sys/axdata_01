@@ -30,7 +30,7 @@ export default function IdleScreen({ state, bump, lastGain, concept }) {
   const canPrestige = state.maxStage >= 15;
   const nextGain = Math.floor(Math.sqrt(state.maxStage));
   const synergy = teamSynergy(party);
-  const battle = resolve(getPartyUnits(state), stageDef.challenge, accountMods(state));
+  const battle = resolve(getPartyUnits(state), stageDef.challenge, accountMods(state), state.formation);
 
   return (
     <ScrollView style={st.flex} contentContainerStyle={st.wrap}>

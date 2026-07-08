@@ -24,7 +24,7 @@ export const rpgGenre = {
 
     const party = getPartyUnits(state);
     const stageDef = getStage(state.stage);
-    const result = resolve(party, stageDef.challenge, accountMods(state));
+    const result = resolve(party, stageDef.challenge, accountMods(state), state.formation);
 
     if (result.win) {
       earn(state.wallet, {

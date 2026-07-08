@@ -10,6 +10,7 @@ import { charImage } from '../charImages';
 import { fx } from '../feedback';
 import { togglePartyMember, MAX_PARTY, getPartyUnits } from '../../system/core/gameState.mjs';
 import { teamSynergy } from '../../system/core/synergy.mjs';
+import { unitRole, toggleFormation, formationSummary } from '../../system/core/formation.mjs';
 import { computeStats, computePower, powerBreakdown } from '../../system/core/stats.mjs';
 import { getArchetype } from '../../system/core/archetypes.mjs';
 import { levelCap } from '../../system/core/units.mjs';
@@ -200,6 +201,37 @@ export default function RosterScreen({ state, bump, concept }) {
               {syn.list.map((s) => (
                 <View key={s.id} style={g.synChip}><Text style={g.synChipText}>✦ {s.label}</Text><Text style={g.synChipDesc}>{s.desc}</Text></View>
               ))}
+            </View>
+          );
+        })()}
+        {/* 진형 — 전열(방어벽) / 후열(보호받는 딜러). 후열 배치 시 발동. */}
+        {(() => {
+          const sum = formationSummary(state);
+          return (
+            <View style={g.formWrap}>
+              <View style={g.intiHead}>
+                <Text style={g.formTitle}>⚔️ 진형</Text>
+                <Text style={g.dim}>전열 방어·체력↑ · 후열 공격↑</Text>
+              </View>
+              <View style={g.formRow}>
+                {getPartyUnits(state).map((u) => {
+                  const back = unitRole(state, u.uid) === 'back';
+                  const pm = identity(concept, u);
+                  return (
+                    <TouchableOpacity key={u.uid} activeOpacity={0.8}
+                      onPress={() => act(() => toggleFormation(state, u.uid))}
+                      style={[g.formChip, back ? g.formBack : g.formFront]}>
+                      <Text style={g.formPos}>{back ? '후열' : '전열'}</Text>
+                      <Text style={g.formName} numberOfLines={1}>{pm.name}</Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+              {sum.exposed
+                ? <Text style={g.formWarn}>⚠️ 전열이 없어 후열이 노출됨 — 공격 보너스 상실</Text>
+                : sum.active
+                  ? <Text style={g.formOk}>진형 발동 · 탭하여 전열↔후열 전환</Text>
+                  : <Text style={g.dim}>전원 전열(균형). 탭하여 후열 딜러 배치</Text>}
             </View>
           );
         })()}
@@ -711,6 +743,16 @@ const g = StyleSheet.create({
   partySlotSel: { borderColor: T.accent },
   partyName: { color: T.text, fontSize: 10, fontWeight: '700', marginTop: 5 },
   partyEmpty: { color: T.muted, fontSize: 24, fontWeight: '400' },
+  formWrap: { marginTop: 12, borderTopWidth: 1, borderTopColor: T.line, paddingTop: 10 },
+  formTitle: { color: T.text, fontWeight: '800', fontSize: 13 },
+  formRow: { flexDirection: 'row', gap: 6, marginTop: 8, flexWrap: 'wrap' },
+  formChip: { flex: 1, minWidth: 64, alignItems: 'center', paddingVertical: 7, borderRadius: 10, borderWidth: 1 },
+  formFront: { backgroundColor: T.surface2, borderColor: T.line },
+  formBack: { backgroundColor: T.surface2, borderColor: T.accent },
+  formPos: { fontSize: 11, fontWeight: '900', color: T.accent },
+  formName: { color: T.text, fontSize: 10, fontWeight: '700', marginTop: 3, maxWidth: '100%' },
+  formWarn: { color: T.danger, fontSize: 11, fontWeight: '700', marginTop: 8 },
+  formOk: { color: T.good, fontSize: 11, marginTop: 8 },
   synNone: { color: T.muted, fontSize: 12, marginTop: 10 },
   synWrap: { marginTop: 10, gap: 6 },
   synChip: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: T.surface2, borderRadius: 10, paddingHorizontal: 10, paddingVertical: 6, borderWidth: 1, borderColor: T.accent },

@@ -1,6 +1,7 @@
 import { toCombatProfile } from './units.mjs';
 import { affinity } from './elements.mjs';
 import { teamSynergy } from './synergy.mjs';
+import { FORMATION_MODS, formationActive } from './formation.mjs';
 
 // ─────────────────────────────────────────────────────────────
 // 전투 판정 엔진 — 시스템의 심장.
@@ -24,11 +25,21 @@ function mitigation(def) {
 
 // challenge 형태: { hp, atk, def }  (스칼라 적)
 // accountMods.powerMult: 계정 단위 영구 파워 배수(환생 보너스 등). 기본 1.
-export function resolve(party, challenge, accountMods = {}) {
+export function resolve(party, challenge, accountMods = {}, formation = null) {
   if (!party.length) return { win: false, duration: Infinity, log: '파티 없음' };
   const powerMult = accountMods.powerMult || 1;
 
   const profiles = party.map(toCombatProfile);
+  // 진형: 후열이 1명 이상일 때만 발동(하위호환). 전열=방어벽, 후열=보호받는 딜러.
+  if (formationActive(formation, party)) {
+    const hasFront = party.some((u) => formation[u.uid] !== 'back');
+    for (const p of profiles) {
+      const m = formation[p.uid] === 'back'
+        ? (hasFront ? FORMATION_MODS.back : FORMATION_MODS.backExposed)
+        : FORMATION_MODS.front;
+      p.dps *= m.dps || 1; p.def *= m.def || 1; p.hp *= m.hp || 1;
+    }
+  }
   // 파티 구성 시너지 (삼위일체·진형·속성 결속) — 팀 전체 배수
   const syn = teamSynergy(party).mult;
 

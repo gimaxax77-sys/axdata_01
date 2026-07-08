@@ -38,7 +38,7 @@ export const idleGenre = {
     if (state.difficulty && state.difficulty !== 'normal') {
       let guard = 0;
       while (state.stage > 1 && guard++ < 500) {
-        const r = resolve(party, playStage(state).challenge, mods);
+        const r = resolve(party, playStage(state).challenge, mods, state.formation);
         if (r.win && r.duration !== Infinity) break;
         state.stage -= 1;
       }
@@ -47,7 +47,7 @@ export const idleGenre = {
     // 시간 예산이 남는 동안 현재 스테이지를 반복
     while (remaining > 0) {
       const stageDef = playStage(state);
-      const result = resolve(party, stageDef.challenge, mods);
+      const result = resolve(party, stageDef.challenge, mods, state.formation);
 
       if (!result.win || result.duration === Infinity) break; // 벽에 막힘
 

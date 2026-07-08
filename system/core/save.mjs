@@ -84,6 +84,11 @@ function normalize(state) {
   if (state.party.length === 0 && state.units && state.units.length) {
     state.party = [state.units[0].uid];
   }
+  // 진형: 편성된 유닛만 후열 지정 유지 (미편성 uid 정리).
+  state.formation = state.formation || {};
+  for (const uid of Object.keys(state.formation)) {
+    if (!state.party.includes(uid)) delete state.formation[uid];
+  }
   for (const u of state.units || []) {
     if (!u.skills) u.skills = [null, null, null];
     if (!u.enhance) u.enhance = { atk: 0, hp: 0, def: 0, crit: 0 };

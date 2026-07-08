@@ -48,7 +48,7 @@ export function fightChapter(state, i) {
   if (i > cleared) return { ok: false, reason: '이전 챕터를 먼저 클리어하세요' };
   const party = getPartyUnits(state);
   if (!party.length) return { ok: false, reason: '파티 없음' };
-  const res = resolve(party, bossChallenge(i), accountMods(state));
+  const res = resolve(party, bossChallenge(i), accountMods(state), state.formation);
   if (!res.win) return { ok: true, win: false, margin: res.margin };
   let reward = null;
   if (i === cleared) {

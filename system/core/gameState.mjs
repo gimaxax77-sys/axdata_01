@@ -13,6 +13,8 @@ export function createGameState({ units = [], party = [] } = {}) {
   return {
     units, // 보유 유닛 인스턴스 배열
     party, // 편성된 유닛 uid 배열 (최대 정책은 장르가 정함)
+    formation: {}, // 진형: uid → 'back' (미기재=전열). 후열 1명↑일 때만 발동
+
     inventory: [], // 미장착 장비 인스턴스 배열
     runeBag: [], // 미장착 룬 인스턴스 배열
     wallet: createWallet(),
@@ -54,6 +56,7 @@ export function togglePartyMember(state, uid) {
   if (has) {
     if (state.party.length <= 1) return { ok: false, reason: '최소 1명은 편성해야 합니다' };
     state.party = state.party.filter((x) => x !== uid);
+    if (state.formation) delete state.formation[uid]; // 편성 해제 시 진형도 정리
     return { ok: true, inParty: false };
   }
   if (state.party.length >= MAX_PARTY) return { ok: false, reason: `파티는 최대 ${MAX_PARTY}명` };

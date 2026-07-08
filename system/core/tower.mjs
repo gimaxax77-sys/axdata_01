@@ -32,7 +32,7 @@ export function climbTower(state) {
   const floor = (state.tower && state.tower.floor) || 1;
   const party = getPartyUnits(state);
   if (!party.length) return { ok: false, reason: '파티 없음' };
-  const res = resolve(party, towerChallenge(floor), accountMods(state));
+  const res = resolve(party, towerChallenge(floor), accountMods(state), state.formation);
   if (!res.win) return { ok: true, win: false, floor, margin: res.margin };
   const reward = towerReward(floor);
   earn(state.wallet, reward);
