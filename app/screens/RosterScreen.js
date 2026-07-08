@@ -19,7 +19,7 @@ import { identity, elementMeta } from '../../system/concepts/index.mjs';
 import { GEAR_SLOTS, GEAR_CATALOG, SLOT_META, gearEnhanceCost, gearContribution } from '../../system/core/gear.mjs';
 import { levelUp, ascend, enhanceNode, equipSkill, unequipSkill, upgradeSkill, awakenSignature } from '../../system/core/character.mjs';
 import { AWAKEN_MAX, awakenCost } from '../../system/core/skills.mjs';
-import { craftGear, equipGear, enhanceGear, unequipGear, gearCraftCost, activeGearSets, rerollGearSubs, GEAR_RARITY, grantGearElementOption, ELEM_OPTION_COST, GEAR_SUB_MAX } from '../../system/core/gear.mjs';
+import { craftGear, equipGear, enhanceGear, unequipGear, gearCraftCost, activeGearSets, rerollGearSubs, GEAR_RARITY, grantGearElementOption, ELEM_OPTION_COST, GEAR_SUB_MAX, enchantGear, rerollEnchant, enchantInfo, enchantCost, ENCHANT_MAX } from '../../system/core/gear.mjs';
 import { materialCount, MATERIAL_META } from '../../system/core/materials.mjs';
 import { optimizeLoadout } from '../../system/core/loadout.mjs';
 import { recordMission } from '../../system/core/daily.mjs';
@@ -695,13 +695,30 @@ function PickerModal({ picker, unit, state, onClose, onChange, concept }) {
             </Text>
             <Text style={m.equippedDesc}>{describeGearItem(item)}</Text>
             {(item.subs || []).length > 0 && <Text style={m.subLine}>부옵션: {describeSubs(item.subs)}</Text>}
+            {(() => {
+              const en = enchantInfo(item);
+              return en
+                ? <Text style={m.subLine}>✨ 인챈트: {en.label} +{Math.round(en.value * 100)}% <Text style={g.dim}>Lv.{en.level}/{ENCHANT_MAX}</Text></Text>
+                : <Text style={m.subLine}>✨ 인챈트: 없음</Text>;
+            })()}
             <MultiToggle value={emult} onChange={setEmult} />
-            <View style={{ flexDirection: 'row', gap: 8 }}>
+            <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap' }}>
               <Btn small kind="gold" label={`강화 ${multLabel(emult)} (${fmt(gearEnhanceCost(item.level).currency)})`} onPress={() => applyN(() => enhanceGear(state, item.uid))} />
               {(item.subs || []).length > 0 && <Btn small kind="primary" label="재련 💎20" onPress={() => apply(() => rerollGearSubs(state, item.uid))} />}
               <Btn small kind="gold" disabled={materialCount(state, 'elemEssence') < ELEM_OPTION_COST || (item.subs || []).length >= GEAR_SUB_MAX}
                 label={`속성 부여 ${MATERIAL_META.elemEssence.emoji}${ELEM_OPTION_COST}`}
                 onPress={() => apply(() => { const r = grantGearElementOption(state, item.uid); setDmsg(r.ok ? `${MATERIAL_META.elemEssence.emoji} 속성옵션 부여 (부옵션 ${r.subs.length})` : (r.reason || '실패')); })} />
+              {(() => {
+                const en = enchantInfo(item);
+                const lv = en ? en.level : 0;
+                const c = enchantCost(lv).elemEssence;
+                return (<>
+                  <Btn small kind="primary" disabled={lv >= ENCHANT_MAX || materialCount(state, 'elemEssence') < c}
+                    label={`인챈트 ${MATERIAL_META.elemEssence.emoji}${c}`}
+                    onPress={() => apply(() => { const r = enchantGear(state, item.uid); setDmsg(r.ok ? `✨ ${r.info.label} 인챈트 Lv.${r.info.level}` : (r.reason || '실패')); })} />
+                  {en && <Btn small kind="ghost" label="효과변경 💎25" onPress={() => apply(() => { const r = rerollEnchant(state, item.uid); setDmsg(r.ok ? `✨ 인챈트 변경: ${r.info.label}` : (r.reason || '실패')); })} />}
+                </>);
+              })()}
               <Btn small kind="ghost" label="해제" onPress={() => apply(() => unequipGear(state, unit.uid, slot))} />
             </View>
           </View>

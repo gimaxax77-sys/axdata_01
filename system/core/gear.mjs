@@ -219,7 +219,61 @@ export function createGear(blueprintId, { rarity, rng } = {}) {
   return item;
 }
 
-// 장비 한 점이 유닛에 주는 기여분 (강화 레벨 + 등급 배수 + 부옵션 반영).
+// ── 인챈트(마법부여) — 장비에 각인하는 성장형 효과. 전 슬롯(탈것 포함) 적용. ──
+//   첫 인챈트는 무작위 효과를 1레벨로 부여, 이후 같은 효과를 레벨업(강도↑).
+//   속성정수(마법 재료)로 부여·강화, 다이아로 효과 재추첨(reroll).
+export const ENCHANT_MAX = 5;
+export const ENCHANT_POOL = [
+  { key: 'atk', kind: 'statPct', per: 0.02, label: '공격' },
+  { key: 'hp', kind: 'statPct', per: 0.02, label: '체력' },
+  { key: 'def', kind: 'statPct', per: 0.02, label: '방어' },
+  { key: 'spd', kind: 'statPct', per: 0.02, label: '속도' },
+  { key: 'critChance', kind: 'effect', per: 0.015, label: '치명확률' },
+  { key: 'critDamage', kind: 'effect', per: 0.04, label: '치명피해' },
+  { key: 'lifesteal', kind: 'effect', per: 0.02, label: '흡혈' },
+  { key: 'defPierce', kind: 'effect', per: 0.025, label: '관통' },
+  { key: 'dmgReduce', kind: 'effect', per: 0.015, label: '피해감소' },
+];
+function enchantDef(key) { return ENCHANT_POOL.find((e) => e.key === key) || null; }
+
+// 인챈트 현황(표시용): { key, kind, level, per, label, value } 또는 null.
+export function enchantInfo(item) {
+  if (!item || !item.enchant) return null;
+  const d = enchantDef(item.enchant.key);
+  if (!d) return null;
+  return { ...d, level: item.enchant.level, value: Math.round(d.per * item.enchant.level * 1000) / 1000 };
+}
+// 현재 인챈트 레벨(0=없음) 기준 다음 강화 비용.
+export function enchantCost(level) {
+  return { elemEssence: 2 + level * 2 };
+}
+export function enchantGear(state, gearUid, rng = Math.random) {
+  const item = findGearAnywhere(state, gearUid);
+  if (!item) return { ok: false, reason: '장비 없음' };
+  const cur = item.enchant ? item.enchant.level : 0;
+  if (cur >= ENCHANT_MAX) return { ok: false, reason: `인챈트 상한 ${ENCHANT_MAX}` };
+  const cost = enchantCost(cur);
+  if (!spendMaterial(state, 'elemEssence', cost.elemEssence)) return { ok: false, reason: '속성정수 부족', cost };
+  if (!item.enchant) {
+    const p = ENCHANT_POOL[Math.floor(rng() * ENCHANT_POOL.length)];
+    item.enchant = { key: p.key, kind: p.kind, level: 1 };
+  } else {
+    item.enchant.level += 1;
+  }
+  return { ok: true, enchant: item.enchant, info: enchantInfo(item), cost };
+}
+// 효과 재추첨 — 레벨 유지, 효과 종류만 다이아로 다시 뽑는다.
+export function rerollEnchant(state, gearUid, rng = Math.random) {
+  const item = findGearAnywhere(state, gearUid);
+  if (!item || !item.enchant) return { ok: false, reason: '인챈트 없음' };
+  const cost = { gem: 25 };
+  if (!spend(state.wallet, cost)) return { ok: false, reason: '다이아 부족', cost };
+  const p = ENCHANT_POOL[Math.floor(rng() * ENCHANT_POOL.length)];
+  item.enchant = { key: p.key, kind: p.kind, level: item.enchant.level };
+  return { ok: true, enchant: item.enchant, info: enchantInfo(item), cost };
+}
+
+// 장비 한 점이 유닛에 주는 기여분 (강화 레벨 + 등급 배수 + 부옵션 + 인챈트 반영).
 export function gearContribution(gearItem) {
   const b = getBlueprint(gearItem.blueprint);
   const rmult = (GEAR_RARITY[gearItem.rarity] && GEAR_RARITY[gearItem.rarity].mult) || 1.0;
@@ -231,6 +285,12 @@ export function gearContribution(gearItem) {
   for (const s of gearItem.subs || []) {
     if (s.kind === 'statPct') statPct[s.key] = (statPct[s.key] || 0) + s.value;
     else effect[s.key] = (effect[s.key] || 0) + s.value;
+  }
+  // 인챈트 기여 (statPct 또는 effect)
+  const en = enchantInfo(gearItem);
+  if (en) {
+    if (en.kind === 'statPct') statPct[en.key] = (statPct[en.key] || 0) + en.value;
+    else effect[en.key] = (effect[en.key] || 0) + en.value;
   }
   return { flat, statPct, effect };
 }
