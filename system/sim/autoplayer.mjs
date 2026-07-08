@@ -7,6 +7,8 @@ import {
 import { craftGear, equipGear, enhanceGear, GEAR_SLOTS, GEAR_CATALOG } from '../core/gear.mjs';
 import { RELICS, upgradeRelic } from '../core/relics.mjs';
 import { petSummon, PET_PULL_COST } from '../core/pets.mjs';
+import { EMBLEMS, upgradeEmblem } from '../core/emblems.mjs';
+import { guardianSummon, GUARDIAN_SUMMON_COST } from '../core/guardians.mjs';
 import { MAX_PARTY } from '../core/gameState.mjs';
 import {
   canOwnSigWeapon, hasSigWeapon, unlockSigWeapon, enhanceSigWeapon, SIGWEAPON_MAX,
@@ -190,12 +192,26 @@ function drainAxes(state, rng) {
   }
 }
 
-// gem 풀 소진: 펫 소환(중복 레벨업·자동 장착)
+// gem 풀 소진: 펫 소환(중복 레벨업·자동 장착) + 엠블럼 강화 + 정령 소환
 function drainPets(state, rng) {
   let iters = 0;
   while (iters++ < CAP_ITERS) {
     if ((state.wallet.gem || 0) < PET_PULL_COST.gem) break;
     if (!petSummon(state, rng).ok) break;
+  }
+  // 엠블럼(문장) 강화 — 파워/자원 엠블럼을 감당 가능한 만큼(다이아).
+  iters = 0;
+  const eids = Object.keys(EMBLEMS);
+  let progressed = true;
+  while (progressed && iters++ < CAP_ITERS) {
+    progressed = false;
+    for (const id of eids) if (upgradeEmblem(state, id).ok) progressed = true;
+  }
+  // 정령 소환(다이아) — 남은 다이아로.
+  iters = 0;
+  while (iters++ < CAP_ITERS) {
+    if ((state.wallet.gem || 0) < GUARDIAN_SUMMON_COST.gem) break;
+    if (!guardianSummon(state, rng).ok) break;
   }
 }
 
