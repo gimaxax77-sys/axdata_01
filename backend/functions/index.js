@@ -10,6 +10,9 @@ const functions = require('firebase-functions');
 const admin = require('firebase-admin');
 admin.initializeApp();
 
+// Phase 2 PvP/리더보드 함수 재노출.
+Object.assign(exports, require('./pvp'));
+
 // ── IAP 영수증 검증 ──────────────────────────────────────────
 // 클라이언트는 결제 성공 후 { platform, productId, token } 를 보낸다.
 // 서버가 스토어에 검증 요청 → 유효하면 지급 승인 토큰을 돌려준다.

@@ -56,6 +56,22 @@ if (cfg && cfg.projectId) {
       const res = await call({ platform, productId, token });
       return res.data; // { ok, reason?, productId? }
     },
+    // ── Phase 2 PvP/리더보드 (Cloud Functions 호출) ──
+    async pvpUploadDefense(snapshot) {
+      if (!currentUser) return { ok: false, reason: 'no-user' };
+      return (await httpsCallable(fns, 'uploadDefense')({ snapshot })).data;
+    },
+    async pvpMatchmake(attacker) {
+      if (!currentUser) return null;
+      return (await httpsCallable(fns, 'matchmakePvp')({ attacker })).data;
+    },
+    async pvpLeaderboard(ladder) {
+      return (await httpsCallable(fns, 'getLeaderboard')({ ladder })).data;
+    },
+    async submitTower(floor, name) {
+      if (!currentUser) return { ok: false };
+      return (await httpsCallable(fns, 'submitTower')({ floor, name })).data;
+    },
     // 원격 설정 가져오기 → { key: 문자열값 } (balance/notice/event 등).
     async fetchConfig() {
       const rc = getRemoteConfig(app);

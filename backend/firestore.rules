@@ -6,7 +6,16 @@ service cloud.firestore {
     match /users/{uid} {
       allow read, write: if request.auth != null && request.auth.uid == uid;
     }
-    // 리더보드(Phase 2) 등 공개 읽기 전용 컬렉션은 별도 규칙으로 추가
-    // match /leaderboards/{doc} { allow read: if true; allow write: if false; }
+    // 방어 스냅샷: 본인만 쓰기, 매칭 위해 로그인 유저는 읽기 허용
+    match /pvp_defense/{uid} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null && request.auth.uid == uid;
+    }
+    // 리더보드/명예의 전당: 공개 읽기, 쓰기는 서버(함수)만 → 클라 직접 쓰기 금지
+    match /leaderboards/{path=**} { allow read: if true; allow write: if false; }
+    match /halloffame/{path=**}   { allow read: if true; allow write: if false; }
+    // 결제 원장/시즌 메타: 클라 접근 금지(함수 전용)
+    match /purchases/{doc} { allow read, write: if false; }
+    match /seasons/{path=**} { allow read: if true; allow write: if false; }
   }
 }
