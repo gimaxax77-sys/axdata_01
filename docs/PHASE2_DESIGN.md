@@ -51,18 +51,26 @@ pvp_defense/{uid} = {
 - 업로드 시점: 파티/장비 변경 후 저빈도(디바운스). 세이브 push와 함께 갱신.
 - 크기: 파티 4인 기준 수 KB(전체 세이브보다 훨씬 작음).
 
-### 2-2. 시즌 리더보드 — `leaderboards/{season}/arena/{uid}`
+### 2-2. 3중 리그 리더보드 (확정) — `leaderboards/{ladder}/{seasonId}/arena/{uid}`
+아레나는 **주간·격주·월간 3개 리그를 동시 운영**한다. 한 번의 PvP 승리가 **세 리그 모두에 포인트**를 적립하고, 각 리그는 **자기 주기로 독립 리셋·정산**한다(주간=잦은 새출발, 월간=장기 명예).
 ```
-leaderboards/{season}/arena/{uid} = { name, points, power, tierIndex, updatedAt }
-leaderboards/{season}/tower/{uid} = { name, bestFloor, updatedAt }
+ladder ∈ { weekly(1주), biweekly(2주), monthly(4주) }
+leaderboards/{ladder}/{seasonId}/arena/{uid} = { name, points, power, tierIndex, updatedAt }
 ```
-- 순위 조회: `orderBy(points desc) limit N` (인덱스). 내 순위: 근사(상위 컷 기준) 또는 주기적 랭크 계산 함수.
+- 순위 조회: `orderBy(points desc) limit N`(인덱스). 내 순위: 근사(상위 컷) 또는 주기적 랭크 함수.
 
-### 2-3. 시즌 메타 — `seasons/{seasonId}`
+### 2-3. 탑 리더보드 (확정: 시즌제 + 영구 병행)
 ```
-seasons/{seasonId} = { startAt, endAt, active }
-current = 'seasons/current' → seasonId 포인터
+leaderboards/tower_season/{seasonId}/{uid} = { name, bestFloor, updatedAt }  // 시즌마다 리셋(경쟁)
+halloffame/tower/{uid}                      = { name, bestFloor, updatedAt }  // 영구 명예의 전당(최고 기록)
 ```
+
+### 2-4. 시즌 메타 — `seasons/{ladder}/current`
+```
+seasons/{ladder}/{seasonId} = { startAt, endAt, active }
+seasons/{ladder}/current → seasonId 포인터   // ladder별 현재 시즌
+```
+- 리셋 주기: weekly=7일, biweekly=14일, monthly=28일. 스케줄 함수가 각각 정산.
 
 ### 2-4. 결과 원장(중복/어뷰징 방지) — `pvp_log/{uid}/{ts}`
 공격 기록(일일 횟수·재보상 방지·신고 추적).
@@ -91,12 +99,21 @@ current = 'seasons/current' → seasonId 포인터
 
 ---
 
-## 4. 리더보드 플로우
+## 4. 리더보드 & 정산 플로우
 
-- **아레나 시즌 포인트**: PvP 결과마다 서버가 `leaderboards/{season}/arena/{uid}.points` 갱신.
-- **무한의 탑**: 최고층 갱신 시 클라가 `submitTower(floor)` 호출 → 서버가 max로 기록.
+- **아레나 3중 리그**: PvP 결과마다 서버가 weekly/biweekly/monthly **세 리그 포인트 동시 갱신**.
+- **무한의 탑**: 최고층 갱신 시 `submitTower(floor)` → **시즌 리더보드 + 영구 명예의 전당** 둘 다 max로 기록.
 - **조회**: 상위 100 + 내 주변 순위. 캐시(1~5분)로 읽기 비용 절감.
-- **시즌 종료**: 스케줄 함수가 순위별 보상 우편 지급 → 포인트 리셋 → 새 시즌 시작.
+
+### 보상 이원화 (확정: 모든 리그 즉시 + 순위 정산)
+- **즉시 보상**: PvP 승리 시 그 자리에서 지급(다이아·골드). 리그 무관 1회.
+- **순위 정산 보상**: 각 리그(주간/격주/월간) **시즌 종료 시** 순위 구간별 보상을 **우편(mailbox)으로 지급** → 포인트 리셋 → 새 시즌.
+  - 주기가 짧을수록 보상은 작게, 월간이 가장 큼(장기 경쟁 유인).
+  - 탑도 시즌 리더보드는 정산 보상, 명예의 전당은 보상 없는 영구 기록(과시).
+
+### 방어 정산 (확정: 단방향)
+- 방어자는 **패배해도 포인트 하락 없음**(무손실). 공격자만 승패로 ± → 방어 스트레스 제거.
+- 방어 성공/피격 로그는 표시용(“오늘 N회 방어 성공”)으로만 남긴다.
 
 ---
 
@@ -149,13 +166,18 @@ Phase 1과 동일 패턴:
 
 ---
 
-## 9. 결정 필요 항목 (Gim 확인)
+## 9. 확정 사항 (Gim 결정)
 
-1. **시즌 길이** — 2주 / 4주? (권장: 2주, 라이브옵스 리듬)
-2. **PvP 보상** — 승리 시 즉시 보상 + 시즌 종료 순위 보상 이원화? (권장: 예)
-3. **방어 패배 시** — 방어자도 포인트 하락시킬지(양방향) vs 공격자만(단방향, 부담↓). 권장: **단방향**(방어자 무손실 → 스트레스↓).
-4. **봇 폴백 비율** — 실 유저 풀이 얇을 때 봇 허용 범위.
-5. **탑 리더보드** — 시즌제 vs 영구 명예의 전당.
+1. **리그 주기** — ✅ **3중 리그 동시 운영**: 주간(1주)·격주(2주)·월간(4주). 한 번의 승리가 세 리그에 동시 적립, 각자 독립 리셋.
+2. **보상** — ✅ **모든 리그 즉시 보상 + 순위 정산 보상** 이원화(정산은 우편).
+3. **방어 정산** — ✅ **단방향**(방어자 무손실).
+4. **봇 폴백** — ✅ 제안대로: 실 유저 풀이 얇을 때 봇 상대로 대전 성립(신규·최상위 보호).
+5. **탑 리더보드** — ✅ **시즌제 + 영구 명예의 전당 병행**.
+
+### 파생 설계 노트
+- **3중 리그 UI**: 아레나 화면에 리그 탭(주간/격주/월간) — 각 리그 내 순위·잔여시간·내 포인트 표시.
+- **우편함(mailbox)** 필요 → Phase 2에 경량 우편 시스템 포함(정산 보상 수령). 로컬에서는 즉시수령으로 폴백.
+- **봇 폴백 비율**은 Remote Config로 조정 가능하게(라이브옵스). 초기 기본값: 실 유저 부족 시 100% 봇.
 
 ---
 
