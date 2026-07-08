@@ -133,16 +133,17 @@ export default function GachaScreen({ state, bump, concept }) {
 
   // 소환 숙련도(소환 레벨) 현황·청구.
   const info = summonMasteryInfo(state, banner);
+  const tickEmoji = (rw) => (rw.ticket === 'gem' ? gemE : sumE);
+  const rewardParts = (rw) => {
+    const parts = [`${tickEmoji(rw)}${fmt(rw[rw.ticket])}`];
+    if (rw.type === 'stat') parts.push(`전투력 +${Math.round(rw.power * 100)}%`);
+    else { parts.push(`${concept.resources.currency.emoji}${fmt(rw.currency)}`); parts.push(`${concept.resources.growth.emoji}${fmt(rw.growth)}`); }
+    return parts;
+  };
   const doClaim = () => {
     const r = claimSummonLevel(state, banner);
-    if (r.ok) {
-      fx('success');
-      const rw = r.reward;
-      const parts = [`Lv.${r.level} 보상`, `${sumE}${rw.summon}`];
-      if (rw.type === 'stat') parts.push(`전투력 +${Math.round(rw.power * 100)}%`);
-      else { parts.push(`${concept.resources.currency.emoji}${fmt(rw.currency)}`); parts.push(`${concept.resources.growth.emoji}${fmt(rw.growth)}`); if (rw.gem) parts.push(`${gemE}${rw.gem}`); }
-      setMsg(parts.join(' · '));
-    } else { fx('error'); }
+    if (r.ok) { fx('success'); setMsg([`Lv.${r.level} 보상`, ...rewardParts(r.reward)].join(' · ')); }
+    else { fx('error'); }
     bump();
   };
   // 진행 바: 현재 레벨→다음 레벨 문턱 사이 비율.
@@ -151,9 +152,7 @@ export default function GachaScreen({ state, bump, concept }) {
   const nextThr = curLv < SUMMON_LEVEL_MAX ? SUMMON_LEVEL_THRESHOLDS[curLv] : null;
   const barPct = nextThr ? Math.min(100, ((info.count - prevThr) / (nextThr - prevThr)) * 100) : 100;
   const nr = info.nextReward;
-  const nrText = !nr ? '최대 레벨 달성' : nr.type === 'stat'
-    ? `${sumE}${nr.summon} + 전투력 +${Math.round(nr.power * 100)}%`
-    : `${sumE}${nr.summon} + ${concept.resources.currency.emoji}${fmt(nr.currency)} ${concept.resources.growth.emoji}${fmt(nr.growth)}${nr.gem ? ` ${gemE}${nr.gem}` : ''}`;
+  const nrText = !nr ? '최대 레벨 달성' : rewardParts(nr).join(' ');
 
   if (!isUnlocked(state, 'gacha')) {
     return <LockedPanel concept={concept} title="소환" stage={unlockStage('gacha')} desc="스테이지를 진행하면 소환이 열립니다." />;

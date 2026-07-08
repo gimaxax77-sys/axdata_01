@@ -13,6 +13,10 @@ import { getStage } from './progression.mjs';
 export const SUMMON_LEVEL_MAX = 15;
 export const SUMMON_BANNERS = ['hero', 'pet', 'gear', 'rune', 'cosmetic'];
 
+// 배너별 "뽑기권" 재화 — 그 배너에서 실제 소환에 쓰는 재화로 지급.
+//   영웅은 소환권(summon), 나머지(펫·장비·룬·코스튬)는 다이아(gem)로 소환하므로 gem.
+export const BANNER_TICKET = { hero: 'summon', pet: 'gem', gear: 'gem', rune: 'gem', cosmetic: 'gem' };
+
 // 레벨 L 도달에 필요한 누적 소환 횟수 (index 0 = 레벨1).
 export const SUMMON_LEVEL_THRESHOLDS = [3, 8, 15, 25, 40, 60, 85, 115, 150, 190, 235, 285, 340, 400, 465];
 
@@ -43,19 +47,22 @@ export function recordSummon(state, banner, n = 1) {
   m.count += n;
 }
 
-// 레벨 보상 정의 (표시·지급 공용). 재화는 진행도(peakStage) 비례.
-export function levelReward(state, level) {
-  const summon = 10 + level * 2; // 공통: 뽑기권
+// 레벨 보상 정의 (표시·지급 공용). 뽑기권은 배너 재화, 재화는 진행도(peakStage) 비례.
+//   · 홀수 : 뽑기권 + 능력치(계정 파워 %)
+//   · 짝수 : 뽑기권 + 재화(골드·정수)
+export function levelReward(state, banner, level) {
+  const ticket = BANNER_TICKET[banner] || 'summon';
+  const ticketAmt = (ticket === 'summon' ? 10 : 8) + level * 2; // 다이아는 소폭 낮게
+  const base = { ticket, [ticket]: ticketAmt };
   if (level % 2 === 1) {
-    return { type: 'stat', summon, power: levelPowerBonus(level) };
+    return { type: 'stat', ...base, power: levelPowerBonus(level) };
   }
   const st = getStage(state.peakStage || 1).rewards;
   const scale = 30 + level * 10;
   return {
-    type: 'currency', summon,
+    type: 'currency', ...base,
     currency: Math.round(st.currency * scale),
     growth: Math.round(st.growth * scale),
-    gem: level * 5,
   };
 }
 
@@ -70,7 +77,7 @@ export function summonMasteryInfo(state, banner) {
     banner, count: m.count, level, claimed: m.claimed, claimable,
     maxed: m.claimed >= SUMMON_LEVEL_MAX,
     nextLevel, nextThreshold,
-    nextReward: m.claimed < SUMMON_LEVEL_MAX ? levelReward(state, m.claimed + 1) : null,
+    nextReward: m.claimed < SUMMON_LEVEL_MAX ? levelReward(state, banner, m.claimed + 1) : null,
   };
 }
 
@@ -81,12 +88,9 @@ export function claimSummonLevel(state, banner) {
   if (m.claimed >= SUMMON_LEVEL_MAX) return { ok: false, reason: '최대 레벨' };
   if (level <= m.claimed) return { ok: false, reason: '레벨 미달' };
   const next = m.claimed + 1;
-  const reward = levelReward(state, next);
+  const reward = levelReward(state, banner, next);
   const grant = {};
-  if (reward.summon) grant.summon = reward.summon;
-  if (reward.currency) grant.currency = reward.currency;
-  if (reward.growth) grant.growth = reward.growth;
-  if (reward.gem) grant.gem = reward.gem;
+  for (const k of ['summon', 'gem', 'currency', 'growth']) if (reward[k]) grant[k] = reward[k];
   earn(state.wallet, grant);
   m.claimed = next;
   return { ok: true, level: next, reward };
