@@ -3,7 +3,8 @@ import { View, Text, StyleSheet, ScrollView } from 'react-native';
 import { T } from '../theme';
 import { Card, Btn, fmt, MultiToggle, multLabel, repeat } from '../components';
 import { isUnlocked, unlockStage } from '../../system/core/unlocks.mjs';
-import { ARENA_ENTRIES, arenaEntriesLeft, arenaFight, arenaInfo } from '../../system/core/arena.mjs';
+import { ARENA_ENTRIES, arenaEntriesLeft, arenaFight, arenaInfo, ladderInfo } from '../../system/core/arena.mjs';
+import { mailList, unreadMailCount, claimMail, claimAllMail } from '../../system/core/mailbox.mjs';
 import { GUILD_ATTACKS, guildAttacksLeft, guildAttack, guildBossMaxHp } from '../../system/core/guild.mjs';
 import { COMP_SHOP, compPurchase, compGrantPreview } from '../../system/core/compshop.mjs';
 import { climbTower, towerChallenge } from '../../system/core/tower.mjs';
@@ -64,6 +65,11 @@ export default function ArenaGuildScreen({ state, bump, concept }) {
     bump();
   };
 
+  const doClaimMail = () => { const r = claimAllMail(state); if (r.ok) fx('success'); else fx('error'); bump(); };
+  const fmtDur = (ms) => { const h = Math.floor(ms / 3600000); const d = Math.floor(h / 24); return d > 0 ? `${d}일 ${h % 24}시간` : `${h}시간`; };
+  const mailN = unreadMailCount(state);
+  const ladders = arenaOpen ? ladderInfo(state) : [];
+
   const aLeft = arenaOpen ? arenaEntriesLeft(state) : 0;
   const gLeft = guildOpen ? guildAttacksLeft(state) : 0;
   const bossMax = guildOpen ? guildBossMaxHp(state) : 1;
@@ -71,6 +77,26 @@ export default function ArenaGuildScreen({ state, bump, concept }) {
 
   return (
     <ScrollView style={c.flex} contentContainerStyle={c.wrap}>
+      {/* ── 우편함 ───────────────────────────────── */}
+      {mailN > 0 && (
+        <Card style={{ marginBottom: 12 }}>
+          <View style={c.head}>
+            <Text style={c.sec}>📬 우편함 <Text style={c.dim}>{mailN}통</Text></Text>
+            <Btn small kind="gold" label="전체 수령" onPress={doClaimMail} />
+          </View>
+          {mailList(state).filter((m) => !m.claimed).slice(0, 4).map((m) => (
+            <View key={m.id} style={c.mailRow}>
+              <Text style={c.mailTitle} numberOfLines={1}>{m.title}</Text>
+              <Text style={c.mailReward}>
+                {m.reward.gem ? `${concept.resources.gem.emoji}${m.reward.gem} ` : ''}
+                {m.reward.currency ? `${concept.resources.currency.emoji}${fmt(m.reward.currency)}` : ''}
+                {m.reward.summon ? `${concept.resources.summon.emoji}${m.reward.summon}` : ''}
+              </Text>
+            </View>
+          ))}
+        </Card>
+      )}
+
       {/* ── 아레나 ───────────────────────────────── */}
       <Card>
         <View style={c.head}>
@@ -97,6 +123,18 @@ export default function ArenaGuildScreen({ state, bump, concept }) {
           )}
           <View style={{ height: 10 }} />
           <Btn label={aLeft > 0 ? '전투 시작' : '오늘 입장 소진'} kind="gold" disabled={aLeft <= 0} sfx={false} onPress={doArena} />
+
+          {/* 3중 리그 — 승리 포인트가 세 리그에 동시 적립, 각자 독립 정산 */}
+          <Text style={c.ladderHead}>🏆 리그 <Text style={c.dim}>(승리 시 세 리그 동시 적립 · 종료 시 순위 보상 우편)</Text></Text>
+          <View style={c.ladderRow}>
+            {ladders.map((l) => (
+              <View key={l.id} style={c.ladderCell}>
+                <Text style={c.ladderLabel}>{l.label}</Text>
+                <Text style={c.ladderPts}>{fmt(l.points)}p</Text>
+                <Text style={c.ladderTime}>{fmtDur(l.endsInMs)} 남음</Text>
+              </View>
+            ))}
+          </View>
           <CompShop state={state} bump={bump} concept={concept} kind="arena" balance={state.arena.points} unit="🏅" />
         </>)}
       </Card>
@@ -175,6 +213,15 @@ const c = StyleSheet.create({
   resultTitle: { fontWeight: '900', fontSize: 15 },
   resultSub: { color: T.muted, fontSize: 12, marginTop: 4 },
   resultReward: { color: T.good, fontSize: 12, fontWeight: '700', marginTop: 4 },
+  ladderHead: { color: T.text, fontWeight: '800', fontSize: 13, marginTop: 14, marginBottom: 6 },
+  ladderRow: { flexDirection: 'row', gap: 8 },
+  ladderCell: { flex: 1, backgroundColor: T.surface2, borderRadius: 10, paddingVertical: 8, alignItems: 'center', borderWidth: 1, borderColor: T.line },
+  ladderLabel: { color: T.muted, fontSize: 11, fontWeight: '700' },
+  ladderPts: { color: T.accent, fontSize: 15, fontWeight: '900', marginTop: 2 },
+  ladderTime: { color: T.muted, fontSize: 9, marginTop: 2 },
+  mailRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 6, borderTopWidth: 1, borderTopColor: T.line },
+  mailTitle: { color: T.text, fontSize: 12, fontWeight: '700', flex: 1 },
+  mailReward: { color: T.good, fontSize: 12, fontWeight: '700' },
   bossBar: { height: 26, backgroundColor: T.surface2, borderRadius: 8, overflow: 'hidden', justifyContent: 'center', marginBottom: 8 },
   bossFill: { position: 'absolute', left: 0, top: 0, bottom: 0, backgroundColor: T.danger, opacity: 0.5 },
   bossText: { color: T.text, fontSize: 12, fontWeight: '700', textAlign: 'center' },
