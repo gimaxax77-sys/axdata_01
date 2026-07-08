@@ -8,8 +8,9 @@ import { idleGenre } from '../system/genres/idle.mjs';
 import { serialize, deserialize, exportCode, importCode } from '../system/core/save.mjs';
 import { applyOverrides } from '../system/core/admin.mjs';
 import { hasPremium } from '../system/core/cosmetics.mjs';
-import { cloudAvailable, cloudUser, cloudSignIn, cloudSignOut, cloudPull, cloudPush } from './backend/cloud';
+import { cloudAvailable, cloudUser, cloudSignIn, cloudSignOut, cloudPull, cloudPush, cloudFetchConfig } from './backend/cloud';
 import { chooseSave, makeEnvelope, saveProgress } from './backend/sync.mjs';
+import { loadRemoteConfig } from './backend/remoteConfig.mjs';
 import { SAVE_VERSION } from '../system/core/save.mjs';
 import { fantasyConcept } from '../system/concepts/fantasy.mjs';
 import { CONCEPTS } from '../system/concepts/index.mjs';
@@ -221,10 +222,25 @@ export function useGame() {
     return () => clearInterval(id);
   }, [envOf]);
 
+  // 원격 설정(Remote Config) 1회 로드 — 밸런스 핫픽스 반영 + 공지/이벤트 표시.
+  const [remote, setRemote] = useState({ notice: null, event: null });
+  const didConfig = useRef(false);
+  useEffect(() => {
+    if (didConfig.current || !cloudAvailable()) return;
+    didConfig.current = true;
+    (async () => {
+      const raw = await cloudFetchConfig();
+      if (!raw) return;
+      const r = loadRemoteConfig(raw); // balance는 BALANCE에 반영됨
+      setRemote({ notice: r.notice, event: r.event });
+      bump(); // 밸런스 변경 반영 리렌더
+    })();
+  }, [bump]);
+
   return {
     state: ref.current, rev, bump, lastGain, offline, dismissOffline, claimOfflineBonus,
     reset, save, exportSave, importSave, concept: CONCEPT,
-    cloud, syncNow, signOutCloud,
+    cloud, syncNow, signOutCloud, remote,
   };
 }
 

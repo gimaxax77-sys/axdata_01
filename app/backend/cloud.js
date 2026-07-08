@@ -56,3 +56,10 @@ export async function cloudVerifyPurchase(payload) {
   if (!p || !p.verifyPurchase) return { ok: false, reason: 'cloud-off' };
   try { return await p.verifyPurchase(payload); } catch (e) { return { ok: false, reason: String(e && e.message || e) }; }
 }
+
+// 원격 설정(Remote Config) 가져오기 → { key: value(문자열) } 또는 null.
+export async function cloudFetchConfig() {
+  const p = provider();
+  if (!p || !p.fetchConfig) return null;
+  try { return await p.fetchConfig(); } catch { return null; }
+}

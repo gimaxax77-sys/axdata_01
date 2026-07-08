@@ -58,6 +58,15 @@
 - [ ] `cd backend/functions && npm i`
 - [ ] `firebase deploy --only functions` (`iapVerify`, `validateSave` 배포)
 
+### 2-4. Remote Config(원격 밸런스/공지) — 코드 완료, 콘솔 설정만
+- [ ] Firebase 콘솔 → Remote Config에 파라미터 등록(문자열 JSON):
+  - `balance` 예: `{"powerWeights.hp":0.09}` (허용 경로는 admin.mjs ADMIN_FIELDS)
+  - `notice` 예: `{"text":"점검 안내"}`  ·  `event` 예: `{"text":"주말 2배!"}`
+- [ ] 앱에서 자동 로드(1회)·밸런스 반영·공지 배너 표시됨(추가 코드 불필요)
+
+> Phase 1의 세 축(**클라우드 세이브·IAP 검증·Remote Config**) 클라이언트 구현 완료.
+> 남은 건 Firebase 콘솔 설정 + 함수 배포뿐입니다.
+
 ---
 
 ## 3. 실 인앱결제(IAP) 연동

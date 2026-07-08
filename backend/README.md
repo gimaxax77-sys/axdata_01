@@ -11,8 +11,18 @@
 ## 클라이언트 측 이미 구현됨 (코드 변경 불필요)
 - `app/backend/cloud.js` — 공급자 파사드(미등록 시 no-op).
 - `app/backend/sync.mjs` — 충돌 해결(버전→진행도→시각). 테스트: `system/test/cloud-sync.test.mjs`.
-- `app/useGame.js` — 로그인 후 자동 pull/충돌해결/push(60초 주기), 수동 동기화.
+- `app/backend/purchaseFlow.mjs` — 결제 지급 게이팅(스토어→검증→지급).
+- `app/backend/remoteConfig.mjs` — 원격 설정 로더(balance는 admin.applyOverrides 재사용).
+- `app/useGame.js` — 로그인 후 자동 pull/충돌해결/push(60초 주기), 수동 동기화, 원격설정 1회 로드.
 - `app/screens/Settings.js` — 설정에 "☁️ 클라우드 세이브" 섹션(로그인/동기화/로그아웃).
+- `App.js` — 원격 공지/이벤트 배너(1회 닫기).
+
+## Remote Config 키 (Firebase 콘솔에서 설정)
+Firebase 콘솔 → Remote Config에 아래 파라미터를 문자열(JSON)로 등록하면 앱 재배포 없이 반영됨:
+- `balance` : 밸런스 오버라이드. 예) `{"powerWeights.hp":0.09,"rewardGrowth":1.15}`
+  - 허용 경로는 `system/core/admin.mjs`의 ADMIN_FIELDS(미등록 경로는 무시 → 안전)
+- `notice`  : 공지 배너. 예) `{"text":"오늘 20시 점검 예정"}`
+- `event`   : 이벤트 배너. 예) `{"text":"주말 2배 이벤트!"}`
 
 ## 활성화 단계
 1. **Firebase 프로젝트 생성** (콘솔) → Authentication(익명 로그인 ON), Firestore 생성.

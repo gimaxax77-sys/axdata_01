@@ -18,6 +18,7 @@ import { initializeApp } from 'firebase/app';
 import { getAuth, signInAnonymously, onAuthStateChanged } from 'firebase/auth';
 import { getFirestore, doc, getDoc, setDoc } from 'firebase/firestore';
 import { getFunctions, httpsCallable } from 'firebase/functions';
+import { getRemoteConfig, fetchAndActivate, getAll } from 'firebase/remote-config';
 
 const cfg = (Constants.expoConfig?.extra || Constants.manifest?.extra || {}).firebase;
 
@@ -54,6 +55,16 @@ if (cfg && cfg.projectId) {
       const call = httpsCallable(fns, 'iapVerify');
       const res = await call({ platform, productId, token });
       return res.data; // { ok, reason?, productId? }
+    },
+    // 원격 설정 가져오기 → { key: 문자열값 } (balance/notice/event 등).
+    async fetchConfig() {
+      const rc = getRemoteConfig(app);
+      rc.settings.minimumFetchIntervalMillis = 3600000; // 1시간 캐시(쿼터 절약)
+      await fetchAndActivate(rc);
+      const all = getAll(rc);
+      const out = {};
+      for (const [k, v] of Object.entries(all)) out[k] = v.asString();
+      return out;
     },
   };
 }

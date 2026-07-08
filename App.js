@@ -65,6 +65,7 @@ function AppInner() {
 
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [adminOpen, setAdminOpen] = useState(false);
+  const [noticeHidden, setNoticeHidden] = useState(false);
   // 설정을 세이브에서 엔진들에 반영
   const st = game.state.settings;
   setLang(st.lang); // 렌더 중 동기 반영 — 언어 전환이 같은 렌더에 즉시 적용(지연 없음)
@@ -113,6 +114,16 @@ function AppInner() {
         <View style={s.resWrap}>
           <ResourceBar concept={game.concept} wallet={game.state.wallet} />
         </View>
+      )}
+
+      {/* 원격 공지/이벤트 배너 (Remote Config) — 탭 1회 닫기 */}
+      {!showPixel && (game.remote?.notice || game.remote?.event) && !noticeHidden && (
+        <TouchableOpacity activeOpacity={0.85} onPress={() => setNoticeHidden(true)} style={s.notice}>
+          <Text style={s.noticeText} numberOfLines={2}>
+            {game.remote.event?.text ? `🎉 ${game.remote.event.text}` : `📢 ${game.remote.notice.text}`}
+          </Text>
+          <Text style={s.noticeX}>✕</Text>
+        </TouchableOpacity>
       )}
 
       {/* 온보딩 목표 배너 (소개를 본 뒤, 목표가 남아있을 때만) */}
@@ -212,6 +223,9 @@ function AppInner() {
 const s = StyleSheet.create({
   safe: { flex: 1, backgroundColor: T.bg, paddingTop: Platform.OS === 'android' ? RNStatusBar.currentHeight : 0 },
   header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 18, paddingTop: 10, paddingBottom: 4 },
+  notice: { flexDirection: 'row', alignItems: 'center', gap: 10, marginHorizontal: 14, marginTop: 6, paddingHorizontal: 12, paddingVertical: 8, borderRadius: 10, backgroundColor: T.surface2, borderWidth: 1, borderColor: T.accent },
+  noticeText: { color: T.text, fontSize: 12, fontWeight: '700', flex: 1 },
+  noticeX: { color: T.muted, fontSize: 14, fontWeight: '900' },
   title: { color: T.accent, fontWeight: '900', fontSize: 22 },
   subtitle: { color: T.muted, fontSize: 12, marginTop: 1 },
   iconBtn: { borderWidth: 1, borderColor: T.line, borderRadius: 10, paddingHorizontal: 10, paddingVertical: 6, marginRight: 8 },
