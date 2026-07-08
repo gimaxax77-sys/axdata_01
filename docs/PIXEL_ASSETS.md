@@ -116,17 +116,33 @@
 | **디테일 추가/재작화** | 높음 | **고해상 원본** 필요(Beowulf). 저해상 확대는 불가 |
 | **시점 변환**(탑다운→정면) | 매우 높음 | 사실상 재작화 → 처음부터 정면/사이드 팩 고르기 |
 
-### 수정 관점 추천 (2트랙)
-- **A. 편집·변형 최우선** → **Mana Seed** 또는 **xiaosuzaoshui**(둘 다 무료·레이어드·모듈러).
-  1개 base로 의상/색 바꿔 28종 뽑기 최적. 단 사이드뷰 → 정면 대치엔 대기컷 활용.
-- **B. 완성 퀄 최우선** → **Beowulf 144**(고해상 완성본). 구조 편집은 못 하지만 **색변형/등급 틴트/아웃라인은 자유**, 로스터 수 단번 확보.
-- **현실안**: B(Beowulf)로 로스터를 빠르게 채우고, 필요한 소수는 A(모듈러)로 커스텀.
+### ⚠️ 해상도 정정 — 모듈러 무료팩은 대부분 저해상
+Mana Seed·xiaosuzaoshui·LPC 계열은 **탑다운 RPG용이라 캐릭터가 작습니다(≈16~32px)**.
+편집은 쉬워도 **우리처럼 캐릭터를 크게 띄우는 화면에선 뭉개집니다.** 확대해도 디테일이
+안 늘어남 → **"풀 비주얼"이면 모듈러보다 해상도가 우선.**
 
-**편집용 팩 링크**
-- Mana Seed Character Base — seliel-the-shaper.itch.io/character-base
-- Free Pixel Art (레이어드) — xiaosuzaoshui.itch.io/pixel-art
-- Character Templates — erisesra.itch.io/character-templates-pack
-- (회피) LPC Generator — liberatedpixelcup.github.io *※ 라이선스 주의*
+### 고해상 · 고카운트 캐릭터 (크게 띄우기 적합)
+| 팩 | 규모 | 해상도 | 특징 | 라이선스 | 링크 |
+|---|---|---|---|---|---|
+| **700+ RPG Character Portraits** (indieartifex) | 700+ | 64px | **다중 팔레트 포함**(색변형 친화) · 초상 | 상업 | indieartifex.itch.io/pixel-art-rpg-character-portraits-pack |
+| **400+ Battlers** (indieartifex) | 400+ | 고 | 전투용 풀바디(오크·스켈레톤·데몬…) | 상업 | indieartifex.itch.io/pixel-art-rpg-character-sprites-battlers-pack |
+| **RPG Heroes & Classes** (Beowulf) | 144 | **64/128/256** | 클래스 다수, 크게 띄우기 최적 | 상업 | beowulf.itch.io/rpg-heroes-classes-pixel-art-huge-pack |
+| **25 Fantasy Characters** (Cyangmou) | 25 | 고(정밀) | 최고 디테일 아티스트 | 상업 | cyangmou.itch.io/25-pixel-art-fantasy-characters |
+| **36 RPG Fantasy Portraits** (CaptainSkolot) | 36 | 64px | 초상 세트 | 상업 | captainskolot.itch.io/36-rpg-fantasy-portrait-pixelart-pixel-art-sprite-portrait-pack-for-rpg-fanta |
+
+### 수정 관점 최종 추천 (해상도 우선)
+우리 게임은 **초상(로스터/소환 카드) + 배틀러(전투 무대 풀바디)** 두 표시가 필요:
+- **초상** → **indieartifex 700+ Portraits**(다중 팔레트라 등급/속성 색변형 최적) 또는 CaptainSkolot 36
+- **배틀러** → **Beowulf 144**(64~256px, 크게 띄워도 선명) 또는 indieartifex 400+ Battlers
+- **편집**: 이들은 소스파일 없이 완성본이지만 **고해상이라** 색변형·등급틴트·아웃라인·크롭은 코드로 자유. 구조 개조(의상 갈아입히기)만 불가 — 대신 종류가 많아 불필요.
+
+> 결론: **저해상 모듈러(Mana Seed)는 제외**, **고해상 완성본(indieartifex/Beowulf)** 로 가고
+> 편집은 **색변형·틴트·조립** 중심으로. 이게 "크게 띄우는 풀 비주얼 + 수정작업" 둘 다 만족.
+
+**저해상 편집용(참고 — 작은 표시나 도트 감성 원할 때만)**
+- Mana Seed — seliel-the-shaper.itch.io/character-base *(저해상)*
+- xiaosuzaoshui Free — xiaosuzaoshui.itch.io/pixel-art *(저해상·무료)*
+- (회피) LPC — liberatedpixelcup.github.io *※ GPL/CC-BY-SA 라이선스 함정*
 
 ---
 
