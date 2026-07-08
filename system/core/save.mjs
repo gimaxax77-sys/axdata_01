@@ -80,6 +80,11 @@ function normalize(state) {
   state.profile.owned = state.profile.owned || {};
   state.profile.owned.frame = state.profile.owned.frame || {};
   state.profile.owned.title = state.profile.owned.title || {};
+  state.summonMastery = state.summonMastery || {};
+  for (const bn of ['hero', 'pet', 'gear', 'rune', 'cosmetic']) {
+    const m = state.summonMastery[bn] || {};
+    state.summonMastery[bn] = { count: m.count || 0, claimed: m.claimed || 0 };
+  }
   state.stage = state.stage || 1;
   state.difficulty = state.difficulty || 'normal';
   state.maxStage = state.maxStage || 1;

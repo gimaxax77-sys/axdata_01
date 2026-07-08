@@ -16,6 +16,10 @@ import { identity } from '../../system/concepts/index.mjs';
 import { recordMission } from '../../system/core/daily.mjs';
 import { isUnlocked, unlockStage } from '../../system/core/unlocks.mjs';
 import { LockedPanel } from '../components';
+import {
+  recordSummon, summonMasteryInfo, claimSummonLevel,
+  SUMMON_LEVEL_MAX, SUMMON_LEVEL_THRESHOLDS,
+} from '../../system/core/summonMastery.mjs';
 
 const RANK = { N: 0, R: 1, SR: 2, SSR: 3, UR: 4 };
 const SLOT_EMOJI = { weapon: '⚔️', armor: '🛡️', accessory: '💍' };
@@ -77,41 +81,44 @@ export default function GachaScreen({ state, bump, concept }) {
   const b = BANNERS[banner];
   const bal = state.wallet[b.curr] || 0;
 
-  // 단일 소환 실행 → 표시용 셀 {rarity,emoji,name,image}. 없으면 null.
+  // 단일 소환 실행 → { cell, spent }. spent=재화 소모 여부(숙련도 카운트용).
   function pullOnce() {
     if (banner === 'pet') {
-      const r = petSummon(state); if (!r.ok) return null;
+      const r = petSummon(state); if (!r.ok) return { cell: null, spent: false };
       const p = PETS[r.pet];
-      return { rarity: r.rarity, emoji: p.emoji, name: `${p.label} Lv.${r.level}` };
+      return { cell: { rarity: r.rarity, emoji: p.emoji, name: `${p.label} Lv.${r.level}` }, spent: true };
     }
     if (banner === 'gear') {
-      const r = summonGear(state); if (!r.ok) return null;
-      return { rarity: r.rarity, emoji: SLOT_EMOJI[r.item.slot] || '⚔️', name: r.label };
+      const r = summonGear(state); if (!r.ok) return { cell: null, spent: false };
+      return { cell: { rarity: r.rarity, emoji: SLOT_EMOJI[r.item.slot] || '⚔️', name: r.label }, spent: true };
     }
     if (banner === 'rune') {
-      const r = summonRune(state); if (!r.ok) return null;
+      const r = summonRune(state); if (!r.ok) return { cell: null, spent: false };
       const set = RUNE_SETS[r.rune.set];
-      return { rarity: r.rarity, emoji: set?.emoji || '🔷', name: set?.label || r.rune.set };
+      return { cell: { rarity: r.rarity, emoji: set?.emoji || '🔷', name: set?.label || r.rune.set }, spent: true };
     }
     if (banner === 'cosmetic') {
-      const r = summonCosmetic(state); if (!r.ok) return null;
-      if (r.duplicate) { setMsg(`모든 외형 보유 · ${gemE}${r.refund.gem} 환급`); return null; }
-      return { rarity: 'SSR', emoji: r.item.emoji, name: r.item.label };
+      const r = summonCosmetic(state); if (!r.ok) return { cell: null, spent: false };
+      if (r.duplicate) { setMsg(`모든 외형 보유 · ${gemE}${r.refund.gem} 환급`); return { cell: null, spent: true }; }
+      return { cell: { rarity: 'SSR', emoji: r.item.emoji, name: r.item.label }, spent: true };
     }
-    return null; // hero handled separately
+    return { cell: null, spent: false }; // hero handled separately
   }
 
   const pull = (n) => {
     setMsg(null);
     let cells = [];
+    let executed = 0;
     if (banner === 'hero') {
       if (n === 1) { const r = summonOne(state, Math.random, pool); if (r.ok) cells = [r]; }
       else { const r = summonMulti(state, n, Math.random, pool); if (r.ok) cells = r.results; }
       cells = cells.map((r) => ({ rarity: r.rarity, emoji: identity(concept, r.unit).emoji, name: identity(concept, r.unit).name, image: charImage(concept.id, r.unit.characterId) }));
+      executed = cells.length;
       if (cells.length) recordMission(state, 'summon', cells.length);
     } else {
-      for (let i = 0; i < n; i++) { const c = pullOnce(); if (c) cells.push(c); else break; }
+      for (let i = 0; i < n; i++) { const { cell, spent } = pullOnce(); if (!spent) break; executed++; if (cell) cells.push(cell); }
     }
+    if (executed) recordSummon(state, banner, executed); // 소환 숙련도 누적
     if (cells.length) {
       setResults(cells.slice(-20)); setResultsKey((k) => k + 1);
       fx('summon');
@@ -123,6 +130,30 @@ export default function GachaScreen({ state, bump, concept }) {
 
   const canN = (n) => bal >= b.cost * n;
   const maxN = Math.min(300, Math.floor(bal / b.cost));
+
+  // 소환 숙련도(소환 레벨) 현황·청구.
+  const info = summonMasteryInfo(state, banner);
+  const doClaim = () => {
+    const r = claimSummonLevel(state, banner);
+    if (r.ok) {
+      fx('success');
+      const rw = r.reward;
+      const parts = [`Lv.${r.level} 보상`, `${sumE}${rw.summon}`];
+      if (rw.type === 'stat') parts.push(`전투력 +${Math.round(rw.power * 100)}%`);
+      else { parts.push(`${concept.resources.currency.emoji}${fmt(rw.currency)}`); parts.push(`${concept.resources.growth.emoji}${fmt(rw.growth)}`); if (rw.gem) parts.push(`${gemE}${rw.gem}`); }
+      setMsg(parts.join(' · '));
+    } else { fx('error'); }
+    bump();
+  };
+  // 진행 바: 현재 레벨→다음 레벨 문턱 사이 비율.
+  const curLv = info.level;
+  const prevThr = curLv > 0 ? SUMMON_LEVEL_THRESHOLDS[curLv - 1] : 0;
+  const nextThr = curLv < SUMMON_LEVEL_MAX ? SUMMON_LEVEL_THRESHOLDS[curLv] : null;
+  const barPct = nextThr ? Math.min(100, ((info.count - prevThr) / (nextThr - prevThr)) * 100) : 100;
+  const nr = info.nextReward;
+  const nrText = !nr ? '최대 레벨 달성' : nr.type === 'stat'
+    ? `${sumE}${nr.summon} + 전투력 +${Math.round(nr.power * 100)}%`
+    : `${sumE}${nr.summon} + ${concept.resources.currency.emoji}${fmt(nr.currency)} ${concept.resources.growth.emoji}${fmt(nr.growth)}${nr.gem ? ` ${gemE}${nr.gem}` : ''}`;
 
   if (!isUnlocked(state, 'gacha')) {
     return <LockedPanel concept={concept} title="소환" stage={unlockStage('gacha')} desc="스테이지를 진행하면 소환이 열립니다." />;
@@ -147,6 +178,22 @@ export default function GachaScreen({ state, bump, concept }) {
         <Text style={s.pity}>
           {banner === 'hero' ? `천장까지 ${90 - state.gacha.pity}회 · ` : ''}보유 {b.curr === 'gem' ? gemE : sumE} {fmt(bal)}
         </Text>
+      </Card>
+
+      {/* 소환 레벨(숙련도) */}
+      <Card style={{ marginTop: 12 }}>
+        <View style={s.mHead}>
+          <Text style={s.mTitle}>소환 레벨 <Text style={s.mLv}>Lv.{info.claimed}/{SUMMON_LEVEL_MAX}</Text></Text>
+          <Btn small kind={info.claimable ? 'gold' : 'ghost'} disabled={!info.claimable}
+            label={info.claimable ? `Lv.${info.claimed + 1} 보상 받기` : info.maxed ? 'MAX' : '진행 중'}
+            onPress={doClaim} />
+        </View>
+        <View style={s.mBar}><View style={[s.mBarFill, { width: `${barPct}%` }]} /></View>
+        <Text style={s.mSub}>
+          {nextThr ? `누적 ${info.count}/${nextThr}회` : `누적 ${info.count}회 · 최대`}
+          {'  ·  '}다음: {nrText}
+        </Text>
+        <Text style={s.mNote}>홀수 레벨 뽑기권+능력치 · 짝수 레벨 뽑기권+재화</Text>
       </Card>
 
       <View style={s.btns}>
@@ -196,6 +243,13 @@ const s = StyleSheet.create({
   btns: { flexDirection: 'row', gap: 10, marginTop: 14 },
   floor: { color: T.muted, fontSize: 12, textAlign: 'center', marginTop: 8 },
   msg: { color: T.accent, fontSize: 13, fontWeight: '700', textAlign: 'center', marginTop: 8 },
+  mHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 },
+  mTitle: { color: T.text, fontWeight: '800', fontSize: 14 },
+  mLv: { color: T.accent, fontSize: 13, fontWeight: '900' },
+  mBar: { height: 8, backgroundColor: T.surface2, borderRadius: 4, overflow: 'hidden' },
+  mBarFill: { height: 8, backgroundColor: T.good, borderRadius: 4 },
+  mSub: { color: T.muted, fontSize: 11, marginTop: 6 },
+  mNote: { color: T.muted, fontSize: 10, marginTop: 4 },
   sec: { color: T.text, fontWeight: '800', fontSize: 15, marginBottom: 10 },
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, justifyContent: 'center' },
   cell: { width: 90, backgroundColor: T.surface2, borderRadius: 12, borderWidth: 2, padding: 8, alignItems: 'center' },

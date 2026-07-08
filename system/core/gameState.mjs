@@ -43,6 +43,8 @@ export function createGameState({ units = [], party = [] } = {}) {
     tower: { floor: 1, best: 1 }, // 무한의 탑 현재/최고 층
     // 개성(코스메틱) — 능력치 무관. 닉네임·대표영웅·프레임·칭호 + 광고제거 패스
     profile: { name: '조련사', avatarUid: null, frame: 'none', title: 'none', premium: false, owned: { frame: {}, title: {} } },
+    // 소환 숙련도 — 배너별 누적 소환 횟수·청구 레벨 (최대 15)
+    summonMastery: { hero: { count: 0, claimed: 0 }, pet: { count: 0, claimed: 0 }, gear: { count: 0, claimed: 0 }, rune: { count: 0, claimed: 0 }, cosmetic: { count: 0, claimed: 0 } },
   };
 }
 
