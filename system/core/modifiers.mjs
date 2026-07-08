@@ -106,9 +106,7 @@ export function collectUnitModifiers(unit) {
   const ib = intimacyBonus(unit);
   if (ib) for (const k of Object.keys(mods.statPct)) mods.statPct[k] += ib;
 
-  // 3-c) 코스튬 — 장착 시 세팅된 statPct (Concept가 정의, Core는 plain data만 읽음)
-  const cb = unit.costumeBonus;
-  if (cb) for (const k of Object.keys(mods.statPct)) if (cb[k]) mods.statPct[k] += cb[k];
+  // (코스튬은 순수 외형으로 전환 — 능력치 기여 없음. 레거시 costumeBonus 미적용)
 
   // 4) 장착 장비 — flat 스탯 + 전투 효과
   const gear = unit.gear || {};

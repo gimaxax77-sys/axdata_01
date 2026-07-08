@@ -124,13 +124,6 @@ export function arenaInfo(state) {
   return { power: Math.round(power), tier: arenaPowerTier(power), points: state.arena.points };
 }
 
-// (하위호환) 포인트 기반 이름 — 일부 표시에 남겨두되, 리그는 전투력 기준을 쓴다.
-export function arenaTier(points) {
-  const P = [[2000, '다이아'], [1200, '플래티넘'], [700, '골드'], [300, '실버'], [0, '브론즈']];
-  for (const [min, name] of P) if (points >= min) return name;
-  return '브론즈';
-}
-
 function refresh(state, now) {
   const d = Math.floor(now / 86400000);
   if (state.arena.day !== d) { state.arena.day = d; state.arena.entries = 0; }

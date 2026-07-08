@@ -11,7 +11,9 @@ export const UNLOCKS = {
   dungeonGold: 20,    // 골드 던전
   dungeonEssence: 35, // 정수(강화석) 던전
   pets: 45,           // 펫
+  emblem: 50,         // 엠블럼(문장) — 다이아 소비 계정 성장(펫 이후 노출)
   arena: 55,          // 아레나 (경쟁)
+  guardian: 60,       // 정령/가디언 — 다이아 소환 소환수
   tower: 40,          // 무한의 탑 (엔드게임 도전)
   guild: 75,          // 길드 (경쟁)
 };

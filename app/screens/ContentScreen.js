@@ -309,10 +309,11 @@ export default function ContentScreen({ state, bump, concept }) {
       <Card style={{ marginTop: 12 }}>
         <View style={c.petHead}>
           <Text style={c.sec}>엠블럼 <Text style={c.dim}>(문장 · 계정 공유)</Text></Text>
-          <MultiToggle value={mult} onChange={setMult} />
+          {isUnlocked(state, 'emblem') && <MultiToggle value={mult} onChange={setMult} />}
         </View>
-        <Text style={c.sub}>{emblemComplete(state) ? `✨ 도감 완성 · 전투력 +${Math.round(EMBLEM_COMPLETE_BONUS * 100)}%` : '전 문장 1레벨↑ 수집 시 완성 보너스'}</Text>
-        {Object.values(EMBLEMS).map((e) => {
+        {!isUnlocked(state, 'emblem') && <Text style={c.sub}>🔒 스테이지 {unlockStage('emblem')} 도달 시 해금</Text>}
+        {isUnlocked(state, 'emblem') && <Text style={c.sub}>{emblemComplete(state) ? `✨ 도감 완성 · 전투력 +${Math.round(EMBLEM_COMPLETE_BONUS * 100)}%` : '전 문장 1레벨↑ 수집 시 완성 보너스'}</Text>}
+        {isUnlocked(state, 'emblem') && Object.values(EMBLEMS).map((e) => {
           const lv = (state.emblems && state.emblems[e.id]) || 0;
           const cost = emblemUpgradeCost(lv);
           const eff = e.kind === 'power' ? '전투력' : e.kind === 'currency' ? `${concept.resources.currency.name} 수입` : `${concept.resources.growth.name} 수입`;
@@ -337,10 +338,13 @@ export default function ContentScreen({ state, bump, concept }) {
         <View style={c.petHead}>
           <Text style={c.sec}>정령 <Text style={c.dim}>(장착 {state.guardians.active.length}/{MAX_ACTIVE_GUARDIANS})</Text></Text>
         </View>
+        {!isUnlocked(state, 'guardian') && <Text style={c.sub}>🔒 스테이지 {unlockStage('guardian')} 도달 시 해금</Text>}
+        {isUnlocked(state, 'guardian') && (<>
         <Btn small kind="gold" label={`정령 소환 ${multLabel(mult)} ${concept.resources.gem.emoji}${mult === 'Max' ? '' : fmt(GUARDIAN_SUMMON_COST.gem * mult)}`}
           disabled={(state.wallet.gem || 0) < GUARDIAN_SUMMON_COST.gem} onPress={() => actN(() => guardianSummon(state))} />
         {Object.keys(state.guardians.owned).length === 0 && <Text style={c.sub}>보유 정령 없음 — 소환으로 획득하세요.</Text>}
-        {Object.entries(state.guardians.owned).map(([id, lv]) => {
+        </>)}
+        {isUnlocked(state, 'guardian') && Object.entries(state.guardians.owned).map(([id, lv]) => {
           const gd = GUARDIANS[id];
           const active = state.guardians.active.includes(id);
           const full = state.guardians.active.length >= MAX_ACTIVE_GUARDIANS;
