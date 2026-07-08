@@ -196,8 +196,9 @@ const s = StyleSheet.create({
   glowGold: { shadowColor: T.accent, shadowOpacity: 0.4, shadowRadius: 8, shadowOffset: { width: 0, height: 2 } },
   glowPrimary: { shadowColor: T.primary, shadowOpacity: 0.35, shadowRadius: 8, shadowOffset: { width: 0, height: 2 } },
   card: { borderRadius: 16, padding: 16, borderWidth: 1, borderColor: T.line, overflow: 'hidden', backgroundColor: T.surface, shadowColor: '#000', shadowOpacity: 0.25, shadowRadius: 10, shadowOffset: { width: 0, height: 4 } },
+  // 내용 크기로 컴팩트하게 — 셀에 flex:1이면 네이티브에서 부모 폭 전체로 늘어남(웹과 차이).
   multi: { flexDirection: 'row', backgroundColor: T.surface2, borderRadius: 10, padding: 3, gap: 3 },
-  multiCell: { flex: 1, alignItems: 'center', paddingVertical: 6, borderRadius: 8 },
+  multiCell: { minWidth: 40, alignItems: 'center', paddingVertical: 6, paddingHorizontal: 8, borderRadius: 8 },
   multiOn: { backgroundColor: T.primary },
   multiText: { color: T.muted, fontWeight: '800', fontSize: 13 },
   multiTextOn: { color: '#fff' },
