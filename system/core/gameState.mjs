@@ -1,5 +1,6 @@
 import { createWallet } from './economy.mjs';
 import { computePower } from './stats.mjs';
+import { teamSynergy } from './synergy.mjs';
 
 // ─────────────────────────────────────────────────────────────
 // 게임 상태(세이브) — IP의 지속 자산.
@@ -78,11 +79,93 @@ export function togglePartyMember(state, uid) {
   return { ok: true, inParty: true };
 }
 
-// 보유 유닛 중 전투력 상위 순으로 파티를 자동으로 채운다(최대 MAX_PARTY).
-// "자동배치"가 진형뿐 아니라 편성 자체도 최적화하도록 하는 선행 단계.
+const SYNERGY_ARCHETYPES = ['VANGUARD', 'STRIKER', 'SUPPORT'];
+
+// 남은 슬롯을 전투력 상위 순으로 채운다. avoid(x)가 true인 후보는 1순위에서
+// 건너뛰되(시너지 유지 목적), 그래도 정원을 못 채우면 2차로 avoid 없이 채운다.
+function fillToSize(chosen, pool, size, avoid = () => false) {
+  const ids = new Set(chosen.map((x) => x.uid));
+  const result = [...chosen];
+  const rest = pool.filter((x) => !ids.has(x.uid)).sort((a, b) => b.power - a.power);
+  for (const x of rest) {
+    if (result.length >= size) break;
+    if (avoid(x)) continue;
+    result.push(x); ids.add(x.uid);
+  }
+  if (result.length < size) {
+    for (const x of rest) {
+      if (result.length >= size) break;
+      if (ids.has(x.uid)) continue;
+      result.push(x); ids.add(x.uid);
+    }
+  }
+  return result;
+}
+
+// 조합의 "시너지 반영 전투력" — 개별 전투력 합 × 팀 시너지 배수(평균).
+// resolve()의 실제 배수 구조(atk/hp/def 각각 곱)를 근사해 평가한다.
+function evalComposition(scored) {
+  const sumPower = scored.reduce((s, x) => s + x.power, 0);
+  const syn = teamSynergy(scored.map((x) => x.unit));
+  const avgMult = (syn.mult.atk + syn.mult.hp + syn.mult.def) / 3;
+  return { score: sumPower * avgMult, syn };
+}
+
+// 보유 유닛 중에서 "시너지까지 반영한 전투력"이 가장 높은 조합으로 파티를 채운다.
+//   · 단순 전투력 상위 정렬만으로는 삼위일체(3원형)·원형 집중·속성 결속처럼
+//     파티 전체에 곱연산으로 붙는 시너지를 놓칠 수 있다(개별 최강이 전체
+//     최강은 아님). 몇 가지 유의미한 후보 조합을 만들어 실제로 비교한다.
 export function autoParty(state, size = MAX_PARTY) {
   if (!state.units || !state.units.length) return { ok: false, reason: '보유한 유닛 없음' };
-  const sorted = state.units.slice().sort((a, b) => computePower(b) - computePower(a));
-  state.party = sorted.slice(0, size).map((u) => u.uid);
-  return { ok: true, party: [...state.party] };
+  const scored = state.units.map((u) => ({ uid: u.uid, unit: u, power: computePower(u) }));
+  const n = Math.min(size, scored.length);
+
+  const candidates = [];
+
+  // 1) 기준선 — 전투력 상위만.
+  const baseline = scored.slice().sort((a, b) => b.power - a.power).slice(0, n);
+  candidates.push(baseline);
+
+  // 2) 삼위일체 — 3원형 모두 owned라면 각 원형 최강 1명씩을 우선 앉히고 나머지는 전투력 순.
+  const byArch = {};
+  for (const x of scored) (byArch[x.unit.archetype] ||= []).push(x);
+  for (const k of Object.keys(byArch)) byArch[k].sort((a, b) => b.power - a.power);
+  if (SYNERGY_ARCHETYPES.every((a) => byArch[a]?.length)) {
+    const anchors = SYNERGY_ARCHETYPES.map((a) => byArch[a][0]);
+    candidates.push(fillToSize(anchors, scored, n));
+  }
+
+  // 3) 원형 집중 — 특정 원형 3명 이상 보유 시, 그 원형 최강 3명을 앉히고 나머지는 전투력 순.
+  for (const a of SYNERGY_ARCHETYPES) {
+    if ((byArch[a]?.length || 0) >= 3) {
+      candidates.push(fillToSize(byArch[a].slice(0, 3), scored, n));
+    }
+  }
+
+  // 4) 속성 결속 — 가장 많이 겹치는 속성의 최강 그룹(최대 4명)을 앉히고 나머지는 전투력 순.
+  const byElem = {};
+  for (const x of scored) if (x.unit.element) (byElem[x.unit.element] ||= []).push(x);
+  for (const k of Object.keys(byElem)) byElem[k].sort((a, b) => b.power - a.power);
+  const dominantElem = Object.keys(byElem).sort((a, b) => byElem[b].length - byElem[a].length)[0];
+  if (dominantElem && byElem[dominantElem].length >= 2) {
+    candidates.push(fillToSize(byElem[dominantElem].slice(0, 4), scored, n));
+  }
+
+  // 5) 오색 결속 — 서로 다른 속성을 최대한 모아 앉히고, 남는 슬롯은 속성 중복을 피해 채운다.
+  const distinctElems = Object.keys(byElem);
+  if (distinctElems.length >= 3) {
+    const rainbow = distinctElems.map((e) => byElem[e][0]);
+    const used = new Set(rainbow.map((x) => x.unit.element));
+    candidates.push(fillToSize(rainbow, scored, n, (x) => x.unit.element && used.has(x.unit.element)));
+  }
+
+  // 후보 중 시너지 반영 전투력이 가장 높은 조합을 채택.
+  let best = null, bestEval = null;
+  for (const c of candidates) {
+    const ev = evalComposition(c);
+    if (!bestEval || ev.score > bestEval.score) { best = c; bestEval = ev; }
+  }
+
+  state.party = best.map((x) => x.uid);
+  return { ok: true, party: [...state.party], synergy: bestEval.syn.list.map((s) => s.label) };
 }

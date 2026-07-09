@@ -387,10 +387,11 @@ export default function RosterScreen({ state, bump, concept }) {
               <View style={g.intiHead}>
                 <Text style={g.formTitle}>⚔️ 진형</Text>
                 <Btn small kind="ghost" label="🪄 자동배치" onPress={() => {
-                  // 편성(파티 구성) 자체도 전투력 상위로 채운 뒤 진형을 배치한다.
+                  // 편성(파티 구성)을 시너지까지 반영해 채운 뒤 진형을 배치한다.
                   const rp = autoParty(state);
                   const r = rp.ok ? autoFormation(state) : rp;
-                  setDeckMsg(r.ok ? `🪄 자동배치 완료 · ${state.party.length}명 · 탱커 전열 · 딜러 후열` : `⚠ ${r.reason}`);
+                  const synTxt = rp.ok && rp.synergy?.length ? ` · ✦${rp.synergy.join('·')}` : '';
+                  setDeckMsg(r.ok ? `🪄 자동배치 완료 · ${state.party.length}명 · 탱커 전열 · 딜러 후열${synTxt}` : `⚠ ${r.reason}`);
                   fx(r.ok ? 'success' : 'error'); bump();
                 }} />
               </View>

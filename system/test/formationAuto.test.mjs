@@ -67,6 +67,31 @@ test('autoParty: 보유 유닛이 없으면 실패', () => {
   assert.equal(autoParty(s).ok, false);
 });
 
+test('autoParty: 삼위일체(3원형) 시너지를 위해 순수 전투력 최상위가 아닌 조합을 고른다', () => {
+  const s = createGameState({ units: [], party: [] });
+  // VANGUARD/SUPPORT를 STRIKER와 거의 동급(근소하게만 낮은) 전투력으로 투자해둔 상태.
+  // 순수 top-7(전투력만)이면 근소한 차이로 밀려 STRIKER 7명만 뽑히지만,
+  // 삼위일체(+전 스탯 12%)를 포함하면 총합이 더 커야 한다.
+  const strikers = Array.from({ length: 7 }, () => createUnit('STRIKER', { level: 40, rank: 3 }));
+  const vanguard = createUnit('VANGUARD', { level: 47, rank: 3 }); // STRIKER보다 근소하게 약함
+  const support = createUnit('SUPPORT', { level: 76, rank: 3 }); // STRIKER보다 근소하게 약함
+  s.units.push(...strikers, vanguard, support);
+  s.party = [strikers[0].uid];
+  const r = autoParty(s);
+  assert.equal(r.ok, true);
+  assert.ok(s.party.includes(support.uid), 'SUPPORT가 근소하게 약해도 삼위일체를 위해 포함됨');
+  assert.ok(s.party.includes(vanguard.uid), 'VANGUARD도 포함됨');
+  assert.ok(r.synergy.includes('삼위일체'), '삼위일체 시너지가 실제로 반영됨');
+});
+
+test('autoParty: 단일 원형만 보유하면 기존과 동일하게 전투력 상위로 채운다', () => {
+  const { s, units } = makeState(10);
+  const r = autoParty(s);
+  assert.equal(r.ok, true);
+  const byPower = units.slice().sort((a, b) => computePower(b) - computePower(a)).slice(0, MAX_PARTY).map((u) => u.uid);
+  assert.deepEqual(new Set(s.party), new Set(byPower), '시너지 후보가 없으면 기준선(전투력 상위)과 동일');
+});
+
 test('자동배치 버튼 흐름: 1명만 편성된 상태에서도 autoParty+autoFormation으로 전원 배치된다', () => {
   const s = createGameState({ units: [], party: [] });
   const units = Array.from({ length: 7 }, () => createUnit('STRIKER', { level: 20, rank: 2 }));
