@@ -138,7 +138,7 @@ function describeRune(rune) {
   const stat = set.main.stat.toUpperCase();
   const pct = `${(val * 100).toFixed(1)}%`;
   const subTxt = (rune.subs || []).length ? ` · ${describeSubs(rune.subs)}` : '';
-  return { title: `${set.emoji} ${set.label} +${rune.level}`, sub: `[${RUNE_RARITY[rune.rarity].label}] ${stat} ${pct}${subTxt}` };
+  return { title: `${set.emoji} ${set.label} +${rune.level}`, sub: `${stat} ${pct}${subTxt}`, rarity: rune.rarity, rarityLabel: RUNE_RARITY[rune.rarity].label };
 }
 
 // 영웅 탭 최상위 서브탭 — 영웅(그리드+상세) · 편성(파티·진형) · 성장(펫·유물·엠블럼·정령).
@@ -668,7 +668,7 @@ export default function RosterScreen({ state, bump, concept }) {
             <TouchableOpacity key={i} onPress={() => setPicker({ mode: 'rune', slot: i })} style={g.slotRow} activeOpacity={0.8}>
               <View style={{ flex: 1 }}>
                 {rune ? (<>
-                  <Text style={g.slotName}>{d.title}</Text>
+                  <Text style={g.slotName}>{d.title} <Text style={rarityText(d.rarity)}> {d.rarityLabel} </Text></Text>
                   <Text style={g.slotDesc}>{d.sub}</Text>
                 </>) : <Text style={g.slotEmpty}>＋ 룬 슬롯 {i + 1}</Text>}
               </View>
