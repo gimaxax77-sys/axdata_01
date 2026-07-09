@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, Animated, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Animated, TouchableOpacity, Modal } from 'react-native';
 import { T } from '../theme';
 import { Card, Btn, fmt, MultiToggle, multLabel, repeat } from '../components';
 import { fx } from '../feedback';
@@ -49,6 +49,7 @@ export default function ContentScreen({ state, bump, concept }) {
   const [grp, setGrp] = useState('daily'); // 현재 서브탭
   const [camResult, setCamResult] = useState(null);
   const [dropMsg, setDropMsg] = useState(null);
+  const [dunSel, setDunSel] = useState(null); // 던전 상세 팝업 대상 타입
   const act = (fn) => { fn(); bump(); };
   const actN = (fn) => { repeat(fn, mult); bump(); };
   // 아이템/재료 던전: mult회 입장 → 마지막 드롭 요약 표시.
@@ -101,6 +102,20 @@ export default function ContentScreen({ state, bump, concept }) {
     if (r.ok) { fx('success'); setDropMsg(`🏔️ 시즌 ${r.floor}층 클리어!`); }
     else { fx('error'); setDropMsg(r.reason || '시즌 도전 실패'); }
     bump();
+  };
+
+  // 던전 표시 정보(타일·팝업 공용) — 이모지/이름/드롭/남은 입장.
+  const dungeonInfo = (type, d) => {
+    const meta = DUNGEON_META[type];
+    const unlocked = isUnlocked(state, meta.feature);
+    const left = dungeonEntriesLeft(state, type);
+    const isItem = ['gear', 'rune', 'weekday', 'element', 'petshard'].includes(d.kind);
+    const res = d.resource ? concept.resources[d.resource] : null;
+    const emoji = isItem ? meta.label.split(' ')[0] : res.emoji;
+    const name = isItem ? meta.label.split(' ').slice(1).join(' ').replace(' 던전', '') : res.name;
+    const amount = res ? Math.round(getStage(state.peakStage).rewards[d.resource] * 40) : 0;
+    const drop = isItem ? meta.drop : `1회 ${res.emoji}+${fmt(amount)}`;
+    return { unlocked, left, isItem, emoji, name, drop, feature: meta.feature };
   };
 
   const chapters = campaignChapters(state, concept.campaign || []);
@@ -255,37 +270,21 @@ export default function ContentScreen({ state, bump, concept }) {
           <Text style={c.sec}>🗝️ 던전</Text>
           <MultiToggle value={mult} onChange={setMult} />
         </View>
-        <Text style={c.sub}>자원·아이템 파밍 · 하루 입장 제한 · 입장 {multLabel(mult)}</Text>
-        {Object.entries(DUNGEONS).map(([type, d]) => {
-          const meta = DUNGEON_META[type];
-          const unlocked = isUnlocked(state, meta.feature);
-          const left = dungeonEntriesLeft(state, type);
-          const isItem = ['gear', 'rune', 'weekday', 'element', 'petshard'].includes(d.kind);
-          const res = d.resource ? concept.resources[d.resource] : null;
-          const label = isItem ? meta.label : `${res.emoji} ${res.name} 던전`;
-          const amount = res ? Math.round(getStage(state.peakStage).rewards[d.resource] * 40) : 0;
-          const rewardTxt = isItem
-            ? `1회 ${meta.drop} · 입장 ${left}/${d.entriesPerDay}`
-            : `1회 ${res.emoji}+${fmt(amount)} · 입장 ${left}/${d.entriesPerDay}`;
-          return (
-            <View key={type} style={c.dRow}>
-              <View style={{ flex: 1 }}>
-                <Text style={c.mLabel}>{label}</Text>
-                {unlocked
-                  ? <Text style={c.mReward}>{rewardTxt}</Text>
-                  : <Text style={c.mReward}>🔒 스테이지 {unlockStage(meta.feature)} 해금</Text>}
-              </View>
-              <View style={c.dBtns}>
-                <Btn small label={unlocked ? '입장' : '잠김'} disabled={!unlocked || left <= 0}
-                  onPress={() => (isItem ? runDungeon(type) : actN(() => enterDungeon(state, type)))} />
-                {unlocked && (
-                  <Btn small kind="ghost" label={`🧹 소탕 ${left}`} disabled={left <= 0}
-                    onPress={() => doSweep(type)} />
-                )}
-              </View>
-            </View>
-          );
-        })}
+        <Text style={c.sub}>자원·아이템 파밍 · 하루 입장 제한 · 탭하여 입장</Text>
+        {/* 던전 아이콘 타일(가로열 대신) — 탭하면 상세 팝업에서 입장/소탕. */}
+        <View style={c.dunGrid}>
+          {Object.entries(DUNGEONS).map(([type, d]) => {
+            const info = dungeonInfo(type, d);
+            return (
+              <TouchableOpacity key={type} onPress={() => setDunSel(type)} activeOpacity={0.8}
+                style={[c.dunTile, !info.unlocked && c.dunLock, info.left <= 0 && info.unlocked && c.dunSpent]}>
+                <Text style={c.dunEmoji}>{info.unlocked ? info.emoji : '🔒'}</Text>
+                <Text style={c.dunName} numberOfLines={1}>{info.name}</Text>
+                <Text style={[c.dunLeft, info.left <= 0 && { color: T.muted }]}>{info.unlocked ? `${info.left}/${d.entriesPerDay}` : `${unlockStage(info.feature)}층`}</Text>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
         {/* 보유 재료 */}
         <View style={c.matBar}>
           <Text style={c.matChip}>{MATERIAL_META.ascendStone.emoji} {MATERIAL_META.ascendStone.label} {fmt(materialCount(state, 'ascendStone'))}</Text>
@@ -298,6 +297,38 @@ export default function ContentScreen({ state, bump, concept }) {
       </>)}
 
     </ScrollView>
+
+    {/* 던전 상세 팝업 — 타일 탭 시 입장/소탕 액션. */}
+    <Modal transparent animationType="fade" visible={!!dunSel} onRequestClose={() => setDunSel(null)}>
+      <TouchableOpacity style={c.backdrop} activeOpacity={1} onPress={() => setDunSel(null)}>
+        <TouchableOpacity style={c.dunModal} activeOpacity={1} onPress={() => {}}>
+          {dunSel && (() => {
+            const d = DUNGEONS[dunSel];
+            const info = dungeonInfo(dunSel, d);
+            return (<>
+              <View style={c.dunHead}>
+                <Text style={c.dunHeadEmoji}>{info.emoji}</Text>
+                <View style={{ flex: 1 }}>
+                  <Text style={c.dunHeadName}>{info.name} 던전</Text>
+                  <Text style={c.sub}>{info.unlocked ? `${info.drop} · 남은 입장 ${info.left}/${d.entriesPerDay}` : `🔒 스테이지 ${unlockStage(info.feature)} 도달 시 해금`}</Text>
+                </View>
+                {info.unlocked && <MultiToggle value={mult} onChange={setMult} />}
+              </View>
+              {dropMsg ? <Text style={c.dropMsg}>{dropMsg}</Text> : null}
+              <View style={{ height: 10 }} />
+              <Btn kind="gold" disabled={!info.unlocked || info.left <= 0}
+                label={info.unlocked ? `입장 ${multLabel(mult)}` : '잠김'}
+                onPress={() => (info.isItem ? runDungeon(dunSel) : actN(() => enterDungeon(state, dunSel)))} />
+              <View style={{ height: 8 }} />
+              <Btn kind="primary" disabled={!info.unlocked || info.left <= 0}
+                label={`🧹 소탕 (남은 ${info.left}회 전부)`} onPress={() => doSweep(dunSel)} />
+              <View style={{ height: 8 }} />
+              <Btn kind="ghost" label="닫기" onPress={() => setDunSel(null)} />
+            </>);
+          })()}
+        </TouchableOpacity>
+      </TouchableOpacity>
+    </Modal>
 
     {/* 작업 결과 배너 — 어느 그룹에서 눌러도 보이도록 서브탭 바 위에 공용 배치. */}
     {dropMsg ? <Text style={c.dropBanner} numberOfLines={2}>{dropMsg}</Text> : null}
@@ -376,12 +407,25 @@ const c = StyleSheet.create({
     borderTopWidth: 1, borderTopColor: T.line, backgroundColor: T.surface2 },
   subCell: { alignItems: 'center', justifyContent: 'center', paddingVertical: 6, borderRadius: 10,
     borderWidth: 1, borderColor: 'transparent' },
-  subCellOn: { backgroundColor: T.surface, borderColor: T.accent },
+  subCellOn: { backgroundColor: T.accent, borderColor: T.accent },
   subIcon: { fontSize: 18, opacity: 0.55, textAlign: 'center' },
   subIconOn: { opacity: 1 },
   subLabel: { color: T.muted, fontSize: 11, fontWeight: '800', marginTop: 2 },
-  subLabelOn: { color: T.accent },
+  subLabelOn: { color: '#241a40' },
   subDot: { position: 'absolute', top: -1, right: -5, width: 7, height: 7, borderRadius: 4, backgroundColor: T.danger },
   dropBanner: { color: T.accent, fontSize: 12, fontWeight: '800', textAlign: 'center',
     paddingHorizontal: 14, paddingVertical: 6, backgroundColor: T.surface2 },
+  // 던전 아이콘 타일 그리드 + 상세 팝업.
+  dunGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 4 },
+  dunTile: { width: 76, alignItems: 'center', paddingVertical: 10, borderRadius: 12, backgroundColor: T.surface2, borderWidth: 1.5, borderColor: T.line, gap: 2 },
+  dunLock: { opacity: 0.45 },
+  dunSpent: { opacity: 0.6 },
+  dunEmoji: { fontSize: 24 },
+  dunName: { color: T.text, fontSize: 10, fontWeight: '700', maxWidth: 70, textAlign: 'center' },
+  dunLeft: { color: T.good, fontSize: 10, fontWeight: '800' },
+  backdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.65)', alignItems: 'center', justifyContent: 'center', padding: 24 },
+  dunModal: { backgroundColor: T.surface, borderRadius: 20, padding: 20, width: '100%', maxWidth: 360, borderWidth: 1, borderColor: T.line },
+  dunHead: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  dunHeadEmoji: { fontSize: 38 },
+  dunHeadName: { color: T.text, fontSize: 17, fontWeight: '900' },
 });

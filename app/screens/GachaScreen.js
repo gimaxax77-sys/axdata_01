@@ -58,24 +58,24 @@ export default function GachaScreen({ state, bump, concept }) {
   // 배너 정의: 소환 재화·비용·매핑을 한 곳에.
   const BANNERS = {
     hero: {
-      label: '영웅', tab: `${sumE} 영웅`, curr: 'summon', cost: PULL_COST.summon, multi: true,
+      label: '영웅', icon: '🦸', curr: 'summon', cost: PULL_COST.summon, multi: true,
       sub: '확률: N 50 · R 33 · SR 14 · SSR 2.5 · UR 0.5 (%)',
       note: '10연차 이상 최소 1개 SR 이상 보장',
     },
     pet: {
-      label: '펫', tab: '🐾 펫', curr: 'gem', cost: PET_PULL_COST.gem, multi: true,
+      label: '펫', icon: '🐾', curr: 'gem', cost: PET_PULL_COST.gem, multi: true,
       sub: '펫 획득(중복은 레벨업) · 최대 3마리 장착', note: '펫은 캐릭터·유물처럼 계정 성장 축',
     },
     gear: {
-      label: '장비', tab: '⚔️ 장비', curr: 'gem', cost: GEAR_PULL_COST.gem, multi: true,
+      label: '장비', icon: '⚔️', curr: 'gem', cost: GEAR_PULL_COST.gem, multi: true,
       sub: '랜덤 장비 → 인벤토리 · 진행도↑ 상위 등급↑', note: '영웅 탭에서 장착·강화',
     },
     rune: {
-      label: '룬', tab: '🔷 룬', curr: 'gem', cost: RUNE_PULL_COST.gem, multi: true,
+      label: '룬', icon: '🔷', curr: 'gem', cost: RUNE_PULL_COST.gem, multi: true,
       sub: '랜덤 룬 → 룬 가방 · 진행도↑ 상위 등급↑', note: '3슬롯 장착 · 세트 보너스',
     },
     cosmetic: {
-      label: '코스튬', tab: '🎀 코스튬', curr: 'gem', cost: COSTUME_PULL_COST.gem, multi: false,
+      label: '코스튬', icon: '🎀', curr: 'gem', cost: COSTUME_PULL_COST.gem, multi: false,
       sub: '미보유 외형(프레임·칭호) 무작위 · 능력치 무관', note: '전부 보유 시 다이아 일부 환급',
     },
   };
@@ -158,23 +158,24 @@ export default function GachaScreen({ state, bump, concept }) {
   const nr = info.nextReward;
   const nrText = !nr ? '최대 레벨 달성' : rewardParts(nr).join(' ');
 
+  // "차르륵" — 소환 탭 진입 시 하단 배너 서브탭 순차 등장(콘텐츠 탭과 동일 규약).
+  const bKeys = Object.keys(BANNERS);
+  const bAnims = useRef(bKeys.map(() => new Animated.Value(0))).current;
+  useEffect(() => {
+    if (reducedMotion()) { bAnims.forEach((a) => a.setValue(1)); return; }
+    bAnims.forEach((a) => a.setValue(0));
+    Animated.stagger(60, bAnims.map((a) =>
+      Animated.timing(a, { toValue: 1, duration: 300, useNativeDriver: true }),
+    )).start();
+  }, []);
+
   if (!isUnlocked(state, 'gacha')) {
     return <LockedPanel concept={concept} title="소환" stage={unlockStage('gacha')} desc="스테이지를 진행하면 소환이 열립니다." />;
   }
 
   return (
+    <View style={s.flex}>
     <ScrollView style={s.flex} contentContainerStyle={s.wrap}>
-      {/* 배너 선택 */}
-      <View style={s.tabs}>
-        {Object.entries(BANNERS).map(([key, def]) => (
-          <TouchableOpacity key={key} activeOpacity={0.8}
-            onPress={() => { setBanner(key); setResults([]); setMsg(null); }}
-            style={[s.tab, banner === key && s.tabOn]}>
-            <Text style={[s.tabText, banner === key && s.tabTextOn]}>{def.tab}</Text>
-          </TouchableOpacity>
-        ))}
-      </View>
-
       <Card style={s.banner}>
         <Text style={s.bannerTitle}>{b.label} 소환</Text>
         <Text style={s.bannerSub}>{b.sub}</Text>
@@ -233,17 +234,45 @@ export default function GachaScreen({ state, bump, concept }) {
 
       <Text style={s.hint}>소환권은 출석·미션·환생, 다이아는 상점·보상으로 모입니다.</Text>
     </ScrollView>
+
+    {/* 하단 배너 서브탭 바(메인 탭바 위) — 골드 채움 하이라이트 + 차르륵. */}
+    <View style={s.subbar}>
+      {bKeys.map((key, i) => {
+        const on = banner === key;
+        const def = BANNERS[key];
+        return (
+          <Animated.View key={key} style={{ flex: 1, opacity: bAnims[i], transform: [
+            { translateY: bAnims[i].interpolate({ inputRange: [0, 1], outputRange: [16, 0] }) },
+            { scale: bAnims[i].interpolate({ inputRange: [0, 1], outputRange: [0.85, 1] }) },
+          ] }}>
+            <TouchableOpacity activeOpacity={0.8}
+              onPress={() => { fx('tap'); setBanner(key); setResults([]); setMsg(null); }}
+              style={[s.subCell, on && s.subCellOn]}
+              accessibilityRole="tab" accessibilityState={{ selected: on }} accessibilityLabel={def.label}>
+              <Text style={[s.subIcon, on && s.subIconOn]}>{def.icon}</Text>
+              <Text style={[s.subLabel, on && s.subLabelOn]}>{def.label}</Text>
+            </TouchableOpacity>
+          </Animated.View>
+        );
+      })}
+    </View>
+    </View>
   );
 }
 
 const s = StyleSheet.create({
   flex: { flex: 1 },
   wrap: { padding: 14 },
-  tabs: { flexDirection: 'row', gap: 6, marginBottom: 12, flexWrap: 'wrap' },
-  tab: { flexGrow: 1, paddingVertical: 8, paddingHorizontal: 6, borderRadius: 10, backgroundColor: T.surface2, borderWidth: 1, borderColor: 'transparent', alignItems: 'center' },
-  tabOn: { borderColor: T.accent, backgroundColor: T.surface },
-  tabText: { color: T.muted, fontSize: 12, fontWeight: '700' },
-  tabTextOn: { color: T.text },
+  // 하단 배너 서브탭 바 — 활성은 골드 채움(강한 하이라이트).
+  subbar: { flexDirection: 'row', gap: 6, paddingHorizontal: 10, paddingTop: 6, paddingBottom: 4,
+    borderTopWidth: 1, borderTopColor: T.line, backgroundColor: T.surface2 },
+  subCell: { alignItems: 'center', justifyContent: 'center', paddingVertical: 6, borderRadius: 10,
+    borderWidth: 1, borderColor: 'transparent' },
+  subCellOn: { backgroundColor: T.accent, borderColor: T.accent },
+  subIcon: { fontSize: 18, opacity: 0.55 },
+  subIconOn: { opacity: 1 },
+  subLabel: { color: T.muted, fontSize: 11, fontWeight: '800', marginTop: 2 },
+  subLabelOn: { color: '#241a40' },
   banner: { alignItems: 'center', backgroundColor: T.surface2 },
   bannerTitle: { color: T.text, fontWeight: '900', fontSize: 22, marginTop: 4 },
   bannerSub: { color: T.muted, fontSize: 12, marginTop: 6, textAlign: 'center' },
