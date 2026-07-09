@@ -854,8 +854,12 @@ function PickerModal({ picker, unit, state, onClose, onChange, concept }) {
           const maxed = equipped.level >= RUNE_MAX_LEVEL;
           const cost = runeEnhanceCost(equipped.level);
           return (
-            <View style={m.equippedRow}>
-              <Text style={m.equippedName}>장착: {d.title} · {ov(d.sub)}</Text>
+            <View style={[m.equippedRow, { borderWidth: 1.5, borderColor: rarityColor(equipped.rarity) }]}>
+              <View style={m.equippedHead}>
+                <Text style={m.equippedBadge}>✅ 장착중</Text>
+                <Text style={m.equippedName}>{d.title} <Text style={rarityText(equipped.rarity)}> {d.rarityLabel} </Text></Text>
+              </View>
+              <Text style={m.equippedDesc}>{ov(d.sub)}</Text>
               {!maxed && <MultiToggle value={emult} onChange={setEmult} />}
               <View style={{ flexDirection: 'row', gap: 8 }}>
                 <Btn small kind="gold" disabled={maxed || (state.wallet.currency || 0) < cost.currency}
@@ -889,7 +893,10 @@ function PickerModal({ picker, unit, state, onClose, onChange, concept }) {
         <Text style={m.title}>스킬 선택 · 슬롯 {i + 1}</Text>
         {equipped && (
           <View style={m.equippedRow}>
-            <Text style={m.equippedName}>장착: {SKILL_CATALOG[equipped.id].label} +{equipped.level}</Text>
+            <View style={m.equippedHead}>
+              <Text style={m.equippedBadge}>✅ 장착중</Text>
+              <Text style={m.equippedName}>{SKILL_CATALOG[equipped.id].label} +{equipped.level}</Text>
+            </View>
             <Text style={m.equippedDesc}>{ov(describeSkill(equipped.id, skillPower(equipped.level)))}</Text>
             <MultiToggle value={emult} onChange={setEmult} />
             <View style={{ flexDirection: 'row', gap: 8 }}>
@@ -924,11 +931,14 @@ function PickerModal({ picker, unit, state, onClose, onChange, concept }) {
       <>
         <Text style={m.title}>{SLOT_KO[slot]} 선택</Text>
         {item && (
-          <View style={m.equippedRow}>
-            <Text style={m.equippedName}>
-              장착: {GEAR_CATALOG[item.blueprint].label} +{item.level - 1}
-              {item.rarity ? <Text style={rarityText(item.rarity)}> {(GEAR_RARITY[item.rarity] || {}).label || item.rarity} </Text> : null}
-            </Text>
+          <View style={[m.equippedRow, item.rarity && { borderWidth: 1.5, borderColor: rarityColor(item.rarity) }]}>
+            <View style={m.equippedHead}>
+              <Text style={m.equippedBadge}>✅ 장착중</Text>
+              <Text style={m.equippedName}>
+                {GEAR_CATALOG[item.blueprint].label} +{item.level - 1}
+                {item.rarity ? <Text style={rarityText(item.rarity)}> {(GEAR_RARITY[item.rarity] || {}).label || item.rarity} </Text> : null}
+              </Text>
+            </View>
             <Text style={m.equippedDesc}>{ov(describeGearItem(item))}</Text>
             {(item.subs || []).length > 0 && <Text style={m.subLine}>부옵션: {ov(describeSubs(item.subs))}</Text>}
             {(() => {
@@ -1142,6 +1152,8 @@ const m = StyleSheet.create({
   sheet: { backgroundColor: T.surface, borderTopLeftRadius: 22, borderTopRightRadius: 22, padding: 18, borderTopWidth: 1, borderColor: T.line },
   title: { color: T.text, fontWeight: '900', fontSize: 18, marginBottom: 12 },
   equippedRow: { backgroundColor: T.surface2, borderRadius: 12, padding: 12, marginBottom: 10, gap: 8 },
+  equippedBadge: { color: '#0f2a17', backgroundColor: T.good, fontSize: 11, fontWeight: '900', borderRadius: 5, paddingHorizontal: 7, paddingVertical: 1, alignSelf: 'flex-start', overflow: 'hidden' },
+  equippedHead: { flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap' },
   equippedName: { color: T.text, fontWeight: '700', fontSize: 14 },
   equippedDesc: { color: T.muted, fontSize: 12 },
   subLine: { color: T.accent, fontSize: 11, fontWeight: '600' },
