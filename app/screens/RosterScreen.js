@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Modal, TextInput, useWindowDimensions, Animated } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Modal, TextInput, useWindowDimensions, Animated, FlatList } from 'react-native';
 import { T, rarityMeta } from '../theme';
 import { reducedMotion } from '../motion';
 import GrowthPanel from './GrowthPanel';
@@ -871,19 +871,20 @@ function PickerModal({ picker, unit, state, onClose, onChange, concept }) {
             </View>
           );
         })()}
-        <ScrollView style={{ maxHeight: 360 }}>
-          {bag.length === 0 && <Text style={m.optDesc}>가방이 비었습니다. 룬 카드에서 발굴하세요.</Text>}
-          {bag.map((r) => {
+        {/* 가상화(FlatList) — 가방이 수백 개여도 보이는 행만 렌더(렉 제거). */}
+        <FlatList style={{ maxHeight: 360 }} data={bag} keyExtractor={(r) => r.uid}
+          initialNumToRender={10} maxToRenderPerBatch={10} windowSize={5}
+          ListEmptyComponent={<Text style={m.optDesc}>가방이 비었습니다. 룬 카드에서 발굴하세요.</Text>}
+          renderItem={({ item: r }) => {
             const d = describeRune(r);
             return (
-              <TouchableOpacity key={r.uid} onPress={() => apply(() => { equipRune(state, unit.uid, i, r.uid); onClose(); })}
+              <TouchableOpacity onPress={() => apply(() => { equipRune(state, unit.uid, i, r.uid); onClose(); })}
                 style={[m.opt, { borderColor: rarityColor(r.rarity) }]} activeOpacity={0.8}>
                 <Text style={m.optName}>{d.title} <Text style={rarityText(r.rarity)}> {RUNE_RARITY[r.rarity].label} </Text></Text>
                 <Text style={m.optDesc}>{ov(d.sub)}</Text>
               </TouchableOpacity>
             );
-          })}
-        </ScrollView>
+          }} />
       </>
     );
   } else if (picker.mode === 'skill') {
@@ -970,25 +971,30 @@ function PickerModal({ picker, unit, state, onClose, onChange, concept }) {
             </View>
           </View>
         )}
-        <ScrollView style={{ maxHeight: 340 }}>
-          <Text style={m.group}>제작</Text>
-          {bps.map((b) => (
-            <TouchableOpacity key={b.id} onPress={() => apply(() => { const c = craftGear(state, b.id); if (c.ok) { equipGear(state, unit.uid, c.item.uid); onClose(); } })}
-              style={m.opt} activeOpacity={0.8}>
-              <Text style={m.optName}>{b.label} <Text style={m.optCost}>🪙{fmt(gearCraftCost(b.id).currency)}</Text></Text>
-              <Text style={m.optDesc}>{describeGear(b)}</Text>
-            </TouchableOpacity>
-          ))}
-          {owned.length > 0 && <Text style={m.group}>보유 장비</Text>}
-          {owned.map((it) => (
-            <TouchableOpacity key={it.uid} onPress={() => apply(() => { equipGear(state, unit.uid, it.uid); onClose(); })}
+        {/* 가상화 — 보유 장비가 많아도 보이는 행만 렌더. 제작 목록은 헤더로. */}
+        <FlatList style={{ maxHeight: 340 }} data={owned} keyExtractor={(it) => it.uid}
+          initialNumToRender={8} maxToRenderPerBatch={10} windowSize={5}
+          ListHeaderComponent={(
+            <>
+              <Text style={m.group}>제작</Text>
+              {bps.map((b) => (
+                <TouchableOpacity key={b.id} onPress={() => apply(() => { const c = craftGear(state, b.id); if (c.ok) { equipGear(state, unit.uid, c.item.uid); onClose(); } })}
+                  style={m.opt} activeOpacity={0.8}>
+                  <Text style={m.optName}>{b.label} <Text style={m.optCost}>🪙{fmt(gearCraftCost(b.id).currency)}</Text></Text>
+                  <Text style={m.optDesc}>{describeGear(b)}</Text>
+                </TouchableOpacity>
+              ))}
+              {owned.length > 0 && <Text style={m.group}>보유 장비</Text>}
+            </>
+          )}
+          renderItem={({ item: it }) => (
+            <TouchableOpacity onPress={() => apply(() => { equipGear(state, unit.uid, it.uid); onClose(); })}
               style={m.opt} activeOpacity={0.8}>
               <Text style={m.optName}>{GEAR_CATALOG[it.blueprint].label} +{it.level - 1}
                 {it.rarity ? <Text style={rarityText(it.rarity)}> {(GEAR_RARITY[it.rarity] || {}).label || it.rarity} </Text> : null}</Text>
               <Text style={m.optDesc}>{ov(describeGearItem(it))}</Text>
             </TouchableOpacity>
-          ))}
-        </ScrollView>
+          )} />
       </>
     );
   }
