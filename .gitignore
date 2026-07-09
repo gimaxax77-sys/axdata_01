@@ -31,3 +31,7 @@ credentials.json
 
 # Env
 .env*.local
+
+# Python bytecode cache
+__pycache__/
+*.pyc
