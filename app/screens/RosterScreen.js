@@ -74,7 +74,7 @@ function costumeNeedText(cos, concept) {
 // 스탯 → 아이콘(룬·장비·스킬 표기 일관). 이름 대신 아이콘으로 간결·시각화.
 const STAT_ICON = {
   atk: '⚔️', hp: '❤️', def: '🛡️', spd: '👟',
-  critChance: '💥', critDamage: '🎯🎯', lifesteal: '🩸', defPierce: '🏹',
+  critChance: '💥', critDamage: '💥💥', lifesteal: '🩸', defPierce: '🏹',
   dmgReduce: '🧱', evasion: '🌀', accuracy: '🎯', trueDamage: '⚡', absDef: '🔰',
 };
 function statIcon(key) { return STAT_ICON[key] || String(key).toUpperCase(); }
