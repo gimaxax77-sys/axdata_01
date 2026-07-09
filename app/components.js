@@ -183,6 +183,22 @@ const bs = StyleSheet.create({
   badgeText: { color: '#1a1225', fontSize: 10, fontWeight: '900' },
 });
 
+// ── 등급 배지(RarityTag) — 다크 배경 위 색텍스트는 대비가 약해, 등급색을
+//   '채운 알약'으로 표기해 시인성을 확보한다. 로스터/장비/룬/펫 등 공용.
+//   label=true면 한글 라벨(레어/에픽…), 아니면 약칭(R/SR…).
+export function RarityTag({ rarity = 'N', label = false, style }) {
+  const rm = rarityMeta(rarity);
+  return (
+    <View style={[bs.rtag, { backgroundColor: rm.color }, style]}>
+      <Text style={bs.rtagText}>{label ? rm.label : rarity}</Text>
+    </View>
+  );
+}
+Object.assign(bs, StyleSheet.create({
+  rtag: { paddingHorizontal: 6, paddingVertical: 1, borderRadius: 5, alignSelf: 'center' },
+  rtagText: { color: '#160f28', fontSize: 10, fontWeight: '900', letterSpacing: 0.3 },
+}));
+
 const s = StyleSheet.create({
   resbar: { flexDirection: 'row', borderRadius: 14, padding: 6, gap: 6, borderWidth: 1, borderColor: T.line },
   rescell: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingVertical: 8 },

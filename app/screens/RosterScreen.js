@@ -2,10 +2,16 @@ import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Modal, TextInput, useWindowDimensions, Animated } from 'react-native';
 import { T, rarityMeta } from '../theme';
 import { reducedMotion } from '../motion';
+import GrowthPanel from './GrowthPanel';
 
 // 등급 순위(정렬용) — 인벤토리 상위 우선.
 const RARITY_RANK = { N: 0, R: 1, SR: 2, SSR: 3, UR: 4 };
 function rarityColor(r) { return rarityMeta(r).color; }
+// 등급 인라인 배지 스타일 — 다크 배경의 색텍스트는 대비가 약해, 등급색 배경 +
+// 어두운 글자로 시인성을 확보한다(Text 중첩 유지, 레이아웃 영향 없음).
+function rarityText(r) {
+  return { backgroundColor: rarityMeta(r).color, color: '#160f28', fontWeight: '900', fontSize: 11, borderRadius: 4, overflow: 'hidden' };
+}
 import { Card, Btn, fmt, MultiToggle, multLabel, repeat, Portrait } from '../components';
 import { charImage } from '../charImages';
 import { fx } from '../feedback';
@@ -135,17 +141,18 @@ function describeRune(rune) {
   return { title: `${set.emoji} ${set.label} +${rune.level}`, sub: `[${RUNE_RARITY[rune.rarity].label}] ${stat} ${pct}${subTxt}` };
 }
 
-// 영웅 탭 최상위 서브탭 — 영웅(그리드+상세) ↔ 편성(파티·진형·DPS·덱).
+// 영웅 탭 최상위 서브탭 — 영웅(그리드+상세) · 편성(파티·진형) · 성장(펫·유물·엠블럼·정령).
 const ROSTER_TABS = [
   { key: 'heroes', label: '영웅', icon: '🦸' },
   { key: 'party', label: '편성', icon: '⚔️' },
+  { key: 'growth', label: '성장', icon: '🌱' },
 ];
 
 // 캐릭터 상세 서브탭 — 9개 세로 스택을 목적별 4묶음으로.
 //   성장: 친밀도·씨앗·성장(레벨/돌파/각인) · 장비: 룬·전용무기·장비
 //   스킬: 전용스킬·스킬편성 · 꾸미기: 코스튬
 const DETAIL_TABS = [
-  { key: 'growth', label: '성장', icon: '🌱' },
+  { key: 'growth', label: '육성', icon: '📈' },
   { key: 'gear', label: '장비', icon: '⚔️' },
   { key: 'skill', label: '스킬', icon: '✨' },
   { key: 'cosmetic', label: '꾸미기', icon: '🎭' },
@@ -402,7 +409,7 @@ export default function RosterScreen({ state, bump, concept }) {
         <View style={g.head}>
           <Portrait emoji={meta.emoji} image={charImage(concept.id, unit.characterId)} rarity={unit.rarity} size={62} badge style={{ marginRight: 4 }} />
           <View style={{ flex: 1 }}>
-            <Text style={g.headName}>{meta.name}{unit.rarity ? <Text style={g.rarity}>  {unit.rarity}</Text> : null}</Text>
+            <Text style={g.headName}>{meta.name}{unit.rarity ? <Text> </Text> : null}{unit.rarity ? <Text style={rarityText(unit.rarity)}> {unit.rarity} </Text> : null}</Text>
             {(meta.title || meta.personality) && (
               <Text style={g.headTitle}>
                 {meta.title}{meta.personality ? ` · ${meta.personality}` : ''}
@@ -515,7 +522,7 @@ export default function RosterScreen({ state, bump, concept }) {
             <Text style={g.bubbleText}>“{bubble || lines.greet}”</Text>
           </View>
           <View style={g.intiHead}>
-            <Text style={g.sec}>친밀도 <Text style={g.dim}>Lv.{intimacyLevel(unit)}/{INTIMACY_MAX} · 전 스탯 +{intimacyLevel(unit) * 2}%</Text></Text>
+            <Text style={g.sec}>💗 친밀도 <Text style={g.dim}>Lv.{intimacyLevel(unit)}/{INTIMACY_MAX} · 전 스탯 +{intimacyLevel(unit) * 2}%</Text></Text>
             <Btn small kind="gold" disabled={intimacyLevel(unit) >= INTIMACY_MAX}
               label={intimacyLevel(unit) >= INTIMACY_MAX ? 'MAX' : `선물 ${multLabel(mult)} ${concept.resources.currency.emoji}${fmt(giftCost(unit).currency)}`}
               onPress={() => {
@@ -533,14 +540,14 @@ export default function RosterScreen({ state, bump, concept }) {
       {/* 코스튬(스킨) — 캐릭터 외형 변경. 순수 외형(능력치 무관) */}
       {dtab === 'cosmetic' && (
       <Card style={{ marginTop: 12 }}>
-        <Text style={g.sec}>코스튬 <Text style={g.dim}>(외형 · 능력치 무관)</Text></Text>
+        <Text style={g.sec}>🎭 코스튬 <Text style={g.dim}>(외형 · 능력치 무관)</Text></Text>
         {costumesFor(state, unit).map((cos) => {
           const needTxt = costumeNeedText(cos, concept);
           return (
             <View key={cos.id} style={g.slotRow}>
               <Text style={g.cosEmoji}>{cos.owned ? cos.emoji : '🔒'}</Text>
               <View style={{ flex: 1 }}>
-                <Text style={g.slotName}>{cos.label} <Text style={{ color: rarityColor(cos.rarity), fontWeight: '900', fontSize: 12 }}>{cos.rarity}</Text>{cos.char ? <Text style={g.dim}>  전용</Text> : null}</Text>
+                <Text style={g.slotName}>{cos.label} <Text style={rarityText(cos.rarity)}> {cos.rarity} </Text>{cos.char ? <Text style={g.dim}>  전용</Text> : null}</Text>
                 <Text style={g.slotDesc}>{cos.owned ? `획득: ${cos.sourceLabel}` : `🔒 ${needTxt}`}</Text>
               </View>
               <Btn small kind={cos.equipped ? 'ghost' : cos.owned ? 'gold' : 'ghost'} disabled={!cos.owned}
@@ -595,7 +602,7 @@ export default function RosterScreen({ state, bump, concept }) {
         return (
           <Card style={{ marginTop: 12, borderColor: T.accent }}>
             <View style={g.sigHead}>
-              <Text style={g.sec}>전용 스킬</Text>
+              <Text style={g.sec}>⭐ 전용 스킬</Text>
               <Text style={g.sigBadge}>시그니처</Text>
             </View>
             <Text style={g.slotName}>{sig.label} <Text style={g.dim}>(R{unit.rank} 강도{boost ? ` · 무기 +${Math.round(boost * 100)}%` : ''})</Text></Text>
@@ -624,7 +631,7 @@ export default function RosterScreen({ state, bump, concept }) {
         const canEnh = owned && !maxed && (state.wallet.currency || 0) >= enhCost.currency;
         return (
           <Card style={{ marginTop: 12 }}>
-            <Text style={g.sec}>전용무기</Text>
+            <Text style={g.sec}>🗡️ 전용무기</Text>
             <View style={g.slotRow}>
               <Text style={g.cosEmoji}>{owned ? w.emoji : '🔒'}</Text>
               <View style={{ flex: 1 }}>
@@ -647,7 +654,7 @@ export default function RosterScreen({ state, bump, concept }) {
       {dtab === 'gear' && (
       <Card style={{ marginTop: 12 }}>
         <View style={g.intiHead}>
-          <Text style={g.sec}>룬<Text style={g.dim}>({(unit.runes || []).filter(Boolean).length}/{RUNE_SLOTS})</Text></Text>
+          <Text style={g.sec}>🔩 룬 <Text style={g.dim}>({(unit.runes || []).filter(Boolean).length}/{RUNE_SLOTS})</Text></Text>
           <MultiToggle value={mult} onChange={setMult} />
         </View>
         <Btn small kind="gold" disabled={(state.wallet.currency || 0) < RUNE_SUMMON_COST.currency}
@@ -679,7 +686,7 @@ export default function RosterScreen({ state, bump, concept }) {
       {dtab === 'skill' && (
       <Card style={{ marginTop: 12 }}>
         <View style={g.intiHead}>
-          <Text style={g.sec}>스킬 편성<Text style={g.dim}>({unit.skills.filter(Boolean).length}/{slots})</Text></Text>
+          <Text style={g.sec}>✨ 스킬 편성 <Text style={g.dim}>({unit.skills.filter(Boolean).length}/{slots})</Text></Text>
           <Btn small kind="gold" label="✨ 추천 전체" sfx={false} onPress={() => runRecommend('all')} />
         </View>
         {recMsg && <Text style={g.recMsg}>{recMsg}</Text>}
@@ -707,7 +714,7 @@ export default function RosterScreen({ state, bump, concept }) {
       {dtab === 'gear' && (
       <Card style={{ marginTop: 12 }}>
         <View style={g.intiHead}>
-          <Text style={g.sec}>장비</Text>
+          <Text style={g.sec}>⚔️ 장비</Text>
           <Btn small kind="gold" label="✨ 추천 장착" sfx={false} onPress={() => runRecommend('gear')} />
         </View>
         {recMsg && <Text style={g.recMsg}>{recMsg}</Text>}
@@ -726,7 +733,7 @@ export default function RosterScreen({ state, bump, concept }) {
                     <Text style={g.slotTag}>{SLOT_META[slot].emoji} {SLOT_META[slot].label}</Text>
                     {item ? (<>
                       <Text style={g.slotName}>{GEAR_CATALOG[item.blueprint].label} +{item.level - 1}
-                        {item.rarity ? <Text style={{ color: rarityColor(item.rarity), fontWeight: '900' }}>  {(GEAR_RARITY[item.rarity] || {}).label || item.rarity}</Text> : null}</Text>
+                        {item.rarity ? <Text>  </Text> : null}{item.rarity ? <Text style={rarityText(item.rarity)}> {(GEAR_RARITY[item.rarity] || {}).label || item.rarity} </Text> : null}</Text>
                       <Text style={g.slotDesc}>{describeGearItem(item)}</Text>
                     </>) : <Text style={g.slotEmpty}>＋ 비어있음</Text>}
                   </View>
@@ -746,7 +753,7 @@ export default function RosterScreen({ state, bump, concept }) {
       {dtab === 'growth' && (
       <Card style={{ marginTop: 12, marginBottom: 24 }}>
         <View style={g.intiHead}>
-          <Text style={g.sec}>성장</Text>
+          <Text style={g.sec}>📈 성장</Text>
           <MultiToggle value={mult} onChange={setMult} />
         </View>
         <View style={g.btnRow}>
@@ -767,6 +774,11 @@ export default function RosterScreen({ state, bump, concept }) {
       </>)}
 
       </>)}
+
+      {/* 성장 — 계정 성장 시스템(콘텐츠 탭에서 이전) */}
+      {rtab === 'growth' && (
+        <GrowthPanel state={state} bump={bump} concept={concept} />
+      )}
 
       {/* 편성 모달 */}
       <PickerModal picker={picker} unit={unit} state={state} concept={concept}
@@ -846,7 +858,7 @@ function PickerModal({ picker, unit, state, onClose, onChange, concept }) {
             return (
               <TouchableOpacity key={r.uid} onPress={() => apply(() => { equipRune(state, unit.uid, i, r.uid); onClose(); })}
                 style={[m.opt, { borderColor: rarityColor(r.rarity) }]} activeOpacity={0.8}>
-                <Text style={m.optName}>{d.title} <Text style={{ color: rarityColor(r.rarity), fontWeight: '900' }}>[{RUNE_RARITY[r.rarity].label}]</Text></Text>
+                <Text style={m.optName}>{d.title} <Text style={rarityText(r.rarity)}> {RUNE_RARITY[r.rarity].label} </Text></Text>
                 <Text style={m.optDesc}>{d.sub}</Text>
               </TouchableOpacity>
             );
@@ -900,7 +912,7 @@ function PickerModal({ picker, unit, state, onClose, onChange, concept }) {
           <View style={m.equippedRow}>
             <Text style={m.equippedName}>
               장착: {GEAR_CATALOG[item.blueprint].label} +{item.level - 1}
-              {item.rarity ? <Text style={{ color: rarityColor(item.rarity), fontWeight: '900' }}>  [{(GEAR_RARITY[item.rarity] || {}).label || item.rarity}]</Text> : null}
+              {item.rarity ? <Text style={rarityText(item.rarity)}> {(GEAR_RARITY[item.rarity] || {}).label || item.rarity} </Text> : null}
             </Text>
             <Text style={m.equippedDesc}>{describeGearItem(item)}</Text>
             {(item.subs || []).length > 0 && <Text style={m.subLine}>부옵션: {describeSubs(item.subs)}</Text>}
@@ -946,7 +958,7 @@ function PickerModal({ picker, unit, state, onClose, onChange, concept }) {
             <TouchableOpacity key={it.uid} onPress={() => apply(() => { equipGear(state, unit.uid, it.uid); onClose(); })}
               style={m.opt} activeOpacity={0.8}>
               <Text style={m.optName}>{GEAR_CATALOG[it.blueprint].label} +{it.level - 1}
-                {it.rarity ? <Text style={{ color: rarityColor(it.rarity), fontWeight: '900' }}>  [{(GEAR_RARITY[it.rarity] || {}).label || it.rarity}]</Text> : null}</Text>
+                {it.rarity ? <Text style={rarityText(it.rarity)}> {(GEAR_RARITY[it.rarity] || {}).label || it.rarity} </Text> : null}</Text>
               <Text style={m.optDesc}>{describeGearItem(it)}</Text>
             </TouchableOpacity>
           ))}
