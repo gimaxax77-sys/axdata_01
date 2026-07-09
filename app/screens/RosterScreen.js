@@ -71,25 +71,26 @@ function costumeNeedText(cos, concept) {
   return SOURCE_LABEL[cos.source] || cos.source;
 }
 
+// 스탯 → 아이콘(룬·장비·스킬 표기 일관). 이름 대신 아이콘으로 간결·시각화.
+const STAT_ICON = {
+  atk: '⚔️', hp: '❤️', def: '🛡️', spd: '👟',
+  critChance: '🎯', critDamage: '💥', lifesteal: '🩸', defPierce: '🏹',
+  dmgReduce: '🧱', evasion: '🌀', accuracy: '👁️', trueDamage: '⚡', absDef: '🔰',
+};
+function statIcon(key) { return STAT_ICON[key] || String(key).toUpperCase(); }
+
 // 효과 객체 → 사람이 읽는 문자열 (scale = 스킬 레벨/랭크 배수)
 function describeEffect(e = {}, scale = 1) {
   const p = [];
-  if (e.critChance) p.push(`치명 +${Math.round(e.critChance * scale * 100)}%`);
-  if (e.critDamage) p.push(`치피 +${Math.round(e.critDamage * scale * 100)}%`);
-  if (e.lifesteal) p.push(`흡혈 +${Math.round(e.lifesteal * scale * 100)}%`);
-  if (e.defPierce) p.push(`관통 +${Math.round(e.defPierce * scale * 100)}%`);
-  if (e.dmgReduce) p.push(`피해감소 +${Math.round(e.dmgReduce * scale * 100)}%`);
-  if (e.evasion) p.push(`회피 +${Math.round(e.evasion * scale * 100)}%`);
-  if (e.accuracy) p.push(`명중 +${Math.round(e.accuracy * scale * 100)}%`);
-  if (e.trueDamage) p.push(`절대공격 +${Math.round(e.trueDamage * scale * 100)}%`);
-  if (e.absDef) p.push(`절대방어 +${Math.round(e.absDef * scale * 100)}%`);
+  const order = ['critChance', 'critDamage', 'lifesteal', 'defPierce', 'dmgReduce', 'evasion', 'accuracy', 'trueDamage', 'absDef'];
+  for (const k of order) if (e[k]) p.push(`${statIcon(k)} +${Math.round(e[k] * scale * 100)}%`);
   return p;
 }
 // scale: 스킬 레벨/랭크 배수. 강화 시 실제 반영되는 수치를 그대로 보여준다.
 function describeSkill(id, scale = 1) {
   const s = SKILL_CATALOG[id];
   const p = [];
-  if (s.statPct) for (const [k, v] of Object.entries(s.statPct)) p.push(`${k.toUpperCase()} +${Math.round(v * scale * 100)}%`);
+  if (s.statPct) for (const [k, v] of Object.entries(s.statPct)) p.push(`${statIcon(k)} +${Math.round(v * scale * 100)}%`);
   p.push(...describeEffect(s.effect, scale));
   p.push(...describeTeamBuff(s.teamBuff, scale));
   return p.join(' · ');
@@ -97,15 +98,15 @@ function describeSkill(id, scale = 1) {
 // 팀버프 3종 표시 (공격/피해경감/치명)
 function describeTeamBuff(tb = {}, scale = 1) {
   const p = [];
-  if (tb.atk) p.push(`팀ATK +${Math.round(tb.atk * scale * 100)}%`);
-  if (tb.def) p.push(`팀 피해경감 +${Math.round(tb.def * scale * 100)}%`);
-  if (tb.critChance) p.push(`팀 치명 +${Math.round(tb.critChance * scale * 100)}%`);
+  if (tb.atk) p.push(`팀 ⚔️ +${Math.round(tb.atk * scale * 100)}%`);
+  if (tb.def) p.push(`팀 🛡️ +${Math.round(tb.def * scale * 100)}%`);
+  if (tb.critChance) p.push(`팀 🎯 +${Math.round(tb.critChance * scale * 100)}%`);
   return p;
 }
 // 설계도 기준(강화 전 Lv1) 표시 — 제작 미리보기용.
 function describeGear(bp) {
   const p = [];
-  for (const [k, v] of Object.entries(bp.flat || {})) p.push(`${k.toUpperCase()} +${v}`);
+  for (const [k, v] of Object.entries(bp.flat || {})) p.push(`${statIcon(k)} +${v}`);
   p.push(...describeEffect(bp.effect));
   return p.join(' · ');
 }
@@ -113,20 +114,19 @@ function describeGear(bp) {
 function describeGearItem(item) {
   const c = gearContribution(item);
   const p = [];
-  for (const [k, v] of Object.entries(c.flat)) p.push(`${k.toUpperCase()} +${Math.round(v)}`);
-  for (const [k, v] of Object.entries(c.statPct)) p.push(`${k.toUpperCase()} +${Math.round(v * 100)}%`);
+  for (const [k, v] of Object.entries(c.flat)) p.push(`${statIcon(k)} +${Math.round(v)}`);
+  for (const [k, v] of Object.entries(c.statPct)) p.push(`${statIcon(k)} +${Math.round(v * 100)}%`);
   p.push(...describeEffect(c.effect));
   return p.join(' · ');
 }
 // 장비 부옵션만 (재련 대상 강조용).
 function describeSubs(subs = []) {
-  const KO = { atk: 'ATK', hp: 'HP', def: 'DEF', spd: 'SPD', critChance: '치명', critDamage: '치피', lifesteal: '흡혈', defPierce: '관통', dmgReduce: '피해감소', evasion: '회피', accuracy: '명중', trueDamage: '절대공격', absDef: '절대방어' };
-  return subs.map((s) => `${KO[s.key] || s.key} +${Math.round(s.value * 100)}%`).join(' · ');
+  return subs.map((s) => `${statIcon(s.key)} +${Math.round(s.value * 100)}%`).join(' · ');
 }
 // 시그니처 각성 2차 효과 설명
 function describeAwaken(a = {}) {
   const p = [];
-  if (a.statPct) for (const [k, v] of Object.entries(a.statPct)) p.push(`${k.toUpperCase()} +${Math.round(v * 100)}%`);
+  if (a.statPct) for (const [k, v] of Object.entries(a.statPct)) p.push(`${statIcon(k)} +${Math.round(v * 100)}%`);
   p.push(...describeEffect(a.effect));
   p.push(...describeTeamBuff(a.teamBuff));
   return p.join(' · ');
@@ -135,7 +135,7 @@ function describeAwaken(a = {}) {
 function describeRune(rune) {
   const set = RUNE_SETS[rune.set];
   const val = runeMainValue(rune);
-  const stat = set.main.stat.toUpperCase();
+  const stat = statIcon(set.main.stat);
   const pct = `${(val * 100).toFixed(1)}%`;
   const subTxt = (rune.subs || []).length ? ` · ${describeSubs(rune.subs)}` : '';
   return { title: `${set.emoji} ${set.label} +${rune.level}`, sub: `${stat} ${pct}${subTxt}`, rarity: rune.rarity, rarityLabel: RUNE_RARITY[rune.rarity].label };
