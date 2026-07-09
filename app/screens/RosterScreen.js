@@ -14,6 +14,35 @@ function rarityText(r) {
   return { backgroundColor: rarityMeta(r).color, color: '#160f28', fontWeight: '900', fontSize: 11, borderRadius: 4, overflow: 'hidden' };
 }
 import { Card, Btn, fmt, MultiToggle, multLabel, repeat, Portrait } from '../components';
+
+// 후보를 임시 장착했을 때의 실제 전투력 — 피커의 "변경 전후 비교"용.
+//   (loadout.mjs 추천 로직과 동일 기법: 넣어보고 계산 후 원복)
+function powerWithGearItem(unit, slot, item) {
+  const prev = unit.gear[slot];
+  unit.gear[slot] = item || null;
+  const p = computePower(unit);
+  unit.gear[slot] = prev;
+  return p;
+}
+function powerWithRuneItem(unit, i, rune) {
+  if (!unit.runes) unit.runes = [];
+  const prev = unit.runes[i];
+  unit.runes[i] = rune || null;
+  const p = computePower(unit);
+  unit.runes[i] = prev;
+  return p;
+}
+// 전후 차이 텍스트(색·부호) — 각 후보 줄에 "전투력 A → B ▲+Δ"로 표시.
+function DeltaText({ cur, next }) {
+  const d = next - cur;
+  const color = d > 0 ? T.good : d < 0 ? T.danger : T.muted;
+  const sign = d > 0 ? '▲ +' : d < 0 ? '▼ -' : '± ';
+  return (
+    <Text style={{ color, fontWeight: '900', fontSize: 12, marginTop: 3 }}>
+      전투력 {fmt(cur)} → {fmt(next)}  {sign}{fmt(Math.abs(d))}
+    </Text>
+  );
+}
 import { charImage } from '../charImages';
 import { fx } from '../feedback';
 import { togglePartyMember, MAX_PARTY, getPartyUnits } from '../../system/core/gameState.mjs';
@@ -851,6 +880,7 @@ function PickerModal({ picker, unit, state, onClose, onChange, concept }) {
   if (picker.mode === 'rune') {
     const i = picker.slot;
     const equipped = (unit.runes || [])[i];
+    const curP = computePower(unit); // 변경 전 전투력(후보별 비교 기준)
     // 가방: 등급↓ → 메인값↓ 정렬(상위 우선).
     const bag = (state.runeBag || []).slice()
       .sort((a, b) => (RARITY_RANK[b.rarity] || 0) - (RARITY_RANK[a.rarity] || 0) || (runeMainValue(b) - runeMainValue(a)));
@@ -889,6 +919,7 @@ function PickerModal({ picker, unit, state, onClose, onChange, concept }) {
                 style={[m.opt, { borderColor: rarityColor(r.rarity) }]} activeOpacity={0.8}>
                 <Text style={m.optName}>{d.title} <Text style={rarityText(r.rarity)}> {RUNE_RARITY[r.rarity].label} </Text></Text>
                 <Text style={m.optDesc}>{ov(d.sub)}</Text>
+                <DeltaText cur={curP} next={powerWithRuneItem(unit, i, r)} />
               </TouchableOpacity>
             );
           }} />
@@ -932,6 +963,7 @@ function PickerModal({ picker, unit, state, onClose, onChange, concept }) {
   } else {
     const slot = picker.slot;
     const item = unit.gear[slot];
+    const curP = computePower(unit); // 변경 전 전투력(후보별 비교 기준)
     const bps = Object.values(GEAR_CATALOG).filter((b) => b.slot === slot);
     // 인벤토리: 등급↓ → 강화레벨↓ 로 정렬(상위 우선).
     const owned = state.inventory.filter((g2) => g2.slot === slot)
@@ -996,10 +1028,11 @@ function PickerModal({ picker, unit, state, onClose, onChange, concept }) {
           )}
           renderItem={({ item: it }) => (
             <TouchableOpacity onPress={() => apply(() => { equipGear(state, unit.uid, it.uid); onClose(); })}
-              style={m.opt} activeOpacity={0.8}>
+              style={[m.opt, it.rarity && { borderColor: rarityColor(it.rarity) }]} activeOpacity={0.8}>
               <Text style={m.optName}>{GEAR_CATALOG[it.blueprint].label} +{it.level - 1}
                 {it.rarity ? <Text style={rarityText(it.rarity)}> {(GEAR_RARITY[it.rarity] || {}).label || it.rarity} </Text> : null}</Text>
               <Text style={m.optDesc}>{ov(describeGearItem(it))}</Text>
+              <DeltaText cur={curP} next={powerWithGearItem(unit, slot, it)} />
             </TouchableOpacity>
           )} />
       </>
