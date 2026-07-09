@@ -1,7 +1,7 @@
 import { toCombatProfile } from './units.mjs';
 import { affinity } from './elements.mjs';
 import { teamSynergy } from './synergy.mjs';
-import { FORMATION_MODS, formationActive } from './formation.mjs';
+import { formationActive, formationModsFor, hasFrontLine } from './formation.mjs';
 
 // ─────────────────────────────────────────────────────────────
 // 전투 판정 엔진 — 시스템의 심장.
@@ -32,11 +32,9 @@ export function resolve(party, challenge, accountMods = {}, formation = null) {
   const profiles = party.map(toCombatProfile);
   // 진형: 후열이 1명 이상일 때만 발동(하위호환). 전열=방어벽, 후열=보호받는 딜러.
   if (formationActive(formation, party)) {
-    const hasFront = party.some((u) => formation[u.uid] !== 'back');
+    const hasFront = hasFrontLine(formation, party);
     for (const p of profiles) {
-      const m = formation[p.uid] === 'back'
-        ? (hasFront ? FORMATION_MODS.back : FORMATION_MODS.backExposed)
-        : FORMATION_MODS.front;
+      const m = formationModsFor(formation, p.uid, hasFront);
       p.dps *= m.dps || 1; p.def *= m.def || 1; p.hp *= m.hp || 1;
     }
   }
@@ -121,11 +119,9 @@ export function combatContributions(party, challenge = {}, accountMods = {}, for
   const powerMult = accountMods.powerMult || 1;
   const profiles = party.map(toCombatProfile);
   if (formationActive(formation, party)) {
-    const hasFront = party.some((u) => formation[u.uid] !== 'back');
+    const hasFront = hasFrontLine(formation, party);
     for (const p of profiles) {
-      const m = formation[p.uid] === 'back'
-        ? (hasFront ? FORMATION_MODS.back : FORMATION_MODS.backExposed)
-        : FORMATION_MODS.front;
+      const m = formationModsFor(formation, p.uid, hasFront);
       p.dps *= m.dps || 1; p.def *= m.def || 1; p.hp *= m.hp || 1;
     }
   }
@@ -167,11 +163,9 @@ function aggregateSide(party, accountMods = {}, formation = null) {
   const powerMult = accountMods.powerMult || 1;
   const profiles = party.map(toCombatProfile);
   if (formationActive(formation, party)) {
-    const hasFront = party.some((u) => formation[u.uid] !== 'back');
+    const hasFront = hasFrontLine(formation, party);
     for (const p of profiles) {
-      const m = formation[p.uid] === 'back'
-        ? (hasFront ? FORMATION_MODS.back : FORMATION_MODS.backExposed)
-        : FORMATION_MODS.front;
+      const m = formationModsFor(formation, p.uid, hasFront);
       p.dps *= m.dps || 1; p.def *= m.def || 1; p.hp *= m.hp || 1;
     }
   }

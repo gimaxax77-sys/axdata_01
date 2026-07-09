@@ -80,8 +80,8 @@ export default function GachaScreen({ state, bump, concept }) {
       sub: '정령 획득(중복은 레벨업) · 최대 3체 장착', note: '장착·관리는 영웅 탭 › 성장',
     },
     cosmetic: {
-      label: '코스튬', icon: '🎀', curr: 'gem', cost: COSTUME_PULL_COST.gem, multi: false,
-      sub: '미보유 외형(프레임·칭호) 무작위 · 능력치 무관', note: '전부 보유 시 다이아 일부 환급',
+      label: '코스튬', icon: '🎀', curr: 'gem', cost: COSTUME_PULL_COST.gem, multi: true,
+      sub: '미보유 외형(프레임·칭호) 무작위 · 능력치 무관', note: '전부 보유 시 다이아 일부 환급(배수뽑기도 자동 환급)',
     },
   };
   const b = BANNERS[banner];

@@ -7,7 +7,8 @@ import { createWallet } from './economy.mjs';
 // ─────────────────────────────────────────────────────────────
 
 // 파티 최대 편성 인원(장르 무관 기본 정책). 전투는 파티 전원 합산.
-export const MAX_PARTY = 4;
+// 진형 정원(전열2·중열3·후열2)과 일치 — formation.ROLE_CAP 참고.
+export const MAX_PARTY = 7;
 
 export function createGameState({ units = [], party = [] } = {}) {
   return {

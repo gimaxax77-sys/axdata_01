@@ -1,5 +1,5 @@
 import { getPartyUnits } from './gameState.mjs';
-import { setFormation, unitRole } from './formation.mjs';
+import { setFormation, unitRole, FORMATION_ROLES } from './formation.mjs';
 import { equipSkill } from './character.mjs';
 import { skillSlots } from './skills.mjs';
 
@@ -58,8 +58,8 @@ export function applyBuild(state, build) {
     const slot = build.slots[i];
     if (!slot) { skipped += 1; return; }
     applied += 1;
-    // 진형 적용.
-    setFormation(state, u.uid, slot.role === 'back' ? 'back' : 'front');
+    // 진형 적용(전열/중열/후열). 알 수 없는 값은 전열로 폴백.
+    setFormation(state, u.uid, FORMATION_ROLES.includes(slot.role) ? slot.role : 'front');
     // 스킬 로드아웃 적용(내 유닛이 열 수 있는 슬롯까지만).
     const cap = skillSlots(u);
     (slot.skills || []).forEach((sid, si) => {
