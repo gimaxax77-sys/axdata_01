@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView, Platform, StatusBar as RNStatusBar, Modal, Alert, useWindowDimensions } from 'react-native';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView, Platform, StatusBar as RNStatusBar, Modal, Alert, useWindowDimensions, Animated } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { LinearGradient } from 'expo-linear-gradient';
 import { T } from './app/theme';
@@ -34,6 +34,9 @@ const TABS = [
   { key: 'shop', label: '상점', icon: '🛒', Screen: React.memo(ShopScreen) },
 ];
 
+// 시트에 얹는 영웅 화면 — 메모된 인스턴스 재사용(초당 방치틱 리렌더 차단).
+const RosterMemo = TABS.find((t) => t.key === 'roster').Screen;
+
 function fmtDuration(sec) {
   sec = Math.round(sec);
   const h = Math.floor(sec / 3600);
@@ -42,6 +45,43 @@ function fmtDuration(sec) {
   if (m > 0) return `${m}분`;
   return `${sec}초`;
 }
+
+// 영웅 바텀시트 — 상단 자동전투는 그대로 두고(방치 화면 베이스) 하단에서 시트가 올라온다.
+// 강화하는 동안 위 전투가 실시간으로 강해지는 걸 눈으로 확인(레이어 구조).
+function RosterSheet({ children, onClose, reduce }) {
+  const a = useRef(new Animated.Value(0)).current;
+  useEffect(() => {
+    if (reduce) { a.setValue(1); return; }
+    a.setValue(0);
+    Animated.timing(a, { toValue: 1, duration: 300, useNativeDriver: true }).start();
+  }, []);
+  const translateY = a.interpolate({ inputRange: [0, 1], outputRange: [500, 0] });
+  return (
+    <View style={StyleSheet.absoluteFill} pointerEvents="box-none">
+      {/* 위 전투가 비치도록 옅은 스크림 — 탭하면 닫힘(방치로 복귀). */}
+      <TouchableOpacity style={sh.scrim} activeOpacity={1} onPress={onClose}
+        accessibilityRole="button" accessibilityLabel="강화 시트 닫기" />
+      <Animated.View style={[sh.sheet, { opacity: a, transform: [{ translateY }] }]}>
+        <View style={sh.grip} />
+        <TouchableOpacity style={sh.x} onPress={onClose} activeOpacity={0.7}
+          accessibilityRole="button" accessibilityLabel="닫기">
+          <Text style={sh.xTxt}>✕</Text>
+        </TouchableOpacity>
+        <View style={sh.body}>{children}</View>
+      </Animated.View>
+    </View>
+  );
+}
+const sh = StyleSheet.create({
+  scrim: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(12,8,26,0.28)' },
+  sheet: { position: 'absolute', left: 0, right: 0, bottom: 0, height: '62%',
+    backgroundColor: T.surface, borderTopLeftRadius: 20, borderTopRightRadius: 20,
+    borderWidth: 1, borderBottomWidth: 0, borderColor: T.line, overflow: 'hidden' },
+  grip: { width: 40, height: 4, borderRadius: 3, backgroundColor: T.line, alignSelf: 'center', marginTop: 8, marginBottom: 2 },
+  x: { position: 'absolute', top: 8, right: 12, width: 28, height: 28, borderRadius: 8, borderWidth: 1, borderColor: T.line, alignItems: 'center', justifyContent: 'center', zIndex: 2 },
+  xTxt: { color: T.muted, fontSize: 14, fontWeight: '900' },
+  body: { flex: 1 },
+});
 
 export default function App() {
   return (
@@ -60,13 +100,18 @@ function AppInner() {
   });
   const [tab, setTab] = useState('idle');
   const [pixelMode, setPixelMode] = useState(false); // 픽셀 방치 화면 미리보기
-  // 탭 키 안전 폴백 — 재편으로 사라진 키(arena/meta 등)가 와도 크래시 없이 홈으로.
-  const Active = (TABS.find((t) => t.key === tab) || TABS[0]).Screen;
   const showPixel = pixelMode && tab === 'idle';
 
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [adminOpen, setAdminOpen] = useState(false);
   const [noticeHidden, setNoticeHidden] = useState(false);
+  // 상점으로 옮긴 환경 버튼(픽셀 화면·설정) 핸들러 — memo 유지 위해 안정 참조(useCallback).
+  const openSettings = useCallback(() => { fx('tap'); setSettingsOpen(true); }, []);
+  const togglePixel = useCallback(() => { fx('tap'); setPixelMode((v) => !v); }, []);
+  // 영웅 탭은 방치 전투를 켠 채 바텀시트로 표시 — 베이스 화면은 방치(idle).
+  const isRoster = tab === 'roster';
+  const baseKey = isRoster ? 'idle' : tab;
+  const BaseScreen = (TABS.find((t) => t.key === baseKey) || TABS[0]).Screen;
   // 설정을 세이브에서 엔진들에 반영
   const st = game.state.settings;
   setLang(st.lang); // 렌더 중 동기 반영 — 언어 전환이 같은 렌더에 즉시 적용(지연 없음)
@@ -106,23 +151,7 @@ function AppInner() {
       <LinearGradient colors={T.bgGrad} style={StyleSheet.absoluteFill} pointerEvents="none" />
       {/* 가로 wide: 넓은 화면에선 폰 폭으로 가운데 정렬한 프레임 안에 배치 */}
       <View style={[s.frame, wide && s.frameWide]}>
-      {/* 헤더 (픽셀 모드에선 몰입 위해 숨김) */}
-      {!showPixel && (
-        <View style={s.header}>
-          <View style={{ flex: 1 }}>
-            <Text style={s.title}>{game.concept.title}</Text>
-            <Text style={s.subtitle}>{t('app_subtitle')}</Text>
-          </View>
-          <TouchableOpacity onPress={() => { fx('tap'); setPixelMode((v) => !v); }} style={s.iconBtn} activeOpacity={0.7}
-            accessibilityRole="button" accessibilityLabel="픽셀 모드">
-            <Text style={s.iconBtnText}>🎨</Text>
-          </TouchableOpacity>
-          <TouchableOpacity onPress={() => { fx('tap'); setSettingsOpen(true); }} style={s.iconBtn} activeOpacity={0.7}
-            accessibilityRole="button" accessibilityLabel="설정">
-            <Text style={s.iconBtnText}>⚙️</Text>
-          </TouchableOpacity>
-        </View>
-      )}
+      {/* 게임명/장르 헤더 제거 — 자원바가 최상단. 픽셀 화면·설정은 상점 탭으로 이동. */}
       {!showPixel && (
         <View style={s.resWrap}>
           <ResourceBar concept={game.concept} wallet={game.state.wallet} />
@@ -150,8 +179,17 @@ function AppInner() {
             </TouchableOpacity>
           </View>
         ) : (
-          <Active state={game.state} rev={game.rev} bump={game.bump} concept={game.concept}
-            lastGain={tab === 'idle' ? game.lastGain : undefined} />
+          <>
+            <BaseScreen state={game.state} rev={game.rev} bump={game.bump} concept={game.concept}
+              lastGain={baseKey === 'idle' ? game.lastGain : undefined}
+              onOpenSettings={openSettings} onTogglePixel={togglePixel} />
+            {/* 영웅 강화 바텀시트 — 위 전투(방치 베이스) 유지, 아래에서 시트 등장. */}
+            {isRoster && (
+              <RosterSheet onClose={() => setTab('idle')} reduce={st.reduceMotion}>
+                <RosterMemo state={game.state} rev={game.rev} bump={game.bump} concept={game.concept} />
+              </RosterSheet>
+            )}
+          </>
         )}
       </View>
 

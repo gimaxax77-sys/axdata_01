@@ -41,7 +41,7 @@ const SUBTABS = [
   { key: 'cosmetic', label: '코스튬', icon: '🎭' },
 ];
 
-export default function ShopScreen({ state, bump, concept }) {
+export default function ShopScreen({ state, bump, concept, onOpenSettings, onTogglePixel }) {
   const [mult, setMult] = useState(1);
   const [pkgMsg, setPkgMsg] = useState(null);
   const [grp, setGrp] = useState('currency'); // 현재 서브탭
@@ -75,6 +75,24 @@ export default function ShopScreen({ state, bump, concept }) {
   return (
     <View style={s.flex}>
     <ScrollView ref={scrollRef} style={s.flex} contentContainerStyle={s.wrap}>
+      {/* 환경 설정 — 상단 헤더에서 이동(픽셀 화면·설정). 어느 서브탭에서나 접근. */}
+      {(onOpenSettings || onTogglePixel) && (
+        <View style={s.envRow}>
+          {onTogglePixel && (
+            <TouchableOpacity style={s.envBtn} onPress={onTogglePixel} activeOpacity={0.8}
+              accessibilityRole="button" accessibilityLabel="픽셀 방치 화면 전환">
+              <Text style={s.envIcon}>🎨</Text><Text style={s.envLabel}>픽셀 화면</Text>
+            </TouchableOpacity>
+          )}
+          {onOpenSettings && (
+            <TouchableOpacity style={s.envBtn} onPress={onOpenSettings} activeOpacity={0.8}
+              accessibilityRole="button" accessibilityLabel="설정 열기">
+              <Text style={s.envIcon}>⚙️</Text><Text style={s.envLabel}>설정</Text>
+            </TouchableOpacity>
+          )}
+        </View>
+      )}
+
       {/* 개성 — 프로필 · 코스메틱(순수 외형, 능력치 무관) */}
       {grp === 'cosmetic' && (
       <Card>
@@ -273,6 +291,12 @@ const s = StyleSheet.create({
   nameInput: { color: T.text, fontWeight: '800', fontSize: 16, borderBottomWidth: 1, borderBottomColor: T.line, paddingVertical: 2 },
   profTitle: { color: T.accent, fontSize: 12, marginTop: 3, fontWeight: '700' },
   cosRow: { flexDirection: 'row', gap: 6, flexWrap: 'wrap', marginTop: 4 },
+  // 환경 설정 이동 버튼(픽셀 화면·설정) — 상단 헤더 제거로 상점에 배치.
+  envRow: { flexDirection: 'row', gap: 8, marginBottom: 12 },
+  envBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6,
+    backgroundColor: T.surface, borderWidth: 1, borderColor: T.line, borderRadius: 12, paddingVertical: 11 },
+  envIcon: { fontSize: 16 },
+  envLabel: { color: T.text, fontWeight: '800', fontSize: 13 },
   // 하단 서브탭 바 — 활성은 골드 채움(공통 규약).
   subbar: { flexDirection: 'row', gap: 6, paddingHorizontal: 10, paddingTop: 6, paddingBottom: 4,
     borderTopWidth: 1, borderTopColor: T.line, backgroundColor: T.surface2 },
