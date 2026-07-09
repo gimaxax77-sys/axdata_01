@@ -1,3 +1,5 @@
+import { computeStats } from './stats.mjs';
+
 // ─────────────────────────────────────────────────────────────
 // 진형 — 파티 "배치"에 전략을 부여한다.
 // 각 편성 유닛을 전열(front)·중열(mid)·후열(back) 중 하나에 둔다.
@@ -109,4 +111,46 @@ export function formationSummary(state) {
   const active = mid.length > 0 || back.length > 0;
   const exposed = active && front.length === 0;
   return { front, mid, back, cap: ROLE_CAP, active, exposed };
+}
+
+// ── 자동 배치 ────────────────────────────────────────────────
+// 탱키(방어·체력)한 순으로 전열, 화력(공격·속도)이 높은 순으로 후열,
+// 나머지를 중열에 채운다. 정원(2·3·2)은 인원이 모자라면 비율대로 줄인다
+// (예: 2명이면 전열1·후열1처럼 소규모 파티도 자연스럽게 배분).
+export function autoFormation(state) {
+  const byId = new Map((state.units || []).map((u) => [u.uid, u]));
+  const party = (state.party || []).map((uid) => byId.get(uid)).filter(Boolean);
+  const total = party.length;
+  if (!total) return { ok: false, reason: '편성된 유닛 없음' };
+
+  const scored = party.map((u) => {
+    const s = computeStats(u);
+    return {
+      uid: u.uid,
+      tank: s.def * 2 + s.hp * 0.05, // 방어 위주 지표 — 전열 적합도
+      strike: s.atk * (1 + s.spd / 200), // 공격 위주 지표 — 후열 적합도
+    };
+  });
+
+  // 인원이 정원(7)보다 적으면 전열·후열 목표치를 비율로 낮춘다.
+  const frontN = Math.min(ROLE_CAP.front, Math.ceil((total * ROLE_CAP.front) / 7));
+  const backN = Math.min(ROLE_CAP.back, Math.ceil((total * ROLE_CAP.back) / 7), total - frontN);
+
+  // 1) 전열 — 탱키한 순으로 목표치까지.
+  const byTank = scored.slice().sort((a, b) => b.tank - a.tank);
+  const frontIds = new Set(byTank.slice(0, frontN).map((x) => x.uid));
+
+  // 2) 후열 — 전열로 뽑히지 않은 유닛 중 화력 순으로 목표치까지.
+  const remaining = scored.filter((x) => !frontIds.has(x.uid));
+  const byStrike = remaining.slice().sort((a, b) => b.strike - a.strike);
+  const backIds = new Set(byStrike.slice(0, backN).map((x) => x.uid));
+
+  // 3) 중열 — 나머지 전원(정원 3 이내는 항상 보장됨: 전체 정원 합 = MAX_PARTY).
+  const midIds = new Set(remaining.filter((x) => !backIds.has(x.uid)).map((x) => x.uid));
+
+  // 적용 순서: 정원 초과가 절대 없도록(비-전열부터 명시 지정, 전열은 기본값이라 항상 통과).
+  state.formation = {}; // 초기화 후 재배치
+  for (const uid of backIds) setFormation(state, uid, 'back');
+  for (const uid of midIds) setFormation(state, uid, 'mid');
+  return { ok: true, front: [...frontIds], mid: [...midIds], back: [...backIds] };
 }

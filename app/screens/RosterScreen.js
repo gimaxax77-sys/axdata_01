@@ -52,7 +52,8 @@ import { charImage } from '../charImages';
 import { fx } from '../feedback';
 import { togglePartyMember, MAX_PARTY, getPartyUnits } from '../../system/core/gameState.mjs';
 import { teamSynergy } from '../../system/core/synergy.mjs';
-import { unitRole, toggleFormation, formationSummary, ROLE_CAP, ROLE_LABEL, FORMATION_ROLES } from '../../system/core/formation.mjs';
+import { unitRole, toggleFormation, formationSummary, autoFormation, ROLE_CAP, ROLE_LABEL, FORMATION_ROLES } from '../../system/core/formation.mjs';
+import { savePreset, loadPreset, presetInfo, PRESET_SLOTS } from '../../system/core/partyPresets.mjs';
 import { computeStats, computePower, powerBreakdown } from '../../system/core/stats.mjs';
 import { getArchetype } from '../../system/core/archetypes.mjs';
 import { levelCap } from '../../system/core/units.mjs';
@@ -385,8 +386,13 @@ export default function RosterScreen({ state, bump, concept }) {
             <View style={g.formWrap}>
               <View style={g.intiHead}>
                 <Text style={g.formTitle}>⚔️ 진형</Text>
-                <Text style={g.dim}>전열 방어↑ · 중열 균형 · 후열 공격↑</Text>
+                <Btn small kind="ghost" label="🪄 자동배치" onPress={() => {
+                  const r = autoFormation(state);
+                  setDeckMsg(r.ok ? '🪄 자동배치 완료 · 탱커 전열 · 딜러 후열' : `⚠ ${r.reason}`);
+                  fx(r.ok ? 'success' : 'error'); bump();
+                }} />
               </View>
+              <Text style={g.dim}>전열 방어↑ · 중열 균형 · 후열 공격↑</Text>
               {FORMATION_ROLES.map((role) => (
                 <View key={role} style={g.formGroup}>
                   <Text style={g.formGroupLabel}>{ROLE_LABEL[role]} <Text style={g.dim}>{groups[role].length}/{ROLE_CAP[role]}</Text></Text>
@@ -446,6 +452,33 @@ export default function RosterScreen({ state, bump, concept }) {
             })()}
           </View>
         )}
+        {/* 편성 프리셋(1~5) — 탭하면 불러오기, 길게 누르면 현재 편성을 저장 */}
+        <View style={g.presetWrap}>
+          <Text style={g.formGroupLabel}>💾 편성 프리셋 <Text style={g.dim}>탭=불러오기 · 길게=저장</Text></Text>
+          <View style={g.presetRow}>
+            {Array.from({ length: PRESET_SLOTS }, (_, i) => i + 1).map((slot) => {
+              const info = presetInfo(state, slot);
+              return (
+                <TouchableOpacity key={slot} activeOpacity={0.8}
+                  style={[g.presetChip, info.exists && g.presetChipOn]}
+                  onPress={() => {
+                    const r = loadPreset(state, slot);
+                    if (r.ok) setDeckMsg(`📥 ${slot}번 편성 불러옴 · ${r.applied}명${r.missing ? ` (제외 ${r.missing}명)` : ''}`);
+                    else setDeckMsg(`⚠ ${r.reason}`);
+                    fx(r.ok ? 'success' : 'error'); bump();
+                  }}
+                  onLongPress={() => {
+                    const r = savePreset(state, slot);
+                    setDeckMsg(r.ok ? `💾 ${slot}번에 현재 편성(${r.count}명) 저장` : `⚠ ${r.reason}`);
+                    fx(r.ok ? 'success' : 'error'); bump();
+                  }}>
+                  <Text style={[g.presetNum, info.exists && g.presetNumOn]}>{slot}</Text>
+                  <Text style={g.presetSub}>{info.exists ? `${info.count}명` : '비어있음'}</Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+        </View>
         {/* 원클릭 덱 복사/붙여넣기(로컬) */}
         <View style={g.deckWrap}>
           <View style={g.deckBtns}>
@@ -1151,6 +1184,14 @@ const g = StyleSheet.create({
   formEmpty: { color: T.muted, fontSize: 11, marginTop: 6 },
   formWarn: { color: T.danger, fontSize: 11, fontWeight: '700', marginTop: 8 },
   formOk: { color: T.good, fontSize: 11, marginTop: 8 },
+  // 편성 프리셋(1~5) 슬롯.
+  presetWrap: { marginTop: 12, borderTopWidth: 1, borderTopColor: T.line, paddingTop: 10 },
+  presetRow: { flexDirection: 'row', gap: 6, marginTop: 6 },
+  presetChip: { flex: 1, alignItems: 'center', paddingVertical: 8, borderRadius: 10, backgroundColor: T.surface2, borderWidth: 1, borderColor: T.line },
+  presetChipOn: { borderColor: T.accent },
+  presetNum: { color: T.muted, fontWeight: '900', fontSize: 15 },
+  presetNumOn: { color: T.accent },
+  presetSub: { color: T.muted, fontSize: 9, marginTop: 2 },
   synNone: { color: T.muted, fontSize: 12, marginTop: 10 },
   dpsWrap: { marginTop: 12, borderTopWidth: 1, borderTopColor: T.line, paddingTop: 10 },
   dpsToggle: { color: T.accent, fontSize: 12, fontWeight: '800' },

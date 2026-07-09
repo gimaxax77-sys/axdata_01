@@ -123,6 +123,7 @@ function normalize(state) {
   for (const uid of Object.keys(state.formation)) {
     if (!state.party.includes(uid)) delete state.formation[uid];
   }
+  state.formationPresets = state.formationPresets || {};
   for (const u of state.units || []) {
     if (!u.skills) u.skills = [null, null, null];
     if (!u.enhance) u.enhance = { atk: 0, hp: 0, def: 0, crit: 0 };

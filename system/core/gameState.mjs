@@ -14,7 +14,8 @@ export function createGameState({ units = [], party = [] } = {}) {
   return {
     units, // 보유 유닛 인스턴스 배열
     party, // 편성된 유닛 uid 배열 (최대 정책은 장르가 정함)
-    formation: {}, // 진형: uid → 'back' (미기재=전열). 후열 1명↑일 때만 발동
+    formation: {}, // 진형: uid → 'mid'|'back' (미기재=전열). 후열/중열 1명↑일 때만 발동
+    formationPresets: {}, // 편성 프리셋(1~5): slot → { party, formation, savedAt }
 
     inventory: [], // 미장착 장비 인스턴스 배열
     runeBag: [], // 미장착 룬 인스턴스 배열
