@@ -1,24 +1,24 @@
-// 판타지 컨셉 기반 앱 테마 (딥 퍼플 + 골드 게임 UI)
+// 판타지 컨셉 기반 앱 테마 (라이트 퍼플 + 골드 게임 UI) — 밝은 톤 개편.
 export const T = {
-  bg: '#160f28',
-  bgGrad: ['#1d1440', '#160f28', '#0f0a1e'], // 화면 배경 그라데이션
-  surface: '#2a1f47',
-  surfaceGrad: ['#312453', '#241a40'], // 카드 그라데이션
-  surface2: '#372a5e',
-  line: '#493a72',
-  primary: '#8b6fd6',
-  primaryGrad: ['#9b7ce6', '#6f52c0'],
-  accent: '#f5c542',
-  accentGrad: ['#ffd95e', '#e8a91f'],
-  text: '#f2ecff',
-  muted: '#a99cc9',
-  good: '#6bd08a',
-  danger: '#e5657f',
+  bg: '#241a40',
+  bgGrad: ['#2f2158', '#241a40', '#1c1434'], // 화면 배경 그라데이션
+  surface: '#3b2d66',
+  surfaceGrad: ['#453573', '#372a5e'], // 카드 그라데이션
+  surface2: '#4b3b7d',
+  line: '#63519e',
+  primary: '#a186ec',
+  primaryGrad: ['#b298f5', '#8266d6'],
+  accent: '#ffd257',
+  accentGrad: ['#ffe27a', '#f0b52e'],
+  text: '#f9f6ff',
+  muted: '#c3b7e2',
+  good: '#7fe3a0',
+  danger: '#ff5f7e',
   shadow: '#000',
   // 자원 색
-  currency: '#f5c542',
-  growth: '#5fd0e0',
-  summon: '#c98bff',
+  currency: '#ffd257',
+  growth: '#71dcec',
+  summon: '#d4a5ff',
 };
 
 // 등급별 스타일 — 색·글로우·그라데이션. 초상/결과/도감 전역에서 공유.

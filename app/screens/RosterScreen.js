@@ -32,14 +32,19 @@ function powerWithRuneItem(unit, i, rune) {
   unit.runes[i] = prev;
   return p;
 }
-// 전후 차이 텍스트(색·부호) — 각 후보 줄에 "전투력 A → B ▲+Δ"로 표시.
+// 전후 차이 표시 — 델타를 '채운 배지'로 강조(하향=빨강 배지+흰 글자, 상향=초록 배지).
 function DeltaText({ cur, next }) {
   const d = next - cur;
-  const color = d > 0 ? T.good : d < 0 ? T.danger : T.muted;
-  const sign = d > 0 ? '▲ +' : d < 0 ? '▼ -' : '± ';
+  const up = d > 0, down = d < 0;
+  const badge = {
+    backgroundColor: up ? T.good : down ? T.danger : T.surface2,
+    color: up ? '#0f2a17' : down ? '#ffffff' : T.muted,
+    fontWeight: '900', fontSize: 12, borderRadius: 5, overflow: 'hidden',
+  };
   return (
-    <Text style={{ color, fontWeight: '900', fontSize: 12, marginTop: 3 }}>
-      전투력 {fmt(cur)} → {fmt(next)}  {sign}{fmt(Math.abs(d))}
+    <Text style={{ color: T.muted, fontWeight: '700', fontSize: 12, marginTop: 4 }}>
+      전투력 {fmt(cur)} → <Text style={{ color: up ? T.good : down ? T.danger : T.text, fontWeight: '900' }}>{fmt(next)}</Text>
+      {'  '}<Text style={badge}> {up ? '▲ +' : down ? '▼ -' : '± '}{fmt(Math.abs(d))} </Text>
     </Text>
   );
 }
