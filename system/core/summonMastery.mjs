@@ -11,7 +11,7 @@ import { getStage } from './progression.mjs';
 // ─────────────────────────────────────────────────────────────
 
 export const SUMMON_LEVEL_MAX = 15;
-export const SUMMON_BANNERS = ['hero', 'pet', 'gear', 'rune', 'cosmetic'];
+export const SUMMON_BANNERS = ['hero', 'pet', 'gear', 'rune', 'cosmetic', 'guardian'];
 
 // 레벨 L 도달에 필요한 누적 소환 횟수 (index 0 = 레벨1).
 export const SUMMON_LEVEL_THRESHOLDS = [3, 8, 15, 25, 40, 60, 85, 115, 150, 190, 235, 285, 340, 400, 465];

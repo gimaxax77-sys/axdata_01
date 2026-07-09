@@ -7,6 +7,7 @@ import { fx } from '../feedback';
 import { reducedMotion } from '../motion';
 import { summonOne, summonMulti, PULL_COST } from '../../system/core/gacha.mjs';
 import { petSummon, PET_PULL_COST, PETS } from '../../system/core/pets.mjs';
+import { guardianSummon, GUARDIAN_SUMMON_COST, GUARDIANS } from '../../system/core/guardians.mjs';
 import {
   summonGear, summonRune, summonCosmetic,
   GEAR_PULL_COST, RUNE_PULL_COST, COSTUME_PULL_COST,
@@ -66,6 +67,10 @@ export default function GachaScreen({ state, bump, concept }) {
       label: '펫', icon: '🐾', curr: 'gem', cost: PET_PULL_COST.gem, multi: true,
       sub: '펫 획득(중복은 레벨업) · 최대 3마리 장착', note: '펫은 캐릭터·유물처럼 계정 성장 축',
     },
+    guardian: {
+      label: '정령', icon: '🧚', curr: 'gem', cost: GUARDIAN_SUMMON_COST.gem, multi: true,
+      sub: '정령 획득(중복은 레벨업) · 최대 3체 장착', note: '장착·관리는 영웅 탭 › 성장',
+    },
     gear: {
       label: '장비', icon: '⚔️', curr: 'gem', cost: GEAR_PULL_COST.gem, multi: true,
       sub: '랜덤 장비 → 인벤토리 · 진행도↑ 상위 등급↑', note: '영웅 탭에서 장착·강화',
@@ -90,6 +95,11 @@ export default function GachaScreen({ state, bump, concept }) {
       const r = petSummon(state); if (!r.ok) return { cell: null, spent: false };
       const p = PETS[r.pet];
       return { cell: { rarity: r.rarity, emoji: p.emoji, name: `${p.label} Lv.${r.level}` }, spent: true };
+    }
+    if (banner === 'guardian') {
+      const r = guardianSummon(state); if (!r.ok) return { cell: null, spent: false };
+      const gd = GUARDIANS[r.guardian];
+      return { cell: { rarity: r.rarity, emoji: gd.emoji, name: `${gd.label} Lv.${r.level}` }, spent: true };
     }
     if (banner === 'gear') {
       const r = summonGear(state); if (!r.ok) return { cell: null, spent: false };
@@ -133,8 +143,10 @@ export default function GachaScreen({ state, bump, concept }) {
     bump();
   };
 
-  const canN = (n) => bal >= b.cost * n;
-  const maxN = Math.min(300, Math.floor(bal / b.cost));
+  // 정령 배너는 해금 게이트(스테이지) 준수 — 잠금 중엔 소환 불가.
+  const bLocked = banner === 'guardian' && !isUnlocked(state, 'guardian');
+  const canN = (n) => !bLocked && bal >= b.cost * n;
+  const maxN = bLocked ? 0 : Math.min(300, Math.floor(bal / b.cost));
 
   // 소환 숙련도(소환 레벨) 현황·청구.
   const info = summonMasteryInfo(state, banner);
@@ -183,7 +195,7 @@ export default function GachaScreen({ state, bump, concept }) {
         <Text style={s.bannerTitle}>{b.label} 소환</Text>
         <Text style={s.bannerSub}>{b.sub}</Text>
         <Text style={s.pity}>
-          {banner === 'hero' ? `천장까지 ${90 - state.gacha.pity}회 · ` : ''}보유 {b.curr === 'gem' ? gemE : sumE} {fmt(bal)}
+          {bLocked ? `🔒 스테이지 ${unlockStage('guardian')} 도달 시 해금 · ` : banner === 'hero' ? `천장까지 ${90 - state.gacha.pity}회 · ` : ''}보유 {b.curr === 'gem' ? gemE : sumE} {fmt(bal)}
         </Text>
       </Card>
 

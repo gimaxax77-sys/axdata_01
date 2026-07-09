@@ -216,6 +216,7 @@ export default function RosterScreen({ state, bump, concept }) {
   const [mult, setMult] = useState(1); // 성장 배수 (×1/×10/×100)
   const [recMsg, setRecMsg] = useState(null); // 추천 장착 결과 메시지
   const [showBd, setShowBd] = useState(false); // 전투력 분해 표 펼침
+  const [showSeed, setShowSeed] = useState(false); // 씨앗 조건 펼침(기본 접힘)
   const [showDps, setShowDps] = useState(false); // DPS 미터 펼침
   const [deckMsg, setDeckMsg] = useState(null); // 덱 복사/붙여넣기 결과
   const [deckCode, setDeckCode] = useState(''); // 붙여넣기 입력 코드
@@ -530,18 +531,23 @@ export default function RosterScreen({ state, bump, concept }) {
           );
         })()}
 
-        {/* 직업(클래스) · 특성 */}
-        <View style={g.jobBox}>
-          <View style={g.jobHead}>
-            <Text style={g.jobEmoji}>{arch.emoji}</Text>
-            <Text style={g.jobName}>{arch.name}</Text>
-            <Text style={g.jobRole}>{archInfo.roleLabel}</Text>
+        {/* 레벨업/돌파/각인 — 영웅 카드 안에서 바로(탭 전환 없이). 직업 소개 카드는 제거(이름줄과 중복). */}
+        <View style={g.growBox}>
+          <View style={g.intiHead}>
+            <Text style={g.subsec2}>📈 성장 {archInfo.teamBuff ? <Text style={g.dim}>· 🤝 팀 공격 +{Math.round(archInfo.teamBuff.mult * 100)}%</Text> : null}</Text>
+            <MultiToggle value={mult} onChange={setMult} />
           </View>
-          <Text style={g.jobTrait}>{archInfo.trait}</Text>
-          <View style={g.traitRow}>
-            {em && <View style={g.trait}><Text style={g.traitTxt}>{em.emoji} {em.name} 속성</Text></View>}
-            {meta.personality && <View style={g.trait}><Text style={g.traitTxt}>💬 {meta.personality}</Text></View>}
-            {archInfo.teamBuff && <View style={[g.trait, g.traitHl]}><Text style={g.traitTxtHl}>🤝 팀 공격 +{Math.round(archInfo.teamBuff.mult * 100)}%</Text></View>}
+          <View style={g.btnRow}>
+            <View style={{ flex: 1 }}><Btn small kind="gold" label={atCap ? '상한 (돌파 필요)' : `레벨업 ${multLabel(mult)}`} disabled={atCap} onPress={() => grow(() => levelUp(state, unit.uid))} /></View>
+            <View style={{ flex: 1 }}><Btn small kind="ghost" label={`돌파 ${multLabel(mult)}`} onPress={() => grow(() => ascend(state, unit.uid))} /></View>
+          </View>
+          <Text style={g.ascHint}>{MATERIAL_META.ascendStone.emoji} 돌파석 {fmt(materialCount(state, 'ascendStone'))} · 이번 돌파 필요 {unit.rank * 2}{materialCount(state, 'ascendStone') < unit.rank * 2 ? ' (부족 시 소환석 대체)' : ''}</Text>
+          <View style={g.btnRow}>
+            {['atk', 'hp', 'def', 'crit'].map((s2) => (
+              <View key={s2} style={{ flex: 1 }}>
+                <Btn small kind="ghost" label={`${statIcon(s2 === 'crit' ? 'critChance' : s2)}+${unit.enhance[s2]}`} onPress={() => grow(() => enhanceNode(state, unit.uid, s2))} />
+              </View>
+            ))}
           </View>
         </View>
       </Card>
@@ -622,12 +628,15 @@ export default function RosterScreen({ state, bump, concept }) {
         const STAT_KO = { atk: '공격', hp: '체력', def: '방어', spd: '속도' };
         return (
           <Card style={{ marginTop: 12, borderColor: sp.fullyUnlocked ? T.good : T.line }}>
-            <View style={g.sigHead}>
-              <Text style={g.sec}>🌱 씨앗 <Text style={g.dim}>서사 발현</Text></Text>
+            {/* 접힘형 — 헤더에 진행도 요약, 탭하면 조건 상세 펼침(스크롤 부담↓). */}
+            <TouchableOpacity style={g.sigHead} activeOpacity={0.7} onPress={() => setShowSeed((v) => !v)}
+              accessibilityRole="button" accessibilityLabel={`씨앗 발현 ${sp.met}/${sp.total}, 탭하여 ${showSeed ? '접기' : '펼치기'}`}>
+              <Text style={g.sec}>🌱 씨앗 <Text style={g.dim}>서사 발현 {showSeed ? '▲' : '▼'}</Text></Text>
               {sp.fullyUnlocked
                 ? <Text style={g.seedFull}>완전 발현</Text>
-                : <Text style={g.dim}>{sp.met}/{sp.total}</Text>}
-            </View>
+                : <Text style={g.dim}>{sp.met}/{sp.total} · 최대 +{Math.round(sp.full * 100)}%</Text>}
+            </TouchableOpacity>
+            {showSeed && (<>
             <Text style={g.slotDesc}>{unit.rarity || '?'}등급 · 완전 발현 시 전 스탯 최대 +{Math.round(sp.full * 100)}%. 낮은 등급일수록 보정이 크지만, 완전 발현해도 최고등급을 살짝 넘지 못합니다.</Text>
             <View style={{ height: 8 }} />
             {conds.map((c) => (
@@ -640,6 +649,7 @@ export default function RosterScreen({ state, bump, concept }) {
                 <View style={c.met ? g.seedBadgeOn : g.seedBadgeOff}><Text style={c.met ? g.seedBadgeTextOn : g.seedBadgeTextOff}>{c.met ? '발현' : `${c.cur}/${c.need}`}</Text></View>
               </View>
             ))}
+            </>)}
           </Card>
         );
       })()}
@@ -807,28 +817,6 @@ export default function RosterScreen({ state, bump, concept }) {
       </Card>
       )}
 
-      {/* 성장 */}
-      {dtab === 'growth' && (
-      <Card style={{ marginTop: 12, marginBottom: 24 }}>
-        <View style={g.intiHead}>
-          <Text style={g.sec}>📈 성장</Text>
-          <MultiToggle value={mult} onChange={setMult} />
-        </View>
-        <View style={g.btnRow}>
-          <View style={{ flex: 1 }}><Btn small label={atCap ? '상한 (돌파 필요)' : `레벨업 ${multLabel(mult)}`} disabled={atCap} onPress={() => grow(() => levelUp(state, unit.uid))} /></View>
-          <View style={{ flex: 1 }}><Btn small kind="ghost" label={`돌파 (랭크↑) ${multLabel(mult)}`} onPress={() => grow(() => ascend(state, unit.uid))} /></View>
-        </View>
-        <Text style={g.ascHint}>{MATERIAL_META.ascendStone.emoji} 돌파석 {fmt(materialCount(state, 'ascendStone'))} · 이번 돌파 필요 {unit.rank * 2}{materialCount(state, 'ascendStone') < unit.rank * 2 ? ' (부족 시 소환석 대체)' : ''}</Text>
-        <Text style={g.subsec}>각인 (특정 스탯 집중) · {multLabel(mult)}</Text>
-        <View style={g.btnRow}>
-          {['atk', 'hp', 'def', 'crit'].map((s2) => (
-            <View key={s2} style={{ flex: 1 }}>
-              <Btn small kind="ghost" label={`${s2}+${unit.enhance[s2]}`} onPress={() => grow(() => enhanceNode(state, unit.uid, s2))} />
-            </View>
-          ))}
-        </View>
-      </Card>
-      )}
       </>)}
 
       </>)}
@@ -1189,6 +1177,8 @@ const g = StyleSheet.create({
   dim: { color: T.muted, fontSize: 12, fontWeight: '400' },
   btnRow: { flexDirection: 'row', gap: 8 },
   loadingHint: { color: T.muted, fontSize: 13, textAlign: 'center', paddingVertical: 24 },
+  // 헤더 카드 내 성장(레벨업/돌파/각인) 박스.
+  growBox: { marginTop: 12, backgroundColor: T.surface2, borderRadius: 12, padding: 12 },
   // 영웅 탭 하위 서브탭 바(메인 탭바 위) — 영웅 ↔ 편성.
   rtabBar: { flexDirection: 'row', gap: 8, paddingHorizontal: 12, paddingTop: 6, paddingBottom: 4,
     borderTopWidth: 1, borderTopColor: T.line, backgroundColor: T.surface2 },

@@ -79,7 +79,7 @@ function AppInner() {
   const wev = weeklyEvent(gs);
   const tabDots = {
     content: canClaimAttendance(gs) || missionList(gs).some((mm) => mm.done && !mm.claimed) || (wev.done && !wev.claimed),
-    gacha: ['hero', 'pet', 'gear', 'rune', 'cosmetic'].some((k) => summonMasteryInfo(gs, k).claimable),
+    gacha: ['hero', 'pet', 'gear', 'rune', 'cosmetic', 'guardian'].some((k) => summonMasteryInfo(gs, k).claimable),
   };
   const changeSetting = (key, val) => {
     game.state.settings[key] = val;

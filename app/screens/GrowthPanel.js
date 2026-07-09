@@ -5,7 +5,7 @@ import { Card, Btn, fmt, MultiToggle, multLabel, repeat } from '../components';
 import { fx } from '../feedback';
 import { RELICS, relicUpgradeCost, upgradeRelic, relicCap } from '../../system/core/relics.mjs';
 import { EMBLEMS, emblemUpgradeCost, upgradeEmblem, emblemCap, emblemComplete, EMBLEM_COMPLETE_BONUS } from '../../system/core/emblems.mjs';
-import { GUARDIANS, guardianSummon, equipGuardian, unequipGuardian, guardianEffectLabel, GUARDIAN_SUMMON_COST, MAX_ACTIVE_GUARDIANS } from '../../system/core/guardians.mjs';
+import { GUARDIANS, equipGuardian, unequipGuardian, guardianEffectLabel, MAX_ACTIVE_GUARDIANS } from '../../system/core/guardians.mjs';
 import { PETS, petSummon, equipPet, unequipPet, petEffectLabel, MAX_ACTIVE_PETS, PET_PULL_COST,
   rerollPetOpt, petFuse, petFuseAvail, petOptLabel, PET_FUSE_COST,
   petShardSummon, SHARD_SUMMON_COST, autoFusePets } from '../../system/core/pets.mjs';
@@ -211,11 +211,8 @@ export default function GrowthPanel({ state, bump, concept }) {
           <Text style={c.sec}>🧚 정령 <Text style={c.dim}>(장착 {state.guardians.active.length}/{MAX_ACTIVE_GUARDIANS})</Text></Text>
         </View>
         {!guardUnlocked && <Text style={c.sub}>🔒 스테이지 {unlockStage('guardian')} 도달 시 해금</Text>}
-        {guardUnlocked && (
-          <Btn small kind="gold" label={`정령 소환 ${multLabel(mult)} ${R.gem.emoji}${mult === 'Max' ? '' : fmt(GUARDIAN_SUMMON_COST.gem * mult)}`}
-            disabled={(state.wallet.gem || 0) < GUARDIAN_SUMMON_COST.gem} onPress={() => actN(() => guardianSummon(state))} />
-        )}
-        {guardUnlocked && Object.keys(state.guardians.owned).length === 0 && <Text style={c.sub}>보유 정령 없음 — 소환으로 획득하세요.</Text>}
+        {/* 소환은 소환 탭 › 🧚정령으로 이동 — 여기선 장착·관리만. */}
+        {guardUnlocked && Object.keys(state.guardians.owned).length === 0 && <Text style={c.sub}>보유 정령 없음 — 소환 탭 › 🧚정령에서 획득하세요.</Text>}
         {guardUnlocked && (
           <View style={c.tileGrid}>
             {Object.entries(state.guardians.owned).map(([id, lv]) => (
