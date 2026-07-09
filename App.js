@@ -17,7 +17,7 @@ import RosterScreen from './app/screens/RosterScreen';
 import GachaScreen from './app/screens/GachaScreen';
 import ContentScreen from './app/screens/ContentScreen';
 import ShopScreen from './app/screens/ShopScreen';
-import { IntroModal, ObjectiveBanner } from './app/screens/Onboarding';
+import { IntroModal } from './app/screens/Onboarding';
 import ErrorBoundary from './app/ErrorBoundary';
 import { canClaimAttendance, missionList } from './system/core/daily.mjs';
 import { weeklyEvent } from './system/core/events.mjs';
@@ -137,11 +137,6 @@ function AppInner() {
           </Text>
           <Text style={s.noticeX}>✕</Text>
         </TouchableOpacity>
-      )}
-
-      {/* 온보딩 목표 배너 (소개를 본 뒤, 목표가 남아있을 때만) */}
-      {!showPixel && game.state.tutorial.introSeen && (
-        <ObjectiveBanner state={game.state} concept={game.concept} onGo={setTab} />
       )}
 
       {/* 화면 — rev(액션 신호)로만 리렌더. lastGain은 방치 탭에만 전달해
