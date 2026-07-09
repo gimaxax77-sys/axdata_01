@@ -135,6 +135,12 @@ function describeRune(rune) {
   return { title: `${set.emoji} ${set.label} +${rune.level}`, sub: `[${RUNE_RARITY[rune.rarity].label}] ${stat} ${pct}${subTxt}` };
 }
 
+// 영웅 탭 최상위 서브탭 — 영웅(그리드+상세) ↔ 편성(파티·진형·DPS·덱).
+const ROSTER_TABS = [
+  { key: 'heroes', label: '영웅', icon: '🦸' },
+  { key: 'party', label: '편성', icon: '⚔️' },
+];
+
 // 캐릭터 상세 서브탭 — 9개 세로 스택을 목적별 4묶음으로.
 //   성장: 친밀도·씨앗·성장(레벨/돌파/각인) · 장비: 룬·전용무기·장비
 //   스킬: 전용스킬·스킬편성 · 꾸미기: 코스튬
@@ -147,6 +153,7 @@ const DETAIL_TABS = [
 
 export default function RosterScreen({ state, bump, concept }) {
   const [selId, setSel] = useState(state.party[0] || state.units[0]?.uid);
+  const [rtab, setRtab] = useState('heroes'); // 영웅 탭 최상위 서브탭
   const [dtab, setDtab] = useState('growth'); // 상세 서브탭
   const [picker, setPicker] = useState(null); // {mode:'skill'|'gear', slot}
   const [bubble, setBubble] = useState(null); // 현재 대사
@@ -168,6 +175,15 @@ export default function RosterScreen({ state, bump, concept }) {
   const lines = unit && linesOf(concept, unit);
   // 선택 캐릭터가 바뀌면 인사 대사로 초기화
   useEffect(() => { setBubble(lines ? lines.greet : null); }, [selId]);
+  // "차르륵" — 영웅 탭 진입 시 최상위 서브탭(영웅/편성)이 순차 등장.
+  const rAnims = useRef(ROSTER_TABS.map(() => new Animated.Value(0))).current;
+  useEffect(() => {
+    if (reducedMotion()) { rAnims.forEach((a) => a.setValue(1)); return; }
+    rAnims.forEach((a) => a.setValue(0));
+    Animated.stagger(70, rAnims.map((a) =>
+      Animated.timing(a, { toValue: 1, duration: 300, useNativeDriver: true }),
+    )).start();
+  }, []);
   // "차르륵" — 캐릭터 선택 시 상세 서브탭이 좌→우로 순차 등장(콘텐츠 탭과 동일 규약).
   const dAnims = useRef(DETAIL_TABS.map(() => new Animated.Value(0))).current;
   useEffect(() => {
@@ -252,8 +268,10 @@ export default function RosterScreen({ state, bump, concept }) {
   const slots = skillSlots(unit);
 
   return (
+    <View style={g.flex}>
     <ScrollView style={g.flex} contentContainerStyle={g.wrap}>
-      {/* 파티 편성 — 전투는 편성된 전원 합산 */}
+      {rtab === 'party' && (
+      /* 파티 편성 — 전투는 편성된 전원 합산 */
       <Card style={{ marginBottom: 12 }}>
         <View style={g.intiHead}>
           <Text style={g.sec}>파티 편성 <Text style={g.dim}>{state.party.length}/{MAX_PARTY}</Text></Text>
@@ -357,7 +375,9 @@ export default function RosterScreen({ state, bump, concept }) {
           {deckMsg ? <Text style={g.deckMsg}>{deckMsg}</Text> : null}
         </View>
       </Card>
+      )}
 
+      {rtab === 'heroes' && (<>
       {/* 보유 유닛 — 세로 나열 그리드(줄바꿈으로 행이 쌓임). 종 단위로 묶여 밀도 유지. */}
       <Text style={g.sec}>보유 {concept.terms.unit} ({grouped.length}종{list.length > grouped.length ? ` · ${list.length}` : ''})</Text>
       <View style={g.grid}>
@@ -746,10 +766,33 @@ export default function RosterScreen({ state, bump, concept }) {
       )}
       </>)}
 
+      </>)}
+
       {/* 편성 모달 */}
       <PickerModal picker={picker} unit={unit} state={state} concept={concept}
         onClose={() => setPicker(null)} onChange={bump} key={picker ? picker.mode + picker.slot : 'none'} />
     </ScrollView>
+
+    {/* 영웅 탭 하위 서브탭 바(메인 탭바 위) — 영웅 ↔ 편성. */}
+    <View style={g.rtabBar}>
+      {ROSTER_TABS.map((tb, i) => {
+        const on = rtab === tb.key;
+        return (
+          <Animated.View key={tb.key} style={{ flex: 1, opacity: rAnims[i], transform: [
+            { translateY: rAnims[i].interpolate({ inputRange: [0, 1], outputRange: [16, 0] }) },
+            { scale: rAnims[i].interpolate({ inputRange: [0, 1], outputRange: [0.85, 1] }) },
+          ] }}>
+            <TouchableOpacity activeOpacity={0.8} onPress={() => { fx('tap'); setRtab(tb.key); }}
+              style={[g.rtabCell, on && g.rtabCellOn]}
+              accessibilityRole="tab" accessibilityState={{ selected: on }} accessibilityLabel={tb.label}>
+              <Text style={[g.rtabIcon, on && g.rtabIconOn]}>{tb.icon}</Text>
+              <Text style={[g.rtabLabel, on && g.rtabLabelOn]}>{tb.label}</Text>
+            </TouchableOpacity>
+          </Animated.View>
+        );
+      })}
+    </View>
+    </View>
   );
 }
 
@@ -1036,6 +1079,16 @@ const g = StyleSheet.create({
   dim: { color: T.muted, fontSize: 12, fontWeight: '400' },
   btnRow: { flexDirection: 'row', gap: 8 },
   loadingHint: { color: T.muted, fontSize: 13, textAlign: 'center', paddingVertical: 24 },
+  // 영웅 탭 하위 서브탭 바(메인 탭바 위) — 영웅 ↔ 편성.
+  rtabBar: { flexDirection: 'row', gap: 8, paddingHorizontal: 12, paddingTop: 6, paddingBottom: 4,
+    borderTopWidth: 1, borderTopColor: T.line, backgroundColor: T.surface2 },
+  rtabCell: { alignItems: 'center', justifyContent: 'center', paddingVertical: 6, borderRadius: 10,
+    borderWidth: 1, borderColor: 'transparent' },
+  rtabCellOn: { backgroundColor: T.surface, borderColor: T.accent },
+  rtabIcon: { fontSize: 18, opacity: 0.55 },
+  rtabIconOn: { opacity: 1 },
+  rtabLabel: { color: T.muted, fontSize: 11, fontWeight: '800', marginTop: 2 },
+  rtabLabelOn: { color: T.accent },
   // 상세 서브탭 바 — 헤더 요약 바로 아래(성장/장비/스킬/꾸미기).
   dtabBar: { flexDirection: 'row', gap: 6, marginTop: 10 },
   dtabCell: { alignItems: 'center', justifyContent: 'center', paddingVertical: 8, borderRadius: 10,
