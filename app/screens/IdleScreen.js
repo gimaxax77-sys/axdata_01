@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { T } from '../theme';
 import { Card, Btn, fmt } from '../components';
 import { effectivePower, powerMultOf } from '../useGame';
@@ -33,7 +33,7 @@ export default function IdleScreen({ state, bump, lastGain, concept }) {
   const battle = resolve(getPartyUnits(state), stageDef.challenge, accountMods(state), state.formation);
 
   return (
-    <ScrollView style={st.flex} contentContainerStyle={st.wrap}>
+    <View style={st.wrap}>
       {/* 난이도 선택 */}
       <View style={st.diffRow}>
         {DIFFICULTIES.map((d) => {
@@ -137,14 +137,15 @@ export default function IdleScreen({ state, bump, lastGain, concept }) {
         />
         {boxMsg ? <Text style={st.boxMsg}>{boxMsg}</Text> : null}
       </Card>
-    </ScrollView>
+    </View>
   );
 }
 
 const st = StyleSheet.create({
   flex: { flex: 1 },
-  wrap: { padding: 14, gap: 12 },
-  stage: { alignItems: 'center', backgroundColor: T.surface2 },
+  // 스크롤 없이 한 화면에 고정 — 전투무대(stage)가 남는 세로 공간을 흡수.
+  wrap: { flex: 1, padding: 12, gap: 8 },
+  stage: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: T.surface2 },
   stageLabel: { color: T.accent, fontWeight: '800', fontSize: 18, marginBottom: 2 },
   diffBadge: { color: T.danger, fontSize: 13, fontWeight: '800' },
   zone: { color: T.muted, fontSize: 12, marginBottom: 4, fontWeight: '600' },

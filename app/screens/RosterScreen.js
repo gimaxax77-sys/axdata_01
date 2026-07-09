@@ -378,15 +378,15 @@ export default function RosterScreen({ state, bump, concept }) {
       )}
 
       {rtab === 'heroes' && (<>
-      {/* 보유 유닛 — 세로 나열 그리드(줄바꿈으로 행이 쌓임). 종 단위로 묶여 밀도 유지. */}
-      <Text style={g.sec}>보유 {concept.terms.unit} ({grouped.length}종{list.length > grouped.length ? ` · ${list.length}` : ''})</Text>
-      <View style={g.grid}>
+      {/* 보유 유닛 — 가로 스크롤 한 줄(세로 공간 절약). 종 단위로 묶여 밀도 유지. */}
+      <Text style={g.sec}>보유 {concept.terms.unit} <Text style={g.dim}>({grouped.length}종{list.length > grouped.length ? ` · ${list.length}` : ''} · 옆으로 밀기)</Text></Text>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={g.gridRow}>
         {grouped.map(({ rep: u, count }) => {
           const m = identity(concept, u);
           const on = u.uid === unit.uid;
           const party = state.party.includes(u.uid);
           return (
-            <TouchableOpacity key={u.uid} onPress={() => setSel(u.uid)} style={[g.chip, { width: chipW }, on && g.chipOn]} activeOpacity={0.8}>
+            <TouchableOpacity key={u.uid} onPress={() => setSel(u.uid)} style={[g.chip, g.chipH, on && g.chipOn]} activeOpacity={0.8}>
               {party && <Text style={g.chipStar}>⭐</Text>}
               {count > 1 && <Text style={g.chipCount}>×{count}</Text>}
               <Portrait emoji={m.emoji} image={charImage(concept.id, u.characterId)} rarity={u.rarity} size={44} badge />
@@ -395,7 +395,7 @@ export default function RosterScreen({ state, bump, concept }) {
             </TouchableOpacity>
           );
         })}
-      </View>
+      </ScrollView>
 
       {/* 상세 */}
       <Card style={{ marginTop: 6 }}>
@@ -975,6 +975,8 @@ const g = StyleSheet.create({
   sec: { color: T.text, fontWeight: '800', fontSize: 15, marginBottom: 8 },
   subsec: { color: T.muted, fontSize: 12, marginTop: 12, marginBottom: 6, fontWeight: '700' },
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, paddingVertical: 4 },
+  gridRow: { flexDirection: 'row', gap: 8, paddingVertical: 4, paddingRight: 8 }, // 가로 스크롤 한 줄
+  chipH: { width: 64 }, // 가로 로스터 칩 고정폭
   chip: { backgroundColor: T.surface, borderRadius: 12, paddingVertical: 8, paddingHorizontal: 4, alignItems: 'center', borderWidth: 1, borderColor: T.line },
   chipOn: { borderColor: T.accent, backgroundColor: T.surface2 },
   chipStar: { position: 'absolute', top: 4, right: 6, fontSize: 12, zIndex: 2 },
