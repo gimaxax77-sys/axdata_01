@@ -1,4 +1,5 @@
 import { createWallet } from './economy.mjs';
+import { computePower } from './stats.mjs';
 
 // ─────────────────────────────────────────────────────────────
 // 게임 상태(세이브) — IP의 지속 자산.
@@ -75,4 +76,13 @@ export function togglePartyMember(state, uid) {
   if (!state.units.some((u) => u.uid === uid)) return { ok: false, reason: '보유하지 않은 유닛' };
   state.party = [...state.party, uid];
   return { ok: true, inParty: true };
+}
+
+// 보유 유닛 중 전투력 상위 순으로 파티를 자동으로 채운다(최대 MAX_PARTY).
+// "자동배치"가 진형뿐 아니라 편성 자체도 최적화하도록 하는 선행 단계.
+export function autoParty(state, size = MAX_PARTY) {
+  if (!state.units || !state.units.length) return { ok: false, reason: '보유한 유닛 없음' };
+  const sorted = state.units.slice().sort((a, b) => computePower(b) - computePower(a));
+  state.party = sorted.slice(0, size).map((u) => u.uid);
+  return { ok: true, party: [...state.party] };
 }

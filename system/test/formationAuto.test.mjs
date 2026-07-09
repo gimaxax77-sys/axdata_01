@@ -1,7 +1,8 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { createUnit } from '../core/units.mjs';
-import { createGameState } from '../core/gameState.mjs';
+import { createGameState, autoParty, MAX_PARTY } from '../core/gameState.mjs';
+import { computePower } from '../core/stats.mjs';
 import { autoFormation, unitRole, ROLE_CAP, formationSummary } from '../core/formation.mjs';
 import { savePreset, loadPreset, presetInfo, listPresetInfo, clearPreset, PRESET_SLOTS } from '../core/partyPresets.mjs';
 import { serialize, deserialize } from '../core/save.mjs';
@@ -46,6 +47,36 @@ test('자동배치: 편성 없으면 실패', () => {
   const s = createGameState({ units: [], party: [] });
   const r = autoFormation(s);
   assert.equal(r.ok, false);
+});
+
+test('autoParty: 보유 유닛 중 전투력 상위 MAX_PARTY명을 편성한다', () => {
+  const s = createGameState({ units: [], party: [] });
+  const units = Array.from({ length: 10 }, (_, i) => createUnit('STRIKER', { level: 5 + i * 3, rank: 1 }));
+  s.units.push(...units);
+  s.party = [units[0].uid]; // 최초엔 1명만 편성된 상태(신규 유저 기본값)
+  const r = autoParty(s);
+  assert.equal(r.ok, true);
+  assert.equal(s.party.length, Math.min(MAX_PARTY, units.length));
+  // 상위 전투력 순으로 뽑혔는지 확인.
+  const byPower = units.slice().sort((a, b) => computePower(b) - computePower(a)).slice(0, MAX_PARTY).map((u) => u.uid);
+  assert.deepEqual(new Set(s.party), new Set(byPower));
+});
+
+test('autoParty: 보유 유닛이 없으면 실패', () => {
+  const s = createGameState({ units: [], party: [] });
+  assert.equal(autoParty(s).ok, false);
+});
+
+test('자동배치 버튼 흐름: 1명만 편성된 상태에서도 autoParty+autoFormation으로 전원 배치된다', () => {
+  const s = createGameState({ units: [], party: [] });
+  const units = Array.from({ length: 7 }, () => createUnit('STRIKER', { level: 20, rank: 2 }));
+  s.units.push(...units);
+  s.party = [units[0].uid]; // 사용자가 보고한 상황 재현: 파티에 1명뿐
+  autoParty(s);
+  const r = autoFormation(s);
+  assert.equal(r.ok, true);
+  const sum = formationSummary(s);
+  assert.equal(sum.front.length + sum.mid.length + sum.back.length, 7, '보유한 7명 전원이 배치됨');
 });
 
 test('프리셋: 저장 → 파티 변경 → 불러오기로 복원', () => {

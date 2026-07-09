@@ -50,7 +50,7 @@ function DeltaText({ cur, next }) {
 }
 import { charImage } from '../charImages';
 import { fx } from '../feedback';
-import { togglePartyMember, MAX_PARTY, getPartyUnits } from '../../system/core/gameState.mjs';
+import { togglePartyMember, MAX_PARTY, getPartyUnits, autoParty } from '../../system/core/gameState.mjs';
 import { teamSynergy } from '../../system/core/synergy.mjs';
 import { unitRole, toggleFormation, formationSummary, autoFormation, ROLE_CAP, ROLE_LABEL, FORMATION_ROLES } from '../../system/core/formation.mjs';
 import { savePreset, loadPreset, presetInfo, PRESET_SLOTS } from '../../system/core/partyPresets.mjs';
@@ -387,8 +387,10 @@ export default function RosterScreen({ state, bump, concept }) {
               <View style={g.intiHead}>
                 <Text style={g.formTitle}>⚔️ 진형</Text>
                 <Btn small kind="ghost" label="🪄 자동배치" onPress={() => {
-                  const r = autoFormation(state);
-                  setDeckMsg(r.ok ? '🪄 자동배치 완료 · 탱커 전열 · 딜러 후열' : `⚠ ${r.reason}`);
+                  // 편성(파티 구성) 자체도 전투력 상위로 채운 뒤 진형을 배치한다.
+                  const rp = autoParty(state);
+                  const r = rp.ok ? autoFormation(state) : rp;
+                  setDeckMsg(r.ok ? `🪄 자동배치 완료 · ${state.party.length}명 · 탱커 전열 · 딜러 후열` : `⚠ ${r.reason}`);
                   fx(r.ok ? 'success' : 'error'); bump();
                 }} />
               </View>
