@@ -216,7 +216,7 @@ export default function RosterScreen({ state, bump, concept }) {
   const [mult, setMult] = useState(1); // 성장 배수 (×1/×10/×100)
   const [recMsg, setRecMsg] = useState(null); // 추천 장착 결과 메시지
   const [showBd, setShowBd] = useState(false); // 전투력 분해 표 펼침
-  const [showSeed, setShowSeed] = useState(false); // 씨앗 조건 펼침(기본 접힘)
+  const [expand, setExpand] = useState(null); // 육성 요약 타일 펼침: 'inti' | 'seed' | null
   const [showDps, setShowDps] = useState(false); // DPS 미터 펼침
   const [deckMsg, setDeckMsg] = useState(null); // 덱 복사/붙여넣기 결과
   const [deckCode, setDeckCode] = useState(''); // 붙여넣기 입력 코드
@@ -572,9 +572,37 @@ export default function RosterScreen({ state, bump, concept }) {
         })}
       </View>
 
-      {/* 친밀도 + 대사 */}
-      {dtab === 'growth' && lines && (
-        <Card style={{ marginTop: 12 }}>
+      {/* 친밀도·씨앗 — 한 줄 반반 요약 타일. 탭하면 아래로 상세 펼침(아코디언). */}
+      {dtab === 'growth' && (() => {
+        const sp = seedProgress(unit);
+        const hasInti = !!lines;
+        if (!hasInti && !sp.hasSeed) return null;
+        const iLv = intimacyLevel(unit);
+        return (
+          <View style={g.halfRow}>
+            {hasInti && (
+              <TouchableOpacity style={[g.halfTile, expand === 'inti' && g.halfTileOn]} activeOpacity={0.8}
+                onPress={() => setExpand(expand === 'inti' ? null : 'inti')}
+                accessibilityRole="button" accessibilityLabel={`친밀도 레벨 ${iLv}, 탭하여 ${expand === 'inti' ? '접기' : '펼치기'}`}>
+                <Text style={g.halfTitle}>💗 친밀도 {expand === 'inti' ? '▲' : '▼'}</Text>
+                <Text style={g.halfSub}>Lv.{iLv}/{INTIMACY_MAX} · +{iLv * 2}%</Text>
+              </TouchableOpacity>
+            )}
+            {sp.hasSeed && (
+              <TouchableOpacity style={[g.halfTile, sp.fullyUnlocked && { borderColor: T.good }, expand === 'seed' && g.halfTileOn]} activeOpacity={0.8}
+                onPress={() => setExpand(expand === 'seed' ? null : 'seed')}
+                accessibilityRole="button" accessibilityLabel={`씨앗 발현 ${sp.met}/${sp.total}, 탭하여 ${expand === 'seed' ? '접기' : '펼치기'}`}>
+                <Text style={g.halfTitle}>🌱 씨앗 {expand === 'seed' ? '▲' : '▼'}</Text>
+                <Text style={[g.halfSub, sp.fullyUnlocked && { color: T.good }]}>{sp.fullyUnlocked ? '완전 발현' : `${sp.met}/${sp.total} · 최대 +${Math.round(sp.full * 100)}%`}</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+        );
+      })()}
+
+      {/* 친밀도 상세(펼침) */}
+      {dtab === 'growth' && expand === 'inti' && lines && (
+        <Card style={{ marginTop: 8 }}>
           <View style={g.bubble}>
             <Text style={g.bubbleEmoji}>{meta.emoji}</Text>
             <Text style={g.bubbleText}>“{bubble || lines.greet}”</Text>
@@ -620,23 +648,14 @@ export default function RosterScreen({ state, bump, concept }) {
       {!heavy && <Text style={g.loadingHint}>불러오는 중…</Text>}
 
       {heavy && (<>
-      {/* 씨앗 — 서사 발현 (등급별 보정, 6조건 달성분 능력치) */}
-      {dtab === 'growth' && (() => {
+      {/* 씨앗 상세(펼침) — 서사 발현 조건 목록 */}
+      {dtab === 'growth' && expand === 'seed' && (() => {
         const sp = seedProgress(unit);
         if (!sp.hasSeed) return null;
         const conds = seedConditions(unit);
         const STAT_KO = { atk: '공격', hp: '체력', def: '방어', spd: '속도' };
         return (
-          <Card style={{ marginTop: 12, borderColor: sp.fullyUnlocked ? T.good : T.line }}>
-            {/* 접힘형 — 헤더에 진행도 요약, 탭하면 조건 상세 펼침(스크롤 부담↓). */}
-            <TouchableOpacity style={g.sigHead} activeOpacity={0.7} onPress={() => setShowSeed((v) => !v)}
-              accessibilityRole="button" accessibilityLabel={`씨앗 발현 ${sp.met}/${sp.total}, 탭하여 ${showSeed ? '접기' : '펼치기'}`}>
-              <Text style={g.sec}>🌱 씨앗 <Text style={g.dim}>서사 발현 {showSeed ? '▲' : '▼'}</Text></Text>
-              {sp.fullyUnlocked
-                ? <Text style={g.seedFull}>완전 발현</Text>
-                : <Text style={g.dim}>{sp.met}/{sp.total} · 최대 +{Math.round(sp.full * 100)}%</Text>}
-            </TouchableOpacity>
-            {showSeed && (<>
+          <Card style={{ marginTop: 8, borderColor: sp.fullyUnlocked ? T.good : T.line }}>
             <Text style={g.slotDesc}>{unit.rarity || '?'}등급 · 완전 발현 시 전 스탯 최대 +{Math.round(sp.full * 100)}%. 낮은 등급일수록 보정이 크지만, 완전 발현해도 최고등급을 살짝 넘지 못합니다.</Text>
             <View style={{ height: 8 }} />
             {conds.map((c) => (
@@ -649,7 +668,6 @@ export default function RosterScreen({ state, bump, concept }) {
                 <View style={c.met ? g.seedBadgeOn : g.seedBadgeOff}><Text style={c.met ? g.seedBadgeTextOn : g.seedBadgeTextOff}>{c.met ? '발현' : `${c.cur}/${c.need}`}</Text></View>
               </View>
             ))}
-            </>)}
           </Card>
         );
       })()}
@@ -1179,6 +1197,12 @@ const g = StyleSheet.create({
   loadingHint: { color: T.muted, fontSize: 13, textAlign: 'center', paddingVertical: 24 },
   // 헤더 카드 내 성장(레벨업/돌파/각인) 박스.
   growBox: { marginTop: 12, backgroundColor: T.surface2, borderRadius: 12, padding: 12 },
+  // 친밀도·씨앗 반반 요약 타일(한 줄) — 탭하면 아래 상세 펼침.
+  halfRow: { flexDirection: 'row', gap: 8, marginTop: 12 },
+  halfTile: { flex: 1, backgroundColor: T.surface, borderRadius: 12, borderWidth: 1.5, borderColor: T.line, paddingVertical: 10, paddingHorizontal: 12 },
+  halfTileOn: { borderColor: T.accent, backgroundColor: T.surface2 },
+  halfTitle: { color: T.text, fontWeight: '800', fontSize: 13 },
+  halfSub: { color: T.muted, fontSize: 11, fontWeight: '700', marginTop: 3 },
   // 영웅 탭 하위 서브탭 바(메인 탭바 위) — 영웅 ↔ 편성.
   rtabBar: { flexDirection: 'row', gap: 8, paddingHorizontal: 12, paddingTop: 6, paddingBottom: 4,
     borderTopWidth: 1, borderTopColor: T.line, backgroundColor: T.surface2 },

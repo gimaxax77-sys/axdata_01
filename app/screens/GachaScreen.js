@@ -63,14 +63,6 @@ export default function GachaScreen({ state, bump, concept }) {
       sub: '확률: N 50 · R 33 · SR 14 · SSR 2.5 · UR 0.5 (%)',
       note: '10연차 이상 최소 1개 SR 이상 보장',
     },
-    pet: {
-      label: '펫', icon: '🐾', curr: 'gem', cost: PET_PULL_COST.gem, multi: true,
-      sub: '펫 획득(중복은 레벨업) · 최대 3마리 장착', note: '펫은 캐릭터·유물처럼 계정 성장 축',
-    },
-    guardian: {
-      label: '정령', icon: '🧚', curr: 'gem', cost: GUARDIAN_SUMMON_COST.gem, multi: true,
-      sub: '정령 획득(중복은 레벨업) · 최대 3체 장착', note: '장착·관리는 영웅 탭 › 성장',
-    },
     gear: {
       label: '장비', icon: '⚔️', curr: 'gem', cost: GEAR_PULL_COST.gem, multi: true,
       sub: '랜덤 장비 → 인벤토리 · 진행도↑ 상위 등급↑', note: '영웅 탭에서 장착·강화',
@@ -78,6 +70,14 @@ export default function GachaScreen({ state, bump, concept }) {
     rune: {
       label: '룬', icon: '🔷', curr: 'gem', cost: RUNE_PULL_COST.gem, multi: true,
       sub: '랜덤 룬 → 룬 가방 · 진행도↑ 상위 등급↑', note: '3슬롯 장착 · 세트 보너스',
+    },
+    pet: {
+      label: '펫', icon: '🐾', curr: 'gem', cost: PET_PULL_COST.gem, multi: true,
+      sub: '펫 획득(중복은 레벨업) · 최대 3마리 장착', note: '펫은 캐릭터·유물처럼 계정 성장 축',
+    },
+    guardian: {
+      label: '정령', icon: '🧚', curr: 'gem', cost: GUARDIAN_SUMMON_COST.gem, multi: true,
+      sub: '정령 획득(중복은 레벨업) · 최대 3체 장착', note: '장착·관리는 영웅 탭 › 성장',
     },
     cosmetic: {
       label: '코스튬', icon: '🎀', curr: 'gem', cost: COSTUME_PULL_COST.gem, multi: false,
