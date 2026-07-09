@@ -674,21 +674,23 @@ export default function RosterScreen({ state, bump, concept }) {
           label={`발굴 ${multLabel(mult)} ${concept.resources.currency.emoji}${mult === 'Max' ? '' : fmt(RUNE_SUMMON_COST.currency * mult)}`}
           onPress={() => { const n = repeat(() => summonRune(state, Math.random), mult); fx(n > 0 ? 'success' : 'error'); bump(); }} />
         {(state.runeBag || []).length > 0 && <Text style={g.dim}>가방 보유 {state.runeBag.length}개</Text>}
-        {[0, 1, 2].map((i) => {
-          const rune = (unit.runes || [])[i];
-          const d = rune && describeRune(rune);
-          return (
-            <TouchableOpacity key={i} onPress={() => setPicker({ mode: 'rune', slot: i })} style={g.slotRow} activeOpacity={0.8}>
-              <View style={{ flex: 1 }}>
+        {/* 룬 슬롯 — 한 줄 아이콘 타일(세트 이모지+레벨+등급). 탭하면 상세/교체 피커. */}
+        <View style={g.runeSlots}>
+          {[0, 1, 2].map((i) => {
+            const rune = (unit.runes || [])[i];
+            const set = rune && RUNE_SETS[rune.set];
+            return (
+              <TouchableOpacity key={i} onPress={() => setPicker({ mode: 'rune', slot: i })}
+                style={[g.runeTile, rune && { borderColor: rarityColor(rune.rarity) }]} activeOpacity={0.8}>
                 {rune ? (<>
-                  <Text style={g.slotName}>{d.title} <Text style={rarityText(d.rarity)}> {d.rarityLabel} </Text></Text>
-                  <Text style={g.slotDesc}>{ov(d.sub)}</Text>
-                </>) : <Text style={g.slotEmpty}>＋ 룬 슬롯 {i + 1}</Text>}
-              </View>
-              <Text style={g.chev}>›</Text>
-            </TouchableOpacity>
-          );
-        })}
+                  <Text style={g.runeEmoji}>{set.emoji}</Text>
+                  <Text style={g.runeLv}>+{rune.level}</Text>
+                  <Text style={[rarityText(rune.rarity), g.runeRar]}> {rune.rarity} </Text>
+                </>) : <Text style={g.runeEmptyBig}>＋</Text>}
+              </TouchableOpacity>
+            );
+          })}
+        </View>
         {activeRuneSets(unit.runes).filter((s) => s.active2).map((s) => (
           <Text key={s.set} style={g.setBonus}>{s.emoji} {s.label} {s.active3 ? '3세트' : '2세트'} 보너스 활성</Text>
         ))}
@@ -1100,6 +1102,13 @@ const g = StyleSheet.create({
   slotName: { color: T.text, fontWeight: '800', fontSize: 14 },
   slotDesc: { color: T.muted, fontSize: 12, marginTop: 2 },
   slotEmpty: { color: T.primary, fontWeight: '700', fontSize: 14 },
+  // 룬 아이콘 타일 — 한 줄에 3개(세트 이모지 + 레벨 + 등급).
+  runeSlots: { flexDirection: 'row', gap: 8, marginTop: 8 },
+  runeTile: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingVertical: 12, borderRadius: 12, backgroundColor: T.surface2, borderWidth: 1.5, borderColor: T.line, gap: 3 },
+  runeEmoji: { fontSize: 26 },
+  runeLv: { color: T.text, fontSize: 12, fontWeight: '800' },
+  runeRar: { fontSize: 9 },
+  runeEmptyBig: { color: T.primary, fontSize: 26, fontWeight: '400' },
   slotTag: { color: T.accent, fontSize: 11, fontWeight: '700', marginBottom: 2 },
   gearCat: { color: T.muted, fontSize: 12, fontWeight: '800', marginTop: 10, marginBottom: 2 },
   chev: { color: T.muted, fontSize: 22, marginLeft: 8 },
