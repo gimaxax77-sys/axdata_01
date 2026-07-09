@@ -65,7 +65,7 @@ function rewardText(state, concept, reward) {
   return Object.entries(g).map(([k, v]) => `${concept.resources[k]?.emoji || ''}${fmt(v)}`).join(' ');
 }
 
-export default function MetaScreen({ state, bump, concept }) {
+export default function MetaScreen({ state, bump, concept, embedded }) {
   const act = (fn) => { fn(); bump(); };
   const [dexChar, setDexChar] = useState(null);
   const sp = seasonProgress(state);
@@ -75,8 +75,11 @@ export default function MetaScreen({ state, bump, concept }) {
   const owned = ownedCharacterIds(state);
   const claimableTiers = tiers.filter((t) => t.reached && (!t.free.claimed || (sp.premium && !t.premium.claimed)));
 
+  // embedded면 자체 스크롤 없이 호스트(영웅 탭) ScrollView에 편승.
+  const Container = embedded ? View : ScrollView;
+  const cProps = embedded ? {} : { style: c.flex, contentContainerStyle: c.wrap };
   return (
-    <ScrollView style={c.flex} contentContainerStyle={c.wrap}>
+    <Container {...cProps}>
       {/* 시즌패스 */}
       <Card>
         <View style={c.head}>
@@ -149,7 +152,7 @@ export default function MetaScreen({ state, bump, concept }) {
       </Card>
 
       <DexModal concept={concept} ch={dexChar} onClose={() => setDexChar(null)} />
-    </ScrollView>
+    </Container>
   );
 }
 

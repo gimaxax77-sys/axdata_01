@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Modal, TextInput,
 import { T, rarityMeta } from '../theme';
 import { reducedMotion } from '../motion';
 import GrowthPanel from './GrowthPanel';
+import MetaScreen from './MetaScreen';
 
 // 등급 순위(정렬용) — 인벤토리 상위 우선.
 const RARITY_RANK = { N: 0, R: 1, SR: 2, SSR: 3, UR: 4 };
@@ -159,6 +160,7 @@ const ROSTER_TABS = [
   { key: 'heroes', label: '영웅', icon: '🦸' },
   { key: 'party', label: '편성', icon: '⚔️' },
   { key: 'growth', label: '성장', icon: '🌱' },
+  { key: 'meta', label: '기록', icon: '📖' },
 ];
 
 // 캐릭터 상세 서브탭 — 9개 세로 스택을 목적별 4묶음으로.
@@ -794,6 +796,11 @@ export default function RosterScreen({ state, bump, concept }) {
       {/* 성장 — 계정 성장 시스템(콘텐츠 탭에서 이전) */}
       {rtab === 'growth' && (
         <GrowthPanel state={state} bump={bump} concept={concept} />
+      )}
+
+      {/* 기록 — 시즌패스·업적·도감(기존 기록 탭 흡수) */}
+      {rtab === 'meta' && (
+        <MetaScreen embedded state={state} bump={bump} concept={concept} />
       )}
 
       {/* 편성 모달 */}

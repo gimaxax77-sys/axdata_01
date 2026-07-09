@@ -40,7 +40,7 @@ function CompShop({ state, bump, concept, kind, balance, unit }) {
   );
 }
 
-export default function ArenaGuildScreen({ state, bump, concept }) {
+export default function ArenaGuildScreen({ state, bump, concept, embedded }) {
   const [arenaLog, setArenaLog] = useState(null);
   const [guildLog, setGuildLog] = useState(null);
   const [towerLog, setTowerLog] = useState(null);
@@ -75,8 +75,11 @@ export default function ArenaGuildScreen({ state, bump, concept }) {
   const bossMax = guildOpen ? guildBossMaxHp(state) : 1;
   const bossHp = guildOpen ? (state.guild.bossHp ?? bossMax) : bossMax;
 
+  // embedded면 자체 스크롤 없이 호스트(콘텐츠 탭) ScrollView에 편승.
+  const Container = embedded ? View : ScrollView;
+  const cProps = embedded ? {} : { style: c.flex, contentContainerStyle: c.wrap };
   return (
-    <ScrollView style={c.flex} contentContainerStyle={c.wrap}>
+    <Container {...cProps}>
       {/* ── 우편함 ───────────────────────────────── */}
       {mailN > 0 && (
         <Card style={{ marginBottom: 12 }}>
@@ -195,7 +198,7 @@ export default function ArenaGuildScreen({ state, bump, concept }) {
           <CompShop state={state} bump={bump} concept={concept} kind="guild" balance={state.guild.coins} unit="🎖️" />
         </>)}
       </Card>
-    </ScrollView>
+    </Container>
   );
 }
 

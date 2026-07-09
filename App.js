@@ -16,21 +16,18 @@ import PixelIdleScreen from './app/screens/PixelIdleScreen';
 import RosterScreen from './app/screens/RosterScreen';
 import GachaScreen from './app/screens/GachaScreen';
 import ContentScreen from './app/screens/ContentScreen';
-import ArenaGuildScreen from './app/screens/ArenaGuildScreen';
-import MetaScreen from './app/screens/MetaScreen';
 import ShopScreen from './app/screens/ShopScreen';
 import { IntroModal, ObjectiveBanner } from './app/screens/Onboarding';
 import ErrorBoundary from './app/ErrorBoundary';
 
 // 탭 화면을 React.memo로 감싼다 — 방치 틱(초당)에는 rev/props가 안 바뀌어
 // 비활성 화면이 리렌더되지 않는다(탭 전환·조작 렉 제거).
+// 세나키우기식 타이트한 5탭. 경쟁→콘텐츠, 기록→영웅 서브탭으로 흡수(소환은 과금 노출 위해 유지).
 const TABS = [
   { key: 'idle', label: '방치', icon: '🏰', Screen: React.memo(IdleScreen) },
-  { key: 'roster', label: '캐릭터', icon: '🐹', Screen: React.memo(RosterScreen) },
+  { key: 'roster', label: '영웅', icon: '🦸', Screen: React.memo(RosterScreen) },
   { key: 'gacha', label: '소환', icon: '🔮', Screen: React.memo(GachaScreen) },
   { key: 'content', label: '콘텐츠', icon: '📅', Screen: React.memo(ContentScreen) },
-  { key: 'arena', label: '경쟁', icon: '⚔️', Screen: React.memo(ArenaGuildScreen) },
-  { key: 'meta', label: '기록', icon: '📖', Screen: React.memo(MetaScreen) },
   { key: 'shop', label: '상점', icon: '🛒', Screen: React.memo(ShopScreen) },
 ];
 

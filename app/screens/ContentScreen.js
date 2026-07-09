@@ -4,6 +4,7 @@ import { T } from '../theme';
 import { Card, Btn, fmt, MultiToggle, multLabel, repeat } from '../components';
 import { fx } from '../feedback';
 import { reducedMotion } from '../motion';
+import ArenaGuildScreen from './ArenaGuildScreen';
 import {
   ATTENDANCE, canClaimAttendance, claimAttendance,
   missionList, claimMission, DUNGEONS, dungeonEntriesLeft, enterDungeon,
@@ -39,6 +40,7 @@ const DUNGEON_META = {
 const SUBTABS = [
   { key: 'daily', label: '일일', icon: '📅' },
   { key: 'event', label: '이벤트', icon: '🎯' },
+  { key: 'arena', label: '경쟁', icon: '⚔️' },
   { key: 'story', label: '스토리', icon: '📖' },
 ];
 
@@ -138,6 +140,8 @@ export default function ContentScreen({ state, bump, concept }) {
   return (
     <View style={c.flex}>
     <ScrollView style={c.flex} contentContainerStyle={c.wrap}>
+      {/* 경쟁 — 아레나·무한의 탑·길드(기존 경쟁 탭 흡수) */}
+      {grp === 'arena' && <ArenaGuildScreen embedded state={state} bump={bump} concept={concept} />}
       {grp === 'story' && (
       /* 스토리 캠페인 */
       <Card style={{ borderColor: T.accent }}>
