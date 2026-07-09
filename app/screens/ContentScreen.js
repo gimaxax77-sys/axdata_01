@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView } from 'react-native';
+import React, { useState, useRef, useEffect } from 'react';
+import { View, Text, StyleSheet, ScrollView, Animated, TouchableOpacity } from 'react-native';
 import { T, rarityMeta } from '../theme';
 import { Card, Btn, fmt, MultiToggle, multLabel, repeat } from '../components';
 import { fx } from '../feedback';
+import { reducedMotion } from '../motion';
 import {
   ATTENDANCE, canClaimAttendance, claimAttendance,
   missionList, claimMission, DUNGEONS, dungeonEntriesLeft, enterDungeon,
@@ -40,8 +41,17 @@ const DUNGEON_META = {
   PETSHARD: { feature: 'pets', label: '🧩 펫 던전', drop: '펫조각(등급별)' },
 };
 
+// 콘텐츠 서브탭 — 목적별 4묶음(하단 바). 상단 스크롤을 1/3로 줄인다.
+const SUBTABS = [
+  { key: 'daily', label: '일일', icon: '📅' },
+  { key: 'event', label: '이벤트', icon: '🎯' },
+  { key: 'growth', label: '성장', icon: '🌱' },
+  { key: 'story', label: '스토리', icon: '📖' },
+];
+
 export default function ContentScreen({ state, bump, concept }) {
   const [mult, setMult] = useState(1);
+  const [grp, setGrp] = useState('daily'); // 현재 서브탭
   const [camResult, setCamResult] = useState(null);
   const [dropMsg, setDropMsg] = useState(null);
   const act = (fn) => { fn(); bump(); };
@@ -118,9 +128,31 @@ export default function ContentScreen({ state, bump, concept }) {
   const hrs = (ms) => Math.max(0, Math.floor(ms / 3600000));
   const days = (ms) => Math.max(0, Math.floor(ms / 86400000));
 
+  // "차르륵 펼쳐지듯이" — 콘텐츠 탭 진입 시 하단 서브탭이 좌→우로 순차 등장.
+  //   가챠 연출과 동일 규약(Animated.timing · useNativeDriver · stagger delay).
+  //   연출끔/절전이면 즉시 완료 상태로 렌더(발열·접근성).
+  const anims = useRef(SUBTABS.map(() => new Animated.Value(0))).current;
+  useEffect(() => {
+    if (reducedMotion()) { anims.forEach((a) => a.setValue(1)); return; }
+    anims.forEach((a) => a.setValue(0));
+    Animated.stagger(60, anims.map((a) =>
+      Animated.timing(a, { toValue: 1, duration: 300, useNativeDriver: true }),
+    )).start();
+  }, []); // 마운트 1회(탭 진입) — App이 탭 전환 시 화면을 새로 마운트한다.
+
+  // 서브탭별 "받을 것 있음" 점(●) — 눈이 먼저 찾도록.
+  const dots = {
+    daily: canAtt || missions.some((m) => m.done && !m.claimed),
+    event: wev.done && !wev.claimed,
+    growth: false,
+    story: false,
+  };
+
   return (
+    <View style={c.flex}>
     <ScrollView style={c.flex} contentContainerStyle={c.wrap}>
-      {/* 스토리 캠페인 */}
+      {grp === 'story' && (
+      /* 스토리 캠페인 */
       <Card style={{ borderColor: T.accent }}>
         <Text style={c.sec}>📖 스토리 <Text style={c.dim}>챕터 {state.campaign.cleared}/{CAMPAIGN_CHAPTER_COUNT}</Text></Text>
         {allClear ? (
@@ -163,7 +195,9 @@ export default function ContentScreen({ state, bump, concept }) {
           </View>
         )}
       </Card>
+      )}
 
+      {grp === 'event' && (<>
       {/* 주간 테마 이벤트(미니 로드맵) */}
       <Card style={{ marginTop: 12, borderColor: T.accent }}>
         <Text style={c.sec}>{wev.emoji} 이번 주 · {wev.label} <Text style={c.dim}>{days(wev.endsInMs)}일 남음</Text></Text>
@@ -184,7 +218,9 @@ export default function ContentScreen({ state, bump, concept }) {
         <View style={{ height: 8 }} />
         <Btn kind="gold" disabled={sInfo.floor >= SEASON_FLOORS} label={sInfo.floor >= SEASON_FLOORS ? '최고 층 달성' : `${sInfo.floor + 1}층 도전`} onPress={doSeasonFight} />
       </Card>
+      </>)}
 
+      {grp === 'daily' && (<>
       {/* 출석 */}
       <Card style={{ marginTop: 12 }}>
         <Text style={c.sec}>출석 체크</Text>
@@ -256,7 +292,6 @@ export default function ContentScreen({ state, bump, concept }) {
             </View>
           );
         })}
-        {dropMsg ? <Text style={c.dropMsg}>{dropMsg}</Text> : null}
         {/* 보유 재료 */}
         <View style={c.matBar}>
           <Text style={c.matChip}>{MATERIAL_META.ascendStone.emoji} {MATERIAL_META.ascendStone.label} {fmt(materialCount(state, 'ascendStone'))}</Text>
@@ -266,7 +301,9 @@ export default function ContentScreen({ state, bump, concept }) {
           ))}
         </View>
       </Card>
+      </>)}
 
+      {grp === 'growth' && (<>
       {/* 펫 */}
       <Card style={{ marginTop: 12 }}>
         <View style={c.petHead}>
@@ -420,7 +457,39 @@ export default function ContentScreen({ state, bump, concept }) {
           );
         })}
       </Card>
+      </>)}
     </ScrollView>
+
+    {/* 작업 결과 배너 — 어느 그룹에서 눌러도 보이도록 서브탭 바 위에 공용 배치. */}
+    {dropMsg ? <Text style={c.dropBanner} numberOfLines={2}>{dropMsg}</Text> : null}
+
+    {/* 하단 서브탭 바 — 메인 탭바 바로 위. 콘텐츠 진입 시 좌→우로 차르륵 펼쳐진다. */}
+    <View style={c.subbar}>
+      {SUBTABS.map((tb, i) => {
+        const on = grp === tb.key;
+        return (
+          <Animated.View key={tb.key} style={{
+            flex: 1,
+            opacity: anims[i],
+            transform: [
+              { translateY: anims[i].interpolate({ inputRange: [0, 1], outputRange: [16, 0] }) },
+              { scale: anims[i].interpolate({ inputRange: [0, 1], outputRange: [0.85, 1] }) },
+            ],
+          }}>
+            <TouchableOpacity activeOpacity={0.8} onPress={() => { fx('tap'); setGrp(tb.key); }}
+              style={[c.subCell, on && c.subCellOn]}
+              accessibilityRole="tab" accessibilityState={{ selected: on }} accessibilityLabel={tb.label}>
+              <View>
+                <Text style={[c.subIcon, on && c.subIconOn]}>{tb.icon}</Text>
+                {dots[tb.key] ? <View style={c.subDot} /> : null}
+              </View>
+              <Text style={[c.subLabel, on && c.subLabelOn]}>{tb.label}</Text>
+            </TouchableOpacity>
+          </Animated.View>
+        );
+      })}
+    </View>
+    </View>
   );
 }
 
@@ -463,4 +532,17 @@ const c = StyleSheet.create({
   dot: { width: 9, height: 9, borderRadius: 5, backgroundColor: T.surface2 },
   dotDone: { backgroundColor: T.good },
   dotNext: { backgroundColor: T.accent },
+  // 하단 서브탭 바(메인 탭바 위) — 목적별 4묶음 전환.
+  subbar: { flexDirection: 'row', gap: 6, paddingHorizontal: 10, paddingTop: 6, paddingBottom: 4,
+    borderTopWidth: 1, borderTopColor: T.line, backgroundColor: T.surface2 },
+  subCell: { alignItems: 'center', justifyContent: 'center', paddingVertical: 6, borderRadius: 10,
+    borderWidth: 1, borderColor: 'transparent' },
+  subCellOn: { backgroundColor: T.surface, borderColor: T.accent },
+  subIcon: { fontSize: 18, opacity: 0.55, textAlign: 'center' },
+  subIconOn: { opacity: 1 },
+  subLabel: { color: T.muted, fontSize: 11, fontWeight: '800', marginTop: 2 },
+  subLabelOn: { color: T.accent },
+  subDot: { position: 'absolute', top: -1, right: -5, width: 7, height: 7, borderRadius: 4, backgroundColor: T.danger },
+  dropBanner: { color: T.accent, fontSize: 12, fontWeight: '800', textAlign: 'center',
+    paddingHorizontal: 14, paddingVertical: 6, backgroundColor: T.surface2 },
 });
