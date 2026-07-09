@@ -231,6 +231,9 @@ export default function RosterScreen({ state, bump, concept }) {
   const lines = unit && linesOf(concept, unit);
   // 선택 캐릭터가 바뀌면 인사 대사로 초기화
   useEffect(() => { setBubble(lines ? lines.greet : null); }, [selId]);
+  // 서브탭 전환 시 스크롤 최상단으로.
+  const scrollRef = useRef(null);
+  useEffect(() => { if (scrollRef.current) scrollRef.current.scrollTo({ y: 0, animated: false }); }, [rtab]);
   // "차르륵" — 영웅 탭 진입 시 최상위 서브탭(영웅/편성)이 순차 등장.
   const rAnims = useRef(ROSTER_TABS.map(() => new Animated.Value(0))).current;
   useEffect(() => {
@@ -325,7 +328,7 @@ export default function RosterScreen({ state, bump, concept }) {
 
   return (
     <View style={g.flex}>
-    <ScrollView style={g.flex} contentContainerStyle={g.wrap}>
+    <ScrollView ref={scrollRef} style={g.flex} contentContainerStyle={g.wrap}>
       {rtab === 'party' && (
       /* 파티 편성 — 전투는 편성된 전원 합산 */
       <Card style={{ marginBottom: 12 }}>
@@ -717,6 +720,7 @@ export default function RosterScreen({ state, bump, concept }) {
             const set = rune && RUNE_SETS[rune.set];
             return (
               <TouchableOpacity key={i} onPress={() => setPicker({ mode: 'rune', slot: i })}
+                accessibilityRole="button" accessibilityLabel={rune ? `${set.label} 룬 +${rune.level} ${rune.rarity}` : `룬 슬롯 ${i + 1} 비어있음`}
                 style={[g.runeTile, rune && { borderColor: rarityColor(rune.rarity) }]} activeOpacity={0.8}>
                 {rune ? (<>
                   <Text style={g.runeEmoji}>{set.emoji}</Text>
@@ -748,6 +752,7 @@ export default function RosterScreen({ state, bump, concept }) {
             const sk = unit.skills[i];
             return (
               <TouchableOpacity key={i} disabled={locked} onPress={() => setPicker({ mode: 'skill', slot: i })}
+                accessibilityRole="button" accessibilityLabel={locked ? `스킬 슬롯 ${i + 1} 잠김` : sk ? `${SKILL_CATALOG[sk.id].label} +${sk.level}` : `스킬 슬롯 ${i + 1} 비어있음`}
                 style={[g.runeTile, locked && g.slotLocked, sk && { borderColor: T.accent }]} activeOpacity={0.8}>
                 {locked ? <Text style={g.runeEmptyBig}>🔒</Text>
                   : sk ? (<>
@@ -783,6 +788,7 @@ export default function RosterScreen({ state, bump, concept }) {
                 const item = unit.gear[slot];
                 return (
                   <TouchableOpacity key={slot} onPress={() => setPicker({ mode: 'gear', slot })}
+                    accessibilityRole="button" accessibilityLabel={item ? `${SLOT_META[slot].label} ${GEAR_CATALOG[item.blueprint].label} +${item.level - 1}` : `${SLOT_META[slot].label} 비어있음`}
                     style={[g.gearTile, item && item.rarity && { borderColor: rarityColor(item.rarity) }]} activeOpacity={0.8}>
                     <Text style={g.gearTileEmoji}>{SLOT_META[slot].emoji}</Text>
                     {item ? (<>

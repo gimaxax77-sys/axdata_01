@@ -144,6 +144,10 @@ export default function ContentScreen({ state, bump, concept }) {
     )).start();
   }, []); // 마운트 1회(탭 진입) — App이 탭 전환 시 화면을 새로 마운트한다.
 
+  // 서브탭 전환 시 스크롤 최상단으로 — 이전 위치가 남아 헤매지 않게.
+  const scrollRef = useRef(null);
+  useEffect(() => { if (scrollRef.current) scrollRef.current.scrollTo({ y: 0, animated: false }); }, [grp]);
+
   // 서브탭별 "받을 것 있음" 점(●) — 눈이 먼저 찾도록.
   const dots = {
     daily: canAtt || missions.some((m) => m.done && !m.claimed),
@@ -154,7 +158,7 @@ export default function ContentScreen({ state, bump, concept }) {
 
   return (
     <View style={c.flex}>
-    <ScrollView style={c.flex} contentContainerStyle={c.wrap}>
+    <ScrollView ref={scrollRef} style={c.flex} contentContainerStyle={c.wrap}>
       {/* 경쟁 — 아레나·무한의 탑·길드(기존 경쟁 탭 흡수) */}
       {grp === 'arena' && <ArenaGuildScreen embedded state={state} bump={bump} concept={concept} />}
       {grp === 'story' && (
@@ -277,6 +281,7 @@ export default function ContentScreen({ state, bump, concept }) {
             const info = dungeonInfo(type, d);
             return (
               <TouchableOpacity key={type} onPress={() => setDunSel(type)} activeOpacity={0.8}
+                accessibilityRole="button" accessibilityLabel={info.unlocked ? `${info.name} 던전, 남은 입장 ${info.left}` : `${info.name} 던전 잠김`}
                 style={[c.dunTile, !info.unlocked && c.dunLock, info.left <= 0 && info.unlocked && c.dunSpent]}>
                 <Text style={c.dunEmoji}>{info.unlocked ? info.emoji : '🔒'}</Text>
                 <Text style={c.dunName} numberOfLines={1}>{info.name}</Text>

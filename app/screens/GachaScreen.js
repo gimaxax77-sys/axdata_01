@@ -158,6 +158,9 @@ export default function GachaScreen({ state, bump, concept }) {
   const nr = info.nextReward;
   const nrText = !nr ? '최대 레벨 달성' : rewardParts(nr).join(' ');
 
+  // 배너 전환 시 스크롤 최상단으로.
+  const scrollRef = useRef(null);
+  useEffect(() => { if (scrollRef.current) scrollRef.current.scrollTo({ y: 0, animated: false }); }, [banner]);
   // "차르륵" — 소환 탭 진입 시 하단 배너 서브탭 순차 등장(콘텐츠 탭과 동일 규약).
   const bKeys = Object.keys(BANNERS);
   const bAnims = useRef(bKeys.map(() => new Animated.Value(0))).current;
@@ -175,7 +178,7 @@ export default function GachaScreen({ state, bump, concept }) {
 
   return (
     <View style={s.flex}>
-    <ScrollView style={s.flex} contentContainerStyle={s.wrap}>
+    <ScrollView ref={scrollRef} style={s.flex} contentContainerStyle={s.wrap}>
       <Card style={s.banner}>
         <Text style={s.bannerTitle}>{b.label} 소환</Text>
         <Text style={s.bannerSub}>{b.sub}</Text>

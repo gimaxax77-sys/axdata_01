@@ -13,6 +13,9 @@ import { teamSynergy } from '../../system/core/synergy.mjs';
 import { resolve } from '../../system/core/resolution.mjs';
 import { getPartyUnits } from '../../system/core/gameState.mjs';
 import { accountMods } from '../../system/core/balance.mjs';
+import { canClaimAttendance, missionList, claimAllDaily } from '../../system/core/daily.mjs';
+import { weeklyEvent, claimWeekly } from '../../system/core/events.mjs';
+import { fx } from '../feedback';
 import BattleView from './BattleView';
 
 export default function IdleScreen({ state, bump, lastGain, concept }) {
@@ -29,11 +32,25 @@ export default function IdleScreen({ state, bump, lastGain, concept }) {
 
   const canPrestige = state.maxStage >= 15;
   const nextGain = Math.floor(Math.sqrt(state.maxStage));
+  // 받을 보상 집계(출석+미션+주간) — 홈에서 원탭 전체수령.
+  const wev = weeklyEvent(state);
+  const claimN = (canClaimAttendance(state) ? 1 : 0)
+    + missionList(state).filter((m) => m.done && !m.claimed).length
+    + (wev.done && !wev.claimed ? 1 : 0);
+  const doClaimAll = () => { claimAllDaily(state); claimWeekly(state); fx('success'); bump(); };
   const synergy = teamSynergy(party);
   const battle = resolve(getPartyUnits(state), stageDef.challenge, accountMods(state), state.formation);
 
   return (
     <View style={st.wrap}>
+      {/* 원탭 전체수령 — 받을 보상(출석·미션·주간)이 있을 때만 노출. */}
+      {claimN > 0 && (
+        <TouchableOpacity style={st.claimRow} activeOpacity={0.85} onPress={doClaimAll}
+          accessibilityRole="button" accessibilityLabel={`받을 보상 ${claimN}건 한번에 받기`}>
+          <Text style={st.claimTxt}>🎁 받을 보상 {claimN}건 — 한번에 받기</Text>
+          <Text style={st.claimGo}>›</Text>
+        </TouchableOpacity>
+      )}
       {/* 난이도 선택 */}
       <View style={st.diffRow}>
         {DIFFICULTIES.map((d) => {
@@ -171,6 +188,10 @@ const st = StyleSheet.create({
   // 구역 진행 게이지.
   zoneBar: { alignSelf: 'stretch', height: 5, backgroundColor: T.bg, borderRadius: 3, marginTop: 10, overflow: 'hidden' },
   zoneBarFill: { height: 5, backgroundColor: T.accent, borderRadius: 3 },
+  // 원탭 전체수령 배너.
+  claimRow: { flexDirection: 'row', alignItems: 'center', backgroundColor: T.surface, borderRadius: 12, borderWidth: 1.5, borderColor: T.good, paddingHorizontal: 14, paddingVertical: 10 },
+  claimTxt: { color: T.good, fontSize: 13, fontWeight: '900', flex: 1 },
+  claimGo: { color: T.good, fontSize: 20, fontWeight: '900' },
   sec: { color: T.text, fontWeight: '800', fontSize: 15, marginBottom: 8 },
   gains: { flexDirection: 'row', gap: 18 },
   gain: { color: T.good, fontWeight: '800', fontSize: 18 },

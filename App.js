@@ -19,6 +19,9 @@ import ContentScreen from './app/screens/ContentScreen';
 import ShopScreen from './app/screens/ShopScreen';
 import { IntroModal, ObjectiveBanner } from './app/screens/Onboarding';
 import ErrorBoundary from './app/ErrorBoundary';
+import { canClaimAttendance, missionList } from './system/core/daily.mjs';
+import { weeklyEvent } from './system/core/events.mjs';
+import { summonMasteryInfo } from './system/core/summonMastery.mjs';
 
 // 탭 화면을 React.memo로 감싼다 — 방치 틱(초당)에는 rev/props가 안 바뀌어
 // 비활성 화면이 리렌더되지 않는다(탭 전환·조작 렉 제거).
@@ -71,6 +74,13 @@ function AppInner() {
   // 가로 wide(PC/태블릿) — 넓은 화면에서 콘텐츠를 폰 폭으로 가운데 정렬(늘어짐 방지).
   const { width: winW } = useWindowDimensions();
   const wide = winW >= 720;
+  // 탭별 "받을 보상 있음" 뱃지 — rev(액션)마다 재계산(가벼운 조회).
+  const gs = game.state;
+  const wev = weeklyEvent(gs);
+  const tabDots = {
+    content: canClaimAttendance(gs) || missionList(gs).some((mm) => mm.done && !mm.claimed) || (wev.done && !wev.claimed),
+    gacha: ['hero', 'pet', 'gear', 'rune', 'cosmetic'].some((k) => summonMasteryInfo(gs, k).claimable),
+  };
   const changeSetting = (key, val) => {
     game.state.settings[key] = val;
     // 엔진 반영은 위 useEffect가 담당(settings 값 변화 감지). 여기선 상태만 갱신.
@@ -150,15 +160,19 @@ function AppInner() {
         )}
       </View>
 
-      {/* 하단 탭 */}
+      {/* 하단 탭 — 받을 것 있는 탭엔 빨간 점(●) 뱃지. */}
       <View style={s.tabbar}>
         {TABS.map((t) => {
           const on = t.key === tab;
+          const dot = !!tabDots[t.key];
           return (
             <TouchableOpacity key={t.key} style={s.tab} onPress={() => setTab(t.key)} activeOpacity={0.8}
-              accessibilityRole="tab" accessibilityLabel={t.label} accessibilityState={{ selected: on }}>
+              accessibilityRole="tab" accessibilityLabel={dot ? `${t.label} (받을 보상 있음)` : t.label} accessibilityState={{ selected: on }}>
               <View style={[s.tabInd, on && s.tabIndOn]} />
-              <Text style={[s.tabIcon, on && s.tabIconOn]}>{t.icon}</Text>
+              <View>
+                <Text style={[s.tabIcon, on && s.tabIconOn]}>{t.icon}</Text>
+                {dot && <View style={s.tabDot} />}
+              </View>
               <Text style={[s.tabLabel, on && s.tabLabelOn]}>{t.label}</Text>
             </TouchableOpacity>
           );
@@ -248,6 +262,7 @@ const s = StyleSheet.create({
   tabInd: { alignSelf: 'stretch', height: 3, borderRadius: 2, backgroundColor: 'transparent', marginBottom: 5, marginHorizontal: 14 },
   tabIndOn: { backgroundColor: T.accent },
   tabIcon: { fontSize: 22, opacity: 0.5 },
+  tabDot: { position: 'absolute', top: -2, right: -7, width: 9, height: 9, borderRadius: 5, backgroundColor: T.danger, borderWidth: 1.5, borderColor: T.surface },
   tabIconOn: { opacity: 1 },
   tabLabel: { color: T.muted, fontSize: 11, marginTop: 2, fontWeight: '700' },
   tabLabelOn: { color: T.accent },

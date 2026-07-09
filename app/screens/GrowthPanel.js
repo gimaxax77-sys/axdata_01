@@ -18,9 +18,10 @@ function rarityText(r) {
 }
 
 // 아이콘 타일 — 이모지 + 레벨 + 등급(+ 장착중 ✅). 탭하면 상세 팝업.
-function Tile({ emoji, rarity, level, active, onPress }) {
+function Tile({ emoji, rarity, level, active, onPress, label }) {
   return (
-    <TouchableOpacity onPress={onPress} style={[c.tile, rarity && { borderColor: rarityMeta(rarity).color }]} activeOpacity={0.8}>
+    <TouchableOpacity onPress={onPress} style={[c.tile, rarity && { borderColor: rarityMeta(rarity).color }]} activeOpacity={0.8}
+      accessibilityRole="button" accessibilityLabel={`${label || ''}${level != null ? ` 레벨 ${level}` : ''}${active ? ' 장착중' : ''}`}>
       {active ? <Text style={c.tileActive}>✅</Text> : null}
       <Text style={c.tileEmoji}>{emoji}</Text>
       {level != null ? <Text style={c.tileLv}>Lv.{level}</Text> : null}
@@ -171,7 +172,7 @@ export default function GrowthPanel({ state, bump, concept }) {
         {petsUnlocked && (
           <View style={c.tileGrid}>
             {Object.entries(state.pets.owned).map(([id, lv]) => (
-              <Tile key={id} emoji={PETS[id].emoji} rarity={PETS[id].rarity} level={lv}
+              <Tile key={id} emoji={PETS[id].emoji} rarity={PETS[id].rarity} level={lv} label={PETS[id].label}
                 active={state.pets.active.includes(id)} onPress={() => setDetail({ type: 'pet', id })} />
             ))}
           </View>
@@ -183,7 +184,7 @@ export default function GrowthPanel({ state, bump, concept }) {
         <Text style={c.sec}>🏺 유물 <Text style={c.dim}>(계정 영구 성장 · 탭하여 강화)</Text></Text>
         <View style={c.tileGrid}>
           {Object.values(RELICS).map((r) => (
-            <Tile key={r.id} emoji={r.emoji} rarity={r.rarity} level={(state.relics && state.relics[r.id]) || 0}
+            <Tile key={r.id} emoji={r.emoji} rarity={r.rarity} level={(state.relics && state.relics[r.id]) || 0} label={r.label}
               onPress={() => setDetail({ type: 'relic', id: r.id })} />
           ))}
         </View>
@@ -197,7 +198,7 @@ export default function GrowthPanel({ state, bump, concept }) {
         {emblemUnlocked && (
           <View style={c.tileGrid}>
             {Object.values(EMBLEMS).map((e) => (
-              <Tile key={e.id} emoji={e.emoji} rarity={e.rarity} level={(state.emblems && state.emblems[e.id]) || 0}
+              <Tile key={e.id} emoji={e.emoji} rarity={e.rarity} level={(state.emblems && state.emblems[e.id]) || 0} label={e.label}
                 onPress={() => setDetail({ type: 'emblem', id: e.id })} />
             ))}
           </View>
@@ -218,7 +219,7 @@ export default function GrowthPanel({ state, bump, concept }) {
         {guardUnlocked && (
           <View style={c.tileGrid}>
             {Object.entries(state.guardians.owned).map(([id, lv]) => (
-              <Tile key={id} emoji={GUARDIANS[id].emoji} rarity={GUARDIANS[id].rarity} level={lv}
+              <Tile key={id} emoji={GUARDIANS[id].emoji} rarity={GUARDIANS[id].rarity} level={lv} label={GUARDIANS[id].label}
                 active={state.guardians.active.includes(id)} onPress={() => setDetail({ type: 'guardian', id })} />
             ))}
           </View>
