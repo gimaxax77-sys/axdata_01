@@ -89,20 +89,24 @@ export default function MetaScreen({ state, bump, concept, embedded }) {
         </View>
         <Text style={c.sub}>진행도로 XP가 쌓입니다 · 다음 티어까지 {sp.per - sp.into}/{sp.per}</Text>
         <View style={c.bar}><View style={[c.barFill, { width: `${(sp.into / sp.per) * 100}%` }]} /></View>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={c.tierRow}>
+        {/* 티어 목록 — 세로 배열(가로 스크롤 대신). 티어 배지 + 무료/⭐프리미엄 보상 버튼. */}
+        <View style={c.tierList}>
           {tiers.map((t) => (
-            <View key={t.tier} style={[c.tier, t.reached && c.tierOn]}>
-              <Text style={c.tierNum}>T{t.tier}</Text>
-              <Btn small kind={t.free.claimed ? 'ghost' : 'primary'} disabled={!t.reached || t.free.claimed}
-                label={t.free.claimed ? '완료' : rewardText(state, concept, t.free.reward)}
-                onPress={() => act(() => claimSeason(state, t.tier, 'free'))} />
-              <View style={{ height: 5 }} />
-              <Btn small kind={t.premium.claimed ? 'ghost' : 'gold'} disabled={!t.reached || !sp.premium || t.premium.claimed}
-                label={t.premium.claimed ? '완료' : `⭐${rewardText(state, concept, t.premium.reward)}`}
-                onPress={() => act(() => claimSeason(state, t.tier, 'premium'))} />
+            <View key={t.tier} style={[c.tierRowV, t.reached && c.tierRowOn]}>
+              <Text style={[c.tierBadge, t.reached && c.tierBadgeOn]}>{t.reached ? '✓' : ''}T{t.tier}</Text>
+              <View style={{ flex: 1 }}>
+                <Btn small kind={t.free.claimed ? 'ghost' : 'primary'} disabled={!t.reached || t.free.claimed}
+                  label={t.free.claimed ? '완료' : rewardText(state, concept, t.free.reward)}
+                  onPress={() => act(() => claimSeason(state, t.tier, 'free'))} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Btn small kind={t.premium.claimed ? 'ghost' : 'gold'} disabled={!t.reached || !sp.premium || t.premium.claimed}
+                  label={t.premium.claimed ? '완료' : `⭐${rewardText(state, concept, t.premium.reward)}`}
+                  onPress={() => act(() => claimSeason(state, t.tier, 'premium'))} />
+              </View>
             </View>
           ))}
-        </ScrollView>
+        </View>
         {claimableTiers.length > 0 && <Text style={c.hint}>받을 수 있는 보상 {claimableTiers.length}개</Text>}
       </Card>
 
@@ -166,10 +170,12 @@ const c = StyleSheet.create({
   premiumOn: { color: T.accent, fontWeight: '800', fontSize: 12 },
   bar: { height: 8, backgroundColor: T.surface2, borderRadius: 4, overflow: 'hidden', marginBottom: 12 },
   barFill: { height: 8, backgroundColor: T.accent, borderRadius: 4 },
-  tierRow: { gap: 8, paddingRight: 8 },
-  tier: { width: 96, backgroundColor: T.surface2, borderRadius: 12, padding: 8, alignItems: 'stretch', borderWidth: 1, borderColor: 'transparent' },
-  tierOn: { borderColor: T.accent },
-  tierNum: { color: T.text, fontWeight: '800', fontSize: 12, textAlign: 'center', marginBottom: 6 },
+  // 시즌패스 티어 세로 목록 — 티어 배지 + 무료/프리미엄 버튼 나란히.
+  tierList: { gap: 6, marginTop: 8 },
+  tierRowV: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: T.surface2, borderRadius: 10, padding: 8, borderWidth: 1, borderColor: 'transparent' },
+  tierRowOn: { borderColor: T.accent },
+  tierBadge: { color: T.muted, fontWeight: '900', fontSize: 12, width: 42, textAlign: 'center' },
+  tierBadgeOn: { color: T.accent },
   hint: { color: T.accent, fontSize: 12, fontWeight: '700', marginTop: 10 },
   row: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 10, borderTopWidth: 1, borderTopColor: T.line },
   label: { color: T.text, fontWeight: '700', fontSize: 14 },

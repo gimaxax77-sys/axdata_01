@@ -1,7 +1,9 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TextInput } from 'react-native';
+import React, { useState, useRef, useEffect } from 'react';
+import { View, Text, StyleSheet, ScrollView, TextInput, TouchableOpacity, Animated } from 'react-native';
 import { T } from '../theme';
 import { Card, Btn, fmt, MultiToggle, repeat } from '../components';
+import { fx } from '../feedback';
+import { reducedMotion } from '../motion';
 import { SHOP, purchase, adLeft, packageOwned } from '../../system/core/shop.mjs';
 import { getStage } from '../../system/core/progression.mjs';
 import { purchasePackage } from '../iap';
@@ -32,9 +34,28 @@ function grantText(state, concept, grant) {
   return parts.join('  ');
 }
 
+// 상점 서브탭 — 재화(광고·다이아) / 패키지(결제·대여) / 코스튬(개성).
+const SUBTABS = [
+  { key: 'currency', label: '재화', icon: '💎' },
+  { key: 'package', label: '패키지', icon: '🎁' },
+  { key: 'cosmetic', label: '코스튬', icon: '🎭' },
+];
+
 export default function ShopScreen({ state, bump, concept }) {
   const [mult, setMult] = useState(1);
   const [pkgMsg, setPkgMsg] = useState(null);
+  const [grp, setGrp] = useState('currency'); // 현재 서브탭
+  // 서브탭 전환 시 스크롤 최상단 + "차르륵" 진입 연출(공통 규약).
+  const scrollRef = useRef(null);
+  useEffect(() => { if (scrollRef.current) scrollRef.current.scrollTo({ y: 0, animated: false }); }, [grp]);
+  const anims = useRef(SUBTABS.map(() => new Animated.Value(0))).current;
+  useEffect(() => {
+    if (reducedMotion()) { anims.forEach((a) => a.setValue(1)); return; }
+    anims.forEach((a) => a.setValue(0));
+    Animated.stagger(60, anims.map((a) =>
+      Animated.timing(a, { toValue: 1, duration: 300, useNativeDriver: true }),
+    )).start();
+  }, []);
   const buy = (id) => { purchase(state, id); bump(); };
   const buyN = (id) => { repeat(() => purchase(state, id), mult); bump(); };
   // 패키지: 결제 → (설정 시)서버 검증 → 검증 통과(grant) 시에만 지급.
@@ -52,8 +73,10 @@ export default function ShopScreen({ state, bump, concept }) {
   const saveName = () => { setProfileName(state, name); bump(); };
 
   return (
-    <ScrollView style={s.flex} contentContainerStyle={s.wrap}>
+    <View style={s.flex}>
+    <ScrollView ref={scrollRef} style={s.flex} contentContainerStyle={s.wrap}>
       {/* 개성 — 프로필 · 코스메틱(순수 외형, 능력치 무관) */}
+      {grp === 'cosmetic' && (
       <Card>
         <Text style={s.sec}>🎭 개성 <Text style={s.dim}>(외형 전용 · 전투력 무관)</Text></Text>
         <View style={s.profHead}>
@@ -96,8 +119,10 @@ export default function ShopScreen({ state, bump, concept }) {
           })}
         </View>
       </Card>
+      )}
 
       {/* 광고 보상 */}
+      {grp === 'currency' && (<>
       <Card style={{ marginTop: 12 }}>
         <Text style={s.sec}>📺 광고 보상 <Text style={s.dim}>(무료 · 일일 제한){hasPremium(state) ? ' · ✨패스 보유' : ''}</Text></Text>
         {SHOP.ad.map((p) => {
@@ -131,8 +156,10 @@ export default function ShopScreen({ state, bump, concept }) {
           </View>
         ))}
       </Card>
+      </>)}
 
       {/* 패키지 (모의 결제) */}
+      {grp === 'package' && (<>
       <Card style={{ marginTop: 12, marginBottom: 24 }}>
         <Text style={s.sec}>🎁 패키지 <Text style={s.dim}>(결제 → 서버 검증 → 지급)</Text></Text>
         {pkgMsg ? <Text style={s.msg}>{pkgMsg}</Text> : null}
@@ -196,7 +223,29 @@ export default function ShopScreen({ state, bump, concept }) {
         })}
         <Text style={s.disc}>※ 기간 종료 시 효과가 사라집니다. 추가 결제로 상위 티어 교체·연장.</Text>
       </Card>
+      </>)}
     </ScrollView>
+
+    {/* 하단 서브탭 바(메인 탭바 위) — 골드 채움 하이라이트 + 차르륵. */}
+    <View style={s.subbar}>
+      {SUBTABS.map((tb, i) => {
+        const on = grp === tb.key;
+        return (
+          <Animated.View key={tb.key} style={{ flex: 1, opacity: anims[i], transform: [
+            { translateY: anims[i].interpolate({ inputRange: [0, 1], outputRange: [16, 0] }) },
+            { scale: anims[i].interpolate({ inputRange: [0, 1], outputRange: [0.85, 1] }) },
+          ] }}>
+            <TouchableOpacity activeOpacity={0.8} onPress={() => { fx('tap'); setGrp(tb.key); }}
+              style={[s.subCell, on && s.subCellOn]}
+              accessibilityRole="tab" accessibilityState={{ selected: on }} accessibilityLabel={tb.label}>
+              <Text style={[s.subIcon, on && s.subIconOn]}>{tb.icon}</Text>
+              <Text style={[s.subLabel, on && s.subLabelOn]}>{tb.label}</Text>
+            </TouchableOpacity>
+          </Animated.View>
+        );
+      })}
+    </View>
+    </View>
   );
 }
 
@@ -224,4 +273,14 @@ const s = StyleSheet.create({
   nameInput: { color: T.text, fontWeight: '800', fontSize: 16, borderBottomWidth: 1, borderBottomColor: T.line, paddingVertical: 2 },
   profTitle: { color: T.accent, fontSize: 12, marginTop: 3, fontWeight: '700' },
   cosRow: { flexDirection: 'row', gap: 6, flexWrap: 'wrap', marginTop: 4 },
+  // 하단 서브탭 바 — 활성은 골드 채움(공통 규약).
+  subbar: { flexDirection: 'row', gap: 6, paddingHorizontal: 10, paddingTop: 6, paddingBottom: 4,
+    borderTopWidth: 1, borderTopColor: T.line, backgroundColor: T.surface2 },
+  subCell: { alignItems: 'center', justifyContent: 'center', paddingVertical: 6, borderRadius: 10,
+    borderWidth: 1, borderColor: 'transparent' },
+  subCellOn: { backgroundColor: T.accent, borderColor: T.accent },
+  subIcon: { fontSize: 18, opacity: 0.55 },
+  subIconOn: { opacity: 1 },
+  subLabel: { color: T.muted, fontSize: 11, fontWeight: '800', marginTop: 2 },
+  subLabelOn: { color: '#241a40' },
 });
