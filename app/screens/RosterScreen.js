@@ -78,6 +78,19 @@ const STAT_ICON = {
   dmgReduce: '🧱', evasion: '🌀', accuracy: '🎯', trueDamage: '⚡', absDef: '🔰',
 };
 function statIcon(key) { return STAT_ICON[key] || String(key).toUpperCase(); }
+// 치명피해(💥💥)만 겹쳐 보이도록 음수 자간 적용 — 문자열을 Text 자식 배열로 변환.
+//   critDamage가 없으면 원문 문자열 그대로 반환(오버헤드 0).
+function ov(text) {
+  const s = String(text);
+  if (!s.includes('💥💥')) return s;
+  const segs = s.split('💥💥');
+  const out = [];
+  segs.forEach((seg, i) => {
+    if (seg) out.push(seg);
+    if (i < segs.length - 1) out.push(<Text key={`cd${i}`} style={{ letterSpacing: -10 }}>💥💥</Text>);
+  });
+  return out;
+}
 
 // 효과 객체 → 사람이 읽는 문자열 (scale = 스킬 레벨/랭크 배수)
 function describeEffect(e = {}, scale = 1) {
@@ -606,7 +619,7 @@ export default function RosterScreen({ state, bump, concept }) {
               <Text style={g.sigBadge}>시그니처</Text>
             </View>
             <Text style={g.slotName}>{sig.label} <Text style={g.dim}>(R{unit.rank} 강도{boost ? ` · 무기 +${Math.round(boost * 100)}%` : ''})</Text></Text>
-            <Text style={g.slotDesc}>{describeSkill(unit.signature, skillPower(unit.rank) * (1 + boost))}</Text>
+            <Text style={g.slotDesc}>{ov(describeSkill(unit.signature, skillPower(unit.rank) * (1 + boost)))}</Text>
             {/* 각성 */}
             <View style={g.awHead}>
               <Text style={g.subsec2}>각성 <Text style={g.dim}>{aw}/{AWAKEN_MAX}</Text></Text>
@@ -614,7 +627,7 @@ export default function RosterScreen({ state, bump, concept }) {
                 label={aw >= AWAKEN_MAX ? 'MAX' : `각성 ${concept.resources.summon.emoji}${awCost.summon} ${concept.resources.gem.emoji}${awCost.gem}`}
                 onPress={() => act(() => awakenSignature(state, unit.uid))} />
             </View>
-            {sig.awaken && <Text style={[g.slotDesc, aw > 0 && { color: T.good }]}>2차 효과: {describeAwaken(sig.awaken)}{aw > 0 ? ` ×${aw}` : ' (각성 시 개방)'}</Text>}
+            {sig.awaken && <Text style={[g.slotDesc, aw > 0 && { color: T.good }]}>2차 효과: {ov(describeAwaken(sig.awaken))}{aw > 0 ? ` ×${aw}` : ' (각성 시 개방)'}</Text>}
           </Card>
         );
       })()}
@@ -669,7 +682,7 @@ export default function RosterScreen({ state, bump, concept }) {
               <View style={{ flex: 1 }}>
                 {rune ? (<>
                   <Text style={g.slotName}>{d.title} <Text style={rarityText(d.rarity)}> {d.rarityLabel} </Text></Text>
-                  <Text style={g.slotDesc}>{d.sub}</Text>
+                  <Text style={g.slotDesc}>{ov(d.sub)}</Text>
                 </>) : <Text style={g.slotEmpty}>＋ 룬 슬롯 {i + 1}</Text>}
               </View>
               <Text style={g.chev}>›</Text>
@@ -700,7 +713,7 @@ export default function RosterScreen({ state, bump, concept }) {
                 {locked ? <Text style={g.dim}>슬롯 {i + 1} · 잠김 (돌파 필요)</Text>
                   : sk ? (<>
                     <Text style={g.slotName}>{SKILL_CATALOG[sk.id].label} +{sk.level}</Text>
-                    <Text style={g.slotDesc}>{describeSkill(sk.id, skillPower(sk.level))}</Text>
+                    <Text style={g.slotDesc}>{ov(describeSkill(sk.id, skillPower(sk.level)))}</Text>
                   </>) : <Text style={g.slotEmpty}>＋ 슬롯 {i + 1} 비어있음</Text>}
               </View>
               {!locked && <Text style={g.chev}>›</Text>}
@@ -734,7 +747,7 @@ export default function RosterScreen({ state, bump, concept }) {
                     {item ? (<>
                       <Text style={g.slotName}>{GEAR_CATALOG[item.blueprint].label} +{item.level - 1}
                         {item.rarity ? <Text>  </Text> : null}{item.rarity ? <Text style={rarityText(item.rarity)}> {(GEAR_RARITY[item.rarity] || {}).label || item.rarity} </Text> : null}</Text>
-                      <Text style={g.slotDesc}>{describeGearItem(item)}</Text>
+                      <Text style={g.slotDesc}>{ov(describeGearItem(item))}</Text>
                     </>) : <Text style={g.slotEmpty}>＋ 비어있음</Text>}
                   </View>
                   <Text style={g.chev}>›</Text>
@@ -840,7 +853,7 @@ function PickerModal({ picker, unit, state, onClose, onChange, concept }) {
           const cost = runeEnhanceCost(equipped.level);
           return (
             <View style={m.equippedRow}>
-              <Text style={m.equippedName}>장착: {d.title} · {d.sub}</Text>
+              <Text style={m.equippedName}>장착: {d.title} · {ov(d.sub)}</Text>
               {!maxed && <MultiToggle value={emult} onChange={setEmult} />}
               <View style={{ flexDirection: 'row', gap: 8 }}>
                 <Btn small kind="gold" disabled={maxed || (state.wallet.currency || 0) < cost.currency}
@@ -859,7 +872,7 @@ function PickerModal({ picker, unit, state, onClose, onChange, concept }) {
               <TouchableOpacity key={r.uid} onPress={() => apply(() => { equipRune(state, unit.uid, i, r.uid); onClose(); })}
                 style={[m.opt, { borderColor: rarityColor(r.rarity) }]} activeOpacity={0.8}>
                 <Text style={m.optName}>{d.title} <Text style={rarityText(r.rarity)}> {RUNE_RARITY[r.rarity].label} </Text></Text>
-                <Text style={m.optDesc}>{d.sub}</Text>
+                <Text style={m.optDesc}>{ov(d.sub)}</Text>
               </TouchableOpacity>
             );
           })}
@@ -875,7 +888,7 @@ function PickerModal({ picker, unit, state, onClose, onChange, concept }) {
         {equipped && (
           <View style={m.equippedRow}>
             <Text style={m.equippedName}>장착: {SKILL_CATALOG[equipped.id].label} +{equipped.level}</Text>
-            <Text style={m.equippedDesc}>{describeSkill(equipped.id, skillPower(equipped.level))}</Text>
+            <Text style={m.equippedDesc}>{ov(describeSkill(equipped.id, skillPower(equipped.level)))}</Text>
             <MultiToggle value={emult} onChange={setEmult} />
             <View style={{ flexDirection: 'row', gap: 8 }}>
               <Btn small kind="gold" label={`강화 ${multLabel(emult)}`} onPress={() => applyN(() => upgradeSkill(state, unit.uid, i))} />
@@ -891,7 +904,7 @@ function PickerModal({ picker, unit, state, onClose, onChange, concept }) {
               <TouchableOpacity key={s.id} disabled={dupOther} onPress={() => apply(() => { equipSkill(state, unit.uid, i, s.id); onClose(); })}
                 style={[m.opt, on && m.optOn, dupOther && m.optDim]} activeOpacity={0.8}>
                 <Text style={m.optName}>{s.label} {on ? '✓' : ''}{dupOther ? ' (다른 슬롯 장착중)' : ''}</Text>
-                <Text style={m.optDesc}>{describeSkill(s.id)}</Text>
+                <Text style={m.optDesc}>{ov(describeSkill(s.id))}</Text>
               </TouchableOpacity>
             );
           })}
@@ -914,8 +927,8 @@ function PickerModal({ picker, unit, state, onClose, onChange, concept }) {
               장착: {GEAR_CATALOG[item.blueprint].label} +{item.level - 1}
               {item.rarity ? <Text style={rarityText(item.rarity)}> {(GEAR_RARITY[item.rarity] || {}).label || item.rarity} </Text> : null}
             </Text>
-            <Text style={m.equippedDesc}>{describeGearItem(item)}</Text>
-            {(item.subs || []).length > 0 && <Text style={m.subLine}>부옵션: {describeSubs(item.subs)}</Text>}
+            <Text style={m.equippedDesc}>{ov(describeGearItem(item))}</Text>
+            {(item.subs || []).length > 0 && <Text style={m.subLine}>부옵션: {ov(describeSubs(item.subs))}</Text>}
             {(() => {
               const en = enchantInfo(item);
               return en
@@ -959,7 +972,7 @@ function PickerModal({ picker, unit, state, onClose, onChange, concept }) {
               style={m.opt} activeOpacity={0.8}>
               <Text style={m.optName}>{GEAR_CATALOG[it.blueprint].label} +{it.level - 1}
                 {it.rarity ? <Text style={rarityText(it.rarity)}> {(GEAR_RARITY[it.rarity] || {}).label || it.rarity} </Text> : null}</Text>
-              <Text style={m.optDesc}>{describeGearItem(it)}</Text>
+              <Text style={m.optDesc}>{ov(describeGearItem(it))}</Text>
             </TouchableOpacity>
           ))}
         </ScrollView>
