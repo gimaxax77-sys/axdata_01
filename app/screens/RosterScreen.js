@@ -346,8 +346,16 @@ export default function RosterScreen({ state, bump, concept }) {
       <Card style={{ marginBottom: 12 }}>
         <View style={g.intiHead}>
           <Text style={g.sec}>파티 편성 <Text style={g.dim}>{state.party.length}/{MAX_PARTY}</Text></Text>
-          <Text style={g.dim}>전투는 편성 전원 합산</Text>
+          <Btn small kind="ghost" label="🎯 자동편성" onPress={() => {
+            // 편성(누가 들어갈지)까지 새로 채운다 — 기존 수동 편성을 덮어씀.
+            const rp = autoParty(state);
+            const r = rp.ok ? autoFormation(state) : rp;
+            const synTxt = rp.ok && rp.synergy?.length ? ` · ✦${rp.synergy.join('·')}` : '';
+            setDeckMsg(r.ok ? `🎯 자동편성 완료 · 보유영웅 중 ${state.party.length}명 선발${synTxt}` : `⚠ ${r.reason}`);
+            fx(r.ok ? 'success' : 'error'); bump();
+          }} />
         </View>
+        <Text style={g.dim}>전투는 편성 전원 합산 · 자동편성은 현재 편성을 대체합니다</Text>
         <View style={g.partyRow}>
           {Array.from({ length: MAX_PARTY }).map((_, i) => {
             const uid = state.party[i];
@@ -386,12 +394,10 @@ export default function RosterScreen({ state, bump, concept }) {
             <View style={g.formWrap}>
               <View style={g.intiHead}>
                 <Text style={g.formTitle}>⚔️ 진형</Text>
-                <Btn small kind="ghost" label="🪄 자동배치" onPress={() => {
-                  // 편성(파티 구성)을 시너지까지 반영해 채운 뒤 진형을 배치한다.
-                  const rp = autoParty(state);
-                  const r = rp.ok ? autoFormation(state) : rp;
-                  const synTxt = rp.ok && rp.synergy?.length ? ` · ✦${rp.synergy.join('·')}` : '';
-                  setDeckMsg(r.ok ? `🪄 자동배치 완료 · ${state.party.length}명 · 탱커 전열 · 딜러 후열${synTxt}` : `⚠ ${r.reason}`);
+                <Btn small kind="ghost" label="🪄 위치 재배치" onPress={() => {
+                  // 편성(누가 들어갈지)은 그대로 두고, 이미 편성된 인원의 위치만 재배치한다.
+                  const r = autoFormation(state);
+                  setDeckMsg(r.ok ? '🪄 위치 재배치 완료 · 탱커 전열 · 딜러 후열' : `⚠ ${r.reason}`);
                   fx(r.ok ? 'success' : 'error'); bump();
                 }} />
               </View>
