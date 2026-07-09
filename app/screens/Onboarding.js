@@ -20,7 +20,7 @@ export function IntroModal({ concept, visible, onDone }) {
   const U = concept.terms.unit, S = concept.terms.stage;
   const slides = [
     { emoji: '🏰', title: `${concept.title}에 오신 걸 환영합니다`, body: `방치형 수집 RPG — 접속하지 않아도 ${ga(U)} 자동으로 싸우고 보상을 모읍니다.` },
-    { emoji: '⚔️', title: `${eul(U)} 키우세요`, body: `캐릭터 탭에서 레벨업·돌파·장비로 강해집니다. 강할수록 더 깊은 ${S}로 자동 전진해요.` },
+    { emoji: '⚔️', title: `${eul(U)} 키우세요`, body: `영웅 탭에서 레벨업·돌파·장비로 강해집니다. 강할수록 더 깊은 ${S}로 자동 전진해요.` },
     { emoji: '🔮', title: '파티를 모으세요', body: `${S} ${unlockStage('gacha')}에서 소환이 열립니다. ${eul(U)} 모아 편성하면 전투력이 합쳐집니다.` },
     { emoji: '✨', title: '성장은 계속됩니다', body: '환생으로 영구 배수를 얻고 더 깊이 도전하세요. 이제 시작해봅시다!' },
   ];
@@ -54,13 +54,15 @@ export function ObjectiveBanner({ state, concept, onGo }) {
   const TEXT = {
     level: `🎯 ${eul(U)} 레벨업하세요 — ${S} ${obj.target} 도달 시 소환 해금`,
     summon: `🎯 소환 탭에서 ${eul(U)} 뽑아 파티를 모으세요`,
-    party: `🎯 캐릭터 탭에서 파티를 편성하세요 (전투력 합산)`,
+    party: `🎯 영웅 탭 > 편성에서 파티를 짜세요 (전투력 합산)`,
     prestige: `✨ 환생으로 영구 배수를 얻고 더 깊이 도전하세요 (방치 탭)`,
-    formation: `⚔️ 진형(전열/후열)으로 전략을 세우세요 — 캐릭터 탭 파티 카드`,
-    arena: `🏆 아레나 전투력 리그에 도전하세요 (약자 보호 매칭)`,
+    formation: `⚔️ 진형(전열/후열)으로 전략을 세우세요 — 영웅 탭 > 편성`,
+    arena: `🏆 아레나에 도전하세요 — 콘텐츠 탭 > 경쟁 (약자 보호 매칭)`,
   };
+  // 탭 재편(7→5)으로 사라진 목적지 리매핑 — arena/meta는 흡수된 탭으로 이동.
+  const goTab = { arena: 'content', meta: 'roster' }[obj.tab] || obj.tab;
   return (
-    <TouchableOpacity style={c.banner} activeOpacity={0.8} onPress={() => onGo(obj.tab)}>
+    <TouchableOpacity style={c.banner} activeOpacity={0.8} onPress={() => onGo(goTab)}>
       <Text style={c.bannerText} numberOfLines={2}>{TEXT[obj.id]}</Text>
       <Text style={c.bannerGo}>›</Text>
     </TouchableOpacity>

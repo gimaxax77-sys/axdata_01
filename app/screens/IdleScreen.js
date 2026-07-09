@@ -83,43 +83,40 @@ export default function IdleScreen({ state, bump, lastGain, concept }) {
             {synergy.list.map((s) => <Text key={s.id} style={st.synTag}>✦ {s.label}</Text>)}
           </View>
         )}
+        {/* 구역 진행 게이지 — 현재 구역(start~end)에서 어디쯤인지 한눈에. */}
+        <View style={st.zoneBar}>
+          <View style={[st.zoneBarFill, { width: `${Math.round(((state.stage - zone.start) / Math.max(1, zone.end - zone.start)) * 100)}%` }]} />
+        </View>
       </Card>
 
-      {/* 핵심 지표 */}
-      <View style={st.row}>
-        <Card style={st.metric}>
+      {/* 핵심 지표 스트립 — 전투력·최고층·초당수입 한 줄(세나키우기식 요약). */}
+      <Card style={st.strip}>
+        <View style={st.stripCell}>
           <Text style={st.mLabel}>전투력</Text>
           <Text style={st.mVal}>{fmt(power)}</Text>
-        </Card>
-        <Card style={st.metric}>
-          <Text style={st.mLabel}>역대 최고 {concept.terms.stage}</Text>
-          <Text style={st.mVal}>{state.peakStage}</Text>
-        </Card>
-      </View>
-
-      {/* 초당 수입 */}
-      <Card>
-        <Text style={st.sec}>방치 수입 (초당)</Text>
-        <View style={st.gains}>
-          <Text style={st.gain}>{concept.resources.currency.emoji} +{fmt(lastGain.currency)}</Text>
-          <Text style={st.gain}>{concept.resources.growth.emoji} +{fmt(lastGain.growth)}</Text>
         </View>
-        <Text style={st.hint}>접속하지 않아도 자동으로 전투하고 보상이 쌓입니다.</Text>
+        <View style={st.stripDiv} />
+        <View style={st.stripCell}>
+          <Text style={st.mLabel}>최고 {concept.terms.stage}</Text>
+          <Text style={st.mVal}>{state.peakStage}</Text>
+        </View>
+        <View style={st.stripDiv} />
+        <View style={st.stripCell}>
+          <Text style={st.mLabel}>초당 수입</Text>
+          <Text style={st.gainSm} numberOfLines={1}>{concept.resources.currency.emoji}{fmt(lastGain.currency)}</Text>
+          <Text style={st.gainSm} numberOfLines={1}>{concept.resources.growth.emoji}{fmt(lastGain.growth)}</Text>
+        </View>
       </Card>
 
-      {/* 환생 */}
-      <Card style={{ borderColor: canPrestige ? T.accent : T.line }}>
-        <Text style={st.sec}>환생 ✨</Text>
-        <Text style={st.prestigeStat}>
-          환생 {state.prestige}회 · 파워 배수 <Text style={{ color: T.accent }}>×{mult.toFixed(2)}</Text>
-        </Text>
-        <Text style={st.hint}>
-          이번 회차를 리셋하고 영구 파워/수입 배수를 얻습니다.
-          {canPrestige ? ` 지금 환생 시 +${nextGain} 포인트.` : ' (최고 15층 도달 시 해금)'}
-        </Text>
-        <View style={{ height: 10 }} />
-        <Btn
-          label={canPrestige ? `환생하기 (+${nextGain})` : '15층 도달 필요'}
+      {/* 환생 — 컴팩트 CTA(요약 + 버튼 한 줄). */}
+      <Card style={[st.prestigeRow, { borderColor: canPrestige ? T.accent : T.line }]}>
+        <View style={{ flex: 1 }}>
+          <Text style={st.prestigeStat}>✨ 환생 {state.prestige}회 · <Text style={{ color: T.accent }}>×{mult.toFixed(2)}</Text></Text>
+          <Text style={st.hintSm}>{canPrestige ? `지금 환생 시 +${nextGain}P (영구 배수)` : '최고 15층 도달 시 해금'}</Text>
+          {boxMsg ? <Text style={st.boxMsg} numberOfLines={1}>{boxMsg}</Text> : null}
+        </View>
+        <Btn small
+          label={canPrestige ? `환생 +${nextGain}` : '🔒 15층'}
           kind="gold"
           disabled={!canPrestige}
           onPress={() => {
@@ -135,7 +132,6 @@ export default function IdleScreen({ state, bump, lastGain, concept }) {
             bump();
           }}
         />
-        {boxMsg ? <Text style={st.boxMsg}>{boxMsg}</Text> : null}
       </Card>
     </View>
   );
@@ -162,8 +158,19 @@ const st = StyleSheet.create({
   synTag: { color: T.accent, fontSize: 11, fontWeight: '800', backgroundColor: T.surface, borderRadius: 8, paddingHorizontal: 8, paddingVertical: 3, overflow: 'hidden' },
   row: { flexDirection: 'row', gap: 12 },
   metric: { flex: 1, alignItems: 'center' },
-  mLabel: { color: T.muted, fontSize: 12, marginBottom: 4 },
-  mVal: { color: T.text, fontWeight: '900', fontSize: 26 },
+  mLabel: { color: T.muted, fontSize: 11, marginBottom: 3 },
+  mVal: { color: T.text, fontWeight: '900', fontSize: 20 },
+  // 지표 스트립(전투력·최고층·수입 한 줄) + 세로 구분선.
+  strip: { flexDirection: 'row', alignItems: 'center', paddingVertical: 10 },
+  stripCell: { flex: 1, alignItems: 'center' },
+  stripDiv: { width: 1, height: 30, backgroundColor: T.line },
+  gainSm: { color: T.good, fontWeight: '800', fontSize: 12 },
+  // 환생 컴팩트 행.
+  prestigeRow: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 10 },
+  hintSm: { color: T.muted, fontSize: 11, marginTop: 2 },
+  // 구역 진행 게이지.
+  zoneBar: { alignSelf: 'stretch', height: 5, backgroundColor: T.bg, borderRadius: 3, marginTop: 10, overflow: 'hidden' },
+  zoneBarFill: { height: 5, backgroundColor: T.accent, borderRadius: 3 },
   sec: { color: T.text, fontWeight: '800', fontSize: 15, marginBottom: 8 },
   gains: { flexDirection: 'row', gap: 18 },
   gain: { color: T.good, fontWeight: '800', fontSize: 18 },

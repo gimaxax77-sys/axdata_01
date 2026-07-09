@@ -57,7 +57,8 @@ function AppInner() {
   });
   const [tab, setTab] = useState('idle');
   const [pixelMode, setPixelMode] = useState(false); // 픽셀 방치 화면 미리보기
-  const Active = TABS.find((t) => t.key === tab).Screen;
+  // 탭 키 안전 폴백 — 재편으로 사라진 키(arena/meta 등)가 와도 크래시 없이 홈으로.
+  const Active = (TABS.find((t) => t.key === tab) || TABS[0]).Screen;
   const showPixel = pixelMode && tab === 'idle';
 
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -156,6 +157,7 @@ function AppInner() {
           return (
             <TouchableOpacity key={t.key} style={s.tab} onPress={() => setTab(t.key)} activeOpacity={0.8}
               accessibilityRole="tab" accessibilityLabel={t.label} accessibilityState={{ selected: on }}>
+              <View style={[s.tabInd, on && s.tabIndOn]} />
               <Text style={[s.tabIcon, on && s.tabIconOn]}>{t.icon}</Text>
               <Text style={[s.tabLabel, on && s.tabLabelOn]}>{t.label}</Text>
             </TouchableOpacity>
@@ -232,8 +234,8 @@ const s = StyleSheet.create({
   notice: { flexDirection: 'row', alignItems: 'center', gap: 10, marginHorizontal: 14, marginTop: 6, paddingHorizontal: 12, paddingVertical: 8, borderRadius: 10, backgroundColor: T.surface2, borderWidth: 1, borderColor: T.accent },
   noticeText: { color: T.text, fontSize: 12, fontWeight: '700', flex: 1 },
   noticeX: { color: T.muted, fontSize: 14, fontWeight: '900' },
-  title: { color: T.accent, fontWeight: '900', fontSize: 22 },
-  subtitle: { color: T.muted, fontSize: 12, marginTop: 1 },
+  title: { color: T.accent, fontWeight: '900', fontSize: 19 },
+  subtitle: { color: T.muted, fontSize: 11, marginTop: 1 },
   iconBtn: { borderWidth: 1, borderColor: T.line, borderRadius: 10, paddingHorizontal: 10, paddingVertical: 6, marginRight: 8 },
   iconBtnText: { fontSize: 15 },
   pixelExit: { position: 'absolute', top: 8, right: 8, backgroundColor: 'rgba(20,15,40,0.85)', borderWidth: 1, borderColor: '#4a3f88', borderRadius: 4, paddingHorizontal: 8, paddingVertical: 4 },
@@ -241,7 +243,10 @@ const s = StyleSheet.create({
   resWrap: { paddingHorizontal: 14, paddingVertical: 8 },
   body: { flex: 1 },
   tabbar: { flexDirection: 'row', backgroundColor: T.surface, borderTopWidth: 1, borderTopColor: T.line, paddingBottom: 6 },
-  tab: { flex: 1, alignItems: 'center', paddingVertical: 10 },
+  tab: { flex: 1, alignItems: 'center', paddingVertical: 8 },
+  // 활성 탭 상단 인디케이터 — 어느 탭인지 즉시 인지(세나키우기식 강조).
+  tabInd: { alignSelf: 'stretch', height: 3, borderRadius: 2, backgroundColor: 'transparent', marginBottom: 5, marginHorizontal: 14 },
+  tabIndOn: { backgroundColor: T.accent },
   tabIcon: { fontSize: 22, opacity: 0.5 },
   tabIconOn: { opacity: 1 },
   tabLabel: { color: T.muted, fontSize: 11, marginTop: 2, fontWeight: '700' },

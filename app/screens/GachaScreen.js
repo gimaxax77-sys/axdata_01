@@ -68,7 +68,7 @@ export default function GachaScreen({ state, bump, concept }) {
     },
     gear: {
       label: '장비', tab: '⚔️ 장비', curr: 'gem', cost: GEAR_PULL_COST.gem, multi: true,
-      sub: '랜덤 장비 → 인벤토리 · 진행도↑ 상위 등급↑', note: '캐릭터 탭에서 장착·강화',
+      sub: '랜덤 장비 → 인벤토리 · 진행도↑ 상위 등급↑', note: '영웅 탭에서 장착·강화',
     },
     rune: {
       label: '룬', tab: '🔷 룬', curr: 'gem', cost: RUNE_PULL_COST.gem, multi: true,
@@ -103,7 +103,7 @@ export default function GachaScreen({ state, bump, concept }) {
     if (banner === 'cosmetic') {
       const r = summonCosmetic(state); if (!r.ok) return { cell: null, spent: false };
       if (r.duplicate) { setMsg(`모든 코스튬 보유 · ${gemE}${r.refund.gem} 환급`); return { cell: null, spent: true }; }
-      setMsg('캐릭터 탭 › 코스튬에서 장착하세요');
+      setMsg('영웅 탭 › 꾸미기에서 장착하세요');
       return { cell: { rarity: r.item.rarity || 'SSR', emoji: r.item.emoji, name: r.item.label }, spent: true };
     }
     return { cell: null, spent: false }; // hero handled separately
