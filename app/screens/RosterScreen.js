@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Modal, TextInput, useWindowDimensions } from 'react-native';
+import React, { useState, useEffect, useRef } from 'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Modal, TextInput, useWindowDimensions, Animated } from 'react-native';
 import { T, rarityMeta } from '../theme';
+import { reducedMotion } from '../motion';
 
 // 등급 순위(정렬용) — 인벤토리 상위 우선.
 const RARITY_RANK = { N: 0, R: 1, SR: 2, SSR: 3, UR: 4 };
@@ -134,8 +135,19 @@ function describeRune(rune) {
   return { title: `${set.emoji} ${set.label} +${rune.level}`, sub: `[${RUNE_RARITY[rune.rarity].label}] ${stat} ${pct}${subTxt}` };
 }
 
+// 캐릭터 상세 서브탭 — 9개 세로 스택을 목적별 4묶음으로.
+//   성장: 친밀도·씨앗·성장(레벨/돌파/각인) · 장비: 룬·전용무기·장비
+//   스킬: 전용스킬·스킬편성 · 꾸미기: 코스튬
+const DETAIL_TABS = [
+  { key: 'growth', label: '성장', icon: '🌱' },
+  { key: 'gear', label: '장비', icon: '⚔️' },
+  { key: 'skill', label: '스킬', icon: '✨' },
+  { key: 'cosmetic', label: '꾸미기', icon: '🎭' },
+];
+
 export default function RosterScreen({ state, bump, concept }) {
   const [selId, setSel] = useState(state.party[0] || state.units[0]?.uid);
+  const [dtab, setDtab] = useState('growth'); // 상세 서브탭
   const [picker, setPicker] = useState(null); // {mode:'skill'|'gear', slot}
   const [bubble, setBubble] = useState(null); // 현재 대사
   const [mult, setMult] = useState(1); // 성장 배수 (×1/×10/×100)
@@ -156,6 +168,15 @@ export default function RosterScreen({ state, bump, concept }) {
   const lines = unit && linesOf(concept, unit);
   // 선택 캐릭터가 바뀌면 인사 대사로 초기화
   useEffect(() => { setBubble(lines ? lines.greet : null); }, [selId]);
+  // "차르륵" — 캐릭터 선택 시 상세 서브탭이 좌→우로 순차 등장(콘텐츠 탭과 동일 규약).
+  const dAnims = useRef(DETAIL_TABS.map(() => new Animated.Value(0))).current;
+  useEffect(() => {
+    if (reducedMotion()) { dAnims.forEach((a) => a.setValue(1)); return; }
+    dAnims.forEach((a) => a.setValue(0));
+    Animated.stagger(55, dAnims.map((a) =>
+      Animated.timing(a, { toValue: 1, duration: 280, useNativeDriver: true }),
+    )).start();
+  }, [selId]); // 유닛이 바뀔 때마다 재생.
   // 전투력 정렬 — computePower를 유닛당 1회만 계산(캐시)해 O(n log n) 중복 제거.
   // 매 렌더 최신 반영하되 계산은 유닛 수(N)회로 고정.
   const list = (() => {
@@ -446,8 +467,28 @@ export default function RosterScreen({ state, bump, concept }) {
         </View>
       </Card>
 
+      {/* 상세 서브탭 바 — 성장/장비/스킬/꾸미기. 선택 캐릭터 진입 시 차르륵 순차 등장. */}
+      <View style={g.dtabBar}>
+        {DETAIL_TABS.map((tb, i) => {
+          const on = dtab === tb.key;
+          return (
+            <Animated.View key={tb.key} style={{ flex: 1, opacity: dAnims[i], transform: [
+              { translateY: dAnims[i].interpolate({ inputRange: [0, 1], outputRange: [14, 0] }) },
+              { scale: dAnims[i].interpolate({ inputRange: [0, 1], outputRange: [0.85, 1] }) },
+            ] }}>
+              <TouchableOpacity activeOpacity={0.8} onPress={() => { fx('tap'); setDtab(tb.key); }}
+                style={[g.dtabCell, on && g.dtabCellOn]}
+                accessibilityRole="tab" accessibilityState={{ selected: on }} accessibilityLabel={tb.label}>
+                <Text style={[g.dtabIcon, on && g.dtabIconOn]}>{tb.icon}</Text>
+                <Text style={[g.dtabLabel, on && g.dtabLabelOn]}>{tb.label}</Text>
+              </TouchableOpacity>
+            </Animated.View>
+          );
+        })}
+      </View>
+
       {/* 친밀도 + 대사 */}
-      {lines && (
+      {dtab === 'growth' && lines && (
         <Card style={{ marginTop: 12 }}>
           <View style={g.bubble}>
             <Text style={g.bubbleEmoji}>{meta.emoji}</Text>
@@ -470,6 +511,7 @@ export default function RosterScreen({ state, bump, concept }) {
       )}
 
       {/* 코스튬(스킨) — 캐릭터 외형 변경. 순수 외형(능력치 무관) */}
+      {dtab === 'cosmetic' && (
       <Card style={{ marginTop: 12 }}>
         <Text style={g.sec}>코스튬 <Text style={g.dim}>(외형 · 능력치 무관)</Text></Text>
         {costumesFor(state, unit).map((cos) => {
@@ -488,12 +530,13 @@ export default function RosterScreen({ state, bump, concept }) {
           );
         })}
       </Card>
+      )}
 
       {!heavy && <Text style={g.loadingHint}>불러오는 중…</Text>}
 
       {heavy && (<>
       {/* 씨앗 — 서사 발현 (등급별 보정, 6조건 달성분 능력치) */}
-      {(() => {
+      {dtab === 'growth' && (() => {
         const sp = seedProgress(unit);
         if (!sp.hasSeed) return null;
         const conds = seedConditions(unit);
@@ -523,7 +566,7 @@ export default function RosterScreen({ state, bump, concept }) {
       })()}
 
       {/* 전용 스킬 (시그니처) — 항상 발동, 교체 불가. 각성으로 2차 효과 개방 */}
-      {unit.signature && (() => {
+      {dtab === 'skill' && unit.signature && (() => {
         const sig = SKILL_CATALOG[unit.signature];
         const aw = unit.sigAwaken || 0;
         const boost = sigWeaponBoost(unit);
@@ -550,7 +593,7 @@ export default function RosterScreen({ state, bump, concept }) {
       })()}
 
       {/* 전용무기 — 캐릭터 전용 슬롯 (일반 장비와 별개). 시그니처 증폭 */}
-      {canOwnSigWeapon(unit) && (() => {
+      {dtab === 'gear' && canOwnSigWeapon(unit) && (() => {
         const w = sigWeaponOf(concept, unit);
         const owned = hasSigWeapon(unit);
         const lv = owned ? unit.sigWeapon.level : 0;
@@ -581,9 +624,10 @@ export default function RosterScreen({ state, bump, concept }) {
       })()}
 
       {/* 룬 — 소켓형 서브스탯 + 세트 보너스 */}
+      {dtab === 'gear' && (
       <Card style={{ marginTop: 12 }}>
         <View style={g.intiHead}>
-          <Text style={g.sec}>룬 <Text style={g.dim}>({(unit.runes || []).filter(Boolean).length}/{RUNE_SLOTS})</Text></Text>
+          <Text style={g.sec}>룬<Text style={g.dim}>({(unit.runes || []).filter(Boolean).length}/{RUNE_SLOTS})</Text></Text>
           <MultiToggle value={mult} onChange={setMult} />
         </View>
         <Btn small kind="gold" disabled={(state.wallet.currency || 0) < RUNE_SUMMON_COST.currency}
@@ -609,11 +653,13 @@ export default function RosterScreen({ state, bump, concept }) {
           <Text key={s.set} style={g.setBonus}>{s.emoji} {s.label} {s.active3 ? '3세트' : '2세트'} 보너스 활성</Text>
         ))}
       </Card>
+      )}
 
       {/* 스킬 편성 (수동) */}
+      {dtab === 'skill' && (
       <Card style={{ marginTop: 12 }}>
         <View style={g.intiHead}>
-          <Text style={g.sec}>스킬 편성 <Text style={g.dim}>({unit.skills.filter(Boolean).length}/{slots})</Text></Text>
+          <Text style={g.sec}>스킬 편성<Text style={g.dim}>({unit.skills.filter(Boolean).length}/{slots})</Text></Text>
           <Btn small kind="gold" label="✨ 추천 전체" sfx={false} onPress={() => runRecommend('all')} />
         </View>
         {recMsg && <Text style={g.recMsg}>{recMsg}</Text>}
@@ -635,8 +681,10 @@ export default function RosterScreen({ state, bump, concept }) {
           );
         })}
       </Card>
+      )}
 
       {/* 장비 (수동) */}
+      {dtab === 'gear' && (
       <Card style={{ marginTop: 12 }}>
         <View style={g.intiHead}>
           <Text style={g.sec}>장비</Text>
@@ -672,8 +720,10 @@ export default function RosterScreen({ state, bump, concept }) {
           <Text key={s.set} style={g.setBonus}>⚔️ {s.label} 세트 {s.active3 ? '3피스(풀)' : '2피스'} 보너스 활성</Text>
         ))}
       </Card>
+      )}
 
       {/* 성장 */}
+      {dtab === 'growth' && (
       <Card style={{ marginTop: 12, marginBottom: 24 }}>
         <View style={g.intiHead}>
           <Text style={g.sec}>성장</Text>
@@ -693,6 +743,7 @@ export default function RosterScreen({ state, bump, concept }) {
           ))}
         </View>
       </Card>
+      )}
       </>)}
 
       {/* 편성 모달 */}
@@ -985,6 +1036,15 @@ const g = StyleSheet.create({
   dim: { color: T.muted, fontSize: 12, fontWeight: '400' },
   btnRow: { flexDirection: 'row', gap: 8 },
   loadingHint: { color: T.muted, fontSize: 13, textAlign: 'center', paddingVertical: 24 },
+  // 상세 서브탭 바 — 헤더 요약 바로 아래(성장/장비/스킬/꾸미기).
+  dtabBar: { flexDirection: 'row', gap: 6, marginTop: 10 },
+  dtabCell: { alignItems: 'center', justifyContent: 'center', paddingVertical: 8, borderRadius: 10,
+    backgroundColor: T.surface2, borderWidth: 1, borderColor: 'transparent' },
+  dtabCellOn: { backgroundColor: T.surface, borderColor: T.accent },
+  dtabIcon: { fontSize: 18, opacity: 0.55 },
+  dtabIconOn: { opacity: 1 },
+  dtabLabel: { color: T.muted, fontSize: 11, fontWeight: '800', marginTop: 2 },
+  dtabLabelOn: { color: T.accent },
   recMsg: { color: T.accent, fontSize: 12, fontWeight: '700', marginTop: 8, marginBottom: 2 },
 });
 
