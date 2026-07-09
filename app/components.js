@@ -166,16 +166,22 @@ export function repeat(fn, n) {
   return done;
 }
 
+// 큰 수 접미사 — K/M/B/T/Q 이후 AA·AB···ZZ 로 확장(×1000 단위).
+//   1000^5=Q 다음부터 두 글자(AA=1000^6 …). ZZ까지 → 사실상 상한 없음(1e2000+).
+const FMT_SUFFIX = (() => {
+  const s = ['', 'K', 'M', 'B', 'T', 'Q'];
+  for (let a = 0; a < 26; a++) for (let b = 0; b < 26; b++) s.push(String.fromCharCode(65 + a) + String.fromCharCode(65 + b));
+  return s;
+})();
 export function fmt(n) {
   n = Math.round(n);
   const neg = n < 0 ? '-' : '';
   n = Math.abs(n);
-  if (n >= 1e15) return neg + (n / 1e15).toFixed(1) + 'Q';
-  if (n >= 1e12) return neg + (n / 1e12).toFixed(1) + 'T';
-  if (n >= 1e9) return neg + (n / 1e9).toFixed(1) + 'B';
-  if (n >= 1e6) return neg + (n / 1e6).toFixed(1) + 'M';
-  if (n >= 1e4) return neg + (n / 1e3).toFixed(1) + 'K';
-  return neg + n.toLocaleString();
+  if (n < 1e4) return neg + n.toLocaleString();
+  // ×1000 단위로 나눠 접미사 선택(부동소수 안전: 반복 나눗셈).
+  let tier = 0, v = n;
+  while (v >= 1000 && tier < FMT_SUFFIX.length - 1) { v /= 1000; tier++; }
+  return neg + v.toFixed(1) + FMT_SUFFIX[tier];
 }
 
 const bs = StyleSheet.create({

@@ -705,23 +705,24 @@ export default function RosterScreen({ state, bump, concept }) {
           <Btn small kind="gold" label="✨ 추천 전체" sfx={false} onPress={() => runRecommend('all')} />
         </View>
         {recMsg && <Text style={g.recMsg}>{recMsg}</Text>}
-        {[0, 1, 2].map((i) => {
-          const locked = i >= slots;
-          const sk = unit.skills[i];
-          return (
-            <TouchableOpacity key={i} disabled={locked} onPress={() => setPicker({ mode: 'skill', slot: i })}
-              style={[g.slotRow, locked && g.slotLocked]} activeOpacity={0.8}>
-              <View style={{ flex: 1 }}>
-                {locked ? <Text style={g.dim}>슬롯 {i + 1} · 잠김 (돌파 필요)</Text>
+        {/* 스킬 슬롯 — 한 줄 아이콘 타일(✨+이름+레벨). 탭하면 상세/교체 피커. */}
+        <View style={g.runeSlots}>
+          {[0, 1, 2].map((i) => {
+            const locked = i >= slots;
+            const sk = unit.skills[i];
+            return (
+              <TouchableOpacity key={i} disabled={locked} onPress={() => setPicker({ mode: 'skill', slot: i })}
+                style={[g.runeTile, locked && g.slotLocked, sk && { borderColor: T.accent }]} activeOpacity={0.8}>
+                {locked ? <Text style={g.runeEmptyBig}>🔒</Text>
                   : sk ? (<>
-                    <Text style={g.slotName}>{SKILL_CATALOG[sk.id].label} +{sk.level}</Text>
-                    <Text style={g.slotDesc}>{ov(describeSkill(sk.id, skillPower(sk.level)))}</Text>
-                  </>) : <Text style={g.slotEmpty}>＋ 슬롯 {i + 1} 비어있음</Text>}
-              </View>
-              {!locked && <Text style={g.chev}>›</Text>}
-            </TouchableOpacity>
-          );
-        })}
+                    <Text style={g.runeEmoji}>✨</Text>
+                    <Text style={g.skillTileName} numberOfLines={1}>{SKILL_CATALOG[sk.id].label}</Text>
+                    <Text style={g.runeLv}>+{sk.level}</Text>
+                  </>) : <Text style={g.runeEmptyBig}>＋</Text>}
+              </TouchableOpacity>
+            );
+          })}
+        </View>
       </Card>
       )}
 
@@ -737,25 +738,25 @@ export default function RosterScreen({ state, bump, concept }) {
           const equipped = GEAR_SLOTS.filter((s) => unit.gear[s]).length;
           return <Text style={g.slotDesc}>장착 {equipped}/{GEAR_SLOTS.length}</Text>;
         })()}
+        {/* 장비 슬롯 — 부위별 아이콘 타일(부위 이모지+레벨+등급). 탭하면 상세/교체 피커. */}
         {GEAR_CATS.map(({ cat, label }) => (
           <View key={cat}>
             <Text style={g.gearCat}>{label}</Text>
-            {GEAR_SLOTS.filter((slot) => SLOT_META[slot].cat === cat).map((slot) => {
-              const item = unit.gear[slot];
-              return (
-                <TouchableOpacity key={slot} onPress={() => setPicker({ mode: 'gear', slot })} style={g.slotRow} activeOpacity={0.8}>
-                  <View style={{ flex: 1 }}>
-                    <Text style={g.slotTag}>{SLOT_META[slot].emoji} {SLOT_META[slot].label}</Text>
+            <View style={g.gearGrid}>
+              {GEAR_SLOTS.filter((slot) => SLOT_META[slot].cat === cat).map((slot) => {
+                const item = unit.gear[slot];
+                return (
+                  <TouchableOpacity key={slot} onPress={() => setPicker({ mode: 'gear', slot })}
+                    style={[g.gearTile, item && item.rarity && { borderColor: rarityColor(item.rarity) }]} activeOpacity={0.8}>
+                    <Text style={g.gearTileEmoji}>{SLOT_META[slot].emoji}</Text>
                     {item ? (<>
-                      <Text style={g.slotName}>{GEAR_CATALOG[item.blueprint].label} +{item.level - 1}
-                        {item.rarity ? <Text>  </Text> : null}{item.rarity ? <Text style={rarityText(item.rarity)}> {(GEAR_RARITY[item.rarity] || {}).label || item.rarity} </Text> : null}</Text>
-                      <Text style={g.slotDesc}>{ov(describeGearItem(item))}</Text>
-                    </>) : <Text style={g.slotEmpty}>＋ 비어있음</Text>}
-                  </View>
-                  <Text style={g.chev}>›</Text>
-                </TouchableOpacity>
-              );
-            })}
+                      <Text style={g.runeLv}>+{item.level - 1}</Text>
+                      {item.rarity ? <Text style={[rarityText(item.rarity), g.runeRar]}> {item.rarity} </Text> : null}
+                    </>) : <Text style={g.gearTileEmpty}>{SLOT_META[slot].label}</Text>}
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
           </View>
         ))}
         {activeGearSets(unit).map((s) => (
@@ -1119,6 +1120,12 @@ const g = StyleSheet.create({
   runeLv: { color: T.text, fontSize: 12, fontWeight: '800' },
   runeRar: { fontSize: 9 },
   runeEmptyBig: { color: T.primary, fontSize: 26, fontWeight: '400' },
+  skillTileName: { color: T.text, fontSize: 10, fontWeight: '700', maxWidth: 62, textAlign: 'center' },
+  // 장비 아이콘 타일(부위별) — 줄바꿈 그리드.
+  gearGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 2, marginBottom: 4 },
+  gearTile: { width: 64, alignItems: 'center', justifyContent: 'center', paddingVertical: 10, borderRadius: 12, backgroundColor: T.surface2, borderWidth: 1.5, borderColor: T.line, gap: 2 },
+  gearTileEmoji: { fontSize: 22 },
+  gearTileEmpty: { color: T.muted, fontSize: 9, textAlign: 'center' },
   slotTag: { color: T.accent, fontSize: 11, fontWeight: '700', marginBottom: 2 },
   gearCat: { color: T.muted, fontSize: 12, fontWeight: '800', marginTop: 10, marginBottom: 2 },
   chev: { color: T.muted, fontSize: 22, marginLeft: 8 },
