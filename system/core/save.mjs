@@ -138,6 +138,7 @@ function normalize(state) {
     if (!u.sigWeapon) u.sigWeapon = { level: 0 };
     if (u.sigAwaken === undefined) u.sigAwaken = 0;
     if (!u.runes) u.runes = [null, null, null];
+    if (!u.star || u.star < 1) u.star = 1; // 성급 기본 1(구버전 세이브 보정)
   }
   return state;
 }

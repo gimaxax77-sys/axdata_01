@@ -2,6 +2,7 @@ import { getArchetype } from './archetypes.mjs';
 import { collectUnitModifiers } from './modifiers.mjs';
 import { BALANCE } from './balance.mjs';
 import { rarityBaseMult } from './seed.mjs';
+import { starMult } from './starGrade.mjs';
 
 // ─────────────────────────────────────────────────────────────
 // 스탯 성장 공식 — 장르/컨셉 무관.
@@ -25,11 +26,13 @@ function baseGrownStats(unit) {
   // 등급 기본 배수 — 등급이 곧 잠재력의 하한(씨앗이 좁히되 다 못 메움).
   // 등급 없는 유닛(데모/시뮬)은 1.0 → 하위호환.
   const rm = rarityBaseMult(unit);
+  // 성급 배수 — 동일 영웅 중복 합성으로 오르는 독립 성장 축(+12%/성급).
+  const sm = starMult(unit);
   return {
-    hp: base.hp * growth * rm,
-    atk: base.atk * growth * rm,
-    def: base.def * growth * rm,
-    spd: base.spd * spdMult * rm,
+    hp: base.hp * growth * rm * sm,
+    atk: base.atk * growth * rm * sm,
+    def: base.def * growth * rm * sm,
+    spd: base.spd * spdMult * rm * sm,
   };
 }
 

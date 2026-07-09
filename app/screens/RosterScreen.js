@@ -67,6 +67,16 @@ import { optimizeLoadout } from '../../system/core/loadout.mjs';
 import { recordMission } from '../../system/core/daily.mjs';
 import { intimacyLevel, intimacyProgress, giftCost, giveGift, INTIMACY_MAX } from '../../system/core/intimacy.mjs';
 import { seedConditions, seedProgress } from '../../system/core/seed.mjs';
+import { starOf, starLabel, STAR_MAX, starUpInfo, starUp } from '../../system/core/starGrade.mjs';
+
+// 후보 성급으로 올렸을 때의 전투력(성급 강화 델타 미리보기용) — 넣어보고 원복.
+function powerWithNextStar(unit) {
+  const prev = unit.star;
+  unit.star = starOf(unit) + 1;
+  const p = computePower(unit);
+  unit.star = prev;
+  return p;
+}
 import { linesOf, sigWeaponOf } from '../../system/concepts/index.mjs';
 import { costumesFor, equipCostume as equipSkin, unequipCostume as unequipSkin, refreshCostumeUnlocks, SOURCE_LABEL } from '../../system/core/costumes.mjs';
 import { combatContributions } from '../../system/core/resolution.mjs';
@@ -451,7 +461,7 @@ export default function RosterScreen({ state, bump, concept }) {
               {count > 1 && <Text style={g.chipCount}>×{count}</Text>}
               <Portrait emoji={m.emoji} image={charImage(concept.id, u.characterId)} rarity={u.rarity} size={44} badge />
               <Text style={g.chipName} numberOfLines={1}>{m.name}</Text>
-              <Text style={g.chipLv}>Lv.{u.level} · {concept.archetypes[u.archetype]?.emoji}</Text>
+              <Text style={g.chipLv}>Lv.{u.level}{starOf(u) > 1 ? ` · ${starOf(u)}★` : ''} · {concept.archetypes[u.archetype]?.emoji}</Text>
             </TouchableOpacity>
           );
         })}
@@ -463,6 +473,7 @@ export default function RosterScreen({ state, bump, concept }) {
           <Portrait emoji={meta.emoji} image={charImage(concept.id, unit.characterId)} rarity={unit.rarity} size={62} badge style={{ marginRight: 4 }} />
           <View style={{ flex: 1 }}>
             <Text style={g.headName}>{meta.name}{unit.rarity ? <Text> </Text> : null}{unit.rarity ? <Text style={rarityText(unit.rarity)}> {unit.rarity} </Text> : null}</Text>
+            <Text style={g.starRow}>{starLabel(unit)} <Text style={g.starRowNum}>{starOf(unit)}★</Text></Text>
             {(meta.title || meta.personality) && (
               <Text style={g.headTitle}>
                 {meta.title}{meta.personality ? ` · ${meta.personality}` : ''}
@@ -549,6 +560,30 @@ export default function RosterScreen({ state, bump, concept }) {
               </View>
             ))}
           </View>
+          {/* 성급 강화 — 동일 영웅 중복을 합쳐 별 +1(모든 스탯 +12% 곱연산). */}
+          {(() => {
+            const si = starUpInfo(state, unit);
+            const curP = computePower(unit);
+            return (
+              <View style={g.starBox}>
+                <View style={g.intiHead}>
+                  <Text style={g.subsec2}>⭐ 성급 <Text style={g.starRowNum}>{si.star}★{si.maxed ? '' : `→${si.star + 1}★`}</Text></Text>
+                  <Text style={g.dim}>{si.maxed ? `최고 ${STAR_MAX}★` : `중복 ${si.haveDupes}/${si.req.dupes} · 🪙${fmt(si.req.currency)}`}</Text>
+                </View>
+                {!si.maxed && si.identified && <DeltaText cur={curP} next={powerWithNextStar(unit)} />}
+                <Btn small kind="gold" disabled={!si.canUp}
+                  label={si.maxed ? `MAX ${STAR_MAX}★` : !si.identified ? '성급 강화 불가(정체성 없음)'
+                    : !si.enoughDupes ? `중복 영웅 ${si.req.dupes}명 필요`
+                    : !si.enoughGold ? '골드 부족' : `성급 강화 (${si.star}★ → ${si.star + 1}★)`}
+                  onPress={() => {
+                    const r = starUp(state, unit.uid);
+                    setDeckMsg(r.ok ? `⭐ ${r.star}★ 달성! 중복 ${r.consumed}명 합성` : `⚠ ${r.reason}`);
+                    fx(r.ok ? 'success' : 'error'); bump();
+                  }} />
+                {!si.maxed && si.identified && <Text style={g.starHint}>중복 영웅을 합성해 별을 올립니다 · 약한 중복부터 소모(장비·룬은 회수)</Text>}
+              </View>
+            );
+          })()}
         </View>
       </Card>
 
@@ -1197,6 +1232,12 @@ const g = StyleSheet.create({
   loadingHint: { color: T.muted, fontSize: 13, textAlign: 'center', paddingVertical: 24 },
   // 헤더 카드 내 성장(레벨업/돌파/각인) 박스.
   growBox: { marginTop: 12, backgroundColor: T.surface2, borderRadius: 12, padding: 12 },
+  // 성급(별) 표시 — 헤더 이름줄 아래 금색 별.
+  starRow: { color: T.accent, fontSize: 13, fontWeight: '900', marginTop: 2, letterSpacing: 1 },
+  starRowNum: { color: T.accent, fontSize: 12, fontWeight: '900' },
+  // 성급 강화 블록(성장 박스 내부 하단 구획).
+  starBox: { marginTop: 12, borderTopWidth: 1, borderTopColor: T.line, paddingTop: 10, gap: 6 },
+  starHint: { color: T.muted, fontSize: 10, lineHeight: 14 },
   // 친밀도·씨앗 반반 요약 타일(한 줄) — 탭하면 아래 상세 펼침.
   halfRow: { flexDirection: 'row', gap: 8, marginTop: 12 },
   halfTile: { flex: 1, backgroundColor: T.surface, borderRadius: 12, borderWidth: 1.5, borderColor: T.line, paddingVertical: 10, paddingHorizontal: 12 },

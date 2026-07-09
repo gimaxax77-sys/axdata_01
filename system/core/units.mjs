@@ -32,6 +32,7 @@ export function createUnit(archetype, { level = 1, rank = 1, characterId = null,
     runes: [null, null, null], // 룬 슬롯 (각 원소는 null 또는 룬 인스턴스)
     level,
     rank,
+    star: 1, // 성급(동일 영웅 중복 합성으로 상승) — 스탯 곱연산 축
     // 스킬 슬롯: 각 원소는 null 또는 { id, level }
     skills: [null, null, null],
     // 강화(각인) 노드 레벨
