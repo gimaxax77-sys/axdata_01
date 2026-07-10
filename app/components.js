@@ -89,36 +89,46 @@ export const StarBadge = React.memo(function StarBadge({ tier = 1, size = 40 }) 
         borderRadius: size, backgroundColor: T.accent, opacity: haloOpacity,
         transform: clamped >= 5 ? [{ scale: pulseScale }] : undefined,
       }} />
-      {/* 태양광 — 4단계부터 광선이 돋고, 5단계는 천천히 회전 */}
-      {rayCount > 0 && (
-        <Animated.View style={{
-          position: 'absolute', width: size, height: size,
-          transform: [{ rotate: spinDeg }],
-        }}>
-          {Array.from({ length: rayCount }).map((_, i) => (
-            <View key={i} style={{
-              position: 'absolute', left: size / 2 - size * 0.028, top: size / 2 - size * 0.5,
-              width: size * 0.056, height: size * 0.42, borderRadius: size * 0.03,
-              backgroundColor: T.accent, opacity: 0.55,
-              transform: [
-                { translateY: -size * 0.08 },
-                { rotate: `${(360 / rayCount) * i}deg` },
-              ],
-            }} />
-          ))}
-        </Animated.View>
-      )}
-      {/* 뒤 별 — 36° 어긋나게 겹쳐 이중 별(태양) 형태를 만든다 */}
-      <Animated.Text style={{
-        position: 'absolute', fontSize: size * 0.56, color: T.accentGrad[0],
-        opacity: backStarOpacity, transform: [{ rotate: '36deg' }, { scale: pop }],
-      }}>★</Animated.Text>
-      {/* 앞 별 */}
-      <Animated.Text style={{
-        fontSize: size * 0.6, color: T.accent, fontWeight: '900',
-        transform: [{ scale: pop }],
-        textShadowColor: T.accent, textShadowRadius: 3 + t * 5, textShadowOffset: { width: 0, height: 0 },
-      }}>★</Animated.Text>
+      {clamped >= 5 ? (
+        // 최고 성급: 별 2개를 겹치는 대신(따로 어긋나 보이는 문제) 하나의
+        // 꽃/태양 모양 글리프로 단일 렌더 — 항상 중앙에 정확히 맞음.
+        <Animated.Text style={{
+          fontSize: size * 0.66, color: T.accent, fontWeight: '900',
+          transform: [{ scale: pop }, { rotate: spinDeg }],
+          textShadowColor: T.accent, textShadowRadius: 8, textShadowOffset: { width: 0, height: 0 },
+        }}>✻</Animated.Text>
+      ) : (<>
+        {/* 태양광 — 4단계부터 광선이 돋는다 */}
+        {rayCount > 0 && (
+          <Animated.View style={{
+            position: 'absolute', width: size, height: size,
+            transform: [{ rotate: spinDeg }],
+          }}>
+            {Array.from({ length: rayCount }).map((_, i) => (
+              <View key={i} style={{
+                position: 'absolute', left: size / 2 - size * 0.028, top: size / 2 - size * 0.5,
+                width: size * 0.056, height: size * 0.42, borderRadius: size * 0.03,
+                backgroundColor: T.accent, opacity: 0.55,
+                transform: [
+                  { translateY: -size * 0.08 },
+                  { rotate: `${(360 / rayCount) * i}deg` },
+                ],
+              }} />
+            ))}
+          </Animated.View>
+        )}
+        {/* 뒤 별 — 36° 어긋나게 겹쳐 이중 별(태양) 형태를 만든다 */}
+        <Animated.Text style={{
+          position: 'absolute', fontSize: size * 0.56, color: T.accentGrad[0],
+          opacity: backStarOpacity, transform: [{ rotate: '36deg' }, { scale: pop }],
+        }}>★</Animated.Text>
+        {/* 앞 별 */}
+        <Animated.Text style={{
+          fontSize: size * 0.6, color: T.accent, fontWeight: '900',
+          transform: [{ scale: pop }],
+          textShadowColor: T.accent, textShadowRadius: 3 + t * 5, textShadowOffset: { width: 0, height: 0 },
+        }}>★</Animated.Text>
+      </>)}
     </View>
   );
 });
