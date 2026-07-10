@@ -55,7 +55,6 @@ import { teamSynergy } from '../../system/core/synergy.mjs';
 import { toggleFormation, formationSummary, autoFormation, ROLE_CAP, ROLE_LABEL, FORMATION_ROLES } from '../../system/core/formation.mjs';
 import { savePreset, loadPreset, presetInfo, PRESET_SLOTS } from '../../system/core/partyPresets.mjs';
 import { computeStats, computePower, powerBreakdown } from '../../system/core/stats.mjs';
-import { getArchetype } from '../../system/core/archetypes.mjs';
 import { levelCap } from '../../system/core/units.mjs';
 import { skillSlots, SKILL_CATALOG, equippableSkills, skillPower } from '../../system/core/skills.mjs';
 import { identity, elementMeta } from '../../system/concepts/index.mjs';
@@ -296,6 +295,8 @@ export default function RosterScreen({ state, bump, concept }) {
   };
   // 성장 액션은 일일 미션(강화) 진행에 카운트. mult 배수만큼 반복 실행.
   const grow = (fn) => { const n = repeat(fn, mult); if (n > 0) { recordMission(state, 'upgrade', n); fx('success'); } else { fx('error'); } bump(); };
+  // 레벨업/돌파 탭 카드용 — 배수 선택 없이 탭한 수량(n)만큼 바로 실행.
+  const growN = (fn, n) => { const c = repeat(fn, n); if (c > 0) { recordMission(state, 'upgrade', c); fx('success'); } else { fx('error'); } bump(); };
   // 추천 장착 — 결과를 명확히 메시지로 알려준다("왜 안 됐는지" 포함).
   const runRecommend = (scope) => {
     const r = optimizeLoadout(state, unit.uid, scope);
@@ -316,7 +317,6 @@ export default function RosterScreen({ state, bump, concept }) {
   const st8 = computeStats(unit);
   const meta = identity(concept, unit);
   const arch = concept.archetypes[unit.archetype] || { name: unit.archetype, emoji: '❔' };
-  const archInfo = getArchetype(unit.archetype);
   const em = meta.element && elementMeta(concept, meta.element);
   const atCap = unit.level >= levelCap(unit);
   const slots = skillSlots(unit);
@@ -569,13 +569,18 @@ export default function RosterScreen({ state, bump, concept }) {
 
         {/* 레벨업/돌파/각인 — 영웅 카드 안에서 바로(탭 전환 없이). 직업 소개 카드는 제거(이름줄과 중복). */}
         <View style={g.growBox}>
-          <View style={g.intiHead}>
-            <Text style={g.subsec2}>📈 성장 {archInfo.teamBuff ? <Text style={g.dim}>· 🤝 팀 공격 +{Math.round(archInfo.teamBuff.mult * 100)}%</Text> : null}</Text>
-            <MultiToggle value={mult} onChange={setMult} />
-          </View>
+          {/* 배수 선택 없이 레벨업 x1/x10/x100/Max·돌파를 탭 카드 5개로 바로 실행(높이는 기존 버튼 줄과 동일). */}
           <View style={g.btnRow}>
-            <View style={{ flex: 1 }}><Btn small kind="gold" label={atCap ? '상한 (돌파 필요)' : `레벨업 ${multLabel(mult)}`} disabled={atCap} onPress={() => grow(() => levelUp(state, unit.uid))} /></View>
-            <View style={{ flex: 1 }}><Btn small kind="ghost" label={`돌파 ${multLabel(mult)}`} onPress={() => grow(() => ascend(state, unit.uid))} /></View>
+            {atCap ? (
+              <View style={{ flex: 1 }}><Btn small kind="gold" label="상한 (돌파 필요)" disabled /></View>
+            ) : [
+              ['레벨업', 1], ['x10', 10], ['x100', 100], ['Max', 'Max'],
+            ].map(([label, n]) => (
+              <View key={label} style={{ flex: 1 }}>
+                <Btn small tiny kind="gold" label={label} onPress={() => growN(() => levelUp(state, unit.uid), n)} />
+              </View>
+            ))}
+            <View style={{ flex: 1 }}><Btn small tiny kind="ghost" label="돌파" onPress={() => growN(() => ascend(state, unit.uid), 1)} /></View>
           </View>
           <Text style={g.ascHint}>{MATERIAL_META.ascendStone.emoji} 돌파석 {fmt(materialCount(state, 'ascendStone'))} · 이번 돌파 필요 {unit.rank * 2}{materialCount(state, 'ascendStone') < unit.rank * 2 ? ' (부족 시 소환석 대체)' : ''}</Text>
           <View style={g.btnRow}>

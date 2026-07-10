@@ -211,20 +211,19 @@ export function ResourceBar({ concept, wallet }) {
 
 // 버튼 — gold/primary는 그라데이션, ghost는 외곽선.
 // sfx: 누를 때 재생할 피드백 이름(기본 'tap', false면 무음 — 화면에서 직접 재생할 때).
-export function Btn({ label, onPress, disabled, kind = 'primary', small, sfx = 'tap' }) {
+export function Btn({ label, onPress, disabled, kind = 'primary', small, tiny, sfx = 'tap' }) {
   const press = onPress ? (e) => { if (sfx) fx(sfx); onPress(e); } : onPress;
   const grad = kind === 'gold' ? T.accentGrad : T.primaryGrad;
   const fg = kind === 'gold' ? '#3a2a05' : '#fff';
-  const content = (
-    <Text style={[s.btnText, { color: kind === 'ghost' ? T.text : fg }, small && s.btnTextSmall]} numberOfLines={1}>{label}</Text>
-  );
+  const textStyle = [s.btnText, small && s.btnTextSmall, tiny && s.btnTextTiny];
+  const sizeStyle = [small && s.btnSmall, tiny && s.btnTiny];
   const a11y = typeof label === 'string' ? label : undefined;
   if (kind === 'ghost' || disabled) {
     return (
-      <TouchableOpacity style={[s.btn, small && s.btnSmall, kind === 'ghost' ? s.btnGhost : s.btnDisabled]}
+      <TouchableOpacity style={[s.btn, sizeStyle, kind === 'ghost' ? s.btnGhost : s.btnDisabled]}
         onPress={press} disabled={disabled} activeOpacity={0.75}
         accessibilityRole="button" accessibilityLabel={a11y} accessibilityState={{ disabled: !!disabled }}>
-        <Text style={[s.btnText, { color: disabled ? T.muted : T.text }, small && s.btnTextSmall]} numberOfLines={1}>{label}</Text>
+        <Text style={[textStyle, { color: disabled ? T.muted : T.text }]} numberOfLines={1}>{label}</Text>
       </TouchableOpacity>
     );
   }
@@ -233,8 +232,8 @@ export function Btn({ label, onPress, disabled, kind = 'primary', small, sfx = '
     <TouchableOpacity onPress={press} disabled={disabled} activeOpacity={0.82}
       accessibilityRole="button" accessibilityLabel={a11y}
       style={[{ borderRadius: small ? 9 : 12 }, glow]}>
-      <LinearGradient colors={grad} start={{ x: 0, y: 0 }} end={{ x: 0, y: 1 }} style={[s.btn, small && s.btnSmall]}>
-        {content}
+      <LinearGradient colors={grad} start={{ x: 0, y: 0 }} end={{ x: 0, y: 1 }} style={[s.btn, sizeStyle]}>
+        <Text style={[textStyle, { color: kind === 'ghost' ? T.text : fg }]} numberOfLines={1}>{label}</Text>
       </LinearGradient>
     </TouchableOpacity>
   );
@@ -350,10 +349,13 @@ const s = StyleSheet.create({
   // (paddingVertical 8→5, horizontal 12→10, 글로우도 함께 옅게).
   btn: { paddingVertical: 11, paddingHorizontal: 16, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
   btnSmall: { paddingVertical: 5, paddingHorizontal: 10, borderRadius: 9 },
+  // 5개 이상 좁은 탭 카드용(레벨업 x1/x10/x100/Max·돌파) — small보다 더 컴팩트.
+  btnTiny: { paddingVertical: 5, paddingHorizontal: 3, borderRadius: 8 },
   btnGhost: { borderWidth: 1, borderColor: T.line, backgroundColor: 'rgba(255,255,255,0.03)' },
   btnDisabled: { backgroundColor: T.line, opacity: 0.6 },
   btnText: { fontWeight: '800', fontSize: 14 },
   btnTextSmall: { fontSize: 12 },
+  btnTextTiny: { fontSize: 11 },
   glowGold: { shadowColor: T.accent, shadowOpacity: 0.4, shadowRadius: 8, shadowOffset: { width: 0, height: 2 } },
   glowPrimary: { shadowColor: T.primary, shadowOpacity: 0.35, shadowRadius: 8, shadowOffset: { width: 0, height: 2 } },
   glowGoldSmall: { shadowColor: T.accent, shadowOpacity: 0.28, shadowRadius: 4, shadowOffset: { width: 0, height: 1 } },
