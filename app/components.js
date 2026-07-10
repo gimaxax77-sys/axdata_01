@@ -24,8 +24,15 @@ export const Portrait = React.memo(function Portrait({ emoji, image = null, rari
         </LinearGradient>
       </LinearGradient>
       {badge && (
-        <View style={[bs.badge, { backgroundColor: rm.color }]}>
-          <Text style={bs.badgeText}>{rarity}</Text>
+        // 등급 배지 — 초상 크기에 비례해 렌더(화면마다 초상 크기가 달라도
+        // 배지 비율은 일관). 등급 글자수(N~SSR)와 무관하게 동일 규격.
+        <View style={{
+          position: 'absolute', bottom: -size * 0.10, alignSelf: 'center', left: 0, right: 0,
+          marginHorizontal: 'auto', width: size * 0.62, paddingVertical: size * 0.02,
+          borderRadius: size * 0.15, alignItems: 'center', justifyContent: 'center',
+          overflow: 'hidden', backgroundColor: rm.color,
+        }}>
+          <Text style={{ color: '#1a1225', fontSize: size * 0.22, fontWeight: '900', letterSpacing: 0.2 }}>{rarity}</Text>
         </View>
       )}
     </View>
@@ -299,10 +306,6 @@ export function fmt(n) {
   return neg + v.toFixed(1) + FMT_SUFFIX[tier];
 }
 
-const bs = StyleSheet.create({
-  badge: { position: 'absolute', bottom: -4, alignSelf: 'center', left: 0, right: 0, marginHorizontal: 'auto', width: 26, paddingVertical: 1, borderRadius: 6, alignItems: 'center' },
-  badgeText: { color: '#1a1225', fontSize: 10, fontWeight: '900' },
-});
 
 // ── 등급 배지(RarityTag) — 다크 배경 위 색텍스트는 대비가 약해, 등급색을
 //   '채운 알약'으로 표기해 시인성을 확보한다. 로스터/장비/룬/펫 등 공용.
@@ -315,10 +318,10 @@ export function RarityTag({ rarity = 'N', label = false, style }) {
     </View>
   );
 }
-Object.assign(bs, StyleSheet.create({
+const bs = StyleSheet.create({
   rtag: { paddingHorizontal: 6, paddingVertical: 1, borderRadius: 5, alignSelf: 'center' },
   rtagText: { color: '#160f28', fontSize: 10, fontWeight: '900', letterSpacing: 0.3 },
-}));
+});
 
 const s = StyleSheet.create({
   resbar: { flexDirection: 'row', borderRadius: 14, padding: 6, gap: 6, borderWidth: 1, borderColor: T.line },
