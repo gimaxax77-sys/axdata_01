@@ -21,6 +21,11 @@ export const T = {
   summon: '#d4a5ff',
 };
 
+// 여백 스케일 — 화면마다 제각각이던 padding/margin 매직넘버를 한 곳에서
+// 조정하기 위한 공용 토큰. 미니멀 정리 1단계: 카드 패딩·카드간 간격을
+// 여기 값으로 통일해 전역에서 한 번에 조율한다.
+export const SPACE = { xs: 4, sm: 8, md: 12, lg: 16, xl: 20 };
+
 // 등급별 스타일 — 색·글로우·그라데이션. 초상/결과/도감 전역에서 공유.
 export const RARITY_META = {
   N: { label: '노멀', color: '#9aa0b5', grad: ['#8891a8', '#5c6480'], glow: 'rgba(154,160,181,0.0)' },
