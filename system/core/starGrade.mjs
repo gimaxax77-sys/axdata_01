@@ -11,11 +11,16 @@ import { spend } from './economy.mjs';
 // 저장 필드: unit.star (1~STAR_MAX). 누락 시 1로 간주(하위호환).
 // ─────────────────────────────────────────────────────────────
 
-export const STAR_MAX = 5;
-const STAR_STAT_PER = 0.12; // 성급당 +12% (곱연산). 5성 = ×1.48
+// 성급 10단계: 1~5성(일반 별)·6~10성(태양 별). 배지는 5조각 단위로 채워지며
+// 6성부터 별 모양이 태양으로 바뀐다(components.js StarBadge 참조).
+export const STAR_MAX = 10;
+const STAR_STAT_PER = 0.12; // 성급당 +12% (곱연산). 10성 = ×2.08
 
 // S성 → (S+1)성 골드 비용(고정 표). 중복이 실질 관문, 골드는 보조 소모.
-const STAR_GOLD = { 1: 20000, 2: 60000, 3: 150000, 4: 400000 };
+const STAR_GOLD = {
+  1: 20000, 2: 60000, 3: 150000, 4: 400000, 5: 1000000,
+  6: 2500000, 7: 6000000, 8: 15000000, 9: 35000000,
+};
 
 export function starOf(unit) { return unit.star || 1; }
 

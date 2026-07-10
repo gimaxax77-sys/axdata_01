@@ -32,97 +32,52 @@ export const Portrait = React.memo(function Portrait({ emoji, image = null, rari
   );
 });
 
-// ── 성급(Star Grade) 배지 — 별 2개를 36° 어긋나게 겹쳐 태양광 형태를 만든다.
-//   tier(1~STAR_MAX)가 오를수록: 겹친 별이 더 또렷해지고 · 광선이 돋아나고
-//   · 글로우가 커지고 · 최고 등급(5)에서만 은은하게 회전+맥동한다.
-//   reducedMotion 존중(움직임 대신 정적 최종 상태로 표시).
+// ── 성급(Star Grade) 배지 — 한 개의 별이 5조각으로 채워진다.
+//   · 1~5성: 일반 별(★) — 채움 1/5 → 5/5
+//   · 6~10성: 태양 별(✻) — 채움 1/5 → 5/5
+//   빈 부분은 흐린 별, 채운 부분은 금빛으로 좌→우 클립 표시.
+//   회전 이펙트는 없음. 등급 상승 시 살짝 튀는 팝 연출만(reducedMotion 존중).
 export const StarBadge = React.memo(function StarBadge({ tier = 1, size = 40 }) {
-  const clamped = Math.max(1, Math.min(5, tier));
-  const t = (clamped - 1) / 4; // 0~1 정규화(단계별 강도 보간용)
+  const clamped = Math.max(1, Math.min(10, tier));
+  const isSun = clamped >= 6;
+  const glyph = isSun ? '✻' : '★';
+  const pieces = ((clamped - 1) % 5) + 1; // 1~5조각
+  const fill = pieces / 5;
+  const t = (clamped - 1) / 9; // 0~1 (글로우 강도 보간)
   const reduce = reducedMotion();
-  const rayCount = clamped >= 5 ? 12 : clamped >= 4 ? 8 : 0;
-  const spin = useRef(new Animated.Value(0)).current;
-  const pulse = useRef(new Animated.Value(0)).current;
-  const pop = useRef(new Animated.Value(reduce ? 1 : 0.5)).current;
-  const prevTier = useRef(clamped);
+  const pop = useRef(new Animated.Value(reduce ? 1 : 0.6)).current;
 
   useEffect(() => {
-    // 등급 상승 시 팝(bounce) 연출 — 최초 마운트에도 살짝 등장.
     if (reduce) { pop.setValue(1); return; }
-    pop.setValue(0.6);
-    Animated.spring(pop, { toValue: 1, useNativeDriver: true, speed: 18, bounciness: 14 }).start();
-    prevTier.current = clamped;
+    pop.setValue(0.7);
+    Animated.spring(pop, { toValue: 1, useNativeDriver: true, speed: 18, bounciness: 12 }).start();
   }, [clamped]);
 
-  useEffect(() => {
-    if (reduce || rayCount === 0) return;
-    const loop = Animated.loop(
-      Animated.timing(spin, { toValue: 1, duration: 14000 - clamped * 600, useNativeDriver: true }),
-    );
-    loop.start();
-    return () => loop.stop();
-  }, [reduce, rayCount, clamped]);
-
-  useEffect(() => {
-    if (reduce || clamped < 5) return;
-    const loop = Animated.loop(
-      Animated.sequence([
-        Animated.timing(pulse, { toValue: 1, duration: 1100, useNativeDriver: true }),
-        Animated.timing(pulse, { toValue: 0, duration: 1100, useNativeDriver: true }),
-      ]),
-    );
-    loop.start();
-    return () => loop.stop();
-  }, [reduce, clamped]);
-
-  const haloOpacity = 0.10 + t * 0.30; // 0.10 → 0.40
-  const haloScale = 1 + t * 0.35;
-  const spinDeg = spin.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '360deg'] });
-  const pulseScale = pulse.interpolate({ inputRange: [0, 1], outputRange: [1, 1.12] });
+  const haloOpacity = 0.08 + t * 0.30;
+  const haloScale = 1 + t * 0.30;
+  const glyphStyle = {
+    position: 'absolute', left: 0, top: 0, width: size,
+    textAlign: 'center', lineHeight: size, fontSize: size * 0.72, fontWeight: '900',
+  };
 
   return (
     <View style={{ width: size, height: size, alignItems: 'center', justifyContent: 'center' }}>
       {/* 글로우 후광 — 등급이 오를수록 커지고 진해짐 */}
-      <Animated.View style={{
+      <View style={{
         position: 'absolute', width: size * haloScale, height: size * haloScale,
         borderRadius: size, backgroundColor: T.accent, opacity: haloOpacity,
-        transform: clamped >= 5 ? [{ scale: pulseScale }] : undefined,
       }} />
-      {clamped >= 5 ? (
-        // 최고 성급: 별 2개를 겹치는 대신(따로 어긋나 보이는 문제) 하나의
-        // 꽃/태양 모양 글리프로 단일 렌더 — 항상 중앙에 정확히 맞음.
-        <Animated.Text style={{
-          fontSize: size * 0.66, color: T.accent, fontWeight: '900',
-          transform: [{ scale: pop }, { rotate: spinDeg }],
-          textShadowColor: T.accent, textShadowRadius: 8, textShadowOffset: { width: 0, height: 0 },
-        }}>✻</Animated.Text>
-      ) : (<>
-        {/* 태양광 — 4단계부터 광선이 돋는다 */}
-        {rayCount > 0 && (
-          <Animated.View style={{
-            position: 'absolute', width: size, height: size,
-            transform: [{ rotate: spinDeg }],
-          }}>
-            {Array.from({ length: rayCount }).map((_, i) => (
-              <View key={i} style={{
-                position: 'absolute', left: size / 2 - size * 0.028, top: size / 2 - size * 0.5,
-                width: size * 0.056, height: size * 0.42, borderRadius: size * 0.03,
-                backgroundColor: T.accent, opacity: 0.55,
-                transform: [
-                  { translateY: -size * 0.08 },
-                  { rotate: `${(360 / rayCount) * i}deg` },
-                ],
-              }} />
-            ))}
-          </Animated.View>
-        )}
-        {/* 별 — 겹친 이중 별은 저사이즈에서 "별 2개"로 보여 단일 별로 통일. */}
-        <Animated.Text style={{
-          fontSize: size * 0.6, color: T.accent, fontWeight: '900',
-          transform: [{ scale: pop }],
-          textShadowColor: T.accent, textShadowRadius: 3 + t * 5, textShadowOffset: { width: 0, height: 0 },
-        }}>★</Animated.Text>
-      </>)}
+      <Animated.View style={{ width: size, height: size, transform: [{ scale: pop }] }}>
+        {/* 빈 별(흐린 금빛) */}
+        <Text style={[glyphStyle, { color: T.accent, opacity: 0.24 }]}>{glyph}</Text>
+        {/* 채운 별(좌→우 클립) */}
+        <View style={{ position: 'absolute', left: 0, top: 0, width: size * fill, height: size, overflow: 'hidden' }}>
+          <Text style={[glyphStyle, {
+            color: T.accent,
+            textShadowColor: T.accent, textShadowRadius: 2 + t * 5, textShadowOffset: { width: 0, height: 0 },
+          }]}>{glyph}</Text>
+        </View>
+      </Animated.View>
     </View>
   );
 });

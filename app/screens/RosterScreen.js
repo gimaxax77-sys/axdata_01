@@ -493,13 +493,14 @@ export default function RosterScreen({ state, bump, concept }) {
           const on = u.uid === unit.uid;
           const party = state.party.includes(u.uid);
           return (
-            <TouchableOpacity key={u.uid} onPress={() => setSel(u.uid)} style={[g.rosterTile, on && g.rosterTileOn]} activeOpacity={0.8}>
-              {party && <Text style={g.rosterStar}>⭐</Text>}
-              {count > 1 && <Text style={g.rosterCount}>×{count}</Text>}
-              <Portrait emoji={m.emoji} image={charImage(concept.id, u.characterId)} rarity={u.rarity} size={38} badge />
-              <Text style={g.rosterTileName} numberOfLines={1}>{m.name}</Text>
-              <Text style={g.rosterTileLv} numberOfLines={1}>Lv.{u.level}{starOf(u) > 1 ? `·${starOf(u)}★` : ''}</Text>
-            </TouchableOpacity>
+            <View key={u.uid} style={g.rosterCell}>
+              <TouchableOpacity onPress={() => setSel(u.uid)} style={[g.rosterTile, on && g.rosterTileOn]} activeOpacity={0.8}>
+                {party && <Text style={g.rosterStar}>⭐</Text>}
+                {count > 1 && <Text style={g.rosterCount}>×{count}</Text>}
+                <Portrait emoji={m.emoji} image={charImage(concept.id, u.characterId)} rarity={u.rarity} size={44} badge />
+                <Text style={g.rosterTileLv} numberOfLines={1}>Lv.{u.level}{starOf(u) > 1 ? `·${starOf(u)}★` : ''}</Text>
+              </TouchableOpacity>
+            </View>
           );
         })}
       </View>
@@ -507,7 +508,6 @@ export default function RosterScreen({ state, bump, concept }) {
       {/* 상세 */}
       <Card style={{ marginTop: 6 }}>
         <View style={g.head}>
-          <Portrait emoji={meta.emoji} image={charImage(concept.id, unit.characterId)} rarity={unit.rarity} size={62} badge style={{ marginRight: 4 }} />
           <View style={{ flex: 1 }}>
             {/* 이름 옆 빈 공간에 전투력 배지를 배치(별도 카드로 한 줄 차지하지 않음) */}
             <View style={g.nameRow}>
@@ -1157,13 +1157,14 @@ const g = StyleSheet.create({
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, paddingVertical: 4 },
   // 보유 유닛 — 세로 목록(행 단위, 가로 스크롤 없음).
   // 보유 유닛 — 6열 아이콘 그리드(줄바꿈, 세로로 자람. 가로 스크롤 없음).
-  rosterGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 5, marginBottom: 4 },
-  rosterTile: { width: '14.8%', alignItems: 'center', paddingVertical: 6, borderRadius: 10, backgroundColor: T.surface, borderWidth: 1, borderColor: T.line },
+  // 6열 그리드 — 각 셀을 화면폭 1/6로 고정해 6개가 가로폭에 꽉 차게 배치.
+  rosterGrid: { flexDirection: 'row', flexWrap: 'wrap', marginBottom: 4 },
+  rosterCell: { width: '16.666%', padding: 2 },
+  rosterTile: { alignItems: 'center', paddingVertical: 5, borderRadius: 10, backgroundColor: T.surface, borderWidth: 1, borderColor: T.line },
   rosterTileOn: { borderColor: T.accent, backgroundColor: T.surface2 },
   rosterStar: { position: 'absolute', top: 2, right: 3, fontSize: 10, zIndex: 2 },
   rosterCount: { position: 'absolute', top: 2, left: 3, fontSize: 9, fontWeight: '900', color: T.accent, backgroundColor: T.surface2, borderRadius: 5, paddingHorizontal: 3, zIndex: 2, overflow: 'hidden' },
-  rosterTileName: { color: T.text, fontSize: 9.5, fontWeight: '700', marginTop: 3, maxWidth: '100%' },
-  rosterTileLv: { color: T.muted, fontSize: 8, marginTop: 1 },
+  rosterTileLv: { color: T.muted, fontSize: 8, marginTop: 2 },
   // 7슬롯(전열2·중열3·후열2) — 줄바꿈 그리드로 4열 배치.
   partyRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 4 },
   partySlot: { width: '22%', aspectRatio: 1, backgroundColor: T.surface2, borderRadius: 12, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: 'transparent', padding: 4 },
