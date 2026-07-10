@@ -93,6 +93,21 @@ export const SKILL_CATALOG = {
   SIG_LIGHT_ARROW: { id: 'SIG_LIGHT_ARROW', label: '광명의 화살', desc: '공격+치명+관통+팀치명(저격)', signature: true, statPct: { atk: 0.18 }, effect: { critChance: 0.2, defPierce: 0.15 }, teamBuff: { critChance: 0.06 }, awaken: { effect: { critDamage: 0.15 } } },
   SIG_INFERNO_BOLT: { id: 'SIG_INFERNO_BOLT', label: '화염 마탄', desc: '공격+치명피해(마법 폭발)', signature: true, statPct: { atk: 0.18 }, effect: { critDamage: 0.3 }, awaken: { effect: { critChance: 0.05 } } },
   SIG_CHAOS_NOVA: { id: 'SIG_CHAOS_NOVA', label: '혼돈의 신성', desc: '공격+치명+관통+팀공격(초월 캐스터)', signature: true, statPct: { atk: 0.28 }, effect: { critChance: 0.22, critDamage: 0.55, defPierce: 0.12 }, teamBuff: { atk: 0.1 }, awaken: { effect: { critDamage: 0.2 } } },
+
+  // ── 원형별 등급 공백 보강(N/R/SR/SSR/UR 전 등급 커버) ─────────
+  SIG_VANGUARD_NOVICE: { id: 'SIG_VANGUARD_NOVICE', label: '풋내기 방벽', desc: '체력 강화(수호 입문)', signature: true, statPct: { hp: 0.15 }, awaken: { statPct: { def: 0.05 } } },
+  SIG_FLAME_BASTION: { id: 'SIG_FLAME_BASTION', label: '화염 요새', desc: '체력·방어+피해감소(불굴 수호)', signature: true, statPct: { hp: 0.22, def: 0.18 }, effect: { dmgReduce: 0.15 }, awaken: { effect: { lifesteal: 0.06 } } },
+  SIG_GLACIAL_TITAN: { id: 'SIG_GLACIAL_TITAN', label: '빙하 거인', desc: '체력·방어+피해감소+팀방어(초월 수호)', signature: true, statPct: { hp: 0.3, def: 0.25 }, effect: { dmgReduce: 0.2, lifesteal: 0.1 }, teamBuff: { def: 0.1 }, awaken: { effect: { dmgReduce: 0.08 } } },
+  SIG_SUPPORT_NOVICE: { id: 'SIG_SUPPORT_NOVICE', label: '견습 축복', desc: '팀 공격 소폭(지원 입문)', signature: true, teamBuff: { atk: 0.08 }, awaken: { teamBuff: { atk: 0.03 } } },
+  SIG_ALLEY_BLADE: { id: 'SIG_ALLEY_BLADE', label: '뒷골목 칼솜씨', desc: '속도+치명(거리의 칼잡이)', signature: true, statPct: { spd: 0.2 }, effect: { critChance: 0.15 }, awaken: { effect: { critDamage: 0.1 } } },
+  SIG_MIST_STRIKE: { id: 'SIG_MIST_STRIKE', label: '안개 일격', desc: '속도+공격+회피(안개 속 기습)', signature: true, statPct: { spd: 0.35, atk: 0.1 }, effect: { evasion: 0.15 }, awaken: { effect: { critChance: 0.05 } } },
+  SIG_ABYSS_SHADOW: { id: 'SIG_ABYSS_SHADOW', label: '심연의 그림자', desc: '속도+공격+치명+회피+팀공격(초월 암살)', signature: true, statPct: { spd: 0.4, atk: 0.15 }, effect: { critChance: 0.28, critDamage: 0.5, evasion: 0.15 }, teamBuff: { atk: 0.08 }, awaken: { effect: { defPierce: 0.1 } } },
+  SIG_ARCHER_NOVICE: { id: 'SIG_ARCHER_NOVICE', label: '견습 사냥술', desc: '공격 강화(궁수 입문)', signature: true, statPct: { atk: 0.12 }, awaken: { effect: { critChance: 0.03 } } },
+  SIG_MOONLIGHT_SHOT: { id: 'SIG_MOONLIGHT_SHOT', label: '달빛 사격', desc: '공격+치명+명중(정조준)', signature: true, statPct: { atk: 0.16 }, effect: { critChance: 0.18, accuracy: 0.1 }, awaken: { effect: { critDamage: 0.1 } } },
+  SIG_CELESTIAL_ARROW: { id: 'SIG_CELESTIAL_ARROW', label: '천공의 화살', desc: '공격+치명+관통+명중+팀치명(초월 저격)', signature: true, statPct: { atk: 0.22 }, effect: { critChance: 0.25, defPierce: 0.18, accuracy: 0.15 }, teamBuff: { critChance: 0.08 }, awaken: { effect: { critDamage: 0.18 } } },
+  SIG_MAGE_NOVICE: { id: 'SIG_MAGE_NOVICE', label: '견습 마법', desc: '공격 강화(법사 입문)', signature: true, statPct: { atk: 0.14 }, awaken: { effect: { critDamage: 0.05 } } },
+  SIG_FROST_NOVA: { id: 'SIG_FROST_NOVA', label: '서리 폭발', desc: '공격+치명피해+절대공격(빙결 마법)', signature: true, statPct: { atk: 0.17 }, effect: { critDamage: 0.35, trueDamage: 0.08 }, awaken: { effect: { critChance: 0.05 } } },
+  SIG_VOID_SURGE: { id: 'SIG_VOID_SURGE', label: '공허의 쇄도', desc: '공격+치명+절대공격(금단 마법)', signature: true, statPct: { atk: 0.2 }, effect: { critChance: 0.22, critDamage: 0.5, trueDamage: 0.1 }, awaken: { effect: { defPierce: 0.1 } } },
 };
 
 // 시그니처 각성 상한 + 비용 (같은 캐릭터 조각=소환 재화 + 프리미엄).
