@@ -171,7 +171,6 @@ export default function IdleScreen({ state, bump, lastGain, concept, background 
 }
 
 const st = StyleSheet.create({
-  flex: { flex: 1 },
   // 스크롤 없이 한 화면에 고정 — 전투무대(stage)가 남는 세로 공간을 흡수.
   wrap: { flex: 1, padding: 12, gap: 8 },
   stage: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: T.surface2 },
@@ -189,8 +188,6 @@ const st = StyleSheet.create({
   affinity: { color: T.text, fontSize: 12, marginTop: 6, fontWeight: '600' },
   synRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 10, justifyContent: 'center' },
   synTag: { color: T.accent, fontSize: 11, fontWeight: '800', backgroundColor: T.surface, borderRadius: 8, paddingHorizontal: 8, paddingVertical: 3, overflow: 'hidden' },
-  row: { flexDirection: 'row', gap: 12 },
-  metric: { flex: 1, alignItems: 'center' },
   mLabel: { color: T.muted, fontSize: 11, marginBottom: 3 },
   mVal: { color: T.text, fontWeight: '900', fontSize: 20 },
   // 지표 스트립(전투력·최고층·수입 한 줄) + 세로 구분선.
@@ -208,10 +205,6 @@ const st = StyleSheet.create({
   claimRow: { flexDirection: 'row', alignItems: 'center', backgroundColor: T.surface, borderRadius: 12, borderWidth: 1.5, borderColor: T.good, paddingHorizontal: 14, paddingVertical: 10 },
   claimTxt: { color: T.good, fontSize: 13, fontWeight: '900', flex: 1 },
   claimGo: { color: T.good, fontSize: 20, fontWeight: '900' },
-  sec: { color: T.text, fontWeight: '800', fontSize: 15, marginBottom: 8 },
-  gains: { flexDirection: 'row', gap: 18 },
-  gain: { color: T.good, fontWeight: '800', fontSize: 18 },
-  hint: { color: T.muted, fontSize: 12, marginTop: 8, lineHeight: 17 },
   prestigeStat: { color: T.text, fontSize: 14, fontWeight: '600' },
   boxMsg: { color: T.accent, fontSize: 13, fontWeight: '800', marginTop: 10, textAlign: 'center' },
 });
