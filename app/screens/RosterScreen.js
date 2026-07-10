@@ -502,22 +502,20 @@ export default function RosterScreen({ state, bump, concept }) {
       )}
 
       {rtab === 'heroes' && (<>
-      {/* 보유 유닛 — 세로로 쌓이는 목록(가로 스크롤 없음). 종 단위로 묶여 밀도 유지. */}
+      {/* 보유 유닛 — 6열 아이콘 그리드(줄바꿈, 가로 스크롤 없음). 종 단위로 묶여 밀도 유지. */}
       <Text style={g.sec}>보유 {concept.terms.unit} <Text style={g.dim}>({grouped.length}종{list.length > grouped.length ? ` · ${list.length}` : ''})</Text></Text>
-      <View style={g.rosterList}>
+      <View style={g.rosterGrid}>
         {grouped.map(({ rep: u, count }) => {
           const m = identity(concept, u);
           const on = u.uid === unit.uid;
           const party = state.party.includes(u.uid);
           return (
-            <TouchableOpacity key={u.uid} onPress={() => setSel(u.uid)} style={[g.rosterRow, on && g.rosterRowOn]} activeOpacity={0.8}>
+            <TouchableOpacity key={u.uid} onPress={() => setSel(u.uid)} style={[g.rosterTile, on && g.rosterTileOn]} activeOpacity={0.8}>
               {party && <Text style={g.rosterStar}>⭐</Text>}
-              <Portrait emoji={m.emoji} image={charImage(concept.id, u.characterId)} rarity={u.rarity} size={40} badge />
-              <View style={g.rosterInfo}>
-                <Text style={g.rosterName} numberOfLines={1}>{m.name}{count > 1 ? <Text style={g.rosterCount}>  ×{count}</Text> : null}</Text>
-                <Text style={g.rosterSub}>Lv.{u.level}{starOf(u) > 1 ? ` · ${starOf(u)}★` : ''} · {concept.archetypes[u.archetype]?.emoji}{concept.archetypes[u.archetype]?.name}</Text>
-              </View>
-              <Text style={g.rosterChev}>›</Text>
+              {count > 1 && <Text style={g.rosterCount}>×{count}</Text>}
+              <Portrait emoji={m.emoji} image={charImage(concept.id, u.characterId)} rarity={u.rarity} size={38} badge />
+              <Text style={g.rosterTileName} numberOfLines={1}>{m.name}</Text>
+              <Text style={g.rosterTileLv} numberOfLines={1}>Lv.{u.level}{starOf(u) > 1 ? `·${starOf(u)}★` : ''}</Text>
             </TouchableOpacity>
           );
         })}
@@ -1178,15 +1176,14 @@ const g = StyleSheet.create({
   subsec: { color: T.muted, fontSize: 12, marginTop: 12, marginBottom: 6, fontWeight: '700' },
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, paddingVertical: 4 },
   // 보유 유닛 — 세로 목록(행 단위, 가로 스크롤 없음).
-  rosterList: { gap: 6, marginBottom: 4 },
-  rosterRow: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: T.surface, borderRadius: 12, paddingVertical: 8, paddingHorizontal: 10, borderWidth: 1, borderColor: T.line },
-  rosterRowOn: { borderColor: T.accent, backgroundColor: T.surface2 },
-  rosterStar: { fontSize: 13 },
-  rosterInfo: { flex: 1 },
-  rosterName: { color: T.text, fontSize: 13, fontWeight: '800' },
-  rosterCount: { color: T.accent, fontSize: 11, fontWeight: '900' },
-  rosterSub: { color: T.muted, fontSize: 11, marginTop: 2 },
-  rosterChev: { color: T.muted, fontSize: 18 },
+  // 보유 유닛 — 6열 아이콘 그리드(줄바꿈, 세로로 자람. 가로 스크롤 없음).
+  rosterGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 5, marginBottom: 4 },
+  rosterTile: { width: '14.8%', alignItems: 'center', paddingVertical: 6, borderRadius: 10, backgroundColor: T.surface, borderWidth: 1, borderColor: T.line },
+  rosterTileOn: { borderColor: T.accent, backgroundColor: T.surface2 },
+  rosterStar: { position: 'absolute', top: 2, right: 3, fontSize: 10, zIndex: 2 },
+  rosterCount: { position: 'absolute', top: 2, left: 3, fontSize: 9, fontWeight: '900', color: T.accent, backgroundColor: T.surface2, borderRadius: 5, paddingHorizontal: 3, zIndex: 2, overflow: 'hidden' },
+  rosterTileName: { color: T.text, fontSize: 9.5, fontWeight: '700', marginTop: 3, maxWidth: '100%' },
+  rosterTileLv: { color: T.muted, fontSize: 8, marginTop: 1 },
   // 7슬롯(전열2·중열3·후열2) — 줄바꿈 그리드로 4열 배치.
   partyRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 4 },
   partySlot: { width: '22%', aspectRatio: 1, backgroundColor: T.surface2, borderRadius: 12, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: 'transparent', padding: 4 },
