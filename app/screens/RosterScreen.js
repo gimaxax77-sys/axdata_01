@@ -574,7 +574,7 @@ export default function RosterScreen({ state, bump, concept }) {
             {atCap ? (
               <View style={{ flex: 1 }}><Btn small tiny kind="gold" label="상한" disabled /></View>
             ) : [
-              ['레벨', 1], ['x10', 10], ['x100', 100], ['Max', 'Max'],
+              ['Lv. up', 1], ['x10', 10], ['x100', 100], ['Max', 'Max'],
             ].map(([label, n]) => (
               <View key={label} style={{ flex: 1 }}>
                 <Btn small tiny kind="gold" label={label} onPress={() => growN(() => levelUp(state, unit.uid), n)} />
