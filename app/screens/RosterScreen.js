@@ -229,6 +229,7 @@ export default function RosterScreen({ state, bump, concept }) {
   const [expand, setExpand] = useState(null); // 육성 요약 타일 펼침: 'inti' | 'seed' | null
   const [showDps, setShowDps] = useState(false); // DPS 미터 펼침
   const [deckMsg, setDeckMsg] = useState(null); // 덱 복사/붙여넣기 결과
+  const [starMsg, setStarMsg] = useState(null); // 성급 강화 결과(육성 탭 성급 카드 내 표시)
   const [deckCode, setDeckCode] = useState(''); // 붙여넣기 입력 코드
   // 영웅 그리드 5열 고정 — 화면폭에서 좌우 패딩(14×2)·열간격(10×4)을 뺀 뒤 5등분.
   const { width: winW } = useWindowDimensions();
@@ -245,6 +246,8 @@ export default function RosterScreen({ state, bump, concept }) {
   // 서브탭 전환 시 스크롤 최상단으로.
   const scrollRef = useRef(null);
   useEffect(() => { if (scrollRef.current) scrollRef.current.scrollTo({ y: 0, animated: false }); }, [rtab]);
+  // 캐릭터 전환 시 성급 강화 결과 메시지 초기화(이전 캐릭 메시지 잔류 방지).
+  useEffect(() => { setStarMsg(null); }, [unit.uid]);
   // "차르륵" — 영웅 탭 진입 시 최상위 서브탭(영웅/편성)이 순차 등장.
   const rAnims = useRef(ROSTER_TABS.map(() => new Animated.Value(0))).current;
   useEffect(() => {
@@ -684,9 +687,10 @@ export default function RosterScreen({ state, bump, concept }) {
                 : !si.enoughGold ? '골드 부족' : `성급 강화 (${si.star}★ → ${si.star + 1}★)`}
               onPress={() => {
                 const r = starUp(state, unit.uid);
-                setDeckMsg(r.ok ? `⭐ ${r.star}★ 달성! 중복 ${r.consumed}명 합성` : `⚠ ${r.reason}`);
+                setStarMsg(r.ok ? `⭐ ${r.star}★ 달성! 중복 ${r.consumed}명 합성` : `⚠ ${r.reason}`);
                 fx(r.ok ? 'success' : 'error'); bump();
               }} />
+            {starMsg ? <Text style={g.starResult}>{starMsg}</Text> : null}
             {!si.maxed && si.identified && <Text style={g.starHint}>중복 영웅을 합성해 별을 올립니다 · 약한 중복부터 소모(장비·룬은 회수)</Text>}
           </Card>
         );
@@ -1331,6 +1335,7 @@ const g = StyleSheet.create({
   starRowNum: { color: T.accent, fontSize: 12, fontWeight: '900' },
   starRowSub: { color: T.muted, fontSize: 11, fontWeight: '700' },
   starHint: { color: T.muted, fontSize: 10, lineHeight: 14 },
+  starResult: { color: T.accent, fontSize: 12, fontWeight: '800', marginTop: 6 },
   starPreviewRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   // 친밀도·씨앗 반반 요약 타일(한 줄) — 탭하면 아래 상세 펼침.
   halfRow: { flexDirection: 'row', gap: 8, marginTop: 12 },
