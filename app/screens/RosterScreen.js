@@ -511,7 +511,14 @@ export default function RosterScreen({ state, bump, concept }) {
           <View style={{ flex: 1 }}>
             {/* 이름 옆 빈 공간에 전투력 배지를 배치(별도 카드로 한 줄 차지하지 않음) */}
             <View style={g.nameRow}>
-              <Text style={g.headName} numberOfLines={1}>{meta.name}{unit.rarity ? <Text> </Text> : null}{unit.rarity ? <Text style={rarityText(unit.rarity)}> {unit.rarity} </Text> : null}</Text>
+              <View style={g.nameWrap}>
+                <Text style={g.headName} numberOfLines={1}>{meta.name}</Text>
+                {unit.rarity ? (
+                  <View style={[g.rarPill, { backgroundColor: rarityMeta(unit.rarity).color }]}>
+                    <Text style={g.rarPillText}>{unit.rarity}</Text>
+                  </View>
+                ) : null}
+              </View>
               <PowerBadge power={computePower(unit)} expanded={showBd} onPress={() => setShowBd((v) => !v)} />
             </View>
             {/* 별 배지 + 성급·레벨·랭크를 한 줄로 압축(이전엔 별도 줄이었음) */}
@@ -1213,7 +1220,11 @@ const g = StyleSheet.create({
   synChipDesc: { color: T.muted, fontSize: 11, flex: 1 },
   head: { flexDirection: 'row', alignItems: 'flex-start', gap: 12 },
   nameRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 },
+  nameWrap: { flexDirection: 'row', alignItems: 'center', gap: 6, flexShrink: 1 },
   headName: { color: T.text, fontWeight: '900', fontSize: 20, flexShrink: 1 },
+  // 캐릭터명 옆 등급 칩 — 등급 글자수(N~SSR)와 무관하게 동일 규격(고정폭·중앙정렬).
+  rarPill: { minWidth: 30, paddingHorizontal: 5, paddingVertical: 1, borderRadius: 6, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
+  rarPillText: { color: '#160f28', fontSize: 11, fontWeight: '900', letterSpacing: 0.3 },
   // 편성 버튼 + 칭호/성격/속성 캡션을 오른쪽 한 컬럼에 묶어, 이름 옆 남는
   // 세로 공간을 그냥 비워두지 않고 활용한다(별도 줄로 빼지 않음).
   headSide: { alignItems: 'flex-end', gap: 4, maxWidth: 110 },
