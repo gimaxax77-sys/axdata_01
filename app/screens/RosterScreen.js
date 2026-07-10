@@ -13,7 +13,7 @@ function rarityColor(r) { return rarityMeta(r).color; }
 function rarityText(r) {
   return { backgroundColor: rarityMeta(r).color, color: '#160f28', fontWeight: '900', fontSize: 11, borderRadius: 4, overflow: 'hidden' };
 }
-import { Card, Btn, fmt, MultiToggle, multLabel, repeat, Portrait } from '../components';
+import { Card, Btn, fmt, MultiToggle, multLabel, repeat, Portrait, StarBadge } from '../components';
 
 // 후보를 임시 장착했을 때의 실제 전투력 — 피커의 "변경 전후 비교"용.
 //   (loadout.mjs 추천 로직과 동일 기법: 넣어보고 계산 후 원복)
@@ -68,7 +68,7 @@ import { optimizeLoadout } from '../../system/core/loadout.mjs';
 import { recordMission } from '../../system/core/daily.mjs';
 import { intimacyLevel, intimacyProgress, giftCost, giveGift, INTIMACY_MAX } from '../../system/core/intimacy.mjs';
 import { seedConditions, seedProgress } from '../../system/core/seed.mjs';
-import { starOf, starLabel, STAR_MAX, starUpInfo, starUp } from '../../system/core/starGrade.mjs';
+import { starOf, STAR_MAX, starUpInfo, starUp } from '../../system/core/starGrade.mjs';
 
 // 후보 성급으로 올렸을 때의 전투력(성급 강화 델타 미리보기용) — 넣어보고 원복.
 function powerWithNextStar(unit) {
@@ -529,7 +529,10 @@ export default function RosterScreen({ state, bump, concept }) {
           <Portrait emoji={meta.emoji} image={charImage(concept.id, unit.characterId)} rarity={unit.rarity} size={62} badge style={{ marginRight: 4 }} />
           <View style={{ flex: 1 }}>
             <Text style={g.headName}>{meta.name}{unit.rarity ? <Text> </Text> : null}{unit.rarity ? <Text style={rarityText(unit.rarity)}> {unit.rarity} </Text> : null}</Text>
-            <Text style={g.starRow}>{starLabel(unit)} <Text style={g.starRowNum}>{starOf(unit)}★</Text></Text>
+            <View style={g.starRow}>
+              <StarBadge tier={starOf(unit)} size={26} />
+              <Text style={g.starRowNum}>{starOf(unit)}성급{starOf(unit) >= STAR_MAX ? ' · MAX' : ''}</Text>
+            </View>
             {(meta.title || meta.personality) && (
               <Text style={g.headTitle}>
                 {meta.title}{meta.personality ? ` · ${meta.personality}` : ''}
@@ -623,7 +626,14 @@ export default function RosterScreen({ state, bump, concept }) {
             return (
               <View style={g.starBox}>
                 <View style={g.intiHead}>
-                  <Text style={g.subsec2}>⭐ 성급 <Text style={g.starRowNum}>{si.star}★{si.maxed ? '' : `→${si.star + 1}★`}</Text></Text>
+                  <View style={g.starPreviewRow}>
+                    <StarBadge tier={si.star} size={24} />
+                    {!si.maxed && (<>
+                      <Text style={g.starPreviewArrow}>→</Text>
+                      <StarBadge tier={si.star + 1} size={30} />
+                    </>)}
+                    <Text style={g.subsec2}>  성급 {si.star}★{si.maxed ? '' : ` → ${si.star + 1}★`}</Text>
+                  </View>
                   <Text style={g.dim}>{si.maxed ? `최고 ${STAR_MAX}★` : `중복 ${si.haveDupes}/${si.req.dupes} · 🪙${fmt(si.req.currency)}`}</Text>
                 </View>
                 {!si.maxed && si.identified && <DeltaText cur={curP} next={powerWithNextStar(unit)} />}
@@ -1305,11 +1315,13 @@ const g = StyleSheet.create({
   // 헤더 카드 내 성장(레벨업/돌파/각인) 박스.
   growBox: { marginTop: 12, backgroundColor: T.surface2, borderRadius: 12, padding: 12 },
   // 성급(별) 표시 — 헤더 이름줄 아래 금색 별.
-  starRow: { color: T.accent, fontSize: 13, fontWeight: '900', marginTop: 2, letterSpacing: 1 },
+  starRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 2 },
   starRowNum: { color: T.accent, fontSize: 12, fontWeight: '900' },
   // 성급 강화 블록(성장 박스 내부 하단 구획).
   starBox: { marginTop: 12, borderTopWidth: 1, borderTopColor: T.line, paddingTop: 10, gap: 6 },
   starHint: { color: T.muted, fontSize: 10, lineHeight: 14 },
+  starPreviewRow: { flexDirection: 'row', alignItems: 'center' },
+  starPreviewArrow: { color: T.muted, fontSize: 13, fontWeight: '900', marginHorizontal: 4 },
   // 친밀도·씨앗 반반 요약 타일(한 줄) — 탭하면 아래 상세 펼침.
   halfRow: { flexDirection: 'row', gap: 8, marginTop: 12 },
   halfTile: { flex: 1, backgroundColor: T.surface, borderRadius: 12, borderWidth: 1.5, borderColor: T.line, paddingVertical: 10, paddingHorizontal: 12 },

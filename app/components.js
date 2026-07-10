@@ -3,6 +3,7 @@ import { View, Text, Image, TouchableOpacity, StyleSheet, Animated } from 'react
 import { LinearGradient } from 'expo-linear-gradient';
 import { T, rarityMeta } from './theme';
 import { fx } from './feedback';
+import { reducedMotion } from './motion';
 
 // ── 캐릭터 초상 — 등급 프레임 + 글로우. 로스터/파티/소환/도감 공용 ──
 //   image(있으면): 캐릭터 일러스트를 프레임 안에 렌더. 없으면 emoji 폴백.
@@ -27,6 +28,97 @@ export const Portrait = React.memo(function Portrait({ emoji, image = null, rari
           <Text style={bs.badgeText}>{rarity}</Text>
         </View>
       )}
+    </View>
+  );
+});
+
+// ── 성급(Star Grade) 배지 — 별 2개를 36° 어긋나게 겹쳐 태양광 형태를 만든다.
+//   tier(1~STAR_MAX)가 오를수록: 겹친 별이 더 또렷해지고 · 광선이 돋아나고
+//   · 글로우가 커지고 · 최고 등급(5)에서만 은은하게 회전+맥동한다.
+//   reducedMotion 존중(움직임 대신 정적 최종 상태로 표시).
+export const StarBadge = React.memo(function StarBadge({ tier = 1, size = 40 }) {
+  const clamped = Math.max(1, Math.min(5, tier));
+  const t = (clamped - 1) / 4; // 0~1 정규화(단계별 강도 보간용)
+  const reduce = reducedMotion();
+  const rayCount = clamped >= 5 ? 12 : clamped >= 4 ? 8 : 0;
+  const spin = useRef(new Animated.Value(0)).current;
+  const pulse = useRef(new Animated.Value(0)).current;
+  const pop = useRef(new Animated.Value(reduce ? 1 : 0.5)).current;
+  const prevTier = useRef(clamped);
+
+  useEffect(() => {
+    // 등급 상승 시 팝(bounce) 연출 — 최초 마운트에도 살짝 등장.
+    if (reduce) { pop.setValue(1); return; }
+    pop.setValue(0.6);
+    Animated.spring(pop, { toValue: 1, useNativeDriver: true, speed: 18, bounciness: 14 }).start();
+    prevTier.current = clamped;
+  }, [clamped]);
+
+  useEffect(() => {
+    if (reduce || rayCount === 0) return;
+    const loop = Animated.loop(
+      Animated.timing(spin, { toValue: 1, duration: 14000 - clamped * 600, useNativeDriver: true }),
+    );
+    loop.start();
+    return () => loop.stop();
+  }, [reduce, rayCount, clamped]);
+
+  useEffect(() => {
+    if (reduce || clamped < 5) return;
+    const loop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulse, { toValue: 1, duration: 1100, useNativeDriver: true }),
+        Animated.timing(pulse, { toValue: 0, duration: 1100, useNativeDriver: true }),
+      ]),
+    );
+    loop.start();
+    return () => loop.stop();
+  }, [reduce, clamped]);
+
+  const haloOpacity = 0.10 + t * 0.30; // 0.10 → 0.40
+  const haloScale = 1 + t * 0.35;
+  const backStarOpacity = 0.25 + t * 0.65; // 겹친 별이 등급 오를수록 또렷해짐
+  const spinDeg = spin.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '360deg'] });
+  const pulseScale = pulse.interpolate({ inputRange: [0, 1], outputRange: [1, 1.12] });
+
+  return (
+    <View style={{ width: size, height: size, alignItems: 'center', justifyContent: 'center' }}>
+      {/* 글로우 후광 — 등급이 오를수록 커지고 진해짐 */}
+      <Animated.View style={{
+        position: 'absolute', width: size * haloScale, height: size * haloScale,
+        borderRadius: size, backgroundColor: T.accent, opacity: haloOpacity,
+        transform: clamped >= 5 ? [{ scale: pulseScale }] : undefined,
+      }} />
+      {/* 태양광 — 4단계부터 광선이 돋고, 5단계는 천천히 회전 */}
+      {rayCount > 0 && (
+        <Animated.View style={{
+          position: 'absolute', width: size, height: size,
+          transform: [{ rotate: spinDeg }],
+        }}>
+          {Array.from({ length: rayCount }).map((_, i) => (
+            <View key={i} style={{
+              position: 'absolute', left: size / 2 - size * 0.028, top: size / 2 - size * 0.5,
+              width: size * 0.056, height: size * 0.42, borderRadius: size * 0.03,
+              backgroundColor: T.accent, opacity: 0.55,
+              transform: [
+                { translateY: -size * 0.08 },
+                { rotate: `${(360 / rayCount) * i}deg` },
+              ],
+            }} />
+          ))}
+        </Animated.View>
+      )}
+      {/* 뒤 별 — 36° 어긋나게 겹쳐 이중 별(태양) 형태를 만든다 */}
+      <Animated.Text style={{
+        position: 'absolute', fontSize: size * 0.56, color: T.accentGrad[0],
+        opacity: backStarOpacity, transform: [{ rotate: '36deg' }, { scale: pop }],
+      }}>★</Animated.Text>
+      {/* 앞 별 */}
+      <Animated.Text style={{
+        fontSize: size * 0.6, color: T.accent, fontWeight: '900',
+        transform: [{ scale: pop }],
+        textShadowColor: T.accent, textShadowRadius: 3 + t * 5, textShadowOffset: { width: 0, height: 0 },
+      }}>★</Animated.Text>
     </View>
   );
 });
