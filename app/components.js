@@ -123,7 +123,8 @@ export const StarBadge = React.memo(function StarBadge({ tier = 1, size = 40 }) 
   );
 });
 
-// ── 전투력 배지 — 골드 그라데이션 + 글로우로 시인성을 높인 강조 배너.
+// ── 전투력 칩 — 큰 배너가 아니라 이름 옆 빈 공간에 얹는 얇은 플로팅 칩.
+//   골드 그라데이션 + 은은한 글로우로 존재감은 유지하되 자리는 작게 차지.
 //   값이 오르면(레벨업·장착·성급 등) 살짝 튀며 번쩍(획득 강조, ResCell과 동일 규약).
 //   onPress를 주면 눌러서 펼치는 토글(전투력 분해 표)로도 쓸 수 있다.
 export const PowerBadge = React.memo(function PowerBadge({ power, onPress, expanded }) {
@@ -135,7 +136,7 @@ export const PowerBadge = React.memo(function PowerBadge({ power, onPress, expan
       scale.setValue(1); flash.setValue(1);
       Animated.parallel([
         Animated.sequence([
-          Animated.spring(scale, { toValue: 1.05, useNativeDriver: true, speed: 30, bounciness: 10 }),
+          Animated.spring(scale, { toValue: 1.08, useNativeDriver: true, speed: 30, bounciness: 10 }),
           Animated.spring(scale, { toValue: 1, useNativeDriver: true, speed: 16, bounciness: 6 }),
         ]),
         Animated.timing(flash, { toValue: 0, duration: 750, useNativeDriver: false }),
@@ -143,17 +144,14 @@ export const PowerBadge = React.memo(function PowerBadge({ power, onPress, expan
     }
     prev.current = power;
   }, [power]);
-  const glowRadius = flash.interpolate({ inputRange: [0, 1], outputRange: [8, 18] });
+  const glowRadius = flash.interpolate({ inputRange: [0, 1], outputRange: [3, 10] });
   const Wrap = onPress ? TouchableOpacity : View;
   return (
-    <Wrap activeOpacity={0.85} onPress={onPress} style={pb.wrap}>
+    <Wrap activeOpacity={0.8} onPress={onPress} hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}>
       <Animated.View style={[pb.shadowWrap, { transform: [{ scale }], shadowRadius: glowRadius }]}>
-        <LinearGradient colors={T.accentGrad} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={pb.grad}>
+        <LinearGradient colors={T.accentGrad} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={pb.pill}>
           <Text style={pb.icon}>⚔️</Text>
-          <View style={{ flex: 1 }}>
-            <Text style={pb.label}>전투력</Text>
-            <Text style={pb.val}>{fmt(power)}</Text>
-          </View>
+          <Text style={pb.val}>{fmt(power)}</Text>
           {onPress && <Text style={pb.chev}>{expanded ? '▲' : '▼'}</Text>}
         </LinearGradient>
       </Animated.View>
@@ -161,13 +159,11 @@ export const PowerBadge = React.memo(function PowerBadge({ power, onPress, expan
   );
 });
 const pb = StyleSheet.create({
-  wrap: { alignSelf: 'stretch' },
-  shadowWrap: { borderRadius: 14, shadowColor: T.accent, shadowOpacity: 0.7, shadowOffset: { width: 0, height: 0 }, elevation: 6 },
-  grad: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 10, paddingHorizontal: 14, borderRadius: 14 },
-  icon: { fontSize: 22 },
-  label: { color: '#241a40', fontSize: 10, fontWeight: '800', opacity: 0.7, letterSpacing: 0.5 },
-  val: { color: '#241a40', fontSize: 21, fontWeight: '900' },
-  chev: { color: '#241a40', fontSize: 14, fontWeight: '900', opacity: 0.65 },
+  shadowWrap: { borderRadius: 10, shadowColor: T.accent, shadowOpacity: 0.55, shadowOffset: { width: 0, height: 0 }, elevation: 3 },
+  pill: { flexDirection: 'row', alignItems: 'center', gap: 3, paddingVertical: 3, paddingHorizontal: 8, borderRadius: 10 },
+  icon: { fontSize: 11 },
+  val: { color: '#241a40', fontSize: 13, fontWeight: '900' },
+  chev: { color: '#241a40', fontSize: 9, fontWeight: '900', opacity: 0.6, marginLeft: 1 },
 });
 
 // 자원 셀 — 값이 늘면 살짝 튀며 금색으로 번쩍(획득 강조).

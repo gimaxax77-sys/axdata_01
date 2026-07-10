@@ -526,7 +526,11 @@ export default function RosterScreen({ state, bump, concept }) {
         <View style={g.head}>
           <Portrait emoji={meta.emoji} image={charImage(concept.id, unit.characterId)} rarity={unit.rarity} size={62} badge style={{ marginRight: 4 }} />
           <View style={{ flex: 1 }}>
-            <Text style={g.headName}>{meta.name}{unit.rarity ? <Text> </Text> : null}{unit.rarity ? <Text style={rarityText(unit.rarity)}> {unit.rarity} </Text> : null}</Text>
+            {/* 이름 옆 빈 공간에 전투력 배지를 배치(별도 카드로 한 줄 차지하지 않음) */}
+            <View style={g.nameRow}>
+              <Text style={g.headName} numberOfLines={1}>{meta.name}{unit.rarity ? <Text> </Text> : null}{unit.rarity ? <Text style={rarityText(unit.rarity)}> {unit.rarity} </Text> : null}</Text>
+              <PowerBadge power={computePower(unit)} expanded={showBd} onPress={() => setShowBd((v) => !v)} />
+            </View>
             {/* 별 배지 + 성급·레벨·랭크를 한 줄로 압축(이전엔 별도 줄이었음) */}
             <View style={g.starRow}>
               <StarBadge tier={starOf(unit)} size={22} />
@@ -546,9 +550,6 @@ export default function RosterScreen({ state, bump, concept }) {
               </Text>
             )}
           </View>
-        </View>
-        <View style={g.powerWrap}>
-          <PowerBadge power={computePower(unit)} expanded={showBd} onPress={() => setShowBd((v) => !v)} />
         </View>
         <View style={g.statGrid}>
           {[['HP', st8.hp], ['ATK', st8.atk], ['DEF', st8.def], ['SPD', st8.spd]].map(([k, v]) => (
@@ -1237,7 +1238,8 @@ const g = StyleSheet.create({
   synChipText: { color: T.accent, fontWeight: '800', fontSize: 12 },
   synChipDesc: { color: T.muted, fontSize: 11, flex: 1 },
   head: { flexDirection: 'row', alignItems: 'flex-start', gap: 12 },
-  headName: { color: T.text, fontWeight: '900', fontSize: 20 },
+  nameRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 },
+  headName: { color: T.text, fontWeight: '900', fontSize: 20, flexShrink: 1 },
   // 편성 버튼 + 칭호/성격/속성 캡션을 오른쪽 한 컬럼에 묶어, 이름 옆 남는
   // 세로 공간을 그냥 비워두지 않고 활용한다(별도 줄로 빼지 않음).
   headSide: { alignItems: 'flex-end', gap: 4, maxWidth: 110 },
@@ -1266,7 +1268,6 @@ const g = StyleSheet.create({
   seedBadgeOff: { backgroundColor: T.surface2, borderRadius: 8, paddingHorizontal: 8, paddingVertical: 3 },
   seedBadgeTextOn: { color: '#183a1d', fontWeight: '800', fontSize: 11 },
   seedBadgeTextOff: { color: T.muted, fontWeight: '700', fontSize: 11 },
-  powerWrap: { marginTop: 10 },
   statGrid: { flexDirection: 'row', gap: 8, marginTop: 14 },
   stat: { flex: 1, backgroundColor: T.surface2, borderRadius: 10, paddingVertical: 8, alignItems: 'center' },
   statK: { color: T.muted, fontSize: 11 },
