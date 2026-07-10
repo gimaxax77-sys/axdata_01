@@ -502,24 +502,26 @@ export default function RosterScreen({ state, bump, concept }) {
       )}
 
       {rtab === 'heroes' && (<>
-      {/* 보유 유닛 — 가로 스크롤 한 줄(세로 공간 절약). 종 단위로 묶여 밀도 유지. */}
-      <Text style={g.sec}>보유 {concept.terms.unit} <Text style={g.dim}>({grouped.length}종{list.length > grouped.length ? ` · ${list.length}` : ''} · 옆으로 밀기)</Text></Text>
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={g.gridRow}>
+      {/* 보유 유닛 — 세로로 쌓이는 목록(가로 스크롤 없음). 종 단위로 묶여 밀도 유지. */}
+      <Text style={g.sec}>보유 {concept.terms.unit} <Text style={g.dim}>({grouped.length}종{list.length > grouped.length ? ` · ${list.length}` : ''})</Text></Text>
+      <View style={g.rosterList}>
         {grouped.map(({ rep: u, count }) => {
           const m = identity(concept, u);
           const on = u.uid === unit.uid;
           const party = state.party.includes(u.uid);
           return (
-            <TouchableOpacity key={u.uid} onPress={() => setSel(u.uid)} style={[g.chip, g.chipH, on && g.chipOn]} activeOpacity={0.8}>
-              {party && <Text style={g.chipStar}>⭐</Text>}
-              {count > 1 && <Text style={g.chipCount}>×{count}</Text>}
-              <Portrait emoji={m.emoji} image={charImage(concept.id, u.characterId)} rarity={u.rarity} size={44} badge />
-              <Text style={g.chipName} numberOfLines={1}>{m.name}</Text>
-              <Text style={g.chipLv}>Lv.{u.level}{starOf(u) > 1 ? ` · ${starOf(u)}★` : ''} · {concept.archetypes[u.archetype]?.emoji}</Text>
+            <TouchableOpacity key={u.uid} onPress={() => setSel(u.uid)} style={[g.rosterRow, on && g.rosterRowOn]} activeOpacity={0.8}>
+              {party && <Text style={g.rosterStar}>⭐</Text>}
+              <Portrait emoji={m.emoji} image={charImage(concept.id, u.characterId)} rarity={u.rarity} size={40} badge />
+              <View style={g.rosterInfo}>
+                <Text style={g.rosterName} numberOfLines={1}>{m.name}{count > 1 ? <Text style={g.rosterCount}>  ×{count}</Text> : null}</Text>
+                <Text style={g.rosterSub}>Lv.{u.level}{starOf(u) > 1 ? ` · ${starOf(u)}★` : ''} · {concept.archetypes[u.archetype]?.emoji}{concept.archetypes[u.archetype]?.name}</Text>
+              </View>
+              <Text style={g.rosterChev}>›</Text>
             </TouchableOpacity>
           );
         })}
-      </ScrollView>
+      </View>
 
       {/* 상세 */}
       <Card style={{ marginTop: 6 }}>
@@ -1165,12 +1167,16 @@ const g = StyleSheet.create({
   sec: { color: T.text, fontWeight: '800', fontSize: 15, marginBottom: 8 },
   subsec: { color: T.muted, fontSize: 12, marginTop: 12, marginBottom: 6, fontWeight: '700' },
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, paddingVertical: 4 },
-  gridRow: { flexDirection: 'row', gap: 8, paddingVertical: 4, paddingRight: 8 }, // 가로 스크롤 한 줄
-  chipH: { width: 64 }, // 가로 로스터 칩 고정폭
-  chip: { backgroundColor: T.surface, borderRadius: 12, paddingVertical: 8, paddingHorizontal: 4, alignItems: 'center', borderWidth: 1, borderColor: T.line },
-  chipOn: { borderColor: T.accent, backgroundColor: T.surface2 },
-  chipStar: { position: 'absolute', top: 4, right: 6, fontSize: 12, zIndex: 2 },
-  chipCount: { position: 'absolute', top: 4, left: 6, fontSize: 11, fontWeight: '900', color: T.accent, backgroundColor: T.surface2, borderRadius: 6, paddingHorizontal: 4, zIndex: 2, overflow: 'hidden' },
+  // 보유 유닛 — 세로 목록(행 단위, 가로 스크롤 없음).
+  rosterList: { gap: 6, marginBottom: 4 },
+  rosterRow: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: T.surface, borderRadius: 12, paddingVertical: 8, paddingHorizontal: 10, borderWidth: 1, borderColor: T.line },
+  rosterRowOn: { borderColor: T.accent, backgroundColor: T.surface2 },
+  rosterStar: { fontSize: 13 },
+  rosterInfo: { flex: 1 },
+  rosterName: { color: T.text, fontSize: 13, fontWeight: '800' },
+  rosterCount: { color: T.accent, fontSize: 11, fontWeight: '900' },
+  rosterSub: { color: T.muted, fontSize: 11, marginTop: 2 },
+  rosterChev: { color: T.muted, fontSize: 18 },
   // 7슬롯(전열2·중열3·후열2) — 줄바꿈 그리드로 4열 배치.
   partyRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 4 },
   partySlot: { width: '22%', aspectRatio: 1, backgroundColor: T.surface2, borderRadius: 12, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: 'transparent', padding: 4 },
@@ -1219,8 +1225,6 @@ const g = StyleSheet.create({
   synChip: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: T.surface2, borderRadius: 10, paddingHorizontal: 10, paddingVertical: 6, borderWidth: 1, borderColor: T.accent },
   synChipText: { color: T.accent, fontWeight: '800', fontSize: 12 },
   synChipDesc: { color: T.muted, fontSize: 11, flex: 1 },
-  chipName: { color: T.text, fontSize: 11, fontWeight: '700', marginTop: 6, maxWidth: '100%' },
-  chipLv: { color: T.muted, fontSize: 10, marginTop: 2 },
   head: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   headName: { color: T.text, fontWeight: '900', fontSize: 20 },
   rarity: { color: T.accent, fontSize: 13, fontWeight: '800' },
