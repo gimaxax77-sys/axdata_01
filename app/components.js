@@ -77,7 +77,6 @@ export const StarBadge = React.memo(function StarBadge({ tier = 1, size = 40 }) 
 
   const haloOpacity = 0.10 + t * 0.30; // 0.10 → 0.40
   const haloScale = 1 + t * 0.35;
-  const backStarOpacity = 0.25 + t * 0.65; // 겹친 별이 등급 오를수록 또렷해짐
   const spinDeg = spin.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '360deg'] });
   const pulseScale = pulse.interpolate({ inputRange: [0, 1], outputRange: [1, 1.12] });
 
@@ -117,12 +116,7 @@ export const StarBadge = React.memo(function StarBadge({ tier = 1, size = 40 }) 
             ))}
           </Animated.View>
         )}
-        {/* 뒤 별 — 36° 어긋나게 겹쳐 이중 별(태양) 형태를 만든다 */}
-        <Animated.Text style={{
-          position: 'absolute', fontSize: size * 0.56, color: T.accentGrad[0],
-          opacity: backStarOpacity, transform: [{ rotate: '36deg' }, { scale: pop }],
-        }}>★</Animated.Text>
-        {/* 앞 별 */}
+        {/* 별 — 겹친 이중 별은 저사이즈에서 "별 2개"로 보여 단일 별로 통일. */}
         <Animated.Text style={{
           fontSize: size * 0.6, color: T.accent, fontWeight: '900',
           transform: [{ scale: pop }],
