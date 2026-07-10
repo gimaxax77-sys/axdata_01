@@ -83,7 +83,6 @@ import { costumesFor, equipCostume as equipSkin, unequipCostume as unequipSkin, 
 import { combatContributions } from '../../system/core/resolution.mjs';
 import { playStage } from '../../system/core/difficulty.mjs';
 import { accountMods } from '../../system/core/balance.mjs';
-import { dismantlePreview, dismantleUnit } from '../../system/core/dismantle.mjs';
 import { exportBuild, encodeBuild, applyBuildCode } from '../../system/core/buildcopy.mjs';
 import {
   hasSigWeapon, canOwnSigWeapon, unlockSigWeapon, enhanceSigWeapon,
@@ -283,22 +282,6 @@ export default function RosterScreen({ state, bump, concept }) {
   refreshCostumeUnlocks(state); // 조건 충족 코스튬 자동 지급(퀘스트/VIP/전투력)
 
   const act = (fn) => { fn(); bump(); };
-  // 유닛 분해(100% 자원 환급) — 편성 해제 후에만.
-  const doDismantle = () => {
-    const r = dismantleUnit(state, unit.uid);
-    if (r.ok) {
-      const parts = [];
-      if (r.refund.growth) parts.push(`💠${fmt(r.refund.growth)}`);
-      if (r.refund.currency) parts.push(`🪙${fmt(r.refund.currency)}`);
-      if (r.refund.summon) parts.push(`🎟️${fmt(r.refund.summon)}`);
-      if (r.refund.gem) parts.push(`💎${fmt(r.refund.gem)}`);
-      if (r.refund.ascendStone) parts.push(`🔶${r.refund.ascendStone}`);
-      if (r.gearBack) parts.push(`⚔️회수${r.gearBack}`);
-      fx('success'); setDeckMsg(`♻️ 분해 · 환급 ${parts.join(' ') || '없음'}`);
-      setSel(state.party[0] || state.units[0]?.uid);
-    } else { fx('error'); setDeckMsg(r.reason); }
-    bump();
-  };
   // 덱 복사(내 편성 → 코드) / 붙여넣기(코드 → 내 파티 위치별 적용).
   const doCopyDeck = () => {
     const code = encodeBuild(exportBuild(state));
@@ -543,10 +526,10 @@ export default function RosterScreen({ state, bump, concept }) {
               label={inParty ? '편성 해제' : '편성'}
               disabled={!inParty && state.party.length >= MAX_PARTY}
               onPress={() => act(() => togglePartyMember(state, unit.uid))} />
-            {(meta.title || meta.personality) && (
-              <Text style={g.headTitle} numberOfLines={2}>
+            {(meta.title || meta.personality || meta.element) && (
+              <Text style={g.headTitle} numberOfLines={1}>
+                {meta.element ? `${elementMeta(concept, meta.element).emoji} ` : ''}
                 {meta.title}{meta.personality ? ` · ${meta.personality}` : ''}
-                {meta.element ? ` · ${elementMeta(concept, meta.element).emoji}${elementMeta(concept, meta.element).name}` : ''}
               </Text>
             )}
           </View>
@@ -556,26 +539,6 @@ export default function RosterScreen({ state, bump, concept }) {
             <View key={k} style={g.stat}><Text style={g.statK}>{k}</Text><Text style={g.statV}>{fmt(v)}</Text></View>
           ))}
         </View>
-        {/* 분해(100% 자원 환급) — 편성 해제 & 2명 이상일 때만 */}
-        {(() => {
-          const pv = dismantlePreview(state, unit.uid);
-          const blocked = inParty || state.units.length <= 1;
-          const parts = pv.ok ? [
-            pv.refund.growth && `💠${fmt(pv.refund.growth)}`,
-            pv.refund.currency && `🪙${fmt(pv.refund.currency)}`,
-            pv.refund.summon && `🎟️${fmt(pv.refund.summon)}`,
-            pv.refund.gem && `💎${fmt(pv.refund.gem)}`,
-            pv.refund.ascendStone && `🔶${pv.refund.ascendStone}`,
-          ].filter(Boolean) : [];
-          return (
-            <View style={g.dismRow}>
-              <Text style={g.dismInfo} numberOfLines={1}>
-                {blocked ? (inParty ? '편성 해제 후 분해 가능' : '마지막 유닛은 분해 불가') : `환급: ${parts.join(' ') || '없음'}${pv.gearBack ? ` · ⚔️회수${pv.gearBack}` : ''}`}
-              </Text>
-              <Btn small kind="ghost" label="♻️ 분해" disabled={blocked} onPress={doDismantle} />
-            </View>
-          );
-        })()}
         {deckMsg ? <Text style={g.deckMsg}>{deckMsg}</Text> : null}
 
         {/* 전투력 수치비례표 — 각 요소가 전투력에 기여하는 점수·비율(회피성 효과 포함) */}
@@ -1231,8 +1194,6 @@ const g = StyleSheet.create({
   deckBtns: { flexDirection: 'row', gap: 8 },
   deckInput: { marginTop: 8, backgroundColor: T.surface2, borderRadius: 8, borderWidth: 1, borderColor: T.line, color: T.text, paddingHorizontal: 10, paddingVertical: 8, fontSize: 12 },
   deckMsg: { color: T.accent, fontSize: 11, fontWeight: '700', marginTop: 8 },
-  dismRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginTop: 8 },
-  dismInfo: { color: T.muted, fontSize: 11, flex: 1 },
   synWrap: { marginTop: 10, gap: 6 },
   synChip: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: T.surface2, borderRadius: 10, paddingHorizontal: 10, paddingVertical: 6, borderWidth: 1, borderColor: T.accent },
   synChipText: { color: T.accent, fontWeight: '800', fontSize: 12 },
@@ -1268,10 +1229,10 @@ const g = StyleSheet.create({
   seedBadgeOff: { backgroundColor: T.surface2, borderRadius: 8, paddingHorizontal: 8, paddingVertical: 3 },
   seedBadgeTextOn: { color: '#183a1d', fontWeight: '800', fontSize: 11 },
   seedBadgeTextOff: { color: T.muted, fontWeight: '700', fontSize: 11 },
-  statGrid: { flexDirection: 'row', gap: 8, marginTop: 14 },
-  stat: { flex: 1, backgroundColor: T.surface2, borderRadius: 10, paddingVertical: 8, alignItems: 'center' },
-  statK: { color: T.muted, fontSize: 11 },
-  statV: { color: T.text, fontWeight: '800', fontSize: 15, marginTop: 2 },
+  statGrid: { flexDirection: 'row', gap: 6, marginTop: 8 },
+  stat: { flex: 1, backgroundColor: T.surface2, borderRadius: 10, paddingVertical: 4, alignItems: 'center' },
+  statK: { color: T.muted, fontSize: 10 },
+  statV: { color: T.text, fontWeight: '800', fontSize: 14, marginTop: 1 },
   ascHint: { color: T.muted, fontSize: 11, marginTop: 6 },
   bdBox: { marginTop: 12, backgroundColor: T.surface2, borderRadius: 12, padding: 12 },
   bdTitle: { color: T.text, fontWeight: '800', fontSize: 13, marginBottom: 8 },
