@@ -32,18 +32,19 @@ export const Portrait = React.memo(function Portrait({ emoji, image = null, rari
   );
 });
 
-// ── 성급(Star Grade) 배지 — 5조각으로 나뉜 도형이 성급만큼 금빛으로 켜진다.
-//   · 1~5성: 오각형(pentagon) — 중심에서 뻗은 삼각 쐐기 5개
-//   · 6~10성: 별(★) — 중심에서 뻗은 마름모(다이아) 5개(뾰족점)
-//   1성=1조각 … 5성=5조각(오각형 완성), 6성=1조각 … 10성=5조각(별 완성).
+// ── 성급(Star Grade) 배지 — 별 하나를 5조각(뾰족점)으로 채운다.
+//   · 구간: 1~5성=은빛 · 6~10성=금빛 (색으로 구간 즉시 구분)
+//   · 세부: 성급만큼 조각이 켜짐 — 1/6성=1조각 … 5/10성=5조각(별 완성)
+//   빈 조각·채운 조각은 같은 계열 투톤(어두운/밝은)으로 조화. 조각은
+//   중심에서 정확히 맞물려 반대쪽으로 삐져나오지 않는다.
 //   회전 이펙트 없음. 등급 상승 시 팝 연출만(reducedMotion 존중).
-const STAR_GOLD_C = '#ffd257';
-const STAR_DIM_C = 'rgba(255,210,87,0.22)';
-const COS36 = Math.cos(Math.PI / 5); // 0.809
-const SIN36 = Math.sin(Math.PI / 5); // 0.588
+const STAR_BANDS = {
+  silver: { fill: '#e9eefb', dim: '#5b6488', glow: '#cdd6ef' },
+  gold: { fill: '#ffd257', dim: '#8a7135', glow: '#ffe27a' },
+};
 export const StarBadge = React.memo(function StarBadge({ tier = 1, size = 40 }) {
   const clamped = Math.max(1, Math.min(10, tier));
-  const isStar = clamped >= 6;
+  const band = clamped >= 6 ? STAR_BANDS.gold : STAR_BANDS.silver;
   const pieces = ((clamped - 1) % 5) + 1; // 켜진 조각 수 1~5
   const t = (clamped - 1) / 9; // 0~1 (글로우 강도 보간)
   const reduce = reducedMotion();
@@ -55,34 +56,16 @@ export const StarBadge = React.memo(function StarBadge({ tier = 1, size = 40 }) 
     Animated.spring(pop, { toValue: 1, useNativeDriver: true, speed: 18, bounciness: 12 }).start();
   }, [clamped]);
 
-  const haloOpacity = 0.08 + t * 0.28;
-  const haloScale = 1 + t * 0.28;
+  const haloOpacity = 0.06 + t * 0.20;
+  const haloScale = 1 + t * 0.24;
   const c = size / 2;
-  const R = size * 0.46; // 외접 반지름
 
-  // 오각형 쐐기 — 꼭짓점이 위로 오도록 36° 오프셋. 밑변(바깥)은 변, 꼭짓점(안쪽)은 중심.
-  const pentR = size * 0.44;
-  const apo = pentR * COS36;     // 중심→변(apothem)
-  const pw = pentR * SIN36;      // 변 절반폭
-  const wedge = (idx, color, big) => (
-    <View key={`${big ? 'g' : 'd'}${idx}`} style={{
-      position: 'absolute', width: size, height: size,
-      transform: [{ rotate: `${idx * 72 + 36}deg` }],
-    }}>
-      <View style={{
-        position: 'absolute', left: c - pw, top: c - apo,
-        width: 0, height: 0,
-        borderLeftWidth: pw, borderRightWidth: pw, borderTopWidth: apo,
-        borderLeftColor: 'transparent', borderRightColor: 'transparent', borderTopColor: color,
-      }} />
-    </View>
-  );
-
-  // 별 뾰족점 — 위/아래 삼각을 붙인 마름모. 바깥 꼭짓점(R) → 중앙 최대폭 → 중심.
-  const outerY = c - R;
-  const innerY = c + size * 0.04;   // 중심 살짝 지남(조각이 중앙에서 맞물림)
-  const midY = c - R * 0.30;        // 최대폭 위치(바깥쪽)
-  const dw = size * 0.115;          // 마름모 반폭
+  // 별 뾰족점 — 위/아래 삼각을 붙인 마름모. 바깥 꼭짓점 → 중앙 최대폭 → 정확히 중심.
+  //   안쪽 꼭짓점을 중심(c)에 딱 맞춰, 켜진 조각이 반대쪽으로 넘어가지 않게 함.
+  const outerY = c - size * 0.47;   // 바깥 꼭짓점(별 끝)
+  const innerY = c;                 // 안쪽 꼭짓점 = 정중앙(삐져나옴 방지)
+  const midY = c - size * 0.17;     // 최대폭(별 몸통 = 안쪽 오각형 꼭짓점)
+  const dw = size * 0.135;          // 마름모 반폭
   const rhombus = (idx, color, big) => (
     <View key={`${big ? 'g' : 'd'}${idx}`} style={{
       position: 'absolute', width: size, height: size,
@@ -103,20 +86,18 @@ export const StarBadge = React.memo(function StarBadge({ tier = 1, size = 40 }) 
     </View>
   );
 
-  const seg = isStar ? rhombus : wedge;
-
   return (
     <View style={{ width: size, height: size, alignItems: 'center', justifyContent: 'center' }}>
       {/* 글로우 후광 — 등급이 오를수록 커지고 진해짐 */}
       <View style={{
         position: 'absolute', width: size * haloScale, height: size * haloScale,
-        borderRadius: size, backgroundColor: STAR_GOLD_C, opacity: haloOpacity,
+        borderRadius: size, backgroundColor: band.glow, opacity: haloOpacity,
       }} />
       <Animated.View style={{ width: size, height: size, transform: [{ scale: pop }] }}>
-        {/* 1) 5조각 전부 흐리게(빈 도형 윤곽) */}
-        {[0, 1, 2, 3, 4].map((i) => seg(i, STAR_DIM_C, false))}
-        {/* 2) 켜진 조각만 금빛으로 덮어쓰기 */}
-        {[0, 1, 2, 3, 4].filter((i) => i < pieces).map((i) => seg(i, STAR_GOLD_C, true))}
+        {/* 1) 5조각 전부 어둡게(빈 별 = 투톤의 어두운 톤) */}
+        {[0, 1, 2, 3, 4].map((i) => rhombus(i, band.dim, false))}
+        {/* 2) 켜진 조각만 밝은 톤으로 덮어쓰기 */}
+        {[0, 1, 2, 3, 4].filter((i) => i < pieces).map((i) => rhombus(i, band.fill, true))}
       </Animated.View>
     </View>
   );
