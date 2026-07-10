@@ -12,7 +12,9 @@ import { reducedMotion } from '../motion';
 // setInterval + ref 로 가볍게 구동(웹 export에서도 안정).
 // ─────────────────────────────────────────────────────────────
 
-function BattleView({ heroEmoji = '⚔️', enemyEmoji = '👹', win = true, margin = 1, reduce }) {
+const EMPTY_FORMATION = { front: [], mid: [], back: [] };
+
+function BattleView({ party = EMPTY_FORMATION, enemyEmoji = '👹', win = true, margin = 1, reduce }) {
   const noMotion = reduce !== undefined ? reduce : reducedMotion();
   const enemyHp = useRef(1);
   const heroHp = useRef(1);
@@ -74,13 +76,26 @@ function BattleView({ heroEmoji = '⚔️', enemyEmoji = '👹', win = true, mar
     ]}>{typeof f.val === 'number' ? f.val.toLocaleString() : f.val}</Text>
   ));
 
+  const heroCount = party.front.length + party.mid.length + party.back.length;
+
   return (
     <View style={s.arena}>
-      <View style={s.side}>
+      <View style={s.heroSide}>
         <View style={s.floatLayer}>{renderFloats('hero')}</View>
-        <Text style={[s.emoji, lunge && s.emojiLunge]}>{heroEmoji}</Text>
+        {/* 편성 그대로: 후열 → 중열 → 전열(적과 가장 가까움) 3열. */}
+        <View style={s.formRow}>
+          <View style={s.formCol}>
+            {party.back.map((e, i) => <Text key={'b' + i} style={s.miniEmoji}>{e}</Text>)}
+          </View>
+          <View style={s.formCol}>
+            {party.mid.map((e, i) => <Text key={'m' + i} style={s.miniEmoji}>{e}</Text>)}
+          </View>
+          <View style={[s.formCol, lunge && s.formColLunge]}>
+            {party.front.map((e, i) => <Text key={'f' + i} style={s.miniEmojiFront}>{e}</Text>)}
+          </View>
+        </View>
         {bar(heroHp.current, T.good)}
-        <Text style={s.label}>내 파티</Text>
+        <Text style={s.label}>내 파티 {heroCount}명</Text>
       </View>
       <Text style={s.clash}>⚔️</Text>
       <View style={s.side}>
@@ -98,10 +113,16 @@ export default React.memo(BattleView);
 
 const s = StyleSheet.create({
   arena: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-around', height: 132, marginVertical: 4 },
-  side: { alignItems: 'center', width: 120 },
+  side: { alignItems: 'center', width: 110 },
+  // 히어로 쪽 — 3열(후열·중열·전열) 편성을 그대로 보여주는 넓은 영역.
+  heroSide: { alignItems: 'center', width: 172 },
   floatLayer: { position: 'absolute', left: 0, right: 0, bottom: 0, height: 120 },
+  formRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 5, height: 70 },
+  formCol: { flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 3 },
+  formColLunge: { transform: [{ translateX: 8 }] },
+  miniEmoji: { fontSize: 17, opacity: 0.82 },
+  miniEmojiFront: { fontSize: 22 },
   emoji: { fontSize: 56 },
-  emojiLunge: { transform: [{ translateX: 16 }, { scale: 1.08 }] },
   emojiHit: { transform: [{ translateX: 6 }], opacity: 0.55 },
   clash: { fontSize: 20, opacity: 0.6 },
   barBg: { width: 96, height: 8, backgroundColor: T.surface, borderRadius: 4, marginTop: 8, overflow: 'hidden' },

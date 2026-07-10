@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { T } from '../theme';
 import { Card, Btn, fmt } from '../components';
@@ -12,6 +12,7 @@ import { affinityLabel } from '../../system/core/elements.mjs';
 import { teamSynergy } from '../../system/core/synergy.mjs';
 import { resolve } from '../../system/core/resolution.mjs';
 import { getPartyUnits } from '../../system/core/gameState.mjs';
+import { formationSummary } from '../../system/core/formation.mjs';
 import { accountMods } from '../../system/core/balance.mjs';
 import { canClaimAttendance, missionList, claimAllDaily } from '../../system/core/daily.mjs';
 import { weeklyEvent, claimWeekly } from '../../system/core/events.mjs';
@@ -28,7 +29,6 @@ export default function IdleScreen({ state, bump, lastGain, concept }) {
   const byId = new Map(state.units.map((u) => [u.uid, u]));
   const party = state.party.map((id) => byId.get(id)).filter(Boolean);
   const lead = party.slice().sort((a, b) => computePower(b) - computePower(a))[0];
-  const leadMeta = lead ? identity(concept, lead) : null;
 
   const canPrestige = state.maxStage >= 15;
   const nextGain = Math.floor(Math.sqrt(state.maxStage));
@@ -40,6 +40,15 @@ export default function IdleScreen({ state, bump, lastGain, concept }) {
   const doClaimAll = () => { claimAllDaily(state); claimWeekly(state); fx('success'); bump(); };
   const synergy = teamSynergy(party);
   const battle = resolve(getPartyUnits(state), stageDef.challenge, accountMods(state), state.formation);
+  // 편성(전열2·중열3·후열2)을 전투 화면에 그대로 표시 — 방치 틱마다 새 객체를
+  // 만들면 BattleView(React.memo)가 매번 재렌더되므로, 편성이 실제로 바뀔 때만
+  // (uid 구성·역할) 재계산해 레퍼런스를 안정시킨다.
+  const formKey = `${state.party.join(',')}|${JSON.stringify(state.formation)}`;
+  const heroFormation = useMemo(() => {
+    const sum = formationSummary(state);
+    const emojiOf = (uid) => { const u = byId.get(uid); return u ? identity(concept, u).emoji : '⚔️'; };
+    return { front: sum.front.map(emojiOf), mid: sum.mid.map(emojiOf), back: sum.back.map(emojiOf) };
+  }, [formKey]);
 
   return (
     <View style={st.wrap}>
@@ -75,7 +84,7 @@ export default function IdleScreen({ state, bump, lastGain, concept }) {
         </Text>
         <Text style={st.zone}>{elementMeta(concept, zone.element)?.emoji}{elementMeta(concept, zone.element)?.name} 구역 ({zone.start}~{zone.end}층) · 다음 {elementMeta(concept, zone.nextElement)?.emoji}</Text>
         <BattleView
-          heroEmoji={leadMeta ? leadMeta.emoji : '⚔️'}
+          party={heroFormation}
           enemyEmoji={elementMeta(concept, stageDef.challenge.element)?.emoji || '👹'}
           win={battle.win}
           margin={battle.margin}

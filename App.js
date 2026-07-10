@@ -27,7 +27,7 @@ import { summonMasteryInfo } from './system/core/summonMastery.mjs';
 // 비활성 화면이 리렌더되지 않는다(탭 전환·조작 렉 제거).
 // 세나키우기식 타이트한 5탭. 경쟁→콘텐츠, 기록→영웅 서브탭으로 흡수(소환은 과금 노출 위해 유지).
 const TABS = [
-  { key: 'idle', label: '방치', icon: '🏰', Screen: React.memo(IdleScreen) },
+  { key: 'idle', label: '전투', icon: '🏰', Screen: React.memo(IdleScreen) },
   { key: 'roster', label: '영웅', icon: '🦸', Screen: React.memo(RosterScreen) },
   { key: 'gacha', label: '소환', icon: '🔮', Screen: React.memo(GachaScreen) },
   { key: 'content', label: '콘텐츠', icon: '📅', Screen: React.memo(ContentScreen) },
