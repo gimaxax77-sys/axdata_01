@@ -580,7 +580,7 @@ export default function RosterScreen({ state, bump, concept }) {
                 <Btn small tiny kind="gold" label={label} onPress={() => growN(() => levelUp(state, unit.uid), n)} />
               </View>
             ))}
-            <View style={{ flex: 1 }}><Btn small tiny kind="primary" label="돌파" onPress={() => growN(() => ascend(state, unit.uid), 1)} /></View>
+            <View style={{ flex: 1 }}><Btn small tiny kind="primary" label="Ascend" onPress={() => growN(() => ascend(state, unit.uid), 1)} /></View>
           </View>
           <Text style={g.ascHint}>{MATERIAL_META.ascendStone.emoji} 돌파석 {fmt(materialCount(state, 'ascendStone'))} · 이번 돌파 필요 {unit.rank * 2}{materialCount(state, 'ascendStone') < unit.rank * 2 ? ' (부족 시 소환석 대체)' : ''}</Text>
           <View style={g.btnRow}>
