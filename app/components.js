@@ -32,51 +32,68 @@ export const Portrait = React.memo(function Portrait({ emoji, image = null, rari
   );
 });
 
-// ── 성급(Star Grade) 배지 — 한 개의 별이 5조각으로 채워진다.
-//   · 1~5성: 일반 별(★) — 채움 1/5 → 5/5
-//   · 6~10성: 태양 별(✻) — 채움 1/5 → 5/5
-//   빈 부분은 흐린 별, 채운 부분은 금빛으로 좌→우 클립 표시.
-//   회전 이펙트는 없음. 등급 상승 시 살짝 튀는 팝 연출만(reducedMotion 존중).
+// ── 성급(Star Grade) 배지 — 별을 5개의 뾰족한 점(꼭짓점)으로 5등분.
+//   중심에서 72°씩 뻗은 삼각형 5개가 각각 하나의 조각이며, 성급만큼
+//   금빛으로 켜진다(1성=1점 … 5성=5점 전부). 6~10성은 태양으로 승격:
+//   같은 5점 위에 중심 원반 + 사잇점을 더해 태양 느낌을 준다.
+//   회전 이펙트 없음. 등급 상승 시 팝 연출만(reducedMotion 존중).
+const STAR_GOLD_C = '#ffd257';
+const STAR_DIM_C = 'rgba(255,210,87,0.22)';
 export const StarBadge = React.memo(function StarBadge({ tier = 1, size = 40 }) {
   const clamped = Math.max(1, Math.min(10, tier));
   const isSun = clamped >= 6;
-  const glyph = isSun ? '✻' : '★';
-  const pieces = ((clamped - 1) % 5) + 1; // 1~5조각
-  const fill = pieces / 5;
+  const pieces = ((clamped - 1) % 5) + 1; // 켜진 조각 수 1~5
   const t = (clamped - 1) / 9; // 0~1 (글로우 강도 보간)
   const reduce = reducedMotion();
-  const pop = useRef(new Animated.Value(reduce ? 1 : 0.6)).current;
+  const pop = useRef(new Animated.Value(reduce ? 1 : 0.7)).current;
 
   useEffect(() => {
     if (reduce) { pop.setValue(1); return; }
-    pop.setValue(0.7);
+    pop.setValue(0.75);
     Animated.spring(pop, { toValue: 1, useNativeDriver: true, speed: 18, bounciness: 12 }).start();
   }, [clamped]);
 
-  const haloOpacity = 0.08 + t * 0.30;
-  const haloScale = 1 + t * 0.30;
-  const glyphStyle = {
-    position: 'absolute', left: 0, top: 0, width: size,
-    textAlign: 'center', lineHeight: size, fontSize: size * 0.72, fontWeight: '900',
-  };
+  const haloOpacity = 0.08 + t * 0.28;
+  const haloScale = 1 + t * 0.28;
+  const baseHalf = size * (isSun ? 0.155 : 0.17);
+  const pointH = size * 0.47;
+
+  // 하나의 뾰족점(위로 솟은 삼각형) — 중심 기준 wrap을 rotate해 5방향 배치.
+  const point = (idx, color, big) => (
+    <View key={`${big ? 'g' : 'd'}${idx}`} style={{
+      position: 'absolute', width: size, height: size,
+      transform: [{ rotate: `${idx * 72}deg` }],
+    }}>
+      <View style={{
+        position: 'absolute', left: size / 2 - baseHalf, top: size * 0.03,
+        width: 0, height: 0,
+        borderLeftWidth: baseHalf, borderRightWidth: baseHalf, borderBottomWidth: pointH,
+        borderLeftColor: 'transparent', borderRightColor: 'transparent',
+        borderBottomColor: color,
+      }} />
+    </View>
+  );
 
   return (
     <View style={{ width: size, height: size, alignItems: 'center', justifyContent: 'center' }}>
       {/* 글로우 후광 — 등급이 오를수록 커지고 진해짐 */}
       <View style={{
         position: 'absolute', width: size * haloScale, height: size * haloScale,
-        borderRadius: size, backgroundColor: T.accent, opacity: haloOpacity,
+        borderRadius: size, backgroundColor: STAR_GOLD_C, opacity: haloOpacity,
       }} />
       <Animated.View style={{ width: size, height: size, transform: [{ scale: pop }] }}>
-        {/* 빈 별(흐린 금빛) */}
-        <Text style={[glyphStyle, { color: T.accent, opacity: 0.24 }]}>{glyph}</Text>
-        {/* 채운 별(좌→우 클립) */}
-        <View style={{ position: 'absolute', left: 0, top: 0, width: size * fill, height: size, overflow: 'hidden' }}>
-          <Text style={[glyphStyle, {
-            color: T.accent,
-            textShadowColor: T.accent, textShadowRadius: 2 + t * 5, textShadowOffset: { width: 0, height: 0 },
-          }]}>{glyph}</Text>
-        </View>
+        {/* 1) 5점 전부 흐리게(빈 별 윤곽) */}
+        {[0, 1, 2, 3, 4].map((i) => point(i, STAR_DIM_C, false))}
+        {/* 2) 켜진 조각만 금빛으로 덮어쓰기 */}
+        {[0, 1, 2, 3, 4].filter((i) => i < pieces).map((i) => point(i, STAR_GOLD_C, true))}
+        {/* 태양(6~10성): 중심 원반으로 태양 느낌 */}
+        {isSun && (
+          <View style={{
+            position: 'absolute', left: size / 2 - size * 0.15, top: size / 2 - size * 0.15,
+            width: size * 0.3, height: size * 0.3, borderRadius: size * 0.15,
+            backgroundColor: STAR_GOLD_C,
+          }} />
+        )}
       </Animated.View>
     </View>
   );
