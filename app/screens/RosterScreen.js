@@ -661,6 +661,37 @@ export default function RosterScreen({ state, bump, concept }) {
         })}
       </View>
 
+      {/* 성급 강화 — 육성 요소로 이동(레벨업 아래에서 옮김). 요약 타일보다 위에 둬야
+          친밀도·씨앗 아코디언이 타일 바로 아래에서 열린다. */}
+      {dtab === 'growth' && (() => {
+        const si = starUpInfo(state, unit);
+        const curP = computePower(unit);
+        return (
+          <Card style={{ marginTop: 8 }}>
+            <CodeTag id="c3" corner="tr" />
+            <View style={g.intiHead}>
+              <View style={g.starPreviewRow}>
+                <Text style={g.sec}>⭐ 성급 {si.star}★{si.maxed ? '' : ` → ${si.star + 1}★`}</Text>
+                {!si.maxed && <StarBadge tier={si.star + 1} size={22} />}
+              </View>
+              <Text style={g.dim}>{si.maxed ? `최고 ${STAR_MAX}★` : `중복 ${si.haveDupes}/${si.req.dupes} · 🪙${fmt(si.req.currency)}`}</Text>
+            </View>
+            {!si.maxed && si.identified && <DeltaText cur={curP} next={powerWithNextStar(unit)} />}
+            <View style={{ height: 6 }} />
+            <Btn small kind="gold" disabled={!si.canUp}
+              label={si.maxed ? `MAX ${STAR_MAX}★` : !si.identified ? '성급 강화 불가(정체성 없음)'
+                : !si.enoughDupes ? `중복 영웅 ${si.req.dupes}명 필요`
+                : !si.enoughGold ? '골드 부족' : `성급 강화 (${si.star}★ → ${si.star + 1}★)`}
+              onPress={() => {
+                const r = starUp(state, unit.uid);
+                setDeckMsg(r.ok ? `⭐ ${r.star}★ 달성! 중복 ${r.consumed}명 합성` : `⚠ ${r.reason}`);
+                fx(r.ok ? 'success' : 'error'); bump();
+              }} />
+            {!si.maxed && si.identified && <Text style={g.starHint}>중복 영웅을 합성해 별을 올립니다 · 약한 중복부터 소모(장비·룬은 회수)</Text>}
+          </Card>
+        );
+      })()}
+
       {/* 친밀도·씨앗 — 한 줄 반반 요약 타일. 탭하면 아래로 상세 펼침(아코디언). */}
       {dtab === 'growth' && (() => {
         const sp = seedProgress(unit);
@@ -688,36 +719,6 @@ export default function RosterScreen({ state, bump, concept }) {
               </TouchableOpacity>
             )}
           </View>
-        );
-      })()}
-
-      {/* 성급 강화 — 육성 요소로 이동(레벨업 아래에서 옮김). 동일 영웅 중복 합성 → 별 +1, 전 스탯 +12%. */}
-      {dtab === 'growth' && (() => {
-        const si = starUpInfo(state, unit);
-        const curP = computePower(unit);
-        return (
-          <Card style={{ marginTop: 8 }}>
-            <CodeTag id="c3" corner="tr" />
-            <View style={g.intiHead}>
-              <View style={g.starPreviewRow}>
-                <Text style={g.sec}>⭐ 성급 {si.star}★{si.maxed ? '' : ` → ${si.star + 1}★`}</Text>
-                {!si.maxed && <StarBadge tier={si.star + 1} size={22} />}
-              </View>
-              <Text style={g.dim}>{si.maxed ? `최고 ${STAR_MAX}★` : `중복 ${si.haveDupes}/${si.req.dupes} · 🪙${fmt(si.req.currency)}`}</Text>
-            </View>
-            {!si.maxed && si.identified && <DeltaText cur={curP} next={powerWithNextStar(unit)} />}
-            <View style={{ height: 6 }} />
-            <Btn small kind="gold" disabled={!si.canUp}
-              label={si.maxed ? `MAX ${STAR_MAX}★` : !si.identified ? '성급 강화 불가(정체성 없음)'
-                : !si.enoughDupes ? `중복 영웅 ${si.req.dupes}명 필요`
-                : !si.enoughGold ? '골드 부족' : `성급 강화 (${si.star}★ → ${si.star + 1}★)`}
-              onPress={() => {
-                const r = starUp(state, unit.uid);
-                setDeckMsg(r.ok ? `⭐ ${r.star}★ 달성! 중복 ${r.consumed}명 합성` : `⚠ ${r.reason}`);
-                fx(r.ok ? 'success' : 'error'); bump();
-              }} />
-            {!si.maxed && si.identified && <Text style={g.starHint}>중복 영웅을 합성해 별을 올립니다 · 약한 중복부터 소모(장비·룬은 회수)</Text>}
-          </Card>
         );
       })()}
 
