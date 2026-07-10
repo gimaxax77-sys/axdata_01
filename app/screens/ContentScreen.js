@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, Animated, TouchableOpacity, Modal } from 'react-native';
 import { T } from '../theme';
 import { Card, Btn, fmt, MultiToggle, multLabel, repeat } from '../components';
+import { CodeTag } from '../uicode';
 import { fx } from '../feedback';
 import { reducedMotion } from '../motion';
 import ArenaGuildScreen from './ArenaGuildScreen';
@@ -164,6 +165,7 @@ export default function ContentScreen({ state, bump, concept }) {
       {grp === 'story' && (
       /* 스토리 캠페인 */
       <Card style={{ borderColor: T.accent }}>
+        <CodeTag id="n1" corner="tl" />
         <Text style={c.sec}>📖 스토리 <Text style={c.dim}>챕터 {state.campaign.cleared}/{CAMPAIGN_CHAPTER_COUNT}</Text></Text>
         {allClear ? (
           <Text style={c.storyText}>모든 챕터를 완결했습니다. 새로운 서사가 곧 이어집니다…</Text>
@@ -188,6 +190,7 @@ export default function ContentScreen({ state, bump, concept }) {
         </>)}
         {/* 진행 도트 */}
         <View style={c.dots}>
+          <CodeTag id="n2" corner="tr" />
           {chapters.map((ch) => (
             <View key={ch.index} style={[c.dot, ch.cleared && c.dotDone, ch.isNext && c.dotNext]} />
           ))}
@@ -195,6 +198,7 @@ export default function ContentScreen({ state, bump, concept }) {
         {/* 스토리 정주행 도감 */}
         {sLog.readable.length > 0 && (
           <View style={{ marginTop: 10 }}>
+            <CodeTag id="n3" corner="tr" />
             <Btn small kind="ghost" label={showStory ? '스토리 도감 닫기 ▲' : `📚 스토리 정주행 (${sLog.readable.length}) ▼`} onPress={() => setShowStory((v) => !v)} />
             {showStory && sLog.readable.map((e) => (
               <View key={e.index} style={c.logEntry}>
@@ -210,6 +214,7 @@ export default function ContentScreen({ state, bump, concept }) {
       {grp === 'event' && (<>
       {/* 주간 테마 이벤트(미니 로드맵) */}
       <Card style={{ marginTop: 12, borderColor: T.accent }}>
+        <CodeTag id="l1" corner="tl" />
         <Text style={c.sec}>{wev.emoji} 이번 주 · {wev.label} <Text style={c.dim}>{days(wev.endsInMs)}일 남음</Text></Text>
         <Text style={c.sub}>{wev.hint}</Text>
         <View style={c.mBar}><View style={[c.mBarFill, { width: `${Math.min(100, (wev.progress / wev.goal) * 100)}%` }]} /></View>
@@ -221,6 +226,7 @@ export default function ContentScreen({ state, bump, concept }) {
 
       {/* 시즌 소프트리셋 던전(평준화 랭킹) */}
       <Card style={{ marginTop: 12 }}>
+        <CodeTag id="l2" corner="tl" />
         <Text style={c.sec}>🏔️ 시즌 던전 <Text style={c.dim}>시즌 {sInfo.season} · {days(sInfo.endsInMs)}일 남음</Text></Text>
         <Text style={c.sub}>모두 평준화된 조건에서 겨루는 층 등반 — 스펙보다 편성·운영. (계정 배수 미적용)</Text>
         <Text style={c.sub}>도달 {sInfo.floor}/{SEASON_FLOORS}층 · 최고 {sInfo.best}층 · 평준화 전투력 {fmt(sInfo.power)}</Text>
@@ -233,6 +239,7 @@ export default function ContentScreen({ state, bump, concept }) {
       {grp === 'daily' && (<>
       {/* 출석 */}
       <Card style={{ marginTop: 12 }}>
+        <CodeTag id="k1" corner="tl" />
         <Text style={c.sec}>✅ 출석 체크</Text>
         <Text style={c.sub}>연속 {state.daily.streak}일 · 오늘 보상 {rewardText(concept, ATTENDANCE[streakIdx])}</Text>
         <View style={c.attRow}>
@@ -249,6 +256,7 @@ export default function ContentScreen({ state, bump, concept }) {
 
       {/* 일일 미션 */}
       <Card style={{ marginTop: 12 }}>
+        <CodeTag id="k2" corner="tl" />
         <View style={c.rowBetween}>
           <Text style={c.sec}>📋 일일 미션</Text>
           <Btn small kind="gold" label="⚡ 전체 수령"
@@ -270,6 +278,7 @@ export default function ContentScreen({ state, bump, concept }) {
 
       {/* 던전 */}
       <Card style={{ marginTop: 12 }}>
+        <CodeTag id="k3" corner="tl" />
         <View style={c.rowBetween}>
           <Text style={c.sec}>🗝️ 던전</Text>
           <MultiToggle value={mult} onChange={setMult} />

@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, ScrollView, Animated, TouchableOpacity } from 'react-native';
 import { T, rarityMeta } from '../theme';
 import { Card, Btn, fmt, Portrait } from '../components';
+import { CodeTag } from '../uicode';
 import { charImage } from '../charImages';
 import { fx } from '../feedback';
 import { reducedMotion } from '../motion';
@@ -192,6 +193,7 @@ export default function GachaScreen({ state, bump, concept }) {
     <View style={s.flex}>
     <ScrollView ref={scrollRef} style={s.flex} contentContainerStyle={s.wrap}>
       <Card style={s.banner}>
+        <CodeTag id="j1" corner="tl" />
         <Text style={s.bannerTitle}>{b.label} 소환</Text>
         <Text style={s.bannerSub}>{b.sub}</Text>
         <Text style={s.pity}>
@@ -201,6 +203,7 @@ export default function GachaScreen({ state, bump, concept }) {
 
       {/* 소환 레벨(숙련도) */}
       <Card style={{ marginTop: 12 }}>
+        <CodeTag id="j2" corner="tl" />
         <View style={s.mHead}>
           <Text style={s.mTitle}>소환 레벨 <Text style={s.mLv}>Lv.{info.claimed}/{SUMMON_LEVEL_MAX}</Text></Text>
           <Btn small kind={info.claimable ? 'gold' : 'ghost'} disabled={!info.claimable}
@@ -216,6 +219,7 @@ export default function GachaScreen({ state, bump, concept }) {
       </Card>
 
       <View style={s.btns}>
+        <CodeTag id="j3" corner="tl" />
         <View style={{ flex: 1 }}>
           <Btn label={`단차 (${b.cost})`} disabled={!canN(1)} sfx={false} onPress={() => pull(1)} />
         </View>
@@ -233,6 +237,7 @@ export default function GachaScreen({ state, bump, concept }) {
 
       {results.length > 0 && (
         <Card style={{ marginTop: 14 }}>
+          <CodeTag id="j4" corner="tl" />
           <View style={s.resHead}>
             <Text style={s.sec}>소환 결과 <Text style={s.floor}>({results.length}건{results.length >= 20 ? ' · 최근 20' : ''})</Text></Text>
             <TouchableOpacity onPress={toggleSkip} activeOpacity={0.8} style={[s.skipToggle, skipAnim && s.skipToggleOn]}>

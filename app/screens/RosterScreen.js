@@ -328,6 +328,7 @@ export default function RosterScreen({ state, bump, concept }) {
       {rtab === 'party' && (
       /* 파티 편성 — 전투는 편성된 전원 합산 */
       <Card style={{ marginBottom: 12 }}>
+        <CodeTag id="g1" corner="tl" />
         <View style={g.intiHead}>
           <Text style={g.sec}>파티 편성 <Text style={g.dim}>{state.party.length}/{MAX_PARTY}</Text></Text>
           <Btn small kind="ghost" label="🎯 자동편성" onPress={() => {
@@ -363,6 +364,7 @@ export default function RosterScreen({ state, bump, concept }) {
           if (!syn.list.length) return <Text style={g.synNone}>시너지 없음 — 3원형/동일 속성/전원 다른 속성으로 보너스</Text>;
           return (
             <View style={g.synWrap}>
+              <CodeTag id="g2" corner="tr" />
               {syn.list.map((s) => (
                 <View key={s.id} style={g.synChip}><Text style={g.synChipText}>✦ {s.label}</Text><Text style={g.synChipDesc}>{s.desc}</Text></View>
               ))}
@@ -376,6 +378,7 @@ export default function RosterScreen({ state, bump, concept }) {
           const chipStyle = { front: g.formFront, mid: g.formMid, back: g.formBack };
           return (
             <View style={g.formWrap}>
+              <CodeTag id="g3" corner="tr" />
               <View style={g.intiHead}>
                 <Text style={g.formTitle}>⚔️ 진형</Text>
                 <Btn small kind="ghost" label="🪄 위치 재배치" onPress={() => {
@@ -447,6 +450,7 @@ export default function RosterScreen({ state, bump, concept }) {
         )}
         {/* 편성 프리셋(1~5) — 탭하면 불러오기, 길게 누르면 현재 편성을 저장 */}
         <View style={g.presetWrap}>
+          <CodeTag id="g4" corner="tr" />
           <Text style={g.formGroupLabel}>💾 편성 프리셋 <Text style={g.dim}>탭=불러오기 · 길게=저장</Text></Text>
           <View style={g.presetRow}>
             {Array.from({ length: PRESET_SLOTS }, (_, i) => i + 1).map((slot) => {
@@ -474,6 +478,7 @@ export default function RosterScreen({ state, bump, concept }) {
         </View>
         {/* 원클릭 덱 복사/붙여넣기(로컬) */}
         <View style={g.deckWrap}>
+          <CodeTag id="g5" corner="tr" />
           <View style={g.deckBtns}>
             <Btn small kind="ghost" label="📋 덱 복사" onPress={doCopyDeck} />
             <Btn small kind="ghost" label="📥 덱 적용" disabled={!deckCode.trim()} onPress={doPasteDeck} />
@@ -681,6 +686,7 @@ export default function RosterScreen({ state, bump, concept }) {
               <TouchableOpacity style={[g.halfTile, expand === 'inti' && g.halfTileOn]} activeOpacity={0.8}
                 onPress={() => setExpand(expand === 'inti' ? null : 'inti')}
                 accessibilityRole="button" accessibilityLabel={`친밀도 레벨 ${iLv}, 탭하여 ${expand === 'inti' ? '접기' : '펼치기'}`}>
+                <CodeTag id="c1" corner="tl" />
                 <Text style={g.halfTitle}>💗 친밀도 {expand === 'inti' ? '▲' : '▼'}</Text>
                 <Text style={g.halfSub}>Lv.{iLv}/{INTIMACY_MAX} · +{iLv * 2}%</Text>
               </TouchableOpacity>
@@ -689,6 +695,7 @@ export default function RosterScreen({ state, bump, concept }) {
               <TouchableOpacity style={[g.halfTile, sp.fullyUnlocked && { borderColor: T.good }, expand === 'seed' && g.halfTileOn]} activeOpacity={0.8}
                 onPress={() => setExpand(expand === 'seed' ? null : 'seed')}
                 accessibilityRole="button" accessibilityLabel={`씨앗 발현 ${sp.met}/${sp.total}, 탭하여 ${expand === 'seed' ? '접기' : '펼치기'}`}>
+                <CodeTag id="c2" corner="tr" />
                 <Text style={g.halfTitle}>🌱 씨앗 {expand === 'seed' ? '▲' : '▼'}</Text>
                 <Text style={[g.halfSub, sp.fullyUnlocked && { color: T.good }]}>{sp.fullyUnlocked ? '완전 발현' : `${sp.met}/${sp.total} · 최대 +${Math.round(sp.full * 100)}%`}</Text>
               </TouchableOpacity>
@@ -723,6 +730,7 @@ export default function RosterScreen({ state, bump, concept }) {
       {/* 코스튬(스킨) — 캐릭터 외형 변경. 순수 외형(능력치 무관) */}
       {dtab === 'cosmetic' && (
       <Card style={{ marginTop: 12 }}>
+        <CodeTag id="f1" corner="tl" />
         <Text style={g.sec}>🎭 코스튬 <Text style={g.dim}>(외형 · 능력치 무관)</Text></Text>
         {costumesFor(state, unit).map((cos) => {
           const needTxt = costumeNeedText(cos, concept);
@@ -778,6 +786,7 @@ export default function RosterScreen({ state, bump, concept }) {
         const canAwaken = aw < AWAKEN_MAX && (state.wallet.summon || 0) >= awCost.summon && (state.wallet.gem || 0) >= awCost.gem;
         return (
           <Card style={{ marginTop: 12, borderColor: T.accent }}>
+            <CodeTag id="e1" corner="tl" />
             <View style={g.sigHead}>
               <Text style={g.sec}>⭐ 전용 스킬</Text>
               <Text style={g.sigBadge}>시그니처</Text>
@@ -808,6 +817,7 @@ export default function RosterScreen({ state, bump, concept }) {
         const canEnh = owned && !maxed && (state.wallet.currency || 0) >= enhCost.currency;
         return (
           <Card style={{ marginTop: 12 }}>
+            <CodeTag id="d1" corner="tl" />
             <Text style={g.sec}>🗡️ 전용무기</Text>
             <View style={g.slotRow}>
               <Text style={g.cosEmoji}>{owned ? w.emoji : '🔒'}</Text>
@@ -830,6 +840,7 @@ export default function RosterScreen({ state, bump, concept }) {
       {/* 룬 — 소켓형 서브스탯 + 세트 보너스 */}
       {dtab === 'gear' && (
       <Card style={{ marginTop: 12 }}>
+        <CodeTag id="d2" corner="tl" />
         <View style={g.intiHead}>
           <Text style={g.sec}>🔩 룬 <Text style={g.dim}>({(unit.runes || []).filter(Boolean).length}/{RUNE_SLOTS})</Text></Text>
           <MultiToggle value={mult} onChange={setMult} />
@@ -865,6 +876,7 @@ export default function RosterScreen({ state, bump, concept }) {
       {/* 스킬 편성 (수동) */}
       {dtab === 'skill' && (
       <Card style={{ marginTop: 12 }}>
+        <CodeTag id="e2" corner="tl" />
         <View style={g.intiHead}>
           <Text style={g.sec}>✨ 스킬 편성 <Text style={g.dim}>({unit.skills.filter(Boolean).length}/{slots})</Text></Text>
           <Btn small kind="gold" label="✨ 추천 전체" sfx={false} onPress={() => runRecommend('all')} />
@@ -895,6 +907,7 @@ export default function RosterScreen({ state, bump, concept }) {
       {/* 장비 (수동) */}
       {dtab === 'gear' && (
       <Card style={{ marginTop: 12 }}>
+        <CodeTag id="d3" corner="tl" />
         <View style={g.intiHead}>
           <Text style={g.sec}>⚔️ 장비</Text>
           <Btn small kind="gold" label="✨ 추천 장착" sfx={false} onPress={() => runRecommend('gear')} />

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, StyleSheet, Modal, TouchableOpacity } from 'react-native';
 import { T, rarityMeta } from '../theme';
 import { Card, Btn, fmt, MultiToggle, multLabel, repeat } from '../components';
+import { CodeTag } from '../uicode';
 import { fx } from '../feedback';
 import { RELICS, relicUpgradeCost, upgradeRelic, relicCap } from '../../system/core/relics.mjs';
 import { EMBLEMS, emblemUpgradeCost, upgradeEmblem, emblemCap, emblemComplete, EMBLEM_COMPLETE_BONUS } from '../../system/core/emblems.mjs';
@@ -117,6 +118,7 @@ export default function GrowthPanel({ state, bump, concept }) {
     <View>
       {/* 보유 재료 요약 */}
       <View style={c.matBar}>
+        <CodeTag id="h1" corner="tl" />
         <Text style={c.matChip}>{MATERIAL_META.elemEssence.emoji} {MATERIAL_META.elemEssence.label} {fmt(materialCount(state, 'elemEssence'))}</Text>
         {['R', 'SR', 'SSR', 'UR'].map((g) => (
           <Text key={g} style={c.matChip}>{SHARD_META.emoji}{g} {fmt(materialCount(state, 'petShard', g))}</Text>
@@ -126,6 +128,7 @@ export default function GrowthPanel({ state, bump, concept }) {
 
       {/* 펫 */}
       <Card style={{ marginTop: 4 }}>
+        <CodeTag id="h2" corner="tl" />
         <View style={c.petHead}>
           <Text style={c.sec}>🐾 펫 <Text style={c.dim}>(장착 {state.pets.active.length}/{MAX_ACTIVE_PETS})</Text></Text>
           {petsUnlocked && <MultiToggle value={mult} onChange={setMult} />}
@@ -180,6 +183,7 @@ export default function GrowthPanel({ state, bump, concept }) {
 
       {/* 유물 */}
       <Card style={{ marginTop: 12 }}>
+        <CodeTag id="h3" corner="tl" />
         <Text style={c.sec}>🏺 유물 <Text style={c.dim}>(계정 영구 성장 · 탭하여 강화)</Text></Text>
         <View style={c.tileGrid}>
           {Object.values(RELICS).map((r) => (
@@ -191,6 +195,7 @@ export default function GrowthPanel({ state, bump, concept }) {
 
       {/* 엠블럼 */}
       <Card style={{ marginTop: 12 }}>
+        <CodeTag id="h4" corner="tl" />
         <Text style={c.sec}>🎖️ 엠블럼 <Text style={c.dim}>(문장 · 계정 공유)</Text></Text>
         {!emblemUnlocked && <Text style={c.sub}>🔒 스테이지 {unlockStage('emblem')} 도달 시 해금</Text>}
         {emblemUnlocked && <Text style={c.sub}>{emblemComplete(state) ? `✨ 도감 완성 · 전투력 +${Math.round(EMBLEM_COMPLETE_BONUS * 100)}%` : '전 문장 1레벨↑ 수집 시 완성 보너스'}</Text>}
@@ -206,6 +211,7 @@ export default function GrowthPanel({ state, bump, concept }) {
 
       {/* 정령 */}
       <Card style={{ marginTop: 12, marginBottom: 12 }}>
+        <CodeTag id="h5" corner="tl" />
         <View style={c.petHead}>
           <Text style={c.sec}>🧚 정령 <Text style={c.dim}>(장착 {state.guardians.active.length}/{MAX_ACTIVE_GUARDIANS})</Text></Text>
         </View>

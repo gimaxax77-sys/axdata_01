@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Modal } from 'react-native';
 import { T } from '../theme';
 import { Card, Btn, fmt, Portrait } from '../components';
+import { CodeTag } from '../uicode';
 import { charImage } from '../charImages';
 import { elementMeta } from '../../system/concepts/index.mjs';
 import { getArchetype } from '../../system/core/archetypes.mjs';
@@ -82,6 +83,7 @@ export default function MetaScreen({ state, bump, concept, embedded }) {
     <Container {...cProps}>
       {/* 시즌패스 */}
       <Card>
+        <CodeTag id="i1" corner="tl" />
         <View style={c.head}>
           <Text style={c.sec}>🎟️ 시즌패스 <Text style={c.dim}>Tier {sp.tier}</Text></Text>
           {!sp.premium && <Btn small kind="gold" label="프리미엄 ₩9,900" onPress={() => act(() => buySeasonPremium(state))} />}
@@ -112,6 +114,7 @@ export default function MetaScreen({ state, bump, concept, embedded }) {
 
       {/* 업적 */}
       <Card style={{ marginTop: 12 }}>
+        <CodeTag id="i2" corner="tl" />
         <Text style={c.sec}>🏆 업적</Text>
         {achv.map((a) => (
           <View key={a.id} style={c.row}>
@@ -127,6 +130,7 @@ export default function MetaScreen({ state, bump, concept, embedded }) {
 
       {/* 도감 */}
       <Card style={{ marginTop: 12, marginBottom: 24 }}>
+        <CodeTag id="i3" corner="tl" />
         <Text style={c.sec}>📖 도감 <Text style={c.dim}>{owned.size}/{concept.roster.length} 수집</Text></Text>
         <View style={c.grid}>
           {concept.roster.map((ch) => {

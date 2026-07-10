@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView } from 'react-native';
 import { T } from '../theme';
 import { Card, Btn, fmt, MultiToggle, multLabel, repeat } from '../components';
+import { CodeTag } from '../uicode';
 import { isUnlocked, unlockStage } from '../../system/core/unlocks.mjs';
 import { ARENA_ENTRIES, arenaEntriesLeft, arenaFight, arenaInfo, ladderInfo } from '../../system/core/arena.mjs';
 import { mailList, unreadMailCount, claimMail, claimAllMail } from '../../system/core/mailbox.mjs';
@@ -102,6 +103,7 @@ export default function ArenaGuildScreen({ state, bump, concept, embedded }) {
 
       {/* ── 아레나 ───────────────────────────────── */}
       <Card>
+        <CodeTag id="m1" corner="tl" />
         <View style={c.head}>
           <Text style={c.sec}>⚔️ 아레나 <Text style={c.dim}>전투력 리그</Text></Text>
           {arenaOpen && (() => { const ai = arenaInfo(state); return (
@@ -144,6 +146,7 @@ export default function ArenaGuildScreen({ state, bump, concept, embedded }) {
 
       {/* ── 무한의 탑 ─────────────────────────────── */}
       <Card style={{ marginTop: 12 }}>
+        <CodeTag id="m2" corner="tl" />
         <View style={c.head}>
           <Text style={c.sec}>🗼 무한의 탑 <Text style={c.dim}>엔드게임</Text></Text>
           {towerOpen && <Text style={c.tier}>{state.tower.floor}층 · 최고 {state.tower.best}</Text>}
@@ -171,6 +174,7 @@ export default function ArenaGuildScreen({ state, bump, concept, embedded }) {
 
       {/* ── 길드 보스 ─────────────────────────────── */}
       <Card style={{ marginTop: 12, marginBottom: 24 }}>
+        <CodeTag id="m3" corner="tl" />
         <View style={c.head}>
           <Text style={c.sec}>🛡️ 길드 보스 <Text style={c.dim}>레이드</Text></Text>
           {guildOpen && <Text style={c.tier}>티어 {state.guild.tier} · 🪙{fmt(state.guild.coins)}</Text>}

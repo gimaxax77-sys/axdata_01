@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TextInput, TouchableOpacity, Animated } from 'react-native';
 import { T } from '../theme';
 import { Card, Btn, fmt, MultiToggle, repeat } from '../components';
+import { CodeTag } from '../uicode';
 import { fx } from '../feedback';
 import { reducedMotion } from '../motion';
 import { SHOP, purchase, adLeft, packageOwned } from '../../system/core/shop.mjs';
@@ -78,6 +79,7 @@ export default function ShopScreen({ state, bump, concept, onOpenSettings, onTog
       {/* 환경 설정 — 상단 헤더에서 이동(픽셀 화면·설정). 어느 서브탭에서나 접근. */}
       {(onOpenSettings || onTogglePixel) && (
         <View style={s.envRow}>
+          <CodeTag id="o6" corner="tr" />
           {onTogglePixel && (
             <TouchableOpacity style={s.envBtn} onPress={onTogglePixel} activeOpacity={0.8}
               accessibilityRole="button" accessibilityLabel="픽셀 방치 화면 전환">
@@ -96,6 +98,7 @@ export default function ShopScreen({ state, bump, concept, onOpenSettings, onTog
       {/* 개성 — 프로필 · 코스메틱(순수 외형, 능력치 무관) */}
       {grp === 'cosmetic' && (
       <Card>
+        <CodeTag id="o1" corner="tl" />
         <Text style={s.sec}>🎭 개성 <Text style={s.dim}>(외형 전용 · 전투력 무관)</Text></Text>
         <View style={s.profHead}>
           <Text style={s.profFrame}>{(PROFILE_FRAMES[prof.frame] || PROFILE_FRAMES.none).emoji}</Text>
@@ -142,6 +145,7 @@ export default function ShopScreen({ state, bump, concept, onOpenSettings, onTog
       {/* 광고 보상 */}
       {grp === 'currency' && (<>
       <Card style={{ marginTop: 12 }}>
+        <CodeTag id="o2" corner="tl" />
         <Text style={s.sec}>📺 광고 보상 <Text style={s.dim}>(무료 · 일일 제한){hasPremium(state) ? ' · ✨패스 보유' : ''}</Text></Text>
         {SHOP.ad.map((p) => {
           const left = adLeft(state, p.id);
@@ -159,6 +163,7 @@ export default function ShopScreen({ state, bump, concept, onOpenSettings, onTog
 
       {/* 다이아 상점 */}
       <Card style={{ marginTop: 12 }}>
+        <CodeTag id="o3" corner="tl" />
         <View style={s.shopHead}>
           <Text style={s.sec}>{gem.emoji} {gem.name} 상점</Text>
           <MultiToggle value={mult} onChange={setMult} />
@@ -179,6 +184,7 @@ export default function ShopScreen({ state, bump, concept, onOpenSettings, onTog
       {/* 패키지 (모의 결제) */}
       {grp === 'package' && (<>
       <Card style={{ marginTop: 12, marginBottom: 24 }}>
+        <CodeTag id="o4" corner="tl" />
         <Text style={s.sec}>🎁 패키지 <Text style={s.dim}>(결제 → 서버 검증 → 지급)</Text></Text>
         {pkgMsg ? <Text style={s.msg}>{pkgMsg}</Text> : null}
         {SHOP.package.map((p) => {
@@ -204,6 +210,7 @@ export default function ShopScreen({ state, bump, concept, onOpenSettings, onTog
 
       {/* 기간제 대여 (렌트) */}
       <Card style={{ marginTop: 12, marginBottom: 24 }}>
+        <CodeTag id="o5" corner="tl" />
         <Text style={s.sec}>⏳ 기간제 대여 <Text style={s.dim}>(상위 성능을 일정 기간 대여)</Text></Text>
         {Object.values(RENTAL_CATALOG).map((r) => {
           const curTier = rentalTier(state, r.id);
