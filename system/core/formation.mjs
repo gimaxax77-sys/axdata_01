@@ -1,4 +1,4 @@
-import { computeStats } from './stats.mjs';
+import { toCombatProfile } from './units.mjs';
 
 // ─────────────────────────────────────────────────────────────
 // 진형 — 파티 "배치"에 전략을 부여한다.
@@ -123,12 +123,14 @@ export function autoFormation(state) {
   const total = party.length;
   if (!total) return { ok: false, reason: '편성된 유닛 없음' };
 
+  // toCombatProfile을 재사용해 실제 전투 엔진의 dps/hp/def를 그대로 채점 지표로 쓴다
+  // (자체 공식을 따로 두면 전투 공식이 바뀔 때 조용히 어긋날 수 있음).
   const scored = party.map((u) => {
-    const s = computeStats(u);
+    const p = toCombatProfile(u);
     return {
       uid: u.uid,
-      tank: s.def * 2 + s.hp * 0.05, // 방어 위주 지표 — 전열 적합도
-      strike: s.atk * (1 + s.spd / 200), // 공격 위주 지표 — 후열 적합도
+      tank: p.def * 2 + p.hp * 0.05, // 방어 위주 지표 — 전열 적합도
+      strike: p.dps, // 화력 지표(치명타 반영 실제 dps) — 후열 적합도
     };
   });
 
