@@ -1,5 +1,5 @@
 import { computePower } from '../core/stats.mjs';
-import { levelCap, toCombatProfile } from '../core/units.mjs';
+import { levelCap } from '../core/units.mjs';
 import { skillSlots } from '../core/skills.mjs';
 import {
   levelUp, ascend, equipSkill, upgradeSkill, enhanceNode,

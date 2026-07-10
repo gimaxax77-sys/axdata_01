@@ -52,7 +52,7 @@ import { charImage } from '../charImages';
 import { fx } from '../feedback';
 import { togglePartyMember, MAX_PARTY, getPartyUnits, autoParty } from '../../system/core/gameState.mjs';
 import { teamSynergy } from '../../system/core/synergy.mjs';
-import { unitRole, toggleFormation, formationSummary, autoFormation, ROLE_CAP, ROLE_LABEL, FORMATION_ROLES } from '../../system/core/formation.mjs';
+import { toggleFormation, formationSummary, autoFormation, ROLE_CAP, ROLE_LABEL, FORMATION_ROLES } from '../../system/core/formation.mjs';
 import { savePreset, loadPreset, presetInfo, PRESET_SLOTS } from '../../system/core/partyPresets.mjs';
 import { computeStats, computePower, powerBreakdown } from '../../system/core/stats.mjs';
 import { getArchetype } from '../../system/core/archetypes.mjs';
