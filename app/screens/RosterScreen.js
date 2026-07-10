@@ -270,7 +270,7 @@ export default function RosterScreen({ state, bump, concept }) {
     const powerOf = (u) => { let v = pw.get(u.uid); if (v === undefined) { v = computePower(u); pw.set(u.uid, v); } return v; };
     return state.units.slice().sort((a, b) => powerOf(b) - powerOf(a));
   })();
-  // 동일 캐릭터는 한 슬롯으로 묶고 수량 표기(대표=최강 인스턴스). 강한 순 유지.
+  // 동일 캐릭터는 한 슬롯으로 묶고 수량 표기(대표=최강 인스턴스).
   const grouped = [];
   const seen = new Map();
   for (const u of list) {
@@ -278,6 +278,22 @@ export default function RosterScreen({ state, bump, concept }) {
     if (seen.has(key)) seen.get(key).count++;
     else { const gitem = { rep: u, count: 1 }; seen.set(key, gitem); grouped.push(gitem); }
   }
+  // 정렬: 편성된 영웅을 맨 앞으로, 그 외는 등급(높은 순) → 전투력 순.
+  const partyChars = new Set(state.party.map((uid) => {
+    const u = state.units.find((x) => x.uid === uid);
+    return u ? (u.characterId || u.uid) : null;
+  }));
+  const powCache = new Map();
+  const powOf = (u) => { let v = powCache.get(u.uid); if (v === undefined) { v = computePower(u); powCache.set(u.uid, v); } return v; };
+  grouped.sort((a, b) => {
+    const ap = partyChars.has(a.rep.characterId || a.rep.uid) ? 1 : 0;
+    const bp = partyChars.has(b.rep.characterId || b.rep.uid) ? 1 : 0;
+    if (ap !== bp) return bp - ap; // 편성 영웅 우선
+    const ar = RARITY_RANK[a.rep.rarity] || 0;
+    const br = RARITY_RANK[b.rep.rarity] || 0;
+    if (ar !== br) return br - ar; // 등급 높은 순
+    return powOf(b.rep) - powOf(a.rep); // 전투력 순
+  });
   const inParty = state.party.includes(unit.uid);
   refreshCostumeUnlocks(state); // 조건 충족 코스튬 자동 지급(퀘스트/VIP/전투력)
 
