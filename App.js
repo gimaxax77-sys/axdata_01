@@ -49,36 +49,51 @@ function fmtDuration(sec) {
 
 // 영웅 바텀시트 — 상단 자동전투는 그대로 두고(방치 화면 베이스) 하단에서 시트가 올라온다.
 // 강화하는 동안 위 전투가 실시간으로 강해지는 걸 눈으로 확인(레이어 구조).
+const IS_WEB = Platform.OS === 'web';
 function RosterSheet({ children, onClose, reduce }) {
-  const a = useRef(new Animated.Value(0)).current;
-  // 무거운 영웅 화면(초상 13개+상세 카드)을 슬라이드와 동시에 마운트하면
-  // JS 스레드가 막혀 애니메이션이 버벅인다. 슬라이드가 끝난 뒤 마운트해
-  // 올라오는 연출은 부드럽게, 내용은 직후에 채운다.
-  const [ready, setReady] = useState(!!reduce);
+  // 웹: CSS transition 으로 슬라이드를 컴포지터(GPU) 스레드에 넘긴다.
+  //   → JS 스레드가 아무리 바빠도(내용 마운트·틱 리렌더) 슬라이드는 매끄럽다.
+  //   내용을 즉시 마운트해도 CSS 전환이 별도 스레드에서 돌아 버벅이지 않는다.
+  // 네이티브: useNativeDriver Animated + 슬라이드 후 지연 마운트(완료 콜백).
+  const a = useRef(new Animated.Value(reduce ? 1 : 0)).current;
+  const [open, setOpen] = useState(!!reduce);      // 웹 CSS 전환 트리거
+  const [ready, setReady] = useState(IS_WEB || !!reduce); // 웹은 즉시 마운트
   useEffect(() => {
-    if (reduce) { a.setValue(1); setReady(true); return; }
+    if (reduce) { a.setValue(1); setOpen(true); setReady(true); return; }
+    if (IS_WEB) {
+      const r = requestAnimationFrame(() => setOpen(true)); // off→on 프레임 분리로 전환 발동
+      return () => cancelAnimationFrame(r);
+    }
     a.setValue(0);
-    // 슬라이드가 "완전히 끝난 뒤" 무거운 영웅 화면을 마운트(완료 콜백).
-    // 고정 타임아웃과 달리 마운트 스파이크가 애니메이션과 절대 겹치지 않는다.
     let alive = true;
     Animated.timing(a, { toValue: 1, duration: 300, useNativeDriver: true })
       .start(() => { if (alive) setReady(true); });
     return () => { alive = false; };
   }, []);
+
+  const webStyle = {
+    opacity: open ? 1 : 0,
+    transform: [{ translateY: open ? 0 : 520 }],
+    transitionProperty: 'transform, opacity',
+    transitionDuration: '320ms',
+    transitionTimingFunction: 'cubic-bezier(0.16, 1, 0.3, 1)',
+  };
   const translateY = a.interpolate({ inputRange: [0, 1], outputRange: [500, 0] });
+  const nativeStyle = { opacity: a, transform: [{ translateY }] };
+  const Sheet = IS_WEB ? View : Animated.View;
   return (
     <View style={StyleSheet.absoluteFill} pointerEvents="box-none">
       {/* 위 전투가 비치도록 옅은 스크림 — 탭하면 닫힘(방치로 복귀). */}
       <TouchableOpacity style={sh.scrim} activeOpacity={1} onPress={onClose}
         accessibilityRole="button" accessibilityLabel="강화 시트 닫기" />
-      <Animated.View style={[sh.sheet, { opacity: a, transform: [{ translateY }] }]}>
+      <Sheet style={[sh.sheet, IS_WEB ? webStyle : nativeStyle]}>
         <View style={sh.grip} />
         <TouchableOpacity style={sh.x} onPress={onClose} activeOpacity={0.7}
           accessibilityRole="button" accessibilityLabel="닫기">
           <Text style={sh.xTxt}>✕</Text>
         </TouchableOpacity>
         <View style={sh.body}>{ready ? children : <View style={sh.loading}><Text style={sh.loadingTxt}>불러오는 중…</Text></View>}</View>
-      </Animated.View>
+      </Sheet>
     </View>
   );
 }
