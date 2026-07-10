@@ -51,10 +51,16 @@ function fmtDuration(sec) {
 // 강화하는 동안 위 전투가 실시간으로 강해지는 걸 눈으로 확인(레이어 구조).
 function RosterSheet({ children, onClose, reduce }) {
   const a = useRef(new Animated.Value(0)).current;
+  // 무거운 영웅 화면(초상 13개+상세 카드)을 슬라이드와 동시에 마운트하면
+  // JS 스레드가 막혀 애니메이션이 버벅인다. 슬라이드가 끝난 뒤 마운트해
+  // 올라오는 연출은 부드럽게, 내용은 직후에 채운다.
+  const [ready, setReady] = useState(!!reduce);
   useEffect(() => {
-    if (reduce) { a.setValue(1); return; }
+    if (reduce) { a.setValue(1); setReady(true); return; }
     a.setValue(0);
     Animated.timing(a, { toValue: 1, duration: 300, useNativeDriver: true }).start();
+    const t = setTimeout(() => setReady(true), 280);
+    return () => clearTimeout(t);
   }, []);
   const translateY = a.interpolate({ inputRange: [0, 1], outputRange: [500, 0] });
   return (
@@ -68,7 +74,7 @@ function RosterSheet({ children, onClose, reduce }) {
           accessibilityRole="button" accessibilityLabel="닫기">
           <Text style={sh.xTxt}>✕</Text>
         </TouchableOpacity>
-        <View style={sh.body}>{children}</View>
+        <View style={sh.body}>{ready ? children : <View style={sh.loading}><Text style={sh.loadingTxt}>불러오는 중…</Text></View>}</View>
       </Animated.View>
     </View>
   );
@@ -82,6 +88,8 @@ const sh = StyleSheet.create({
   x: { position: 'absolute', top: 8, right: 12, width: 28, height: 28, borderRadius: 8, borderWidth: 1, borderColor: T.line, alignItems: 'center', justifyContent: 'center', zIndex: 2 },
   xTxt: { color: T.muted, fontSize: 14, fontWeight: '900' },
   body: { flex: 1 },
+  loading: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  loadingTxt: { color: T.muted, fontSize: 13, fontWeight: '700' },
 });
 
 export default function App() {
