@@ -621,35 +621,6 @@ export default function RosterScreen({ state, bump, concept }) {
               </View>
             ))}
           </View>
-          {/* 성급 강화 — 동일 영웅 중복을 합쳐 별 +1(모든 스탯 +12% 곱연산). */}
-          {(() => {
-            const si = starUpInfo(state, unit);
-            const curP = computePower(unit);
-            return (
-              <View style={g.starBox}>
-                <CodeTag id="b9" corner="tr" />
-                <View style={g.intiHead}>
-                  {/* 현재 성급 아이콘은 헤더에 이미 표시됨(중복 제거) — 다음 성급 미리보기만 표시. */}
-                  <View style={g.starPreviewRow}>
-                    <Text style={g.subsec2}>성급 {si.star}★{si.maxed ? '' : ` → ${si.star + 1}★`}</Text>
-                    {!si.maxed && <StarBadge tier={si.star + 1} size={22} />}
-                  </View>
-                  <Text style={g.dim}>{si.maxed ? `최고 ${STAR_MAX}★` : `중복 ${si.haveDupes}/${si.req.dupes} · 🪙${fmt(si.req.currency)}`}</Text>
-                </View>
-                {!si.maxed && si.identified && <DeltaText cur={curP} next={powerWithNextStar(unit)} />}
-                <Btn small kind="gold" disabled={!si.canUp}
-                  label={si.maxed ? `MAX ${STAR_MAX}★` : !si.identified ? '성급 강화 불가(정체성 없음)'
-                    : !si.enoughDupes ? `중복 영웅 ${si.req.dupes}명 필요`
-                    : !si.enoughGold ? '골드 부족' : `성급 강화 (${si.star}★ → ${si.star + 1}★)`}
-                  onPress={() => {
-                    const r = starUp(state, unit.uid);
-                    setDeckMsg(r.ok ? `⭐ ${r.star}★ 달성! 중복 ${r.consumed}명 합성` : `⚠ ${r.reason}`);
-                    fx(r.ok ? 'success' : 'error'); bump();
-                  }} />
-                {!si.maxed && si.identified && <Text style={g.starHint}>중복 영웅을 합성해 별을 올립니다 · 약한 중복부터 소모(장비·룬은 회수)</Text>}
-              </View>
-            );
-          })()}
         </View>
       </Card>
 
@@ -701,6 +672,36 @@ export default function RosterScreen({ state, bump, concept }) {
               </TouchableOpacity>
             )}
           </View>
+        );
+      })()}
+
+      {/* 성급 강화 — 육성 요소로 이동(레벨업 아래에서 옮김). 동일 영웅 중복 합성 → 별 +1, 전 스탯 +12%. */}
+      {dtab === 'growth' && (() => {
+        const si = starUpInfo(state, unit);
+        const curP = computePower(unit);
+        return (
+          <Card style={{ marginTop: 8 }}>
+            <CodeTag id="c3" corner="tr" />
+            <View style={g.intiHead}>
+              <View style={g.starPreviewRow}>
+                <Text style={g.sec}>⭐ 성급 {si.star}★{si.maxed ? '' : ` → ${si.star + 1}★`}</Text>
+                {!si.maxed && <StarBadge tier={si.star + 1} size={22} />}
+              </View>
+              <Text style={g.dim}>{si.maxed ? `최고 ${STAR_MAX}★` : `중복 ${si.haveDupes}/${si.req.dupes} · 🪙${fmt(si.req.currency)}`}</Text>
+            </View>
+            {!si.maxed && si.identified && <DeltaText cur={curP} next={powerWithNextStar(unit)} />}
+            <View style={{ height: 6 }} />
+            <Btn small kind="gold" disabled={!si.canUp}
+              label={si.maxed ? `MAX ${STAR_MAX}★` : !si.identified ? '성급 강화 불가(정체성 없음)'
+                : !si.enoughDupes ? `중복 영웅 ${si.req.dupes}명 필요`
+                : !si.enoughGold ? '골드 부족' : `성급 강화 (${si.star}★ → ${si.star + 1}★)`}
+              onPress={() => {
+                const r = starUp(state, unit.uid);
+                setDeckMsg(r.ok ? `⭐ ${r.star}★ 달성! 중복 ${r.consumed}명 합성` : `⚠ ${r.reason}`);
+                fx(r.ok ? 'success' : 'error'); bump();
+              }} />
+            {!si.maxed && si.identified && <Text style={g.starHint}>중복 영웅을 합성해 별을 올립니다 · 약한 중복부터 소모(장비·룬은 회수)</Text>}
+          </Card>
         );
       })()}
 
@@ -1312,8 +1313,6 @@ const g = StyleSheet.create({
   starRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 2 },
   starRowNum: { color: T.accent, fontSize: 12, fontWeight: '900' },
   starRowSub: { color: T.muted, fontSize: 11, fontWeight: '700' },
-  // 성급 강화 블록(성장 박스 내부 하단 구획).
-  starBox: { marginTop: 12, borderTopWidth: 1, borderTopColor: T.line, paddingTop: 10, gap: 6 },
   starHint: { color: T.muted, fontSize: 10, lineHeight: 14 },
   starPreviewRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   // 친밀도·씨앗 반반 요약 타일(한 줄) — 탭하면 아래 상세 펼침.
