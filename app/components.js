@@ -32,16 +32,18 @@ export const Portrait = React.memo(function Portrait({ emoji, image = null, rari
   );
 });
 
-// ── 성급(Star Grade) 배지 — 별을 5개의 마름모(다이아) 조각으로 5등분.
-//   중심에서 72°씩 뻗은 마름모 5개가 각각 하나의 조각이며, 성급만큼
-//   금빛으로 켜진다(1성=1조각 … 5성=5조각 전부). 6~10성은 태양으로 승격:
-//   같은 5마름모 위에 중심 원반을 더해 태양 느낌을 준다.
+// ── 성급(Star Grade) 배지 — 5조각으로 나뉜 도형이 성급만큼 금빛으로 켜진다.
+//   · 1~5성: 오각형(pentagon) — 중심에서 뻗은 삼각 쐐기 5개
+//   · 6~10성: 별(★) — 중심에서 뻗은 마름모(다이아) 5개(뾰족점)
+//   1성=1조각 … 5성=5조각(오각형 완성), 6성=1조각 … 10성=5조각(별 완성).
 //   회전 이펙트 없음. 등급 상승 시 팝 연출만(reducedMotion 존중).
 const STAR_GOLD_C = '#ffd257';
 const STAR_DIM_C = 'rgba(255,210,87,0.22)';
+const COS36 = Math.cos(Math.PI / 5); // 0.809
+const SIN36 = Math.sin(Math.PI / 5); // 0.588
 export const StarBadge = React.memo(function StarBadge({ tier = 1, size = 40 }) {
   const clamped = Math.max(1, Math.min(10, tier));
-  const isSun = clamped >= 6;
+  const isStar = clamped >= 6;
   const pieces = ((clamped - 1) % 5) + 1; // 켜진 조각 수 1~5
   const t = (clamped - 1) / 9; // 0~1 (글로우 강도 보간)
   const reduce = reducedMotion();
@@ -55,34 +57,53 @@ export const StarBadge = React.memo(function StarBadge({ tier = 1, size = 40 }) 
 
   const haloOpacity = 0.08 + t * 0.28;
   const haloScale = 1 + t * 0.28;
-  // 마름모 기하: 바깥 꼭짓점(outerY) → 가운데 최대폭(midY) → 안쪽 꼭짓점(innerY).
-  const half = size * 0.12;      // 마름모 반폭
-  const outerY = size * 0.04;    // 바깥 꼭짓점
-  const innerY = size * 0.54;    // 안쪽 꼭짓점(중심 살짝 지남 → 5조각이 중앙에서 맞물림)
-  const midY = (outerY + innerY) / 2;
-  const upH = midY - outerY;     // 위 삼각(바깥→중앙)
-  const loH = innerY - midY;     // 아래 삼각(중앙→안쪽)
+  const c = size / 2;
+  const R = size * 0.46; // 외접 반지름
 
-  // 하나의 마름모 — 위/아래 삼각을 붙여 다이아 형태. wrap을 rotate해 5방향 배치.
+  // 오각형 쐐기 — 꼭짓점이 위로 오도록 36° 오프셋. 밑변(바깥)은 변, 꼭짓점(안쪽)은 중심.
+  const pentR = size * 0.44;
+  const apo = pentR * COS36;     // 중심→변(apothem)
+  const pw = pentR * SIN36;      // 변 절반폭
+  const wedge = (idx, color, big) => (
+    <View key={`${big ? 'g' : 'd'}${idx}`} style={{
+      position: 'absolute', width: size, height: size,
+      transform: [{ rotate: `${idx * 72 + 36}deg` }],
+    }}>
+      <View style={{
+        position: 'absolute', left: c - pw, top: c - apo,
+        width: 0, height: 0,
+        borderLeftWidth: pw, borderRightWidth: pw, borderTopWidth: apo,
+        borderLeftColor: 'transparent', borderRightColor: 'transparent', borderTopColor: color,
+      }} />
+    </View>
+  );
+
+  // 별 뾰족점 — 위/아래 삼각을 붙인 마름모. 바깥 꼭짓점(R) → 중앙 최대폭 → 중심.
+  const outerY = c - R;
+  const innerY = c + size * 0.04;   // 중심 살짝 지남(조각이 중앙에서 맞물림)
+  const midY = c - R * 0.30;        // 최대폭 위치(바깥쪽)
+  const dw = size * 0.115;          // 마름모 반폭
   const rhombus = (idx, color, big) => (
     <View key={`${big ? 'g' : 'd'}${idx}`} style={{
       position: 'absolute', width: size, height: size,
       transform: [{ rotate: `${idx * 72}deg` }],
     }}>
       <View style={{
-        position: 'absolute', left: size / 2 - half, top: outerY,
+        position: 'absolute', left: c - dw, top: outerY,
         width: 0, height: 0,
-        borderLeftWidth: half, borderRightWidth: half, borderBottomWidth: upH,
+        borderLeftWidth: dw, borderRightWidth: dw, borderBottomWidth: midY - outerY,
         borderLeftColor: 'transparent', borderRightColor: 'transparent', borderBottomColor: color,
       }} />
       <View style={{
-        position: 'absolute', left: size / 2 - half, top: midY,
+        position: 'absolute', left: c - dw, top: midY,
         width: 0, height: 0,
-        borderLeftWidth: half, borderRightWidth: half, borderTopWidth: loH,
+        borderLeftWidth: dw, borderRightWidth: dw, borderTopWidth: innerY - midY,
         borderLeftColor: 'transparent', borderRightColor: 'transparent', borderTopColor: color,
       }} />
     </View>
   );
+
+  const seg = isStar ? rhombus : wedge;
 
   return (
     <View style={{ width: size, height: size, alignItems: 'center', justifyContent: 'center' }}>
@@ -92,18 +113,10 @@ export const StarBadge = React.memo(function StarBadge({ tier = 1, size = 40 }) 
         borderRadius: size, backgroundColor: STAR_GOLD_C, opacity: haloOpacity,
       }} />
       <Animated.View style={{ width: size, height: size, transform: [{ scale: pop }] }}>
-        {/* 1) 5조각 전부 흐리게(빈 별 윤곽) */}
-        {[0, 1, 2, 3, 4].map((i) => rhombus(i, STAR_DIM_C, false))}
+        {/* 1) 5조각 전부 흐리게(빈 도형 윤곽) */}
+        {[0, 1, 2, 3, 4].map((i) => seg(i, STAR_DIM_C, false))}
         {/* 2) 켜진 조각만 금빛으로 덮어쓰기 */}
-        {[0, 1, 2, 3, 4].filter((i) => i < pieces).map((i) => rhombus(i, STAR_GOLD_C, true))}
-        {/* 태양(6~10성): 중심 원반으로 태양 느낌 */}
-        {isSun && (
-          <View style={{
-            position: 'absolute', left: size / 2 - size * 0.14, top: size / 2 - size * 0.14,
-            width: size * 0.28, height: size * 0.28, borderRadius: size * 0.14,
-            backgroundColor: STAR_GOLD_C,
-          }} />
-        )}
+        {[0, 1, 2, 3, 4].filter((i) => i < pieces).map((i) => seg(i, STAR_GOLD_C, true))}
       </Animated.View>
     </View>
   );
