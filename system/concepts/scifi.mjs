@@ -13,6 +13,9 @@ export const scifiConcept = {
     VANGUARD: { name: '가디언 프레임', emoji: '🤖' },
     STRIKER: { name: '레이저 유닛', emoji: '🔫' },
     SUPPORT: { name: '지원 드론', emoji: '🛰️' },
+    ROGUE: { name: '스텔스 유닛', emoji: '🕶️' },
+    ARCHER: { name: '저격 유닛', emoji: '🎯' },
+    MAGE: { name: '플라즈마 코어', emoji: '🌌' },
   },
 
   resources: {
@@ -66,6 +69,19 @@ export const scifiConcept = {
       lines: { greet: '여명 시퀀스 개시.', bond: '수호 대상 최우선 등록.', levelup: '광자 출력 초월.' } },
     { id: 'nyx', name: '아뷔스', emoji: '🔮', title: '심연 예측 코어', personality: '초월적인', element: 'DARK', archetype: 'SUPPORT', rarity: 'UR', signature: 'SIG_ABYSS_ORACLE',
       lines: { greet: '심연 연산 접속.', bond: '네 궤적, 상시 추적.', levelup: '예측 심도 확장.' } },
+    // ── 신규 원형: 스텔스·저격·플라즈마 코어 ──
+    { id: 'kai', name: '고스트-0', emoji: '🕶️', title: '시제 정찰 유닛', personality: '은밀한', element: 'WOOD', archetype: 'ROGUE', rarity: 'N', signature: 'SIG_ROGUE_NOVICE',
+      lines: { greet: '광학 위장 가동.', bond: '너한텐 신호 안 숨겨.', levelup: '반응속도 향상.' } },
+    { id: 'vera', name: '쉐도우', emoji: '🔪', title: '암전 암살 유닛', personality: '냉혹한', element: 'DARK', archetype: 'ROGUE', rarity: 'SSR', signature: 'SIG_NIGHT_FANG',
+      lines: { greet: '표적, 락온 완료.', bond: '…너만은 조준선 밖이다.', levelup: '더 어두운 침묵이 된다.' } },
+    { id: 'robin', name: '스나이퍼-R', emoji: '🎯', title: '삼림 저격 유닛', personality: '차분한', element: 'WOOD', archetype: 'ARCHER', rarity: 'R', signature: 'SIG_FOREST_ARROW',
+      lines: { greet: '풍향 계산 완료.', bond: '탄도, 너와는 공유하지.', levelup: '조준 정밀도 상승.' } },
+    { id: 'sylas', name: '포톤', emoji: '💫', title: '광자 저격수', personality: '고요한', element: 'LIGHT', archetype: 'ARCHER', rarity: 'SSR', signature: 'SIG_LIGHT_ARROW',
+      lines: { greet: '광속 탄도, 오차 없음.', bond: '네 곁에서 조준을 고정한다.', levelup: '탄두에 빛이 실린다.' } },
+    { id: 'elara', name: '이그니션', emoji: '🕯️', title: '플라즈마 캐스터', personality: '열정적인', element: 'FIRE', archetype: 'MAGE', rarity: 'R', signature: 'SIG_INFERNO_BOLT',
+      lines: { greet: '플라즈마 출력 최대.', bond: '네 곁이라 더 뜨거워져요.', levelup: '코어가 타오릅니다!' } },
+    { id: 'oriel', name: '싱귤래러티', emoji: '🌀', title: '특이점 코어', personality: '초연한', element: 'DARK', archetype: 'MAGE', rarity: 'UR', signature: 'SIG_CHAOS_NOVA',
+      lines: { greet: '특이점이 호출에 응한다.', bond: '너만은 이 붕괴 밖에 둔다.', levelup: '봉인 프로토콜 하나 해제.' } },
   ],
 
   // 코스튬 — fantasy와 같은 구조(같은 캐릭터 id·해금·보너스), SF 외형.
@@ -84,6 +100,12 @@ export const scifiConcept = {
     signe: { id: 'signe_c1', name: '지휘 안테나', emoji: '🎺', unlock: 5, bonus: { atk: 0.06, hp: 0.06, def: 0.06, spd: 0.06 } },
     aurel: { id: 'aurel_c1', name: '광자 프레임', emoji: '🌟', unlock: 5, bonus: { atk: 0.06, hp: 0.06, def: 0.06, spd: 0.06 } },
     nyx: { id: 'nyx_c1', name: '심연 코어', emoji: '🌌', unlock: 5, bonus: { atk: 0.06, hp: 0.06, def: 0.06, spd: 0.06 } },
+    kai: { id: 'kai_c1', name: '광학 위장복', emoji: '🕶️', unlock: 5, bonus: { atk: 0.06, hp: 0.06, def: 0.06, spd: 0.06 } },
+    vera: { id: 'vera_c1', name: '암전 슈트', emoji: '🖤', unlock: 5, bonus: { atk: 0.06, hp: 0.06, def: 0.06, spd: 0.06 } },
+    robin: { id: 'robin_c1', name: '위장 스코프', emoji: '🍃', unlock: 5, bonus: { atk: 0.06, hp: 0.06, def: 0.06, spd: 0.06 } },
+    sylas: { id: 'sylas_c1', name: '광자 렌즈', emoji: '✨', unlock: 5, bonus: { atk: 0.06, hp: 0.06, def: 0.06, spd: 0.06 } },
+    elara: { id: 'elara_c1', name: '플라즈마 코팅', emoji: '🔥', unlock: 5, bonus: { atk: 0.06, hp: 0.06, def: 0.06, spd: 0.06 } },
+    oriel: { id: 'oriel_c1', name: '특이점 실드', emoji: '🌌', unlock: 5, bonus: { atk: 0.06, hp: 0.06, def: 0.06, spd: 0.06 } },
   },
 
   // 스토리 캠페인 — 같은 진행/전투 로직, SF 서사로 교체.

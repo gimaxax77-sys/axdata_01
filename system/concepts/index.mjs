@@ -27,6 +27,9 @@ const ARCH_WEAPON = {
   STRIKER: { emoji: '⚔️', kind: '검' },
   VANGUARD: { emoji: '🛡️', kind: '중갑' },
   SUPPORT: { emoji: '🔮', kind: '법구' },
+  ROGUE: { emoji: '🗡️', kind: '단검' },
+  ARCHER: { emoji: '🏹', kind: '활' },
+  MAGE: { emoji: '📖', kind: '마도서' },
 };
 export function sigWeaponOf(concept, unit) {
   const w = concept.weapons && concept.weapons[unit.characterId];

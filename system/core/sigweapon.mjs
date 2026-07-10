@@ -14,6 +14,9 @@ const PROFILE = {
   STRIKER: { flat: { atk: 200 }, effect: { critDamage: 0.4 } },
   VANGUARD: { flat: { hp: 1200, def: 100 }, effect: {} },
   SUPPORT: { flat: { atk: 120, spd: 40 }, effect: {} },
+  ROGUE: { flat: { atk: 180, spd: 30 }, effect: { critChance: 0.12 } },
+  ARCHER: { flat: { atk: 170, spd: 20 }, effect: { critDamage: 0.2 } },
+  MAGE: { flat: { atk: 230 }, effect: { critDamage: 0.3 } },
 };
 
 const WEAPON_ENH_PER = 0.15; // 강화 레벨당 flat +15%

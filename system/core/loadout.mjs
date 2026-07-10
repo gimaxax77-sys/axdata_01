@@ -15,6 +15,9 @@ const ROLE_W = {
   VANGUARD: { atk: 0.7, hp: 1.1, def: 1.1, spd: 0.6, effect: 0.8, team: 1.0 },
   STRIKER: { atk: 1.2, hp: 0.4, def: 0.4, spd: 0.9, effect: 1.0, team: 1.0 },
   SUPPORT: { atk: 0.6, hp: 0.9, def: 0.8, spd: 0.7, effect: 0.9, team: 1.4 },
+  ROGUE: { atk: 1.1, hp: 0.4, def: 0.3, spd: 1.2, effect: 1.1, team: 1.0 },
+  ARCHER: { atk: 1.0, hp: 0.5, def: 0.5, spd: 0.9, effect: 1.0, team: 1.0 },
+  MAGE: { atk: 1.3, hp: 0.3, def: 0.3, spd: 0.7, effect: 1.0, team: 1.0 },
 };
 function weights(unit) { return ROLE_W[unit.archetype] || ROLE_W.STRIKER; }
 

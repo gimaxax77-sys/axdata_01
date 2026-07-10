@@ -113,12 +113,16 @@ export function formationSummary(state) {
   return { front, mid, back, cap: ROLE_CAP, active, exposed };
 }
 
-// 역할별 원형 우선순위 — "누가 그 자리에 어울리나"의 1차 기준.
+// 역할별 원형 우선순위 — "누가 그 자리에 어울리나"의 1차 기준(여러 원형 가능).
 //   전열: 방어형(VANGUARD, 근접 탱커) 우선
-//   중열: 공격형(STRIKER, 근/원거리 딜러 전반) 우선
-//   후열: 지원형(SUPPORT) 우선 — 남는 인원은 앞열(전열·중열)에 못 들어간
-//         유닛이 화력 순으로 흘러들어온다.
-const ROLE_ARCHETYPE_PRIORITY = { front: 'VANGUARD', mid: 'STRIKER', back: 'SUPPORT' };
+//   중열: 근접 딜러(STRIKER 전사·ROGUE 도적) 우선 — 어느 정도 맞으며 딜을 넣는 자리
+//   후열: 원거리·지원(MAGE 법사·ARCHER 궁수·SUPPORT 지원) 우선 — 남는 인원은
+//         앞열(전열·중열)에 못 들어간 유닛이 화력 순으로 흘러들어온다.
+const ROLE_ARCHETYPE_PRIORITY = {
+  front: ['VANGUARD'],
+  mid: ['STRIKER', 'ROGUE'],
+  back: ['MAGE', 'ARCHER', 'SUPPORT'],
+};
 
 // ── 자동 배치 ────────────────────────────────────────────────
 // 전열·중열·후열 모두 같은 규칙을 적용한다:
@@ -156,12 +160,12 @@ export function autoFormation(state) {
   function fill(role) {
     const n = targets[role];
     const key = sortKey[role];
-    const priArch = ROLE_ARCHETYPE_PRIORITY[role];
+    const priArchs = ROLE_ARCHETYPE_PRIORITY[role];
     const pool = scored.filter((x) => !placed.has(x.uid));
-    const primary = pool.filter((x) => x.archetype === priArch).sort((a, b) => b[key] - a[key]);
+    const primary = pool.filter((x) => priArchs.includes(x.archetype)).sort((a, b) => b[key] - a[key]);
     let picked = primary.slice(0, n);
     if (picked.length < n) {
-      const rest = pool.filter((x) => x.archetype !== priArch).sort((a, b) => b[key] - a[key]);
+      const rest = pool.filter((x) => !priArchs.includes(x.archetype)).sort((a, b) => b[key] - a[key]);
       picked = picked.concat(rest.slice(0, n - picked.length));
     }
     for (const x of picked) placed.add(x.uid);

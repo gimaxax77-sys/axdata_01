@@ -85,6 +85,14 @@ export const SKILL_CATALOG = {
   // ── P3 신화(UR) 전용 스킬 — 최상위, 복합 강력 ────────────────
   SIG_DAWNBREAKER: { id: 'SIG_DAWNBREAKER', label: '여명검', desc: '공격+치명+관통+팀치명(초월 딜러)', signature: true, statPct: { atk: 0.25 }, effect: { critChance: 0.25, critDamage: 0.6, defPierce: 0.15 }, teamBuff: { critChance: 0.08 }, awaken: { effect: { critDamage: 0.2 } } },
   SIG_ABYSS_ORACLE: { id: 'SIG_ABYSS_ORACLE', label: '심연 계시', desc: '팀 공격+피해경감+치명(만능 지원)', signature: true, teamBuff: { atk: 0.18, def: 0.12, critChance: 0.1 }, effect: { lifesteal: 0.1 }, awaken: { teamBuff: { atk: 0.05, def: 0.03 } } },
+
+  // ── 신규 원형(도적·궁수·법사) 전용 스킬 ───────────────────────
+  SIG_ROGUE_NOVICE: { id: 'SIG_ROGUE_NOVICE', label: '재빠른 손놀림', desc: '속도 강화(도적 입문)', signature: true, statPct: { spd: 0.15 }, awaken: { effect: { critChance: 0.04 } } },
+  SIG_NIGHT_FANG: { id: 'SIG_NIGHT_FANG', label: '야습의 송곳니', desc: '속도+공격+치명 특화(암습)', signature: true, statPct: { spd: 0.3, atk: 0.12 }, effect: { critChance: 0.25, critDamage: 0.5 }, awaken: { effect: { defPierce: 0.1 } } },
+  SIG_FOREST_ARROW: { id: 'SIG_FOREST_ARROW', label: '숲의 화살', desc: '공격+치명(정밀 사격)', signature: true, statPct: { atk: 0.15 }, effect: { critChance: 0.15 }, awaken: { statPct: { spd: 0.05 } } },
+  SIG_LIGHT_ARROW: { id: 'SIG_LIGHT_ARROW', label: '광명의 화살', desc: '공격+치명+관통+팀치명(저격)', signature: true, statPct: { atk: 0.18 }, effect: { critChance: 0.2, defPierce: 0.15 }, teamBuff: { critChance: 0.06 }, awaken: { effect: { critDamage: 0.15 } } },
+  SIG_INFERNO_BOLT: { id: 'SIG_INFERNO_BOLT', label: '화염 마탄', desc: '공격+치명피해(마법 폭발)', signature: true, statPct: { atk: 0.18 }, effect: { critDamage: 0.3 }, awaken: { effect: { critChance: 0.05 } } },
+  SIG_CHAOS_NOVA: { id: 'SIG_CHAOS_NOVA', label: '혼돈의 신성', desc: '공격+치명+관통+팀공격(초월 캐스터)', signature: true, statPct: { atk: 0.28 }, effect: { critChance: 0.22, critDamage: 0.55, defPierce: 0.12 }, teamBuff: { atk: 0.1 }, awaken: { effect: { critDamage: 0.2 } } },
 };
 
 // 시그니처 각성 상한 + 비용 (같은 캐릭터 조각=소환 재화 + 프리미엄).

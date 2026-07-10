@@ -30,12 +30,18 @@ const DEFAULT_SKILLS = {
   STRIKER: ['BERSERK', 'PRECISION', 'SWIFT'],
   VANGUARD: ['FORTRESS', 'RALLY', 'VAMPIRIC'],
   SUPPORT: ['RALLY', 'PRECISION', 'FORTRESS'],
+  ROGUE: ['PRECISION', 'SWIFT', 'ONSLAUGHT'],
+  ARCHER: ['PRECISION', 'PIERCE', 'SWIFT'],
+  MAGE: ['RUIN', 'BERSERK', 'PRECISION'],
 };
 // 원형별 각인 우선순위
 const ENHANCE_ORDER = {
   STRIKER: ['atk', 'crit', 'atk', 'hp'],
   VANGUARD: ['hp', 'def', 'hp', 'atk'],
   SUPPORT: ['atk', 'hp', 'crit', 'def'],
+  ROGUE: ['atk', 'crit', 'crit', 'atk'],
+  ARCHER: ['atk', 'crit', 'atk', 'hp'],
+  MAGE: ['atk', 'atk', 'crit', 'hp'],
 };
 // 슬롯별 기본 장비
 // 슬롯별 기본 설계도 — 슬롯이 늘어도 자동 대응(카탈로그 첫 매칭). 선호값은 덮어씀.
