@@ -527,22 +527,25 @@ export default function RosterScreen({ state, bump, concept }) {
           <Portrait emoji={meta.emoji} image={charImage(concept.id, unit.characterId)} rarity={unit.rarity} size={62} badge style={{ marginRight: 4 }} />
           <View style={{ flex: 1 }}>
             <Text style={g.headName}>{meta.name}{unit.rarity ? <Text> </Text> : null}{unit.rarity ? <Text style={rarityText(unit.rarity)}> {unit.rarity} </Text> : null}</Text>
+            {/* 별 배지 + 성급·레벨·랭크를 한 줄로 압축(이전엔 별도 줄이었음) */}
             <View style={g.starRow}>
-              <StarBadge tier={starOf(unit)} size={26} />
-              <Text style={g.starRowNum}>{starOf(unit)}성급{starOf(unit) >= STAR_MAX ? ' · MAX' : ''}</Text>
+              <StarBadge tier={starOf(unit)} size={22} />
+              <Text style={g.starRowNum}>{starOf(unit)}성급{starOf(unit) >= STAR_MAX ? ' MAX' : ''}<Text style={g.starRowSub}> · Lv.{unit.level}/{levelCap(unit)} · R{unit.rank}</Text></Text>
             </View>
+          </View>
+          {/* 편성 버튼 옆 빈 공간에 칭호·성격·속성을 배치(별도 줄로 빼지 않음) */}
+          <View style={g.headSide}>
+            <Btn small kind={inParty ? 'ghost' : 'gold'}
+              label={inParty ? '편성 해제' : '편성'}
+              disabled={!inParty && state.party.length >= MAX_PARTY}
+              onPress={() => act(() => togglePartyMember(state, unit.uid))} />
             {(meta.title || meta.personality) && (
-              <Text style={g.headTitle}>
+              <Text style={g.headTitle} numberOfLines={2}>
                 {meta.title}{meta.personality ? ` · ${meta.personality}` : ''}
                 {meta.element ? ` · ${elementMeta(concept, meta.element).emoji}${elementMeta(concept, meta.element).name}` : ''}
               </Text>
             )}
-            <Text style={g.headSub}>Lv.{unit.level}/{levelCap(unit)} · R{unit.rank}</Text>
           </View>
-          <Btn small kind={inParty ? 'ghost' : 'gold'}
-            label={inParty ? '편성 해제' : '편성'}
-            disabled={!inParty && state.party.length >= MAX_PARTY}
-            onPress={() => act(() => togglePartyMember(state, unit.uid))} />
         </View>
         <View style={g.powerWrap}>
           <PowerBadge power={computePower(unit)} expanded={showBd} onPress={() => setShowBd((v) => !v)} />
@@ -1233,11 +1236,13 @@ const g = StyleSheet.create({
   synChip: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: T.surface2, borderRadius: 10, paddingHorizontal: 10, paddingVertical: 6, borderWidth: 1, borderColor: T.accent },
   synChipText: { color: T.accent, fontWeight: '800', fontSize: 12 },
   synChipDesc: { color: T.muted, fontSize: 11, flex: 1 },
-  head: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  head: { flexDirection: 'row', alignItems: 'flex-start', gap: 12 },
   headName: { color: T.text, fontWeight: '900', fontSize: 20 },
+  // 편성 버튼 + 칭호/성격/속성 캡션을 오른쪽 한 컬럼에 묶어, 이름 옆 남는
+  // 세로 공간을 그냥 비워두지 않고 활용한다(별도 줄로 빼지 않음).
+  headSide: { alignItems: 'flex-end', gap: 4, maxWidth: 110 },
   rarity: { color: T.accent, fontSize: 13, fontWeight: '800' },
-  headTitle: { color: T.primary, fontSize: 13, fontWeight: '700', marginTop: 1 },
-  headSub: { color: T.muted, fontSize: 13, marginTop: 2 },
+  headTitle: { color: T.primary, fontSize: 10, fontWeight: '700', textAlign: 'right', lineHeight: 13 },
   bubble: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: T.surface2, borderRadius: 12, padding: 12, marginBottom: 12 },
   bubbleEmoji: { fontSize: 26 },
   cosEmoji: { fontSize: 26, width: 34, textAlign: 'center' },
@@ -1315,6 +1320,7 @@ const g = StyleSheet.create({
   // 성급(별) 표시 — 헤더 이름줄 아래 금색 별.
   starRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 2 },
   starRowNum: { color: T.accent, fontSize: 12, fontWeight: '900' },
+  starRowSub: { color: T.muted, fontSize: 11, fontWeight: '700' },
   // 성급 강화 블록(성장 박스 내부 하단 구획).
   starBox: { marginTop: 12, borderTopWidth: 1, borderTopColor: T.line, paddingTop: 10, gap: 6 },
   starHint: { color: T.muted, fontSize: 10, lineHeight: 14 },

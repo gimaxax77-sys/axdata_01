@@ -220,7 +220,7 @@ export function Btn({ label, onPress, disabled, kind = 'primary', small, sfx = '
   const grad = kind === 'gold' ? T.accentGrad : T.primaryGrad;
   const fg = kind === 'gold' ? '#3a2a05' : '#fff';
   const content = (
-    <Text style={[s.btnText, { color: kind === 'ghost' ? T.text : fg }, small && { fontSize: 13 }]} numberOfLines={1}>{label}</Text>
+    <Text style={[s.btnText, { color: kind === 'ghost' ? T.text : fg }, small && s.btnTextSmall]} numberOfLines={1}>{label}</Text>
   );
   const a11y = typeof label === 'string' ? label : undefined;
   if (kind === 'ghost' || disabled) {
@@ -228,14 +228,15 @@ export function Btn({ label, onPress, disabled, kind = 'primary', small, sfx = '
       <TouchableOpacity style={[s.btn, small && s.btnSmall, kind === 'ghost' ? s.btnGhost : s.btnDisabled]}
         onPress={press} disabled={disabled} activeOpacity={0.75}
         accessibilityRole="button" accessibilityLabel={a11y} accessibilityState={{ disabled: !!disabled }}>
-        <Text style={[s.btnText, { color: disabled ? T.muted : T.text }, small && { fontSize: 13 }]} numberOfLines={1}>{label}</Text>
+        <Text style={[s.btnText, { color: disabled ? T.muted : T.text }, small && s.btnTextSmall]} numberOfLines={1}>{label}</Text>
       </TouchableOpacity>
     );
   }
+  const glow = kind === 'gold' ? (small ? s.glowGoldSmall : s.glowGold) : (small ? s.glowPrimarySmall : s.glowPrimary);
   return (
     <TouchableOpacity onPress={press} disabled={disabled} activeOpacity={0.82}
       accessibilityRole="button" accessibilityLabel={a11y}
-      style={[{ borderRadius: small ? 10 : 12 }, kind === 'gold' ? s.glowGold : s.glowPrimary]}>
+      style={[{ borderRadius: small ? 9 : 12 }, glow]}>
       <LinearGradient colors={grad} start={{ x: 0, y: 0 }} end={{ x: 0, y: 1 }} style={[s.btn, small && s.btnSmall]}>
         {content}
       </LinearGradient>
@@ -349,13 +350,18 @@ const s = StyleSheet.create({
   rescell: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingVertical: 8 },
   resEmoji: { fontSize: 16 },
   resVal: { color: T.text, fontWeight: '800', fontSize: 15 },
-  btn: { paddingVertical: 12, paddingHorizontal: 16, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
-  btnSmall: { paddingVertical: 8, paddingHorizontal: 12, borderRadius: 10 },
+  // 미니멀 정리: small 버튼이 라벨 대비 과하게 커 보이던 걸 축소
+  // (paddingVertical 8→5, horizontal 12→10, 글로우도 함께 옅게).
+  btn: { paddingVertical: 11, paddingHorizontal: 16, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
+  btnSmall: { paddingVertical: 5, paddingHorizontal: 10, borderRadius: 9 },
   btnGhost: { borderWidth: 1, borderColor: T.line, backgroundColor: 'rgba(255,255,255,0.03)' },
   btnDisabled: { backgroundColor: T.line, opacity: 0.6 },
-  btnText: { fontWeight: '800', fontSize: 15 },
+  btnText: { fontWeight: '800', fontSize: 14 },
+  btnTextSmall: { fontSize: 12 },
   glowGold: { shadowColor: T.accent, shadowOpacity: 0.4, shadowRadius: 8, shadowOffset: { width: 0, height: 2 } },
   glowPrimary: { shadowColor: T.primary, shadowOpacity: 0.35, shadowRadius: 8, shadowOffset: { width: 0, height: 2 } },
+  glowGoldSmall: { shadowColor: T.accent, shadowOpacity: 0.28, shadowRadius: 4, shadowOffset: { width: 0, height: 1 } },
+  glowPrimarySmall: { shadowColor: T.primary, shadowOpacity: 0.24, shadowRadius: 4, shadowOffset: { width: 0, height: 1 } },
   // 미니멀 정리 1단계: 패딩 16→12(SPACE.md), 그림자를 옅게(카드가 덜 "떠 보이게").
   card: { borderRadius: 16, padding: SPACE.md, borderWidth: 1, borderColor: T.line, overflow: 'hidden', backgroundColor: T.surface, shadowColor: '#000', shadowOpacity: 0.16, shadowRadius: 6, shadowOffset: { width: 0, height: 2 } },
   // 내용 크기로 컴팩트하게 — 셀에 flex:1이면 네이티브에서 부모 폭 전체로 늘어남(웹과 차이).
