@@ -58,9 +58,12 @@ function RosterSheet({ children, onClose, reduce }) {
   useEffect(() => {
     if (reduce) { a.setValue(1); setReady(true); return; }
     a.setValue(0);
-    Animated.timing(a, { toValue: 1, duration: 300, useNativeDriver: true }).start();
-    const t = setTimeout(() => setReady(true), 280);
-    return () => clearTimeout(t);
+    // 슬라이드가 "완전히 끝난 뒤" 무거운 영웅 화면을 마운트(완료 콜백).
+    // 고정 타임아웃과 달리 마운트 스파이크가 애니메이션과 절대 겹치지 않는다.
+    let alive = true;
+    Animated.timing(a, { toValue: 1, duration: 300, useNativeDriver: true })
+      .start(() => { if (alive) setReady(true); });
+    return () => { alive = false; };
   }, []);
   const translateY = a.interpolate({ inputRange: [0, 1], outputRange: [500, 0] });
   return (
@@ -191,6 +194,7 @@ function AppInner() {
           <>
             <BaseScreen state={game.state} rev={game.rev} bump={game.bump} concept={game.concept}
               lastGain={baseKey === 'idle' ? game.lastGain : undefined}
+              background={isRoster}
               onOpenSettings={openSettings} onTogglePixel={togglePixel} />
             {/* 영웅 강화 바텀시트 — 위 전투(방치 베이스) 유지, 아래에서 시트 등장. */}
             {isRoster && (

@@ -20,7 +20,7 @@ import { weeklyEvent, claimWeekly } from '../../system/core/events.mjs';
 import { fx } from '../feedback';
 import BattleView from './BattleView';
 
-export default function IdleScreen({ state, bump, lastGain, concept }) {
+export default function IdleScreen({ state, bump, lastGain, concept, background }) {
   const [boxMsg, setBoxMsg] = useState(null);
   const power = effectivePower(state);
   const mult = powerMultOf(state);
@@ -92,7 +92,7 @@ export default function IdleScreen({ state, bump, lastGain, concept }) {
           enemyEmoji={elementMeta(concept, stageDef.challenge.element)?.emoji || '👹'}
           win={battle.win}
           margin={battle.margin}
-          reduce={state.settings.reduceMotion}
+          reduce={state.settings.reduceMotion || background}
         />
         <Text style={st.enemy}>적 HP {fmt(stageDef.challenge.hp)} · ATK {fmt(stageDef.challenge.atk)}</Text>
         {(() => {
