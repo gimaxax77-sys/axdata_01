@@ -320,6 +320,7 @@ export default function ContentScreen({ state, bump, concept }) {
             const info = dungeonInfo(dunSel, d);
             return (<>
               <View style={c.dunHead}>
+                <CodeTag id="k4" corner="tl" />
                 <Text style={c.dunHeadEmoji}>{info.emoji}</Text>
                 <View style={{ flex: 1 }}>
                   <Text style={c.dunHeadName}>{info.name} 던전</Text>
