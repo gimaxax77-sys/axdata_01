@@ -36,6 +36,54 @@ test('자동배치: 탱커(VANGUARD)는 전열, 딜러(STRIKER)는 후열 우선
   assert.equal(unitRole(s, dps.uid), 'back', '딜러가 후열로');
 });
 
+test('자동배치: 3원형이 정원만큼 있으면 전열=VANGUARD·중열=STRIKER·후열=SUPPORT로 정확히 갈린다', () => {
+  const s = createGameState({ units: [], party: [] });
+  const vanguards = Array.from({ length: 2 }, () => createUnit('VANGUARD', { level: 30, rank: 3 }));
+  const strikers = Array.from({ length: 3 }, () => createUnit('STRIKER', { level: 30, rank: 3 }));
+  const supports = Array.from({ length: 2 }, () => createUnit('SUPPORT', { level: 30, rank: 3 }));
+  s.units.push(...vanguards, ...strikers, ...supports);
+  s.party = s.units.map((u) => u.uid);
+  autoFormation(s);
+  const sum = formationSummary(s);
+  assert.deepEqual(new Set(sum.front), new Set(vanguards.map((u) => u.uid)), '전열 = VANGUARD 전원');
+  assert.deepEqual(new Set(sum.mid), new Set(strikers.map((u) => u.uid)), '중열 = STRIKER 전원');
+  assert.deepEqual(new Set(sum.back), new Set(supports.map((u) => u.uid)), '후열 = SUPPORT 전원');
+});
+
+test('자동배치: 우선 원형이 정원보다 많으면 그 원형 안에서 스탯 상위만 배치', () => {
+  const s = createGameState({ units: [], party: [] });
+  // STRIKER 5명(중열 정원 3) — 화력 높은 순으로 3명만 중열에 들어가야 한다.
+  const strikers = Array.from({ length: 5 }, (_, i) => createUnit('STRIKER', { level: 10 + i * 10, rank: 2 }));
+  const vanguard = createUnit('VANGUARD', { level: 30, rank: 3 });
+  const support = createUnit('SUPPORT', { level: 30, rank: 3 });
+  s.units.push(...strikers, vanguard, support);
+  s.party = s.units.map((u) => u.uid);
+  autoFormation(s);
+  const sum = formationSummary(s);
+  const topStrikers = strikers.slice().sort((a, b) => b.level - a.level).slice(0, 3).map((u) => u.uid);
+  assert.deepEqual(new Set(sum.mid), new Set(topStrikers), '중열 정원(3) 안에서 화력 상위만 배치');
+});
+
+test('자동배치: 우선 원형이 부족하면 앞열에 못 들어간 유닛이 뒤로 채워진다', () => {
+  const s = createGameState({ units: [], party: [] });
+  // SUPPORT가 하나도 없음 — 후열은 전열·중열에서 밀려난 나머지(원형 무관)로 채워져야 한다.
+  const vanguards = Array.from({ length: 3 }, () => createUnit('VANGUARD', { level: 30, rank: 3 })); // 전열 정원(2) 초과
+  const strikers = Array.from({ length: 3 }, () => createUnit('STRIKER', { level: 30, rank: 3 }));
+  s.units.push(...vanguards, ...strikers);
+  s.party = s.units.map((u) => u.uid);
+  const r = autoFormation(s);
+  assert.equal(r.ok, true);
+  const sum = formationSummary(s);
+  const total = 6; // frontN=2, backN=2, midN=2 (비율 축소)
+  assert.equal(sum.front.length, 2);
+  assert.equal(sum.mid.length, 2);
+  assert.equal(sum.back.length, 2, 'SUPPORT 없어도 후열이 채워짐(앞열에서 밀려난 유닛으로)');
+  assert.equal(sum.front.length + sum.mid.length + sum.back.length, total, '전원 배치됨');
+  // 후열엔 SUPPORT가 없으므로 밀려난 VANGUARD/STRIKER 중에서 채워졌는지 확인.
+  const backArchs = sum.back.map((uid) => s.units.find((u) => u.uid === uid).archetype);
+  assert.ok(backArchs.every((a) => a === 'VANGUARD' || a === 'STRIKER'));
+});
+
 test('자동배치: 인원이 적어도(정원 미달) 실패하지 않는다', () => {
   const { s } = makeState(2);
   const r = autoFormation(s);

@@ -113,10 +113,19 @@ export function formationSummary(state) {
   return { front, mid, back, cap: ROLE_CAP, active, exposed };
 }
 
+// 역할별 원형 우선순위 — "누가 그 자리에 어울리나"의 1차 기준.
+//   전열: 방어형(VANGUARD, 근접 탱커) 우선
+//   중열: 공격형(STRIKER, 근/원거리 딜러 전반) 우선
+//   후열: 지원형(SUPPORT) 우선 — 남는 인원은 앞열(전열·중열)에 못 들어간
+//         유닛이 화력 순으로 흘러들어온다.
+const ROLE_ARCHETYPE_PRIORITY = { front: 'VANGUARD', mid: 'STRIKER', back: 'SUPPORT' };
+
 // ── 자동 배치 ────────────────────────────────────────────────
-// 탱키(방어·체력)한 순으로 전열, 화력(공격·속도)이 높은 순으로 후열,
-// 나머지를 중열에 채운다. 정원(2·3·2)은 인원이 모자라면 비율대로 줄인다
-// (예: 2명이면 전열1·후열1처럼 소규모 파티도 자연스럽게 배분).
+// 전열·중열·후열 모두 같은 규칙을 적용한다:
+//   1) 그 역할의 우선 원형을 스탯 순으로 목표치까지 채운다.
+//   2) 우선 원형이 모자라면, 아직 미배치인 유닛을 스탯 순으로 채워 넣는다
+//      (역할 무관 — "앞열에 못 들어간 유닛이 뒤로 밀린다"는 자연스러운 흐름).
+// 정원(2·3·2)은 인원이 모자라면 비율대로 줄인다(예: 2명이면 전열1·후열1).
 export function autoFormation(state) {
   const byId = new Map((state.units || []).map((u) => [u.uid, u]));
   const party = (state.party || []).map((uid) => byId.get(uid)).filter(Boolean);
@@ -129,30 +138,45 @@ export function autoFormation(state) {
     const p = toCombatProfile(u);
     return {
       uid: u.uid,
-      tank: p.def * 2 + p.hp * 0.05, // 방어 위주 지표 — 전열 적합도
-      strike: p.dps, // 화력 지표(치명타 반영 실제 dps) — 후열 적합도
+      archetype: u.archetype,
+      tank: p.def * 2 + p.hp * 0.05, // 방어 위주 지표 — 전열 적합도(원형이 같을 때 정렬용)
+      strike: p.dps, // 화력 지표(치명타 반영 실제 dps) — 중·후열 적합도(정렬용)
     };
   });
 
-  // 인원이 정원(7)보다 적으면 전열·후열 목표치를 비율로 낮춘다.
+  // 인원이 정원(7)보다 적으면 전열·후열 목표치를 비율로 낮춘다. 중열은 나머지.
   const frontN = Math.min(ROLE_CAP.front, Math.ceil((total * ROLE_CAP.front) / 7));
   const backN = Math.min(ROLE_CAP.back, Math.ceil((total * ROLE_CAP.back) / 7), total - frontN);
+  const midN = total - frontN - backN;
+  const targets = { front: frontN, mid: midN, back: backN };
+  const sortKey = { front: 'tank', mid: 'strike', back: 'strike' };
 
-  // 1) 전열 — 탱키한 순으로 목표치까지.
-  const byTank = scored.slice().sort((a, b) => b.tank - a.tank);
-  const frontIds = new Set(byTank.slice(0, frontN).map((x) => x.uid));
+  // 역할 하나를 채운다: 1순위 원형 → 부족분은 남은 유닛 중 정렬 기준 순.
+  const placed = new Set();
+  function fill(role) {
+    const n = targets[role];
+    const key = sortKey[role];
+    const priArch = ROLE_ARCHETYPE_PRIORITY[role];
+    const pool = scored.filter((x) => !placed.has(x.uid));
+    const primary = pool.filter((x) => x.archetype === priArch).sort((a, b) => b[key] - a[key]);
+    let picked = primary.slice(0, n);
+    if (picked.length < n) {
+      const rest = pool.filter((x) => x.archetype !== priArch).sort((a, b) => b[key] - a[key]);
+      picked = picked.concat(rest.slice(0, n - picked.length));
+    }
+    for (const x of picked) placed.add(x.uid);
+    return picked.map((x) => x.uid);
+  }
 
-  // 2) 후열 — 전열로 뽑히지 않은 유닛 중 화력 순으로 목표치까지.
-  const remaining = scored.filter((x) => !frontIds.has(x.uid));
-  const byStrike = remaining.slice().sort((a, b) => b.strike - a.strike);
-  const backIds = new Set(byStrike.slice(0, backN).map((x) => x.uid));
-
-  // 3) 중열 — 나머지 전원(정원 3 이내는 항상 보장됨: 전체 정원 합 = MAX_PARTY).
-  const midIds = new Set(remaining.filter((x) => !backIds.has(x.uid)).map((x) => x.uid));
+  // 전열 → 중열 → 후열 순으로 채운다: 후열의 "앞열 미배치 인원 우선"이
+  // 자연히 성립하려면 전열·중열을 먼저 확정해야 한다.
+  const frontIds = fill('front');
+  const midIds = fill('mid');
+  const backIds = fill('back');
 
   // 적용 순서: 정원 초과가 절대 없도록(비-전열부터 명시 지정, 전열은 기본값이라 항상 통과).
   state.formation = {}; // 초기화 후 재배치
   for (const uid of backIds) setFormation(state, uid, 'back');
   for (const uid of midIds) setFormation(state, uid, 'mid');
-  return { ok: true, front: [...frontIds], mid: [...midIds], back: [...backIds] };
+  return { ok: true, front: frontIds, mid: midIds, back: backIds };
 }
