@@ -572,15 +572,15 @@ export default function RosterScreen({ state, bump, concept }) {
           {/* 배수 선택 없이 레벨업 x1/x10/x100/Max·돌파를 탭 카드 5개로 바로 실행(높이는 기존 버튼 줄과 동일). */}
           <View style={g.btnRow}>
             {atCap ? (
-              <View style={{ flex: 1 }}><Btn small kind="gold" label="상한 (돌파 필요)" disabled /></View>
+              <View style={{ flex: 1 }}><Btn small tiny kind="gold" label="상한" disabled /></View>
             ) : [
-              ['레벨업', 1], ['x10', 10], ['x100', 100], ['Max', 'Max'],
+              ['레벨', 1], ['x10', 10], ['x100', 100], ['Max', 'Max'],
             ].map(([label, n]) => (
               <View key={label} style={{ flex: 1 }}>
                 <Btn small tiny kind="gold" label={label} onPress={() => growN(() => levelUp(state, unit.uid), n)} />
               </View>
             ))}
-            <View style={{ flex: 1 }}><Btn small tiny kind="ghost" label="돌파" onPress={() => growN(() => ascend(state, unit.uid), 1)} /></View>
+            <View style={{ flex: 1 }}><Btn small tiny kind="primary" label="돌파" onPress={() => growN(() => ascend(state, unit.uid), 1)} /></View>
           </View>
           <Text style={g.ascHint}>{MATERIAL_META.ascendStone.emoji} 돌파석 {fmt(materialCount(state, 'ascendStone'))} · 이번 돌파 필요 {unit.rank * 2}{materialCount(state, 'ascendStone') < unit.rank * 2 ? ' (부족 시 소환석 대체)' : ''}</Text>
           <View style={g.btnRow}>
