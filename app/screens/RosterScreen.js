@@ -13,7 +13,7 @@ function rarityColor(r) { return rarityMeta(r).color; }
 function rarityText(r) {
   return { backgroundColor: rarityMeta(r).color, color: '#160f28', fontWeight: '900', fontSize: 11, borderRadius: 4, overflow: 'hidden' };
 }
-import { Card, Btn, fmt, MultiToggle, multLabel, repeat, Portrait, StarBadge } from '../components';
+import { Card, Btn, fmt, MultiToggle, multLabel, repeat, Portrait, StarBadge, PowerBadge } from '../components';
 
 // 후보를 임시 장착했을 때의 실제 전투력 — 피커의 "변경 전후 비교"용.
 //   (loadout.mjs 추천 로직과 동일 기법: 넣어보고 계산 후 원복)
@@ -537,14 +537,15 @@ export default function RosterScreen({ state, bump, concept }) {
                 {meta.element ? ` · ${elementMeta(concept, meta.element).emoji}${elementMeta(concept, meta.element).name}` : ''}
               </Text>
             )}
-            <TouchableOpacity onPress={() => setShowBd((v) => !v)} activeOpacity={0.7}>
-              <Text style={g.headSub}>Lv.{unit.level}/{levelCap(unit)} · R{unit.rank} · 전투력 {fmt(computePower(unit))} <Text style={g.bdToggle}>{showBd ? '▲ 분해닫기' : '▼ 분해'}</Text></Text>
-            </TouchableOpacity>
+            <Text style={g.headSub}>Lv.{unit.level}/{levelCap(unit)} · R{unit.rank}</Text>
           </View>
           <Btn small kind={inParty ? 'ghost' : 'gold'}
             label={inParty ? '편성 해제' : '편성'}
             disabled={!inParty && state.party.length >= MAX_PARTY}
             onPress={() => act(() => togglePartyMember(state, unit.uid))} />
+        </View>
+        <View style={g.powerWrap}>
+          <PowerBadge power={computePower(unit)} expanded={showBd} onPress={() => setShowBd((v) => !v)} />
         </View>
         <View style={g.statGrid}>
           {[['HP', st8.hp], ['ATK', st8.atk], ['DEF', st8.def], ['SPD', st8.spd]].map(([k, v]) => (
@@ -1260,11 +1261,11 @@ const g = StyleSheet.create({
   seedBadgeOff: { backgroundColor: T.surface2, borderRadius: 8, paddingHorizontal: 8, paddingVertical: 3 },
   seedBadgeTextOn: { color: '#183a1d', fontWeight: '800', fontSize: 11 },
   seedBadgeTextOff: { color: T.muted, fontWeight: '700', fontSize: 11 },
+  powerWrap: { marginTop: 10 },
   statGrid: { flexDirection: 'row', gap: 8, marginTop: 14 },
   stat: { flex: 1, backgroundColor: T.surface2, borderRadius: 10, paddingVertical: 8, alignItems: 'center' },
   statK: { color: T.muted, fontSize: 11 },
   statV: { color: T.text, fontWeight: '800', fontSize: 15, marginTop: 2 },
-  bdToggle: { color: T.accent, fontSize: 12, fontWeight: '700' },
   ascHint: { color: T.muted, fontSize: 11, marginTop: 6 },
   bdBox: { marginTop: 12, backgroundColor: T.surface2, borderRadius: 12, padding: 12 },
   bdTitle: { color: T.text, fontWeight: '800', fontSize: 13, marginBottom: 8 },
