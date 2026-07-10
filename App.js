@@ -7,6 +7,7 @@ import { ResourceBar, Btn, fmt } from './app/components';
 import { useGame } from './app/useGame';
 import { setMuted, setHaptics, fx } from './app/feedback';
 import { setReduceMotion, setEco } from './app/motion';
+import { setUiCodes } from './app/uicode';
 import { t, setLang } from './app/i18n';
 import { SettingsModal } from './app/screens/Settings';
 import { AdminModal } from './app/screens/Admin';
@@ -115,7 +116,7 @@ function AppInner() {
   // 설정을 세이브에서 엔진들에 반영
   const st = game.state.settings;
   setLang(st.lang); // 렌더 중 동기 반영 — 언어 전환이 같은 렌더에 즉시 적용(지연 없음)
-  useEffect(() => { setMuted(st.muted); setHaptics(st.haptics); setReduceMotion(st.reduceMotion); setEco(st.ecoMode); }, [st.muted, st.haptics, st.reduceMotion, st.ecoMode]);
+  useEffect(() => { setMuted(st.muted); setHaptics(st.haptics); setReduceMotion(st.reduceMotion); setEco(st.ecoMode); setUiCodes(st.uiCodes); }, [st.muted, st.haptics, st.reduceMotion, st.ecoMode, st.uiCodes]);
   // 가로 wide(PC/태블릿) — 넓은 화면에서 콘텐츠를 폰 폭으로 가운데 정렬(늘어짐 방지).
   const { width: winW } = useWindowDimensions();
   const wide = winW >= 720;

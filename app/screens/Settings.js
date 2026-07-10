@@ -54,6 +54,7 @@ export function SettingsModal({ visible, settings, onChange, onReset, onClose, o
           <Toggle label={t('haptic')} desc={t('haptic_desc')} value={settings.haptics} onChange={(v) => onChange('haptics', v)} />
           <Toggle label={t('battle_fx')} desc={t('battle_fx_desc')} value={!settings.reduceMotion} onChange={(v) => onChange('reduceMotion', !v)} />
           <Toggle label={t('eco_mode')} desc={t('eco_mode_desc')} value={!!settings.ecoMode} onChange={(v) => onChange('ecoMode', v)} />
+          <Toggle label="UI 코드 표시(개발)" desc="화면에 요소 코드(a1~z2) 오버레이 — 수정 위치 지목용" value={!!settings.uiCodes} onChange={(v) => onChange('uiCodes', v)} />
 
           {/* 언어 */}
           <View style={c.langRow}>

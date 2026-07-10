@@ -14,6 +14,7 @@ function rarityText(r) {
   return { backgroundColor: rarityMeta(r).color, color: '#160f28', fontWeight: '900', fontSize: 11, borderRadius: 4, overflow: 'hidden' };
 }
 import { Card, Btn, fmt, MultiToggle, multLabel, repeat, Portrait, StarBadge, PowerBadge } from '../components';
+import { CodeTag } from '../uicode';
 
 // 후보를 임시 장착했을 때의 실제 전투력 — 피커의 "변경 전후 비교"용.
 //   (loadout.mjs 추천 로직과 동일 기법: 넣어보고 계산 후 원복)
@@ -488,6 +489,7 @@ export default function RosterScreen({ state, bump, concept }) {
       {/* 보유 유닛 — 6열 아이콘 그리드(줄바꿈, 가로 스크롤 없음). 종 단위로 묶여 밀도 유지. */}
       <Text style={g.sec}>보유 {concept.terms.unit} <Text style={g.dim}>({grouped.length}종{list.length > grouped.length ? ` · ${list.length}` : ''})</Text></Text>
       <View style={g.rosterGrid}>
+        <CodeTag id="b1" corner="tl" />
         {grouped.map(({ rep: u, count }) => {
           const m = identity(concept, u);
           const on = u.uid === unit.uid;
@@ -512,6 +514,7 @@ export default function RosterScreen({ state, bump, concept }) {
             {/* 이름 옆 빈 공간에 전투력 배지를 배치(별도 카드로 한 줄 차지하지 않음) */}
             <View style={g.nameRow}>
               <View style={g.nameWrap}>
+                <CodeTag id="b2" corner="tl" />
                 <Text style={g.headName} numberOfLines={1}>{meta.name}</Text>
                 {unit.rarity ? (
                   <View style={[g.rarPill, { backgroundColor: rarityMeta(unit.rarity).color }]}>
@@ -519,16 +522,19 @@ export default function RosterScreen({ state, bump, concept }) {
                   </View>
                 ) : null}
               </View>
+              <CodeTag id="b3" corner="tr" />
               <PowerBadge power={computePower(unit)} expanded={showBd} onPress={() => setShowBd((v) => !v)} />
             </View>
             {/* 별 배지 + 성급·레벨·랭크를 한 줄로 압축(이전엔 별도 줄이었음) */}
             <View style={g.starRow}>
+              <CodeTag id="b4" corner="tl" />
               <StarBadge tier={starOf(unit)} size={22} />
               <Text style={g.starRowNum}>{starOf(unit)}성급{starOf(unit) >= STAR_MAX ? ' MAX' : ''}<Text style={g.starRowSub}> · Lv.{unit.level}/{levelCap(unit)} · R{unit.rank}</Text></Text>
             </View>
           </View>
           {/* 편성 버튼 옆 빈 공간에 칭호·성격·속성을 배치(별도 줄로 빼지 않음) */}
           <View style={g.headSide}>
+            <CodeTag id="b5" corner="tr" />
             <Btn small kind={inParty ? 'ghost' : 'gold'}
               label={inParty ? '편성 해제' : '편성'}
               disabled={!inParty && state.party.length >= MAX_PARTY}
@@ -542,6 +548,7 @@ export default function RosterScreen({ state, bump, concept }) {
           </View>
         </View>
         <View style={g.statGrid}>
+          <CodeTag id="b6" corner="tl" />
           {[['HP', st8.hp], ['ATK', st8.atk], ['DEF', st8.def], ['SPD', st8.spd]].map(([k, v]) => (
             <View key={k} style={g.stat}><Text style={g.statK}>{k}</Text><Text style={g.statV}>{fmt(v)}</Text></View>
           ))}
@@ -578,6 +585,7 @@ export default function RosterScreen({ state, bump, concept }) {
         <View style={g.growBox}>
           {/* 배수 선택 없이 레벨업 x1/x10/x100/Max·돌파를 탭 카드 5개로 바로 실행(높이는 기존 버튼 줄과 동일). */}
           <View style={g.btnRow}>
+            <CodeTag id="b7" corner="tl" />
             {atCap ? (
               <View style={{ flex: 1 }}><Btn small tiny kind="gold" label="상한" disabled /></View>
             ) : [
@@ -601,6 +609,7 @@ export default function RosterScreen({ state, bump, concept }) {
             );
           })()}
           <View style={g.btnRow}>
+            <CodeTag id="b8" corner="tl" />
             {['atk', 'hp', 'def', 'crit'].map((s2) => (
               <View key={s2} style={{ flex: 1 }}>
                 <Btn small kind="ghost" label={`${statIcon(s2 === 'crit' ? 'critChance' : s2)}+${unit.enhance[s2]}`} onPress={() => grow(() => enhanceNode(state, unit.uid, s2))} />
@@ -613,6 +622,7 @@ export default function RosterScreen({ state, bump, concept }) {
             const curP = computePower(unit);
             return (
               <View style={g.starBox}>
+                <CodeTag id="b9" corner="tr" />
                 <View style={g.intiHead}>
                   {/* 현재 성급 아이콘은 헤더에 이미 표시됨(중복 제거) — 다음 성급 미리보기만 표시. */}
                   <View style={g.starPreviewRow}>
@@ -640,6 +650,7 @@ export default function RosterScreen({ state, bump, concept }) {
 
       {/* 상세 서브탭 바 — 성장/장비/스킬/꾸미기. 선택 캐릭터 진입 시 차르륵 순차 등장. */}
       <View style={g.dtabBar}>
+        <CodeTag id="b10" corner="tl" />
         {DETAIL_TABS.map((tb, i) => {
           const on = dtab === tb.key;
           return (

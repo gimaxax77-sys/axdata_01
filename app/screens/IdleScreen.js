@@ -2,6 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { T } from '../theme';
 import { Card, Btn, fmt } from '../components';
+import { CodeTag } from '../uicode';
 import { effectivePower, powerMultOf } from '../useGame';
 import { idleGenre } from '../../system/genres/idle.mjs';
 import { getStage, stageZone } from '../../system/core/progression.mjs';
@@ -56,12 +57,14 @@ export default function IdleScreen({ state, bump, lastGain, concept }) {
       {claimN > 0 && (
         <TouchableOpacity style={st.claimRow} activeOpacity={0.85} onPress={doClaimAll}
           accessibilityRole="button" accessibilityLabel={`받을 보상 ${claimN}건 한번에 받기`}>
+          <CodeTag id="a1" corner="tl" />
           <Text style={st.claimTxt}>🎁 받을 보상 {claimN}건 — 한번에 받기</Text>
           <Text style={st.claimGo}>›</Text>
         </TouchableOpacity>
       )}
       {/* 난이도 선택 */}
       <View style={st.diffRow}>
+        <CodeTag id="a2" corner="tl" />
         {DIFFICULTIES.map((d) => {
           const unlocked = difficultyUnlocked(state, d.id);
           const on = curDiff.id === d.id;
@@ -78,6 +81,7 @@ export default function IdleScreen({ state, bump, lastGain, concept }) {
 
       {/* 자동 전투 무대 */}
       <Card style={st.stage}>
+        <CodeTag id="a3" corner="tl" />
         <Text style={st.stageLabel}>
           {concept.terms.stage} {state.stage}
           {curDiff.id !== 'normal' ? <Text style={st.diffBadge}>  {curDiff.emoji}{curDiff.label} ×{curDiff.rewardMult}</Text> : null}
@@ -111,12 +115,14 @@ export default function IdleScreen({ state, bump, lastGain, concept }) {
         )}
         {/* 구역 진행 게이지 — 현재 구역(start~end)에서 어디쯤인지 한눈에. */}
         <View style={st.zoneBar}>
+          <CodeTag id="a4" corner="br" />
           <View style={[st.zoneBarFill, { width: `${Math.round(((state.stage - zone.start) / Math.max(1, zone.end - zone.start)) * 100)}%` }]} />
         </View>
       </Card>
 
       {/* 핵심 지표 스트립 — 전투력·최고층·초당수입 한 줄(세나키우기식 요약). */}
       <Card style={st.strip}>
+        <CodeTag id="a5" corner="tl" />
         <View style={st.stripCell}>
           <Text style={st.mLabel}>전투력</Text>
           <Text style={st.mVal}>{fmt(power)}</Text>
@@ -136,6 +142,7 @@ export default function IdleScreen({ state, bump, lastGain, concept }) {
 
       {/* 환생 — 컴팩트 CTA(요약 + 버튼 한 줄). */}
       <Card style={[st.prestigeRow, { borderColor: canPrestige ? T.accent : T.line }]}>
+        <CodeTag id="a6" corner="tl" />
         <View style={{ flex: 1 }}>
           <Text style={st.prestigeStat}>✨ 환생 {state.prestige}회 · <Text style={{ color: T.accent }}>×{mult.toFixed(2)}</Text></Text>
           <Text style={st.hintSm}>{canPrestige ? `지금 환생 시 +${nextGain}P (영구 배수)` : '최고 15층 도달 시 해금'}</Text>
