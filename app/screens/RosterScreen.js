@@ -607,13 +607,10 @@ export default function RosterScreen({ state, bump, concept }) {
             return (
               <View style={g.starBox}>
                 <View style={g.intiHead}>
+                  {/* 현재 성급 아이콘은 헤더에 이미 표시됨(중복 제거) — 다음 성급 미리보기만 표시. */}
                   <View style={g.starPreviewRow}>
-                    <StarBadge tier={si.star} size={24} />
-                    {!si.maxed && (<>
-                      <Text style={g.starPreviewArrow}>→</Text>
-                      <StarBadge tier={si.star + 1} size={30} />
-                    </>)}
-                    <Text style={g.subsec2}>  성급 {si.star}★{si.maxed ? '' : ` → ${si.star + 1}★`}</Text>
+                    <Text style={g.subsec2}>성급 {si.star}★{si.maxed ? '' : ` → ${si.star + 1}★`}</Text>
+                    {!si.maxed && <StarBadge tier={si.star + 1} size={22} />}
                   </View>
                   <Text style={g.dim}>{si.maxed ? `최고 ${STAR_MAX}★` : `중복 ${si.haveDupes}/${si.req.dupes} · 🪙${fmt(si.req.currency)}`}</Text>
                 </View>
@@ -1301,8 +1298,7 @@ const g = StyleSheet.create({
   // 성급 강화 블록(성장 박스 내부 하단 구획).
   starBox: { marginTop: 12, borderTopWidth: 1, borderTopColor: T.line, paddingTop: 10, gap: 6 },
   starHint: { color: T.muted, fontSize: 10, lineHeight: 14 },
-  starPreviewRow: { flexDirection: 'row', alignItems: 'center' },
-  starPreviewArrow: { color: T.muted, fontSize: 13, fontWeight: '900', marginHorizontal: 4 },
+  starPreviewRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   // 친밀도·씨앗 반반 요약 타일(한 줄) — 탭하면 아래 상세 펼침.
   halfRow: { flexDirection: 'row', gap: 8, marginTop: 12 },
   halfTile: { flex: 1, backgroundColor: T.surface, borderRadius: 12, borderWidth: 1.5, borderColor: T.line, paddingVertical: 10, paddingHorizontal: 12 },
