@@ -1,8 +1,8 @@
 import { earn } from './economy.mjs';
-import { addMaterial } from './materials.mjs';
 import { levelUpCost } from './units.mjs';
 import { skillUpCost, awakenCost } from './skills.mjs';
 import { enhanceCost } from './enhance.mjs';
+import { ascendCost } from './character.mjs';
 import { GEAR_SLOTS } from './gear.mjs';
 
 // ─────────────────────────────────────────────────────────────
@@ -15,13 +15,13 @@ import { GEAR_SLOTS } from './gear.mjs';
 
 // 유닛에 누적 투자된 자원 총량을 재구성한다(비용식 역산 — 별도 원장 불필요).
 export function invested(unit) {
-  const bag = { growth: 0, currency: 0, summon: 0, gem: 0, ascendStone: 0 };
+  const bag = { growth: 0, currency: 0, summon: 0, gem: 0 };
   // 레벨업(growth): 1→현재 레벨까지 각 단계 비용 합.
   for (let L = 1; L < (unit.level || 1); L++) {
     bag.growth += levelUpCost({ level: L }).growth;
   }
-  // 돌파(돌파석): 랭크 r 달성마다 r*2 (표준 경로 = 돌파석).
-  for (let r = 1; r < (unit.rank || 1); r++) bag.ascendStone += r * 2;
+  // 돌파(소환석): 랭크 1→현재까지 각 단계 비용 합(중복 소모로 돌파한 경우는 환급 대상 아님).
+  for (let r = 1; r < (unit.rank || 1); r++) bag.summon += ascendCost({ rank: r }).summon;
   // 스킬 강화(growth): 각 스킬 레벨 1→현재.
   for (const s of unit.skills || []) {
     if (!s || !s.id) continue;
@@ -60,8 +60,6 @@ export function dismantleUnit(state, uid) {
   const refund = invested(unit);
   // 지갑 자원(growth/currency/summon/gem) 환급.
   earn(state.wallet, { growth: refund.growth, currency: refund.currency, summon: refund.summon, gem: refund.gem });
-  // 돌파석 환급.
-  if (refund.ascendStone > 0) addMaterial(state, 'ascendStone', refund.ascendStone);
   // 장착 장비 인벤토리로 회수(소실 없음).
   let gearBack = 0;
   for (const slot of GEAR_SLOTS) {

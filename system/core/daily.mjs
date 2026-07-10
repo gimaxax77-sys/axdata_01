@@ -124,11 +124,11 @@ export function enterDungeon(state, type, now = Date.now(), rng = Math.random) {
     return { ok: true, kind: 'rune', rune: r.rune, rarity: r.rarity };
   }
   if (d.kind === 'weekday') {
-    // 장비 1점 + 돌파석 (진행도 비례).
+    // 장비 1점 + 소환석(진행도 비례) — 돌파 재료가 소환석으로 통합됨.
     const g = dropGear(state, rng, dropLuck(state));
-    const stones = 3 + Math.floor((state.peakStage || 1) / 20);
-    addMaterial(state, 'ascendStone', stones);
-    return { ok: true, kind: 'weekday', item: g.item, rarity: g.rarity, ascendStone: stones };
+    const summonAmt = 10 + Math.floor((state.peakStage || 1) / 10);
+    earn(state.wallet, { summon: summonAmt });
+    return { ok: true, kind: 'weekday', item: g.item, rarity: g.rarity, summon: summonAmt };
   }
   if (d.kind === 'element') {
     const amount = 3 + Math.floor((state.peakStage || 1) / 25);
@@ -152,14 +152,14 @@ export function enterDungeon(state, type, now = Date.now(), rng = Math.random) {
 export function sweepDungeon(state, type, now = Date.now(), rng = Math.random) {
   const left = dungeonEntriesLeft(state, type, now);
   if (left <= 0) return { ok: false, reason: '입장 횟수 소진' };
-  const acc = { count: 0, ascendStone: 0, elemEssence: 0, items: 0, runes: 0, shards: {}, currency: 0, growth: 0 };
+  const acc = { count: 0, elemEssence: 0, items: 0, runes: 0, shards: {}, currency: 0, growth: 0, summon: 0 };
   let last = null;
   for (let i = 0; i < left; i++) {
     const r = enterDungeon(state, type, now, rng);
     if (!r.ok) break;
     last = r; acc.count++;
-    acc.ascendStone += r.ascendStone || 0;
     acc.elemEssence += r.elemEssence || 0;
+    acc.summon += r.summon || 0;
     if (r.kind === 'petshard') acc.shards[r.grade] = (acc.shards[r.grade] || 0) + (r.amount || 0);
     else if (r.kind === 'resource') acc[r.resource] = (acc[r.resource] || 0) + (r.amount || 0);
     else if (r.kind === 'gear' || r.kind === 'weekday') acc.items++;

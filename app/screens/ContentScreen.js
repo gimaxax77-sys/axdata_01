@@ -31,7 +31,7 @@ const DUNGEON_META = {
   ESSENCE: { feature: 'dungeonEssence' },
   GEAR: { feature: 'dungeonEssence', label: '⚔️ 장비 던전', drop: '장비 드롭(등급 랜덤)' },
   RUNE: { feature: 'dungeonEssence', label: '🔷 룬 던전', drop: '룬 드롭(등급 랜덤)' },
-  WEEKDAY: { feature: 'dungeonGold', label: '📅 요일 던전', drop: '장비/악세 + 돌파석' },
+  WEEKDAY: { feature: 'dungeonGold', label: '📅 요일 던전', drop: '장비/악세 + 소환석' },
   ELEMENT: { feature: 'dungeonEssence', label: '🔷 속성 던전', drop: '속성정수(장비 속성 옵션)' },
   PETSHARD: { feature: 'pets', label: '🧩 펫 던전', drop: '펫조각(등급별)' },
 };
@@ -54,16 +54,16 @@ export default function ContentScreen({ state, bump, concept }) {
   const actN = (fn) => { repeat(fn, mult); bump(); };
   // 아이템/재료 던전: mult회 입장 → 마지막 드롭 요약 표시.
   const runDungeon = (type) => {
-    let last = null, count = 0, stone = 0, ess = 0; const shards = {};
+    let last = null, count = 0, sm = 0, ess = 0; const shards = {};
     repeat(() => {
       const r = enterDungeon(state, type);
-      if (r.ok) { count++; last = r; stone += r.ascendStone || 0; ess += r.elemEssence || 0; if (r.kind === 'petshard') shards[r.grade] = (shards[r.grade] || 0) + r.amount; }
+      if (r.ok) { count++; last = r; sm += r.summon || 0; ess += r.elemEssence || 0; if (r.kind === 'petshard') shards[r.grade] = (shards[r.grade] || 0) + r.amount; }
       return r;
     }, mult);
     if (!last) { setDropMsg(null); bump(); return; }
     if (last.kind === 'gear') setDropMsg(`⚔️ 장비 ${count}개 · 최근 [${(GEAR_RARITY[last.rarity] || {}).label || last.rarity}] ${GEAR_CATALOG[last.item.blueprint].label}`);
     else if (last.kind === 'rune') setDropMsg(`🔷 룬 ${count}개 · 최근 [${last.rarity}]`);
-    else if (last.kind === 'weekday') setDropMsg(`📅 장비 ${count}개 + 🔶돌파석 ${stone}`);
+    else if (last.kind === 'weekday') setDropMsg(`📅 장비 ${count}개 + 🎟️소환석 ${sm}`);
     else if (last.kind === 'element') setDropMsg(`🔷 속성정수 +${ess}`);
     else if (last.kind === 'petshard') setDropMsg(`🧩 펫조각 ${Object.entries(shards).map(([g, n]) => `${g} ${n}`).join(' · ')}`);
     bump();
@@ -75,7 +75,7 @@ export default function ContentScreen({ state, bump, concept }) {
     const parts = [`🧹 소탕 ${r.count}회`];
     if (r.items) parts.push(`⚔️${r.items}`);
     if (r.runes) parts.push(`🔷룬${r.runes}`);
-    if (r.ascendStone) parts.push(`🔶${r.ascendStone}`);
+    if (r.summon) parts.push(`🎟️${r.summon}`);
     if (r.elemEssence) parts.push(`🔷정수${r.elemEssence}`);
     const sh = Object.entries(r.shards || {}).map(([g, n]) => `🧩${g}${n}`);
     if (sh.length) parts.push(sh.join(' '));
@@ -292,7 +292,6 @@ export default function ContentScreen({ state, bump, concept }) {
         </View>
         {/* 보유 재료 */}
         <View style={c.matBar}>
-          <Text style={c.matChip}>{MATERIAL_META.ascendStone.emoji} {MATERIAL_META.ascendStone.label} {fmt(materialCount(state, 'ascendStone'))}</Text>
           <Text style={c.matChip}>{MATERIAL_META.elemEssence.emoji} {MATERIAL_META.elemEssence.label} {fmt(materialCount(state, 'elemEssence'))}</Text>
           {['R', 'SR', 'SSR', 'UR'].map((g) => (
             <Text key={g} style={c.matChip}>{SHARD_META.emoji}{g} {fmt(materialCount(state, 'petShard', g))}</Text>

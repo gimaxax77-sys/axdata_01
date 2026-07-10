@@ -39,7 +39,7 @@ export function createGameState({ units = [], party = [] } = {}) {
     shop: { purchased: {} }, // 1회성 패키지 구매 기록
     rentals: {}, // 기간제 대여 { slotId: { tier, expiresAt } }
     admin: { overrides: {} }, // 운영자 밸런스 오버라이드 { path: value }
-    materials: { ascendStone: 0, elemEssence: 0, petShard: { R: 0, SR: 0, SSR: 0, UR: 0 } }, // 던전 재료
+    materials: { elemEssence: 0, petShard: { R: 0, SR: 0, SSR: 0, UR: 0 } }, // 던전 재료
     arena: { points: 0, day: -1, entries: 0 }, // 아레나(경쟁) 랭크·일일 입장
     ladders: {}, // 3중 리그(주간/격주/월간) 포인트·주기
     mail: [], // 우편함(순위 정산·이벤트 보상)

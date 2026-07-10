@@ -1,5 +1,4 @@
 import { earn } from './economy.mjs';
-import { addMaterial } from './materials.mjs';
 
 // ─────────────────────────────────────────────────────────────
 // 상시 순환형 '미니 로드맵' 주간 테마 이벤트.
@@ -17,7 +16,7 @@ export const WEEKLY_THEMES = [
   { id: 'skill', label: '스킬 성장의 주', emoji: '📘', track: 'upgrade', goal: 30,
     hint: '캐릭터/스킬 강화가 이득! 강화 30회 달성 상자.', reward: { growth: 3000, summon: 30 } },
   { id: 'gear', label: '장비 단련의 주', emoji: '⚒️', track: 'dungeon', goal: 10,
-    hint: '던전을 돌아 장비를 모으세요! 던전 10회 상자.', reward: { currency: 8000, ascendStone: 5 } },
+    hint: '던전을 돌아 장비를 모으세요! 던전 10회 상자.', reward: { currency: 8000, summon: 20 } },
   { id: 'summon', label: '소환 축제의 주', emoji: '🔮', track: 'summon', goal: 20,
     hint: '소환 축제! 소환 20회 달성 상자.', reward: { gem: 300, summon: 50 } },
   { id: 'arena', label: '투기의 주', emoji: '🏆', track: 'arena', goal: 10,
@@ -56,15 +55,13 @@ export function weeklyEvent(state, now = Date.now()) {
   };
 }
 
-// 보상 청구(주 1회) — 지갑 재화 + 재료(ascendStone) 분리 지급.
+// 보상 청구(주 1회) — 지갑 재화 지급.
 export function claimWeekly(state, now = Date.now()) {
   const e = ensure(state, now);
   const theme = currentTheme(now);
   if (e.claimed) return { ok: false, reason: '이번 주 이미 수령' };
   if (e.progress < theme.goal) return { ok: false, reason: '목표 미달' };
-  const { ascendStone, ...wallet } = theme.reward;
-  earn(state.wallet, wallet);
-  if (ascendStone) addMaterial(state, 'ascendStone', ascendStone);
+  earn(state.wallet, theme.reward);
   e.claimed = true;
   return { ok: true, reward: theme.reward };
 }

@@ -2,7 +2,7 @@ import { spend } from './economy.mjs';
 import { levelUpCost, levelCap } from './units.mjs';
 import { getSkill, skillSlots, skillUpCost, AWAKEN_MAX, awakenCost } from './skills.mjs';
 import { getEnhanceNode, enhanceCost, ENHANCE_CAP } from './enhance.mjs';
-import { spendMaterial } from './materials.mjs';
+import { availableDupes } from './starGrade.mjs';
 
 // ─────────────────────────────────────────────────────────────
 // 캐릭터 성장 액션 — 장르 무관(RPG도 방치형도 캐릭터를 키운다).
@@ -29,19 +29,27 @@ export function levelUp(state, uid) {
 }
 
 // ── 돌파(랭크업) : 레벨 상한을 열고 스킬 슬롯을 늘린다 ──────────
-// 돌파석(요일 던전)을 우선 소모, 없으면 소환 재화로 대체(하위호환).
-export function ascendCost(unit) { return { ascendStone: unit.rank * 2, summon: unit.rank * 2 }; }
+// 소환석을 우선 소모(랭크가 오를수록 요구량이 우상향), 부족하면 동일
+// 영웅 중복 1명 소모로 대체(장비·룬은 회수, 성급 강화용 중복 풀과 공유).
+export function ascendCost(unit) { const r = unit.rank || 1; return { summon: 20 * r * r }; }
 export function ascend(state, uid) {
   const unit = findUnit(state, uid);
-  const stones = unit.rank * 2;
-  if (spendMaterial(state, 'ascendStone', stones)) {
+  const cost = ascendCost(unit);
+  if (spend(state.wallet, cost)) {
     unit.rank += 1;
-    return { ok: true, rank: unit.rank, used: 'ascendStone', newCap: levelCap(unit), slots: skillSlots(unit) };
+    return { ok: true, rank: unit.rank, used: 'summon', cost, newCap: levelCap(unit), slots: skillSlots(unit) };
   }
-  // 돌파석 부족 → 소환 재화 대체
-  if (!spend(state.wallet, { summon: unit.rank * 2 })) return { ok: false, reason: '돌파석/소환석 부족' };
+  // 소환석 부족 → 동일 영웅 중복 1명 소모로 대체
+  const dupe = availableDupes(state, unit)[0];
+  if (!dupe) return { ok: false, reason: '소환석 부족 · 동일 영웅 중복 없음', cost };
+  state.inventory = state.inventory || [];
+  state.runeBag = state.runeBag || [];
+  for (const slot of Object.keys(dupe.gear || {})) { const it = dupe.gear[slot]; if (it) state.inventory.push(it); }
+  for (const r of (dupe.runes || [])) { if (r) state.runeBag.push(r); }
+  if (state.profile && state.profile.avatarUid === dupe.uid) state.profile.avatarUid = null;
+  state.units = state.units.filter((u) => u.uid !== dupe.uid);
   unit.rank += 1;
-  return { ok: true, rank: unit.rank, used: 'summon', newCap: levelCap(unit), slots: skillSlots(unit) };
+  return { ok: true, rank: unit.rank, used: 'dupe', consumedUid: dupe.uid, newCap: levelCap(unit), slots: skillSlots(unit) };
 }
 
 // ── 스킬 장착 ─────────────────────────────────────────────────

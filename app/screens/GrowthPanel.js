@@ -117,7 +117,6 @@ export default function GrowthPanel({ state, bump, concept }) {
     <View>
       {/* 보유 재료 요약 */}
       <View style={c.matBar}>
-        <Text style={c.matChip}>{MATERIAL_META.ascendStone.emoji} {MATERIAL_META.ascendStone.label} {fmt(materialCount(state, 'ascendStone'))}</Text>
         <Text style={c.matChip}>{MATERIAL_META.elemEssence.emoji} {MATERIAL_META.elemEssence.label} {fmt(materialCount(state, 'elemEssence'))}</Text>
         {['R', 'SR', 'SSR', 'UR'].map((g) => (
           <Text key={g} style={c.matChip}>{SHARD_META.emoji}{g} {fmt(materialCount(state, 'petShard', g))}</Text>

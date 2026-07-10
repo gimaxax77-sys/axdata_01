@@ -59,7 +59,7 @@ import { levelCap } from '../../system/core/units.mjs';
 import { skillSlots, SKILL_CATALOG, equippableSkills, skillPower } from '../../system/core/skills.mjs';
 import { identity, elementMeta } from '../../system/concepts/index.mjs';
 import { GEAR_SLOTS, GEAR_CATALOG, SLOT_META, gearEnhanceCost, gearContribution } from '../../system/core/gear.mjs';
-import { levelUp, ascend, enhanceNode, equipSkill, unequipSkill, upgradeSkill, awakenSignature } from '../../system/core/character.mjs';
+import { levelUp, ascend, ascendCost, enhanceNode, equipSkill, unequipSkill, upgradeSkill, awakenSignature } from '../../system/core/character.mjs';
 import { AWAKEN_MAX, awakenCost } from '../../system/core/skills.mjs';
 import { craftGear, equipGear, enhanceGear, unequipGear, gearCraftCost, activeGearSets, rerollGearSubs, GEAR_RARITY, grantGearElementOption, ELEM_OPTION_COST, GEAR_SUB_MAX, enchantGear, rerollEnchant, enchantInfo, enchantCost, ENCHANT_MAX } from '../../system/core/gear.mjs';
 import { materialCount, MATERIAL_META } from '../../system/core/materials.mjs';
@@ -67,7 +67,7 @@ import { optimizeLoadout } from '../../system/core/loadout.mjs';
 import { recordMission } from '../../system/core/daily.mjs';
 import { intimacyLevel, intimacyProgress, giftCost, giveGift, INTIMACY_MAX } from '../../system/core/intimacy.mjs';
 import { seedConditions, seedProgress } from '../../system/core/seed.mjs';
-import { starOf, STAR_MAX, starUpInfo, starUp } from '../../system/core/starGrade.mjs';
+import { starOf, STAR_MAX, starUpInfo, starUp, availableDupes } from '../../system/core/starGrade.mjs';
 
 // 후보 성급으로 올렸을 때의 전투력(성급 강화 델타 미리보기용) — 넣어보고 원복.
 function powerWithNextStar(unit) {
@@ -582,7 +582,17 @@ export default function RosterScreen({ state, bump, concept }) {
             ))}
             <View style={{ flex: 1 }}><Btn small tiny kind="primary" label="Ascend" onPress={() => growN(() => ascend(state, unit.uid), 1)} /></View>
           </View>
-          <Text style={g.ascHint}>{MATERIAL_META.ascendStone.emoji} 돌파석 {fmt(materialCount(state, 'ascendStone'))} · 이번 돌파 필요 {unit.rank * 2}{materialCount(state, 'ascendStone') < unit.rank * 2 ? ' (부족 시 소환석 대체)' : ''}</Text>
+          {(() => {
+            const need = ascendCost(unit).summon;
+            const have = state.wallet.summon || 0;
+            const dupeN = availableDupes(state, unit).length;
+            return (
+              <Text style={g.ascHint}>
+                🎟️ 소환석 {fmt(have)} · 이번 돌파 필요 {fmt(need)}
+                {have < need ? ` (부족 시 동일 영웅 중복 소모 · 보유 ${dupeN}명)` : ''}
+              </Text>
+            );
+          })()}
           <View style={g.btnRow}>
             {['atk', 'hp', 'def', 'crit'].map((s2) => (
               <View key={s2} style={{ flex: 1 }}>

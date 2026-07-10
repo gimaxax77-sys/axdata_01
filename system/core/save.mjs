@@ -44,7 +44,11 @@ function normalize(state) {
   state.admin = state.admin || { overrides: {} };
   state.admin.overrides = state.admin.overrides || {};
   state.materials = state.materials || {};
-  state.materials.ascendStone = state.materials.ascendStone || 0;
+  // 돌파석 폐지 마이그레이션: 구버전 세이브에 남은 돌파석을 소환석으로 1:1 환급 후 제거.
+  if (state.materials.ascendStone) {
+    state.wallet.summon = (state.wallet.summon || 0) + state.materials.ascendStone;
+    delete state.materials.ascendStone;
+  }
   state.materials.elemEssence = state.materials.elemEssence || 0;
   state.materials.petShard = state.materials.petShard || {};
   for (const gr of ['R', 'SR', 'SSR', 'UR']) state.materials.petShard[gr] = state.materials.petShard[gr] || 0;
