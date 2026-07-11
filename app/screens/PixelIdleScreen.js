@@ -9,6 +9,8 @@ import { computePower } from '../../system/core/stats.mjs';
 import { identity, elementMeta } from '../../system/concepts/index.mjs';
 import { villageTier } from '../../system/core/village.mjs';
 import { reducedMotion } from '../motion';
+import SpriteAnim from '../SpriteAnim';
+import { hasUnitSprite, unitSprite } from '../unitSprites';
 
 // ─────────────────────────────────────────────────────────────
 // 픽셀 방치 화면 (미리보기) — 풀아트 방향의 실장 시범.
@@ -44,6 +46,28 @@ function HpBar({ pct, color }) {
       <View style={[ps.hpFill, { width: `${Math.max(0, Math.min(100, pct * 100))}%`, backgroundColor: color }]} />
     </View>
   );
+}
+
+// 시트 실제 폭 → 프레임 수(가로 스트립). require된 애셋 크기에서 계산.
+function framesOf(source, frameW) {
+  const a = Image.resolveAssetSource(source);
+  return a && a.width ? Math.max(1, Math.round(a.width / frameW)) : 1;
+}
+
+// 아군 리더 표시 — 스프라이트 시트가 등록돼 있으면 SpriteAnim, 없으면 기존 픽셀 이미지 폴백.
+function HeroSprite({ concept, lead, bob }) {
+  const key = lead && lead.characterId;
+  const rec = key && hasUnitSprite(concept.id, key) ? unitSprite(concept.id, key, 'idle') : null;
+  if (rec) {
+    const frames = framesOf(rec.source, rec.frameW);
+    return (
+      <Animated.View style={{ transform: [{ translateY: bob }] }}>
+        <SpriteAnim source={rec.source} frameW={rec.frameW} frameH={rec.frameH}
+          frames={frames} state="idle" scale={128 / rec.frameH} />
+      </Animated.View>
+    );
+  }
+  return <Animated.Image source={HERO} style={[ps.heroImg, { transform: [{ translateY: bob }] }]} resizeMode="contain" />;
 }
 
 // 대기 흔들림(bob) 애니메이션 훅. 절전/연출끔이면 애니메이션 정지(정적 렌더).
@@ -120,7 +144,7 @@ export default function PixelIdleScreen({ state, bump, lastGain, concept }) {
       <View style={ps.arena} pointerEvents="none">
         <View style={ps.fighter}>
           <Text style={ps.crit}>크리티컬!</Text>
-          <Animated.Image source={HERO} style={[ps.heroImg, { transform: [{ translateY: heroBob }] }]} resizeMode="contain" />
+          <HeroSprite concept={concept} lead={lead} bob={heroBob} />
           <View style={ps.shadow} />
           <Text style={[ps.name, { color: C.goldL }]}>{leadMeta ? leadMeta.name : '용사'} {lead ? `Lv.${lead.level}` : ''}</Text>
           <HpBar pct={0.78} color={C.good} />
