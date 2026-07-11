@@ -95,7 +95,7 @@ if (SB_URL && SB_KEY) {
       return error ? { ok: false, reason: error.message } : { ok: true };
     },
 
-    // ── 원격 설정(공개 테이블 remote_config 를 두는 경우; 없으면 null) ──
+    // ── 원격 설정(remote_config) 읽기 — 공지/이벤트/밸런스 ──
     async fetchConfig() {
       try {
         const { data } = await sb.from('remote_config').select('key, value');
@@ -104,6 +104,29 @@ if (SB_URL && SB_KEY) {
         for (const row of data) out[row.key] = String(row.value);
         return out;
       } catch { return null; }
+    },
+    // ── 운영자 콘솔: 원격 설정 쓰기/삭제 (RLS로 매니저·운영자만 허용) ──
+    async setConfig(key, value) {
+      if (!currentUser) return { ok: false, reason: 'no-user' };
+      const { error } = await sb.from('remote_config').upsert({
+        key, value, updated_at: new Date().toISOString(), updated_by: currentUser.uid,
+      });
+      return error ? { ok: false, reason: error.message } : { ok: true };
+    },
+    async deleteConfig(key) {
+      if (!currentUser) return { ok: false, reason: 'no-user' };
+      const { error } = await sb.from('remote_config').delete().eq('key', key);
+      return error ? { ok: false, reason: error.message } : { ok: true };
+    },
+
+    // ── IAP 영수증 서버 검증 → Edge Function iap-verify 호출 ──
+    async verifyPurchase({ platform, productId, token }) {
+      if (!currentUser) return { ok: false, reason: 'no-user' };
+      const { data, error } = await sb.functions.invoke('iap-verify', {
+        body: { platform, productId, token },
+      });
+      if (error) return { ok: false, reason: error.message };
+      return data; // { ok, productId, status }
     },
   };
 }

@@ -16,6 +16,7 @@ const ROLE_BY_EMAIL = { 'admin@test': 'admin', 'manager@test': 'manager' };
 const accounts = new Map(); // email → { uid, email, password, role }
 let current = null;
 let saveBlob = null;        // 메모리 세이브 봉투
+const configStore = {};     // 원격 설정(공지·이벤트) 메모리 저장
 
 function mkUser(email, password) {
   const role = ROLE_BY_EMAIL[email] || 'user';
@@ -50,5 +51,9 @@ globalThis.__ELDRIA_CLOUD__ = {
 
   async pull() { return saveBlob; },
   async push(envelope) { saveBlob = envelope; return { ok: true }; },
-  async fetchConfig() { return null; },
+
+  // 원격 설정(공지·이벤트) — 메모리 저장(운영자 콘솔 시험용).
+  async fetchConfig() { return { ...configStore }; },
+  async setConfig(key, value) { configStore[key] = value; return { ok: true }; },
+  async deleteConfig(key) { delete configStore[key]; return { ok: true }; },
 };

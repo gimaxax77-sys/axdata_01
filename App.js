@@ -12,6 +12,7 @@ import { setUiCodes } from './app/uicode';
 import { t, setLang } from './app/i18n';
 import { SettingsModal } from './app/screens/Settings';
 import { AdminModal } from './app/screens/Admin';
+import { ConsoleModal } from './app/screens/Console';
 import { useFonts } from 'expo-font';
 import IdleScreen from './app/screens/IdleScreen';
 import PixelIdleScreen from './app/screens/PixelIdleScreen';
@@ -133,9 +134,12 @@ function AppInner() {
 
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [adminOpen, setAdminOpen] = useState(false);
+  const [consoleOpen, setConsoleOpen] = useState(false);
   const [noticeHidden, setNoticeHidden] = useState(false);
   // 운영자 조작 접근 게이트: 백엔드 연결 시 admin 역할만, 순수 오프라인이면 기존대로 허용.
   const adminUnlocked = !game.cloud.available || can(game.cloud.role, 'tuneBalance');
+  // 운영자 콘솔(공지·이벤트) 접근: 매니저 이상만 — 백엔드 연결 시에만 노출.
+  const consoleUnlocked = game.cloud.available && can(game.cloud.role, 'sendNotice');
   // 상점으로 옮긴 환경 버튼(픽셀 화면·설정) 핸들러 — memo 유지 위해 안정 참조(useCallback).
   const openSettings = useCallback(() => { fx('tap'); setSettingsOpen(true); }, []);
   const togglePixel = useCallback(() => { fx('tap'); setPixelMode((v) => !v); }, []);
@@ -281,6 +285,7 @@ function AppInner() {
         onExport={game.exportSave}
         onImport={game.importSave}
         onOpenAdmin={adminUnlocked ? () => { setSettingsOpen(false); setAdminOpen(true); } : undefined}
+        onOpenConsole={consoleUnlocked ? () => { setSettingsOpen(false); setConsoleOpen(true); } : undefined}
         cloud={game.cloud}
         onSync={game.syncNow}
         onSignOut={game.signOutCloud}
@@ -294,6 +299,16 @@ function AppInner() {
         state={game.state}
         onChange={() => { game.save(); game.bump(); }}
         onClose={() => setAdminOpen(false)}
+      />
+
+      {/* 운영자 콘솔 (공지·이벤트) */}
+      <ConsoleModal
+        visible={consoleOpen}
+        role={game.cloud.role}
+        remote={game.remote}
+        onSet={game.setRemoteConfig}
+        onClear={game.clearRemoteConfig}
+        onClose={() => setConsoleOpen(false)}
       />
 
       {/* 첫 실행 소개 — 오프라인 팝업이 없을 때만 노출 */}

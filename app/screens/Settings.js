@@ -29,7 +29,7 @@ async function copyText(str) {
   return false;
 }
 
-export function SettingsModal({ visible, settings, onChange, onReset, onClose, onExport, onImport, onOpenAdmin, cloud, onSync, onSignOut, onSignUp, onSignInEmail }) {
+export function SettingsModal({ visible, settings, onChange, onReset, onClose, onExport, onImport, onOpenAdmin, onOpenConsole, cloud, onSync, onSignOut, onSignUp, onSignInEmail }) {
   const [code, setCode] = useState('');
   const [msg, setMsg] = useState('');
   const [email, setEmail] = useState('');
@@ -139,6 +139,11 @@ export function SettingsModal({ visible, settings, onChange, onReset, onClose, o
           <Text style={c.sec}>{t('data')}</Text>
           <Btn label={t('reset')} kind="ghost" onPress={onReset} />
           <Text style={c.note}>{t('reset_note')}</Text>
+
+          {onOpenConsole && (<>
+            <View style={c.divider} />
+            <Btn label="🛠 운영자 콘솔 (공지·이벤트)" kind="gold" onPress={onOpenConsole} />
+          </>)}
 
           {onOpenAdmin && (<>
             <View style={c.divider} />

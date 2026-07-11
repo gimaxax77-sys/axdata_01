@@ -87,3 +87,17 @@ export async function cloudFetchConfig() {
   if (!p || !p.fetchConfig) return null;
   try { return await p.fetchConfig(); } catch { return null; }
 }
+
+// 운영자 콘솔: 원격 설정 기록(공지/이벤트). 매니저·운영자만(서버 RLS가 강제).
+export async function cloudSetConfig(key, value) {
+  const p = provider();
+  if (!p || !p.setConfig) return { ok: false, reason: 'cloud-off' };
+  try { return await p.setConfig(key, value); } catch (e) { return { ok: false, reason: String(e && e.message || e) }; }
+}
+
+// 운영자 콘솔: 원격 설정 삭제(공지/이벤트 내리기).
+export async function cloudDeleteConfig(key) {
+  const p = provider();
+  if (!p || !p.deleteConfig) return { ok: false, reason: 'cloud-off' };
+  try { return await p.deleteConfig(key); } catch (e) { return { ok: false, reason: String(e && e.message || e) }; }
+}

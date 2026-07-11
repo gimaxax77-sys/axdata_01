@@ -113,8 +113,44 @@ if (can(cloudRole(), 'tuneBalance')) {
 
 ---
 
+## 7. 운영자 콘솔 (공지·이벤트) — 구현됨
+
+매니저·운영자가 공지/이벤트를 발송하면 모든 플레이어의 배너에 표시됩니다.
+
+1. **테이블 추가**: SQL Editor 에서 `backend/supabase/console.sql` 실행
+   (원격 설정 `remote_config` 테이블 + RLS: 매니저·운영자만 쓰기).
+2. 게임 설정 화면에 **🛠 운영자 콘솔** 버튼이 매니저 이상에게 노출됩니다.
+   → 공지/이벤트 문구 입력 후 발송하면 `remote_config` 에 기록되고,
+     플레이어는 다음 실행/동기화 때 상단 배너로 봅니다.
+
+---
+
+## 8. IAP 영수증 검증 (Edge Function) — 골격
+
+결제 위조를 막으려면 **서버가** 스토어 영수증을 검증해야 합니다.
+
+1. **테이블 추가**: SQL Editor 에서 `backend/supabase/iap.sql` 실행
+   (`purchases` 테이블 — 클라이언트는 조회만, 기록은 서버 전용).
+2. **함수 배포** (Supabase CLI 필요):
+   ```
+   supabase functions deploy iap-verify
+   ```
+   함수 코드: `supabase/functions/iap-verify/index.ts`
+3. **스토어 비밀 등록** (실제 검증용):
+   ```
+   supabase secrets set APPLE_SHARED_SECRET=...   # iOS
+   supabase secrets set GOOGLE_SA_JSON=...          # Android
+   ```
+4. 클라이언트는 `cloudVerifyPurchase({ platform, productId, token })` 로 호출합니다.
+
+> ⚠ 현재 함수는 **골격**입니다(토큰 존재만 확인). 프로덕션 전에 Apple/Google
+> 실제 검증 로직으로 교체해야 합니다(코드 내 TODO 표시). service_role 키는
+> 이 함수에만 자동 주입되며 클라이언트엔 절대 두지 않습니다.
+
+---
+
 ## 다음 단계 (이후 조각)
 
-- **클라우드 세이브 연결**: `saves` 테이블은 이미 준비됨 → `sync.mjs`(chooseSave)로 로컬↔원격 병합.
-- **IAP 영수증 검증**: 서버 함수(Edge Function)로 결제 검증.
-- **운영자 콘솔**: 매니저용 공지·우편·이벤트 관리 화면.
+- **우편(mailbox)**: 계정별 우편함 테이블 + 재화 첨부 발송.
+- **리더보드/PvP**: 아레나·탑 랭킹 서버화.
+- **IAP 실검증**: 위 골격에 Apple/Google 실제 영수증 검증 채우기.
