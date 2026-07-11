@@ -1,8 +1,9 @@
 import { fantasyConcept } from './fantasy.mjs';
 import { scifiConcept } from './scifi.mjs';
+import { wuxiaConcept } from './wuxia.mjs';
 import { COSTUMES } from '../core/costumes.mjs';
 
-export const CONCEPTS = { fantasy: fantasyConcept, scifi: scifiConcept };
+export const CONCEPTS = { fantasy: fantasyConcept, scifi: scifiConcept, wuxia: wuxiaConcept };
 
 // 컨셉 도감에서 characterId로 정체성을 찾는다.
 export function characterOf(concept, id) {

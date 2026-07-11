@@ -45,7 +45,7 @@ const STATE_MAP = [
   ['idle', 'anim_idle'],
   ['attack', 'anim_attack'],
 ];
-const GENRE = { fantasy: 'high fantasy', scifi: 'sci-fi cyberpunk' };
+const GENRE = { fantasy: 'high fantasy', scifi: 'sci-fi cyberpunk', wuxia: 'wuxia martial arts' };
 
 function requestFor(conceptId, concept, ch) {
   const el = concept.elements?.[ch.element]?.name || ch.element || '';

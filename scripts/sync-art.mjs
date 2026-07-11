@@ -41,10 +41,11 @@ const ONLY_CONCEPT = val('--concept', null);
 const LIMIT = Number(val('--limit', 0)) || 0;
 
 // 아트 스튜디오 genre / 아트스타일을 컨셉에 맞춰 매핑(실 API 품질용, 데모엔 무해).
-const GENRE = { fantasy: 'high fantasy', scifi: 'sci-fi cyberpunk' };
+const GENRE = { fantasy: 'high fantasy', scifi: 'sci-fi cyberpunk', wuxia: 'wuxia martial arts' };
 const STYLE = {
   fantasy: 'semi-realistic fantasy digital painting',
   scifi: 'semi-realistic sci-fi digital painting',
+  wuxia: 'semi-realistic wuxia ink-and-color painting',
 };
 
 // 캐릭터 한 명 → 아트 스튜디오 생성 요청 바디.
