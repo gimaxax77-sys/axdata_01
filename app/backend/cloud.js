@@ -27,6 +27,30 @@ export function cloudUser() {
   try { return p && p.user ? p.user() : null; } catch { return null; }
 }
 
+// 현재 로그인 계정의 역할(user/manager/admin). 미로그인·로컬 전용이면 null.
+export function cloudRole() {
+  const p = provider();
+  try {
+    if (p && p.role) return p.role();
+    const u = cloudUser();
+    return u && u.role ? u.role : null;
+  } catch { return null; }
+}
+
+// 이메일 회원가입. payload: { email, password }.
+export async function cloudSignUp(payload) {
+  const p = provider();
+  if (!p || !p.signUp) return { ok: false, reason: 'cloud-off' };
+  try { return await p.signUp(payload); } catch (e) { return { ok: false, reason: String(e && e.message || e) }; }
+}
+
+// 이메일 로그인. payload: { email, password }.
+export async function cloudSignInWithEmail(payload) {
+  const p = provider();
+  if (!p || !p.signInWithEmail) return { ok: false, reason: 'cloud-off' };
+  try { return await p.signInWithEmail(payload); } catch (e) { return { ok: false, reason: String(e && e.message || e) }; }
+}
+
 export async function cloudSignIn() {
   const p = provider();
   if (!p || !p.signIn) return { ok: false, reason: 'cloud-off' };
