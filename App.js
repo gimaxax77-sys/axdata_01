@@ -322,6 +322,7 @@ function AppInner() {
         remote={game.remote}
         onSet={game.setRemoteConfig}
         onClear={game.clearRemoteConfig}
+        onSendMail={game.sendMailCloud}
         onClose={() => setConsoleOpen(false)}
       />
 

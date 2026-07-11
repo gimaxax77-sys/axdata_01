@@ -119,6 +119,23 @@ if (SB_URL && SB_KEY) {
       return error ? { ok: false, reason: error.message } : { ok: true };
     },
 
+    // ── 우편함 — 서버 우편 조회(전체 + 내 우편), 발송(매니저·운영자) ──
+    async fetchMail() {
+      if (!currentUser) return [];
+      const { data } = await sb
+        .from('mail').select('id, title, rewards, created_at')
+        .or(`target_user_id.is.null,target_user_id.eq.${currentUser.uid}`)
+        .order('created_at', { ascending: true }).limit(100);
+      return data || [];
+    },
+    async sendMail({ targetUserId = null, title, rewards }) {
+      if (!currentUser) return { ok: false, reason: 'no-user' };
+      const { error } = await sb.from('mail').insert({
+        target_user_id: targetUserId, title, rewards: rewards || {},
+      });
+      return error ? { ok: false, reason: error.message } : { ok: true };
+    },
+
     // ── IAP 영수증 서버 검증 → Edge Function iap-verify 호출 ──
     async verifyPurchase({ platform, productId, token }) {
       if (!currentUser) return { ok: false, reason: 'no-user' };

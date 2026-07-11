@@ -8,7 +8,8 @@ import { idleGenre } from '../system/genres/idle.mjs';
 import { serialize, deserialize, exportCode, importCode } from '../system/core/save.mjs';
 import { applyOverrides } from '../system/core/admin.mjs';
 import { hasPremium } from '../system/core/cosmetics.mjs';
-import { cloudAvailable, cloudUser, cloudRole, cloudSignIn, cloudSignUp, cloudSignInWithEmail, cloudSignOut, cloudPull, cloudPush, cloudFetchConfig, cloudSetConfig, cloudDeleteConfig } from './backend/cloud';
+import { cloudAvailable, cloudUser, cloudRole, cloudSignIn, cloudSignUp, cloudSignInWithEmail, cloudSignOut, cloudPull, cloudPush, cloudFetchConfig, cloudSetConfig, cloudDeleteConfig, cloudFetchMail, cloudSendMail } from './backend/cloud';
+import { addMail } from '../system/core/mailbox.mjs';
 import { chooseSave, makeEnvelope, saveProgress } from './backend/sync.mjs';
 import { loadRemoteConfig } from './backend/remoteConfig.mjs';
 import { SAVE_VERSION } from '../system/core/save.mjs';
@@ -281,11 +282,40 @@ export function useGame() {
     return r;
   }, [refreshRemote]);
 
+  // 우편함 — 서버 우편을 로컬 우편함(state.mail)으로 흡수(중복 방지: mailSeen).
+  const ingestMail = useCallback((serverMails) => {
+    if (!serverMails || !serverMails.length) return 0;
+    const st = ref.current;
+    st.mailSeen = st.mailSeen || [];
+    const seen = new Set(st.mailSeen);
+    let added = 0;
+    for (const m of serverMails) {
+      if (!m || seen.has(m.id)) continue;
+      addMail(st, { title: m.title || '운영자 우편', reward: m.rewards || {}, ts: m.created_at ? new Date(m.created_at).getTime() : Date.now() });
+      st.mailSeen.push(m.id); seen.add(m.id); added++;
+    }
+    if (added) { save(); bump(); }
+    return added;
+  }, [save, bump]);
+  const refreshMail = useCallback(async () => {
+    if (!cloudAvailable() || !cloudUser()) return 0;
+    return ingestMail(await cloudFetchMail());
+  }, [ingestMail]);
+  // 운영자 콘솔: 우편 발송 → 성공 시 즉시 흡수(전체 발송이면 발송자도 수신).
+  const sendMailCloud = useCallback(async (payload) => {
+    const r = await cloudSendMail(payload);
+    if (r.ok) await refreshMail();
+    return r;
+  }, [refreshMail]);
+  // 로그인(또는 자동 로그인) 시 서버 우편 흡수.
+  useEffect(() => { if (cloud.user) refreshMail(); }, [cloud.user, refreshMail]);
+
   return {
     state: ref.current, rev, bump, lastGain, offline, dismissOffline, claimOfflineBonus,
     reset, save, exportSave, importSave, concept: CONCEPT,
     cloud, syncNow, signOutCloud, signUpEmail, signInEmail, remote,
     setRemoteConfig, clearRemoteConfig, refreshRemote,
+    sendMailCloud, refreshMail,
   };
 }
 

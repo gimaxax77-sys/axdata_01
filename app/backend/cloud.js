@@ -74,6 +74,20 @@ export async function cloudPush(envelope) {
   try { return await p.push(envelope); } catch (e) { return { ok: false, reason: String(e && e.message || e) }; }
 }
 
+// 우편함: 서버 우편 조회 → [{ id, title, rewards, created_at }].
+export async function cloudFetchMail() {
+  const p = provider();
+  if (!p || !p.fetchMail) return [];
+  try { return await p.fetchMail(); } catch { return []; }
+}
+
+// 우편함: 발송(매니저·운영자). payload: { targetUserId?, title, rewards }.
+export async function cloudSendMail(payload) {
+  const p = provider();
+  if (!p || !p.sendMail) return { ok: false, reason: 'cloud-off' };
+  try { return await p.sendMail(payload); } catch (e) { return { ok: false, reason: String(e && e.message || e) }; }
+}
+
 // 인앱결제 영수증 서버 검증. payload: { platform, productId, token }.
 export async function cloudVerifyPurchase(payload) {
   const p = provider();

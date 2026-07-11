@@ -17,6 +17,8 @@ const accounts = new Map(); // email → { uid, email, password, role }
 let current = null;
 let saveBlob = null;        // 메모리 세이브 봉투
 const configStore = {};     // 원격 설정(공지·이벤트) 메모리 저장
+const mailStore = [];       // 우편 메모리 저장
+let mailSeq = 0;
 
 function mkUser(email, password) {
   const role = ROLE_BY_EMAIL[email] || 'user';
@@ -56,4 +58,14 @@ globalThis.__ELDRIA_CLOUD__ = {
   async fetchConfig() { return { ...configStore }; },
   async setConfig(key, value) { configStore[key] = value; return { ok: true }; },
   async deleteConfig(key) { delete configStore[key]; return { ok: true }; },
+
+  // 우편함 — 메모리 저장(전체 우편 = target null).
+  async fetchMail() {
+    if (!current) return [];
+    return mailStore.filter((m) => m.target_user_id == null || m.target_user_id === current.uid);
+  },
+  async sendMail({ targetUserId = null, title, rewards }) {
+    mailStore.push({ id: 'mail-' + (++mailSeq), target_user_id: targetUserId, title, rewards: rewards || {}, created_at: new Date().toISOString() });
+    return { ok: true };
+  },
 };

@@ -34,6 +34,24 @@ export function buildEventConfig(text) {
   return { ok: true, key: 'event', value: JSON.stringify({ text: v.text }) };
 }
 
+// 우편 보상으로 허용되는 재화 키(economy wallet 과 일치).
+export const MAIL_REWARD_KEYS = ['currency', 'gem', 'summon', 'growth'];
+
+// 우편 발송 페이로드 검증·정리. { ok, title, rewards } | { ok:false, reason }.
+//   rewards: 문자열/숫자 혼합 입력을 0 이상 정수로 정리, 0은 제거.
+export function buildMailPayload({ title, rewards = {} } = {}) {
+  const t = (title == null ? '' : String(title)).trim();
+  if (!t) return { ok: false, reason: '우편 제목을 입력하세요' };
+  if (t.length > NOTICE_MAX) return { ok: false, reason: `제목은 최대 ${NOTICE_MAX}자입니다` };
+  const clean = {};
+  for (const k of MAIL_REWARD_KEYS) {
+    const n = Math.floor(Number(rewards[k]));
+    if (Number.isFinite(n) && n > 0) clean[k] = n;
+  }
+  if (Object.keys(clean).length === 0) return { ok: false, reason: '보상 재화를 1개 이상 입력하세요' };
+  return { ok: true, title: t, rewards: clean };
+}
+
 // 역할이 콘솔에 들어올 수 있나(공지 발송 권한 = 매니저 이상).
 export function canOpenConsole(role) {
   return can(role, 'sendNotice');

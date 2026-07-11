@@ -3,14 +3,23 @@ import { View, Text, StyleSheet, Modal, TouchableOpacity, TextInput, ScrollView 
 import { T } from '../theme';
 import { Btn } from '../components';
 import { ROLE_LABEL } from '../../system/core/roles.mjs';
-import { buildNoticeConfig, buildEventConfig, consoleCapabilities, NOTICE_MAX } from '../../system/core/console.mjs';
+import { buildNoticeConfig, buildEventConfig, buildMailPayload, consoleCapabilities, NOTICE_MAX } from '../../system/core/console.mjs';
 
-// 운영자 콘솔 — 매니저/운영자가 공지·이벤트를 발송(원격 설정에 기록).
-//   기록되면 모든 플레이어가 기존 공지 배너로 자동 표시한다.
-export function ConsoleModal({ visible, onClose, role, remote, onSet, onClear }) {
+const MAIL_FIELDS = [
+  { key: 'currency', label: '골드' },
+  { key: 'gem', label: '다이아' },
+  { key: 'summon', label: '소환권' },
+  { key: 'growth', label: '성장' },
+];
+
+// 운영자 콘솔 — 매니저/운영자가 공지·이벤트·우편을 발송.
+//   공지/이벤트는 원격 설정에 기록, 우편은 전체 유저에게 재화 첨부 발송.
+export function ConsoleModal({ visible, onClose, role, remote, onSet, onClear, onSendMail }) {
   const cap = consoleCapabilities(role);
   const [notice, setNotice] = useState('');
   const [event, setEvent] = useState('');
+  const [mailTitle, setMailTitle] = useState('');
+  const [mailRewards, setMailRewards] = useState({});
   const [msg, setMsg] = useState(null);
 
   const curNotice = remote && remote.notice ? remote.notice.text : null;
@@ -27,6 +36,13 @@ export function ConsoleModal({ visible, onClose, role, remote, onSet, onClear })
     const b = buildEventConfig(event);
     if (!b.ok) { setMsg({ ok: false, t: b.reason }); return; }
     flash(await onSet(b.key, b.value), '이벤트를 발송했습니다'); setEvent('');
+  };
+  const postMail = async () => {
+    const b = buildMailPayload({ title: mailTitle, rewards: mailRewards });
+    if (!b.ok) { setMsg({ ok: false, t: b.reason }); return; }
+    const r = await (onSendMail ? onSendMail({ targetUserId: null, title: b.title, rewards: b.rewards }) : { ok: false, reason: '미지원' });
+    flash(r, '전체 우편을 발송했습니다');
+    if (r && r.ok) { setMailTitle(''); setMailRewards({}); }
   };
 
   return (
@@ -66,6 +82,28 @@ export function ConsoleModal({ visible, onClose, role, remote, onSet, onClear })
               </View>
             </>)}
 
+            {/* 우편 발송 */}
+            {cap.notice && onSendMail && (<>
+              <View style={c.divider} />
+              <Text style={c.sec}>📬 우편 발송 <Text style={c.dim}>(전체 유저)</Text></Text>
+              <TextInput style={c.input} value={mailTitle} onChangeText={setMailTitle}
+                placeholder="우편 제목 (예: 점검 보상)" placeholderTextColor={T.muted} />
+              <View style={c.rewardGrid}>
+                {MAIL_FIELDS.map((f) => (
+                  <View key={f.key} style={c.rewardCell}>
+                    <Text style={c.rewardLabel}>{f.label}</Text>
+                    <TextInput style={c.rewardInput} keyboardType="numeric"
+                      value={mailRewards[f.key] != null ? String(mailRewards[f.key]) : ''}
+                      onChangeText={(v) => setMailRewards((r) => ({ ...r, [f.key]: v.replace(/[^0-9]/g, '') }))}
+                      placeholder="0" placeholderTextColor={T.muted} />
+                  </View>
+                ))}
+              </View>
+              <View style={[c.row, { marginTop: 8 }]}>
+                <View style={{ flex: 1 }}><Btn small kind="gold" label="전체 우편 발송" onPress={postMail} /></View>
+              </View>
+            </>)}
+
             {msg ? <Text style={[c.msg, !msg.ok && c.err]}>{msg.ok ? '✓ ' : '⚠ '}{msg.t}</Text> : null}
 
             <Text style={c.note}>발송 즉시 서버(remote_config)에 기록되고, 다른 플레이어는 다음 실행(또는 동기화) 시 배너로 봅니다. 매니저는 공지·이벤트만, 밸런스 조정은 운영자 조작 화면에서 합니다.</Text>
@@ -95,4 +133,9 @@ const c = StyleSheet.create({
   msg: { color: T.accent, fontSize: 13, fontWeight: '800', marginTop: 12 },
   err: { color: '#ff8a8a' },
   note: { color: T.muted, fontSize: 11, marginTop: 12, lineHeight: 16 },
+  dim: { color: T.muted, fontSize: 12, fontWeight: '600' },
+  rewardGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 8 },
+  rewardCell: { flexBasis: '48%', flexGrow: 1, flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: T.surface2, borderRadius: 10, borderWidth: 1, borderColor: T.line, paddingHorizontal: 10, paddingVertical: 6 },
+  rewardLabel: { color: T.text, fontSize: 12, fontWeight: '700', width: 44 },
+  rewardInput: { flex: 1, color: T.text, fontSize: 13, fontWeight: '700', paddingVertical: 4, textAlign: 'right' },
 });
