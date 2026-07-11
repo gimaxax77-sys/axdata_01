@@ -23,6 +23,7 @@ import ErrorBoundary from './app/ErrorBoundary';
 import { canClaimAttendance, missionList } from './system/core/daily.mjs';
 import { weeklyEvent } from './system/core/events.mjs';
 import { summonMasteryInfo } from './system/core/summonMastery.mjs';
+import { can } from './system/core/roles.mjs';
 
 // 탭 화면을 React.memo로 감싼다 — 방치 틱(초당)에는 rev/props가 안 바뀌어
 // 비활성 화면이 리렌더되지 않는다(탭 전환·조작 렉 제거).
@@ -132,6 +133,8 @@ function AppInner() {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [adminOpen, setAdminOpen] = useState(false);
   const [noticeHidden, setNoticeHidden] = useState(false);
+  // 운영자 조작 접근 게이트: 백엔드 연결 시 admin 역할만, 순수 오프라인이면 기존대로 허용.
+  const adminUnlocked = !game.cloud.available || can(game.cloud.role, 'tuneBalance');
   // 상점으로 옮긴 환경 버튼(픽셀 화면·설정) 핸들러 — memo 유지 위해 안정 참조(useCallback).
   const openSettings = useCallback(() => { fx('tap'); setSettingsOpen(true); }, []);
   const togglePixel = useCallback(() => { fx('tap'); setPixelMode((v) => !v); }, []);
@@ -276,10 +279,12 @@ function AppInner() {
         onClose={() => setSettingsOpen(false)}
         onExport={game.exportSave}
         onImport={game.importSave}
-        onOpenAdmin={() => { setSettingsOpen(false); setAdminOpen(true); }}
+        onOpenAdmin={adminUnlocked ? () => { setSettingsOpen(false); setAdminOpen(true); } : undefined}
         cloud={game.cloud}
         onSync={game.syncNow}
         onSignOut={game.signOutCloud}
+        onSignUp={game.signUpEmail}
+        onSignInEmail={game.signInEmail}
       />
 
       {/* 운영자 조작 패널 */}

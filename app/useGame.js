@@ -8,7 +8,7 @@ import { idleGenre } from '../system/genres/idle.mjs';
 import { serialize, deserialize, exportCode, importCode } from '../system/core/save.mjs';
 import { applyOverrides } from '../system/core/admin.mjs';
 import { hasPremium } from '../system/core/cosmetics.mjs';
-import { cloudAvailable, cloudUser, cloudSignIn, cloudSignOut, cloudPull, cloudPush, cloudFetchConfig } from './backend/cloud';
+import { cloudAvailable, cloudUser, cloudRole, cloudSignIn, cloudSignUp, cloudSignInWithEmail, cloudSignOut, cloudPull, cloudPush, cloudFetchConfig } from './backend/cloud';
 import { chooseSave, makeEnvelope, saveProgress } from './backend/sync.mjs';
 import { loadRemoteConfig } from './backend/remoteConfig.mjs';
 import { SAVE_VERSION } from '../system/core/save.mjs';
@@ -193,7 +193,7 @@ export function useGame() {
   }, [bump, save]);
 
   // ── 클라우드 세이브(Phase 1) — 미설정이면 전부 no-op(로컬 전용) ──
-  const [cloud, setCloud] = useState({ available: cloudAvailable(), user: cloudUser(), status: 'idle', msg: null });
+  const [cloud, setCloud] = useState({ available: cloudAvailable(), user: cloudUser(), role: cloudRole(), status: 'idle', msg: null });
   const envOf = useCallback(() => makeEnvelope({
     blob: serialize(ref.current), version: SAVE_VERSION, progress: saveProgress(ref.current),
   }), []);
@@ -209,14 +209,34 @@ export function useGame() {
     if (pick.pick === 'remote') {
       const loaded = deserialize(remote.blob);
       if (loaded) { ref.current = loaded; applyOverrides(ref.current.admin && ref.current.admin.overrides); save(); saveBackup(remote.blob); bump(); }
-      setCloud((c) => ({ ...c, status: 'ok', user: u, msg: '원격 진행 불러옴' }));
+      setCloud((c) => ({ ...c, status: 'ok', user: u, role: cloudRole(), msg: '원격 진행 불러옴' }));
     } else {
       await cloudPush(local);
-      setCloud((c) => ({ ...c, status: 'ok', user: u, msg: '클라우드 저장됨' }));
+      setCloud((c) => ({ ...c, status: 'ok', user: u, role: cloudRole(), msg: '클라우드 저장됨' }));
     }
     return { ok: true, pick: pick.pick };
   }, [envOf, save, bump]);
-  const signOutCloud = useCallback(async () => { await cloudSignOut(); setCloud((c) => ({ ...c, user: null, status: 'idle', msg: '로그아웃' })); }, []);
+  const signOutCloud = useCallback(async () => { await cloudSignOut(); setCloud((c) => ({ ...c, user: null, role: null, status: 'idle', msg: '로그아웃' })); }, []);
+
+  // 이메일 회원가입/로그인 → 성공 시 역할 반영 + 즉시 동기화.
+  const signUpEmail = useCallback(async ({ email, password }) => {
+    if (!cloudAvailable()) return { ok: false, reason: '클라우드 미설정' };
+    setCloud((c) => ({ ...c, status: 'syncing', msg: null }));
+    const r = await cloudSignUp({ email, password });
+    if (!r.ok) { setCloud((c) => ({ ...c, status: 'error', msg: r.reason || '가입 실패' })); return r; }
+    setCloud((c) => ({ ...c, user: cloudUser(), role: cloudRole() }));
+    await syncNow();
+    return r;
+  }, [syncNow]);
+  const signInEmail = useCallback(async ({ email, password }) => {
+    if (!cloudAvailable()) return { ok: false, reason: '클라우드 미설정' };
+    setCloud((c) => ({ ...c, status: 'syncing', msg: null }));
+    const r = await cloudSignInWithEmail({ email, password });
+    if (!r.ok) { setCloud((c) => ({ ...c, status: 'error', msg: r.reason || '로그인 실패' })); return r; }
+    setCloud((c) => ({ ...c, user: cloudUser(), role: cloudRole() }));
+    await syncNow();
+    return r;
+  }, [syncNow]);
 
   // 하이드레이트 완료 후 1회 자동 동기화(설정된 경우만).
   const didSync = useRef(false);
@@ -251,7 +271,7 @@ export function useGame() {
   return {
     state: ref.current, rev, bump, lastGain, offline, dismissOffline, claimOfflineBonus,
     reset, save, exportSave, importSave, concept: CONCEPT,
-    cloud, syncNow, signOutCloud, remote,
+    cloud, syncNow, signOutCloud, signUpEmail, signInEmail, remote,
   };
 }
 

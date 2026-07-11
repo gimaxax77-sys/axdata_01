@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, Modal, TouchableOpacity, TextInput } from 'reac
 import { T } from '../theme';
 import { Btn } from '../components';
 import { t, LANGS } from '../i18n';
+import { ROLE_LABEL } from '../../system/core/roles.mjs';
 
 // 온오프 토글 행
 function Toggle({ label, desc, value, onChange }) {
@@ -28,9 +29,22 @@ async function copyText(str) {
   return false;
 }
 
-export function SettingsModal({ visible, settings, onChange, onReset, onClose, onExport, onImport, onOpenAdmin, cloud, onSync, onSignOut }) {
+export function SettingsModal({ visible, settings, onChange, onReset, onClose, onExport, onImport, onOpenAdmin, cloud, onSync, onSignOut, onSignUp, onSignInEmail }) {
   const [code, setCode] = useState('');
   const [msg, setMsg] = useState('');
+  const [email, setEmail] = useState('');
+  const [pw, setPw] = useState('');
+
+  const doSignIn = async () => {
+    if (!onSignInEmail) return;
+    const r = await onSignInEmail({ email: email.trim(), password: pw });
+    if (r && r.ok) setPw('');
+  };
+  const doSignUp = async () => {
+    if (!onSignUp) return;
+    const r = await onSignUp({ email: email.trim(), password: pw });
+    if (r && r.ok) setPw('');
+  };
 
   const doExport = async () => {
     const c2 = onExport ? onExport() : '';
@@ -72,17 +86,33 @@ export function SettingsModal({ visible, settings, onChange, onReset, onClose, o
             </View>
           </View>
 
-          {/* 클라우드 세이브 (Phase 1) */}
+          {/* 계정 · 클라우드 세이브 */}
           {cloud && cloud.available && (<>
             <View style={c.divider} />
-            <Text style={c.sec}>☁️ 클라우드 세이브</Text>
-            <Text style={c.note}>
-              {cloud.user ? `로그인됨 · ${cloud.status === 'syncing' ? '동기화 중…' : (cloud.msg || '동기화 완료')}` : '기기 밖에 진행을 백업합니다. 로그인 후 자동 동기화됩니다.'}
-            </Text>
-            <View style={c.transferRow}>
-              <View style={{ flex: 1 }}><Btn small kind="gold" label={cloud.user ? '지금 동기화' : '클라우드 로그인'} onPress={onSync} /></View>
-              {cloud.user && <View style={{ flex: 1 }}><Btn small kind="ghost" label="로그아웃" onPress={onSignOut} /></View>}
-            </View>
+            <Text style={c.sec}>☁️ 계정 · 클라우드 세이브</Text>
+            {cloud.user ? (<>
+              <View style={c.acctRow}>
+                <Text style={c.acctEmail} numberOfLines={1}>{cloud.user.email || '로그인됨'}</Text>
+                <Text style={[c.roleBadge, cloud.role === 'admin' && c.roleAdmin, cloud.role === 'manager' && c.roleManager]}>
+                  {ROLE_LABEL[cloud.role] || '일반'}
+                </Text>
+              </View>
+              <Text style={c.note}>{cloud.status === 'syncing' ? '동기화 중…' : (cloud.msg || '동기화 완료')}</Text>
+              <View style={c.transferRow}>
+                <View style={{ flex: 1 }}><Btn small kind="gold" label="지금 동기화" onPress={onSync} /></View>
+                <View style={{ flex: 1 }}><Btn small kind="ghost" label="로그아웃" onPress={onSignOut} /></View>
+              </View>
+            </>) : (<>
+              <Text style={c.note}>이메일로 로그인하면 진행이 기기 밖에 안전하게 보관되고, 다른 기기와 동기화됩니다.</Text>
+              <TextInput style={c.input} value={email} onChangeText={setEmail} placeholder="이메일" placeholderTextColor={T.muted} autoCapitalize="none" autoCorrect={false} keyboardType="email-address" />
+              <View style={{ height: 8 }} />
+              <TextInput style={c.input} value={pw} onChangeText={setPw} placeholder="비밀번호" placeholderTextColor={T.muted} autoCapitalize="none" autoCorrect={false} secureTextEntry />
+              <View style={[c.transferRow, { marginTop: 8 }]}>
+                <View style={{ flex: 1 }}><Btn small kind="gold" label="로그인" onPress={doSignIn} /></View>
+                <View style={{ flex: 1 }}><Btn small kind="ghost" label="가입" onPress={doSignUp} /></View>
+              </View>
+              {cloud.status === 'error' && cloud.msg ? <Text style={c.err}>{cloud.msg}</Text> : null}
+            </>)}
           </>)}
 
           {/* 세이브 이관 */}
@@ -146,6 +176,12 @@ const c = StyleSheet.create({
   transferRow: { flexDirection: 'row', gap: 8, marginBottom: 8 },
   input: { backgroundColor: T.surface2, borderRadius: 10, borderWidth: 1, borderColor: T.line, color: T.text, paddingHorizontal: 12, paddingVertical: 10, fontSize: 13 },
   msg: { color: T.accent, fontSize: 12, fontWeight: '700', marginTop: 8 },
+  err: { color: '#ff8a8a', fontSize: 12, fontWeight: '700', marginTop: 8 },
   note: { color: T.muted, fontSize: 11, marginTop: 8, lineHeight: 16 },
+  acctRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10, marginBottom: 4 },
+  acctEmail: { color: T.text, fontWeight: '800', fontSize: 14, flex: 1 },
+  roleBadge: { color: T.muted, backgroundColor: T.surface2, fontWeight: '800', fontSize: 11, paddingHorizontal: 10, paddingVertical: 3, borderRadius: 999, overflow: 'hidden' },
+  roleManager: { color: '#7fd3ff', backgroundColor: 'rgba(127,211,255,0.15)' },
+  roleAdmin: { color: '#ffd257', backgroundColor: 'rgba(255,210,87,0.15)' },
   ver: { color: T.muted, fontSize: 12, textAlign: 'center', marginTop: 18 },
 });
