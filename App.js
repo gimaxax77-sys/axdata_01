@@ -1,3 +1,4 @@
+import './app/backend/supabaseImpl'; // Supabase 클라우드 공급자 등록(계정·역할·세이브)
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView, Platform, StatusBar as RNStatusBar, Modal, Alert, useWindowDimensions, Animated } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
