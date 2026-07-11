@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, Modal, TouchableOpacity, TextInput, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, Modal, TouchableOpacity, TextInput, ScrollView, Alert, Platform } from 'react-native';
 import { T } from '../theme';
 import { Btn } from '../components';
 import { ROLE_LABEL } from '../../system/core/roles.mjs';
@@ -26,6 +26,11 @@ export function ConsoleModal({ visible, onClose, role, remote, onSet, onClear, o
   const curEvent = remote && remote.event ? remote.event.text : null;
 
   const flash = (r, okText) => setMsg(r && r.ok ? { ok: true, t: okText } : { ok: false, t: (r && r.reason) || '실패' });
+  // 결과를 확실히 보이게 팝업으로도 알림(웹은 window.alert, 네이티브는 Alert).
+  const notify = (title, message) => {
+    if (Platform.OS === 'web' && typeof window !== 'undefined' && window.alert) window.alert(`${title}\n\n${message}`);
+    else Alert.alert(title, message);
+  };
 
   const postNotice = async () => {
     const b = buildNoticeConfig(notice);
@@ -39,9 +44,10 @@ export function ConsoleModal({ visible, onClose, role, remote, onSet, onClear, o
   };
   const postMail = async () => {
     const b = buildMailPayload({ title: mailTitle, rewards: mailRewards });
-    if (!b.ok) { setMsg({ ok: false, t: b.reason }); return; }
-    const r = await (onSendMail ? onSendMail({ targetUserId: null, title: b.title, rewards: b.rewards }) : { ok: false, reason: '미지원' });
+    if (!b.ok) { setMsg({ ok: false, t: b.reason }); notify('우편 발송', b.reason); return; }
+    const r = await (onSendMail ? onSendMail({ targetUserId: null, title: b.title, rewards: b.rewards }) : { ok: false, reason: '연결 안 됨(로그인 확인)' });
     flash(r, '전체 우편을 발송했습니다');
+    notify('우편 발송', r && r.ok ? '전체 우편을 발송했습니다.' : `발송 실패: ${(r && r.reason) || '알 수 없는 오류'}`);
     if (r && r.ok) { setMailTitle(''); setMailRewards({}); }
   };
 

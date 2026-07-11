@@ -58,9 +58,13 @@ test('buildMailPayload: 제목 없으면 실패', () => {
   assert.ok(!buildMailPayload({ title: '   ', rewards: { gem: 10 } }).ok);
 });
 
-test('buildMailPayload: 보상 없으면 실패', () => {
-  assert.ok(!buildMailPayload({ title: '보상', rewards: {} }).ok);
-  assert.ok(!buildMailPayload({ title: '보상', rewards: { gem: 0 } }).ok);
+test('buildMailPayload: 제목만 있으면 발송 가능(보상 선택)', () => {
+  const r = buildMailPayload({ title: '안내 우편', rewards: {} });
+  assert.ok(r.ok);
+  assert.deepEqual(r.rewards, {});
+  const r2 = buildMailPayload({ title: '보상', rewards: { gem: 0 } });
+  assert.ok(r2.ok);
+  assert.deepEqual(r2.rewards, {}); // 0은 제거
 });
 
 test('buildMailPayload: 문자열 숫자 정리 + 0/음수 제거', () => {

@@ -38,7 +38,7 @@ export function buildEventConfig(text) {
 export const MAIL_REWARD_KEYS = ['currency', 'gem', 'summon', 'growth'];
 
 // 우편 발송 페이로드 검증·정리. { ok, title, rewards } | { ok:false, reason }.
-//   rewards: 문자열/숫자 혼합 입력을 0 이상 정수로 정리, 0은 제거.
+//   제목만 있으면 발송 가능(안내 우편). rewards는 선택 — 0/음수/빈값은 제거.
 export function buildMailPayload({ title, rewards = {} } = {}) {
   const t = (title == null ? '' : String(title)).trim();
   if (!t) return { ok: false, reason: '우편 제목을 입력하세요' };
@@ -48,7 +48,6 @@ export function buildMailPayload({ title, rewards = {} } = {}) {
     const n = Math.floor(Number(rewards[k]));
     if (Number.isFinite(n) && n > 0) clean[k] = n;
   }
-  if (Object.keys(clean).length === 0) return { ok: false, reason: '보상 재화를 1개 이상 입력하세요' };
   return { ok: true, title: t, rewards: clean };
 }
 
