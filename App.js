@@ -14,6 +14,8 @@ import { SettingsModal } from './app/screens/Settings';
 import { AdminModal } from './app/screens/Admin';
 import { ConsoleModal } from './app/screens/Console';
 import { NoticePopup } from './app/screens/NoticePopup';
+import { MailboxModal } from './app/screens/MailboxModal';
+import { unreadMailCount } from './system/core/mailbox.mjs';
 import { useFonts } from 'expo-font';
 import IdleScreen from './app/screens/IdleScreen';
 import PixelIdleScreen from './app/screens/PixelIdleScreen';
@@ -136,7 +138,9 @@ function AppInner() {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [adminOpen, setAdminOpen] = useState(false);
   const [consoleOpen, setConsoleOpen] = useState(false);
+  const [mailboxOpen, setMailboxOpen] = useState(false);
   const [noticeHidden, setNoticeHidden] = useState(false);
+  const mailUnread = unreadMailCount(game.state);
   const [noticePopupClosed, setNoticePopupClosed] = useState(false);
   // 공지/이벤트 팝업 — 새 공지가 있으면 접속 시 가운데 모달로 1회 표시.
   //   서명(공지+이벤트 텍스트)이 이전에 확인한 것과 다르면 다시 뜬다.
@@ -203,7 +207,21 @@ function AppInner() {
       {/* 게임명/장르 헤더 제거 — 자원바가 최상단. 픽셀 화면·설정은 상점 탭으로 이동. */}
       {!showPixel && (
         <View style={s.resWrap}>
-          <ResourceBar concept={game.concept} wallet={game.state.wallet} />
+          <View style={s.topRow}>
+            <View style={{ flex: 1 }}>
+              <ResourceBar concept={game.concept} wallet={game.state.wallet} />
+            </View>
+            <TouchableOpacity style={s.mailBtn} activeOpacity={0.8}
+              onPress={() => { fx('tap'); setMailboxOpen(true); }}
+              accessibilityRole="button" accessibilityLabel="우편함">
+              <Text style={s.mailIcon}>📬</Text>
+              {mailUnread > 0 && (
+                <View style={s.mailBadge}>
+                  <Text style={s.mailBadgeTxt}>{mailUnread > 99 ? '99+' : mailUnread}</Text>
+                </View>
+              )}
+            </TouchableOpacity>
+          </View>
         </View>
       )}
 
@@ -326,6 +344,15 @@ function AppInner() {
         onClose={() => setConsoleOpen(false)}
       />
 
+      {/* 우편함 — 상단 아이콘으로 어디서든 열기 */}
+      <MailboxModal
+        visible={mailboxOpen}
+        state={game.state}
+        concept={game.concept}
+        bump={game.bump}
+        onClose={() => setMailboxOpen(false)}
+      />
+
       {/* 공지/이벤트 팝업 — 접속 시 새 공지가 있으면 표시 */}
       <NoticePopup
         visible={showNoticePopup}
@@ -355,6 +382,11 @@ const s = StyleSheet.create({
   pixelExit: { position: 'absolute', top: 8, right: 8, backgroundColor: 'rgba(20,15,40,0.85)', borderWidth: 1, borderColor: '#4a3f88', borderRadius: 4, paddingHorizontal: 8, paddingVertical: 4 },
   pixelExitTxt: { color: '#e6ecf6', fontSize: 12, fontWeight: '800' },
   resWrap: { paddingHorizontal: 14, paddingVertical: 8 },
+  topRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  mailBtn: { width: 46, height: 46, borderRadius: 12, backgroundColor: T.surface2, borderWidth: 1, borderColor: T.line, alignItems: 'center', justifyContent: 'center' },
+  mailIcon: { fontSize: 20 },
+  mailBadge: { position: 'absolute', top: -4, right: -4, minWidth: 18, height: 18, borderRadius: 9, backgroundColor: T.danger, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 4, borderWidth: 1.5, borderColor: T.surface },
+  mailBadgeTxt: { color: '#fff', fontSize: 10, fontWeight: '900' },
   body: { flex: 1 },
   tabbar: { flexDirection: 'row', backgroundColor: T.surface, borderTopWidth: 1, borderTopColor: T.line, paddingBottom: 6 },
   tab: { flex: 1, alignItems: 'center', paddingVertical: 8 },

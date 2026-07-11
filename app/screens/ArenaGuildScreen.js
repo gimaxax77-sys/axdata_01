@@ -5,7 +5,6 @@ import { Card, Btn, fmt, MultiToggle, multLabel, repeat } from '../components';
 import { CodeTag } from '../uicode';
 import { isUnlocked, unlockStage } from '../../system/core/unlocks.mjs';
 import { ARENA_ENTRIES, arenaEntriesLeft, arenaFight, arenaInfo, ladderInfo } from '../../system/core/arena.mjs';
-import { mailList, unreadMailCount, claimMail, claimAllMail } from '../../system/core/mailbox.mjs';
 import { GUILD_ATTACKS, guildAttacksLeft, guildAttack, guildBossMaxHp } from '../../system/core/guild.mjs';
 import { COMP_SHOP, compPurchase, compGrantPreview } from '../../system/core/compshop.mjs';
 import { climbTower, towerChallenge } from '../../system/core/tower.mjs';
@@ -66,9 +65,7 @@ export default function ArenaGuildScreen({ state, bump, concept, embedded }) {
     bump();
   };
 
-  const doClaimMail = () => { const r = claimAllMail(state); if (r.ok) fx('success'); else fx('error'); bump(); };
   const fmtDur = (ms) => { const h = Math.floor(ms / 3600000); const d = Math.floor(h / 24); return d > 0 ? `${d}일 ${h % 24}시간` : `${h}시간`; };
-  const mailN = unreadMailCount(state);
   const ladders = arenaOpen ? ladderInfo(state) : [];
 
   const aLeft = arenaOpen ? arenaEntriesLeft(state) : 0;
@@ -81,25 +78,7 @@ export default function ArenaGuildScreen({ state, bump, concept, embedded }) {
   const cProps = embedded ? {} : { style: c.flex, contentContainerStyle: c.wrap };
   return (
     <Container {...cProps}>
-      {/* ── 우편함 ───────────────────────────────── */}
-      {mailN > 0 && (
-        <Card style={{ marginBottom: 12 }}>
-          <View style={c.head}>
-            <Text style={c.sec}>📬 우편함 <Text style={c.dim}>{mailN}통</Text></Text>
-            <Btn small kind="gold" label="전체 수령" onPress={doClaimMail} />
-          </View>
-          {mailList(state).filter((m) => !m.claimed).slice(0, 4).map((m) => (
-            <View key={m.id} style={c.mailRow}>
-              <Text style={c.mailTitle} numberOfLines={1}>{m.title}</Text>
-              <Text style={c.mailReward}>
-                {m.reward.gem ? `${concept.resources.gem.emoji}${m.reward.gem} ` : ''}
-                {m.reward.currency ? `${concept.resources.currency.emoji}${fmt(m.reward.currency)}` : ''}
-                {m.reward.summon ? `${concept.resources.summon.emoji}${m.reward.summon}` : ''}
-              </Text>
-            </View>
-          ))}
-        </Card>
-      )}
+      {/* 우편함은 상단 우편 아이콘(전역)으로 이동 — MailboxModal */}
 
       {/* ── 아레나 ───────────────────────────────── */}
       <Card>
@@ -226,9 +205,6 @@ const c = StyleSheet.create({
   ladderLabel: { color: T.muted, fontSize: 11, fontWeight: '700' },
   ladderPts: { color: T.accent, fontSize: 15, fontWeight: '900', marginTop: 2 },
   ladderTime: { color: T.muted, fontSize: 9, marginTop: 2 },
-  mailRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 6, borderTopWidth: 1, borderTopColor: T.line },
-  mailTitle: { color: T.text, fontSize: 12, fontWeight: '700', flex: 1 },
-  mailReward: { color: T.good, fontSize: 12, fontWeight: '700' },
   bossBar: { height: 26, backgroundColor: T.surface2, borderRadius: 8, overflow: 'hidden', justifyContent: 'center', marginBottom: 8 },
   bossFill: { position: 'absolute', left: 0, top: 0, bottom: 0, backgroundColor: T.danger, opacity: 0.5 },
   bossText: { color: T.text, fontSize: 12, fontWeight: '700', textAlign: 'center' },
