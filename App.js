@@ -13,6 +13,7 @@ import { t, setLang } from './app/i18n';
 import { SettingsModal } from './app/screens/Settings';
 import { AdminModal } from './app/screens/Admin';
 import { ConsoleModal } from './app/screens/Console';
+import { NoticePopup } from './app/screens/NoticePopup';
 import { useFonts } from 'expo-font';
 import IdleScreen from './app/screens/IdleScreen';
 import PixelIdleScreen from './app/screens/PixelIdleScreen';
@@ -136,6 +137,19 @@ function AppInner() {
   const [adminOpen, setAdminOpen] = useState(false);
   const [consoleOpen, setConsoleOpen] = useState(false);
   const [noticeHidden, setNoticeHidden] = useState(false);
+  const [noticePopupClosed, setNoticePopupClosed] = useState(false);
+  // 공지/이벤트 팝업 — 새 공지가 있으면 접속 시 가운데 모달로 1회 표시.
+  //   서명(공지+이벤트 텍스트)이 이전에 확인한 것과 다르면 다시 뜬다.
+  const noticeText = game.remote?.notice?.text || null;
+  const eventText = game.remote?.event?.text || null;
+  const noticeSig = (noticeText || eventText) ? `${noticeText || ''}|${eventText || ''}` : null;
+  const showNoticePopup = !!noticeSig && !showPixel && !noticePopupClosed
+    && noticeSig !== game.state.settings.dismissedNotice;
+  const dismissNoticePopup = useCallback(() => {
+    game.state.settings.dismissedNotice = noticeSig;
+    game.save();
+    setNoticePopupClosed(true);
+  }, [game, noticeSig]);
   // 운영자 조작 접근 게이트: 백엔드 연결 시 admin 역할만, 순수 오프라인이면 기존대로 허용.
   const adminUnlocked = !game.cloud.available || can(game.cloud.role, 'tuneBalance');
   // 운영자 콘솔(공지·이벤트) 접근: 매니저 이상만 — 백엔드 연결 시에만 노출.
@@ -309,6 +323,14 @@ function AppInner() {
         onSet={game.setRemoteConfig}
         onClear={game.clearRemoteConfig}
         onClose={() => setConsoleOpen(false)}
+      />
+
+      {/* 공지/이벤트 팝업 — 접속 시 새 공지가 있으면 표시 */}
+      <NoticePopup
+        visible={showNoticePopup}
+        notice={noticeText}
+        event={eventText}
+        onClose={dismissNoticePopup}
       />
 
       {/* 첫 실행 소개 — 오프라인 팝업이 없을 때만 노출 */}
