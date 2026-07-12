@@ -1271,7 +1271,6 @@ const g = StyleSheet.create({
   // 편성 버튼 + 칭호/성격/속성 캡션을 오른쪽 한 컬럼에 묶어, 이름 옆 남는
   // 세로 공간을 그냥 비워두지 않고 활용한다(별도 줄로 빼지 않음).
   headSide: { alignItems: 'flex-end', gap: 4, maxWidth: 110 },
-  rarity: { color: T.accent, fontSize: 13, fontWeight: '800' },
   headTitle: { color: T.primary, fontSize: 10, fontWeight: '700', textAlign: 'right', lineHeight: 13 },
   bubble: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: T.surface2, borderRadius: 12, padding: 12, marginBottom: 12 },
   bubbleEmoji: { fontSize: 26 },

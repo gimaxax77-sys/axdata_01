@@ -5,7 +5,7 @@ import { Card, Btn, fmt } from '../components';
 import { CodeTag } from '../uicode';
 import { effectivePower, powerMultOf } from '../useGame';
 import { idleGenre } from '../../system/genres/idle.mjs';
-import { getStage, stageZone } from '../../system/core/progression.mjs';
+import { stageZone } from '../../system/core/progression.mjs';
 import { playStage, DIFFICULTIES, difficultyDef, difficultyUnlocked, setDifficulty } from '../../system/core/difficulty.mjs';
 import { computePower } from '../../system/core/stats.mjs';
 import { identity, elementMeta } from '../../system/concepts/index.mjs';
