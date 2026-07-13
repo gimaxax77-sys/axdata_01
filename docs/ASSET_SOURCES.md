@@ -111,9 +111,16 @@
 - [ ] Freesound(SFX) — https://freesound.org/
 - [ ] OpenGameArt CC0 사운드 — https://opengameart.org/content/cc0-sound-effects
 
-### 3D 적·환경 (선택, 동일 파이프라인)
-- [ ] KayKit Dungeon Remastered — https://kaylousberg.itch.io/kaykit-dungeon-remastered (CC0)
-- [ ] KayKit 다른 팩 둘러보기 — https://kaylousberg.itch.io/
+### KayKit 다른 팩 (전부 CC0, 동일 파이프라인 · 게임 관련순)
+- [ ] **Skeletons**(적/언데드, KayKit 애니 공유) — https://kaylousberg.itch.io/kaykit-skeletons  ★적
+- [ ] **Dungeon Remastered**(던전 배경) — https://kaylousberg.itch.io/kaykit-dungeon-remastered
+- [ ] **RPG Tools Bits**(무기·물약 등 아이템·아이콘용) — https://kaylousberg.itch.io/rpg-tools-bits
+- [ ] **Resource Bits**(상자·통 등 소품 75+) — https://kaylousberg.itch.io/resource-bits
+- [ ] Prototype Bits(프로토타입 64+) — https://kaylousberg.itch.io/prototype-bits
+- [ ] Platformer Pack(선택) — https://kaylousberg.itch.io/kaykit-platformer
+- [ ] Mystery Monthly Series 4(추가 캐릭터) — https://kaylousberg.itch.io/kaykit-series-4
+- 참고(유료 번들): The Complete KayKit — https://kaylousberg.itch.io/kaykit-complete (전 팩+미래 팩 편의·후원, 개별은 무료)
+- 그 외(Halloween/City Builder/Medieval Hexagon 등)는 제작자 페이지에서 — https://kaylousberg.itch.io/
 
 ### 애니메이션 보강 (선택)
 - [ ] Mixamo — https://www.mixamo.com/
