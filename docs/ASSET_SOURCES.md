@@ -83,3 +83,39 @@
 - Kenney: https://kenney.nl/assets · https://kenney.itch.io/kenney-game-assets
 - game-icons.net (CC BY 3.0): https://game-icons.net/
 - Incompetech (CC BY 음악): https://incompetech.com/ · OpenGameArt CC0 사운드: https://opengameart.org/content/cc0-sound-effects
+
+---
+
+## 부록 A. 다운로드 체크리스트 (링크)
+
+### 이미 받음
+- [x] KayKit Adventurers — https://kaylousberg.itch.io/kaykit-adventurers (CC0)
+- [x] KayKit Character Animations — https://kaylousberg.itch.io/kaykit-character-animations (CC0)
+
+### 우선(몬스터)
+- [ ] Quaternius · LowPoly Animated Monsters — https://quaternius.itch.io/lowpoly-animated-monsters (CC0)
+- [ ] Quaternius 전체 — https://quaternius.com/ (CC0)
+
+### UI·오디오·폰트 (Kenney, CC0)
+- [ ] Kenney 목록 — https://kenney.nl/assets
+- [ ] UI Pack — https://kenney.nl/assets/ui-pack
+- [ ] UI Audio — https://kenney.nl/assets/ui-audio
+- [ ] Audio(효과음) — https://kenney.nl/assets/category:Audio
+- [ ] (선택) All-in-1 — https://kenney.itch.io/kenney-game-assets
+
+### 아이콘 (CC BY, 출처표기)
+- [ ] game-icons.net — https://game-icons.net/
+
+### 오디오 추가
+- [ ] Incompetech(BGM, CC BY) — https://incompetech.com/
+- [ ] Freesound(SFX) — https://freesound.org/
+- [ ] OpenGameArt CC0 사운드 — https://opengameart.org/content/cc0-sound-effects
+
+### 3D 적·환경 (선택, 동일 파이프라인)
+- [ ] KayKit Dungeon Remastered — https://kaylousberg.itch.io/kaykit-dungeon-remastered (CC0)
+- [ ] KayKit 다른 팩 둘러보기 — https://kaylousberg.itch.io/
+
+### 애니메이션 보강 (선택)
+- [ ] Mixamo — https://www.mixamo.com/
+
+> 밤 최소 준비: Quaternius 몬스터 1개만 받아도 파이프라인 확장 테스트 가능.
