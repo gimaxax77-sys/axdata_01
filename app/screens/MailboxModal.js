@@ -3,14 +3,16 @@ import React from 'react';
 import { View, Text, StyleSheet, Modal, TouchableOpacity, ScrollView } from 'react-native';
 import { T } from '../theme';
 import { Btn, fmt } from '../components';
-import { mailList, unreadMailCount, claimMail, claimAllMail } from '../../system/core/mailbox.mjs';
+import { mailList, unreadMailCount, claimMail, claimAllMail, clearClaimedMail } from '../../system/core/mailbox.mjs';
 import { fx } from '../feedback';
 
 export function MailboxModal({ visible, state, concept, bump, onClose }) {
   const mails = mailList(state);
   const unread = unreadMailCount(state);
+  const claimedCount = mails.filter((m) => m.claimed).length;
   const claimOne = (id) => { const r = claimMail(state, id); fx(r.ok ? 'success' : 'error'); bump(); };
   const claimAll = () => { const r = claimAllMail(state); fx(r.ok ? 'success' : 'error'); bump(); };
+  const clearClaimed = () => { const r = clearClaimedMail(state); fx(r.ok ? 'success' : 'error'); bump(); };
   const rewardText = (rw = {}) => [
     rw.gem ? `${concept.resources.gem.emoji}${rw.gem}` : '',
     rw.currency ? `${concept.resources.currency.emoji}${fmt(rw.currency)}` : '',
@@ -42,6 +44,12 @@ export function MailboxModal({ visible, state, concept, bump, onClose }) {
             ))}
           </ScrollView>
           <View style={{ height: 10 }} />
+          {claimedCount > 0 ? (
+            <>
+              <Btn small kind="ghost" label={`🧹 읽은 우편 비우기 (${claimedCount}통)`} onPress={clearClaimed} />
+              <View style={{ height: 8 }} />
+            </>
+          ) : null}
           <Btn label="닫기" onPress={onClose} />
         </TouchableOpacity>
       </TouchableOpacity>

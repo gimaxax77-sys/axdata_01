@@ -47,3 +47,12 @@ export function claimAllMail(state) {
   }
   return { ok: got.length > 0, claimed: got.length };
 }
+
+// QoL: 수령 완료(읽은) 우편을 우편함에서 제거. 미수령 우편은 남긴다.
+export function clearClaimedMail(state) {
+  const box = state.mail || [];
+  const kept = box.filter((m) => !m.claimed);
+  const removed = box.length - kept.length;
+  state.mail = kept;
+  return { ok: removed > 0, removed };
+}
