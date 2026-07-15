@@ -18,6 +18,7 @@ import { accountMods } from '../../system/core/balance.mjs';
 import { canClaimAttendance, missionList, claimAllDaily } from '../../system/core/daily.mjs';
 import { weeklyEvent, claimWeekly } from '../../system/core/events.mjs';
 import { unreadMailCount, claimAllMail } from '../../system/core/mailbox.mjs';
+import { spendNudges } from '../../system/core/nudges.mjs';
 import { fx } from '../feedback';
 import BattleView from './BattleView';
 
@@ -41,6 +42,7 @@ export default function IdleScreen({ state, bump, lastGain, concept, background 
     + (wev.done && !wev.claimed ? 1 : 0)
     + unreadMailCount(state);
   const doClaimAll = () => { claimAllDaily(state); claimWeekly(state); claimAllMail(state); fx('success'); bump(); };
+  const nudges = spendNudges(state);
   const synergy = teamSynergy(party);
   const battle = resolve(getPartyUnits(state), stageDef.challenge, accountMods(state), state.formation);
   // 편성(전열2·중열3·후열2)을 전투 화면에 그대로 표시 — 방치 틱마다 새 객체를
@@ -64,6 +66,10 @@ export default function IdleScreen({ state, bump, lastGain, concept, background 
           <Text style={st.claimGo}>›</Text>
         </TouchableOpacity>
       )}
+      {/* 재화 낭비 알림 — 쌓아두면 손해인 재화가 충분할 때 살짝 안내. */}
+      {nudges.map((n) => (
+        <Text key={n.key} style={st.nudge}>{n.msg}</Text>
+      ))}
       {/* 난이도 선택 */}
       <View style={st.diffRow}>
         <CodeTag id="a2" corner="tl" />
@@ -207,6 +213,7 @@ const st = StyleSheet.create({
   claimRow: { flexDirection: 'row', alignItems: 'center', backgroundColor: T.surface, borderRadius: 12, borderWidth: 1.5, borderColor: T.good, paddingHorizontal: 14, paddingVertical: 10 },
   claimTxt: { color: T.good, fontSize: 13, fontWeight: '900', flex: 1 },
   claimGo: { color: T.good, fontSize: 20, fontWeight: '900' },
+  nudge: { color: T.accent, fontSize: 12, fontWeight: '800', paddingHorizontal: 4 },
   prestigeStat: { color: T.text, fontSize: 14, fontWeight: '600' },
   boxMsg: { color: T.accent, fontSize: 13, fontWeight: '800', marginTop: 10, textAlign: 'center' },
 });
