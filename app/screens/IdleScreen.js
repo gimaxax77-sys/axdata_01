@@ -17,6 +17,7 @@ import { formationSummary } from '../../system/core/formation.mjs';
 import { accountMods } from '../../system/core/balance.mjs';
 import { canClaimAttendance, missionList, claimAllDaily } from '../../system/core/daily.mjs';
 import { weeklyEvent, claimWeekly } from '../../system/core/events.mjs';
+import { unreadMailCount, claimAllMail } from '../../system/core/mailbox.mjs';
 import { fx } from '../feedback';
 import BattleView from './BattleView';
 
@@ -33,12 +34,13 @@ export default function IdleScreen({ state, bump, lastGain, concept, background 
 
   const canPrestige = state.maxStage >= 15;
   const nextGain = Math.floor(Math.sqrt(state.maxStage));
-  // 받을 보상 집계(출석+미션+주간) — 홈에서 원탭 전체수령.
+  // 받을 보상 집계(출석+미션+주간+우편) — 홈에서 원탭 전체수령.
   const wev = weeklyEvent(state);
   const claimN = (canClaimAttendance(state) ? 1 : 0)
     + missionList(state).filter((m) => m.done && !m.claimed).length
-    + (wev.done && !wev.claimed ? 1 : 0);
-  const doClaimAll = () => { claimAllDaily(state); claimWeekly(state); fx('success'); bump(); };
+    + (wev.done && !wev.claimed ? 1 : 0)
+    + unreadMailCount(state);
+  const doClaimAll = () => { claimAllDaily(state); claimWeekly(state); claimAllMail(state); fx('success'); bump(); };
   const synergy = teamSynergy(party);
   const battle = resolve(getPartyUnits(state), stageDef.challenge, accountMods(state), state.formation);
   // 편성(전열2·중열3·후열2)을 전투 화면에 그대로 표시 — 방치 틱마다 새 객체를
