@@ -24,3 +24,31 @@
   - 속성→색: FIRE빨강/WATER파랑/WOOD초록/LIGHT금흰/DARK보라.
   - 배정: Knight 12·Mage 11·Rogue 5·Ranger 5. (Gim 검토·수정용, Barbarian/Rogue_Hooded 다양화 여지)
 - 남은 통합: 렌더 도구가 이 매핑대로 게임 규격 이름·경로로 출력 → charImages.js 자동 반영.
+
+---
+
+## QoL 배치 4종 (피로도 제로 보강) — 완료
+
+Gim이 선택박스로 4가지를 모두 고르셔서 순서대로 구현·커밋·검증했습니다.
+
+### ① 전체 던전 일괄 소탕
+- `ContentScreen.doSweepAll` — 해금·입장 남은 모든 던전을 한 번에 소탕.
+- '🧹 모두 소탕' 버튼을 던전 타일 아래 배치.
+
+### ② 우편함 '읽은 우편 비우기'
+- 코어: `mailbox.clearClaimedMail(state)` — 수령 완료 우편만 제거, 미수령 보존. 테스트 3건.
+- `MailboxModal`에 읽은 우편이 있을 때만 노출되는 비우기 버튼.
+
+### ③ 재화 낭비 알림
+- 코어: `nudges.spendNudges(state)` — 소환 재화가 10연 1회분(100) 이상 쌓이면 알림. 테스트 3건.
+- 근거: 자원 상한이 없어 "가득"은 없음 → 소환 재화는 소환 외 용처가 없어 쌓아두면 곧 낭비. 홈에 안내 라인.
+
+### ④ 낮은 등급 장비 자동 분해
+- 코어: `gearsalvage.autoSalvage(state, maxRarity)` — 인벤토리 하급 드롭(임계 이하·레벨1·인챈트 없음)을 재화로 정리. 강화/인챈트 투자분은 보호. 테스트 5건.
+- 설정: `settings.autoSalvage`(null/끄기·'N'·'R'), 기본 끄기(save.mjs 마이그레이션).
+- `ContentScreen`에 토글 3단(끄기/노멀↓/레어↓) + 소탕·던전 드롭 직후 자동 실행, 결과 문구에 '♻️분해 N개 🪙…' 병기.
+
+### 검증
+- `node --test system/test/*.test.mjs` → 267 pass / 0 fail.
+- `npm run build:play` 성공(7668KB), mock 유출 0. play.html 전송 완료.
+- 각 기능 개별 커밋(의미 단위), `claude/git-connection-status-rkjuko` 푸시.
