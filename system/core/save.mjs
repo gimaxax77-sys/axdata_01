@@ -81,6 +81,8 @@ function normalize(state) {
   state.settings.skipGachaAnim = !!state.settings.skipGachaAnim; // 가챠 연출 스킵(기본 off)
   state.settings.ecoMode = !!state.settings.ecoMode; // 절전 모드(발열/배터리, 기본 off)
   state.settings.lang = state.settings.lang || 'ko';
+  // 낮은 등급 장비 자동 분해 임계: null(끄기) | 'N' | 'R'. 기본 끄기.
+  if (state.settings.autoSalvage === undefined) state.settings.autoSalvage = null;
   state.tower = state.tower || { floor: 1, best: 1 };
   state.tower.floor = state.tower.floor || 1;
   state.tower.best = state.tower.best || state.tower.floor || 1;

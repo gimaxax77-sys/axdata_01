@@ -14,6 +14,7 @@ import {
 import { MATERIAL_META, SHARD_META, materialCount } from '../../system/core/materials.mjs';
 import { getStage } from '../../system/core/progression.mjs';
 import { GEAR_CATALOG, GEAR_RARITY } from '../../system/core/gear.mjs';
+import { autoSalvage } from '../../system/core/gearsalvage.mjs';
 import { isUnlocked, unlockStage } from '../../system/core/unlocks.mjs';
 import { campaignChapters, fightChapter, CAMPAIGN_CHAPTER_COUNT, storyLog } from '../../system/core/campaign.mjs';
 import { elementMeta } from '../../system/concepts/index.mjs';
@@ -53,6 +54,13 @@ export default function ContentScreen({ state, bump, concept }) {
   const [dunSel, setDunSel] = useState(null); // 던전 상세 팝업 대상 타입
   const act = (fn) => { fn(); bump(); };
   const actN = (fn) => { repeat(fn, mult); bump(); };
+  const salvagePref = state.settings.autoSalvage; // null | 'N' | 'R'
+  // 설정이 켜져 있으면 하급 장비를 자동 분해하고 결과 문구 조각을 돌려준다.
+  const runAutoSalvage = () => {
+    if (!salvagePref) return null;
+    const r = autoSalvage(state, salvagePref);
+    return r.ok ? `♻️분해 ${r.removed}개 🪙${fmt(r.refund.currency)}` : null;
+  };
   // 아이템/재료 던전: mult회 입장 → 마지막 드롭 요약 표시.
   const runDungeon = (type) => {
     let last = null, count = 0, sm = 0, ess = 0; const shards = {};
@@ -67,6 +75,8 @@ export default function ContentScreen({ state, bump, concept }) {
     else if (last.kind === 'weekday') setDropMsg(`📅 장비 ${count}개 + 🎟️소환석 ${sm}`);
     else if (last.kind === 'element') setDropMsg(`🔷 속성정수 +${ess}`);
     else if (last.kind === 'petshard') setDropMsg(`🧩 펫조각 ${Object.entries(shards).map(([g, n]) => `${g} ${n}`).join(' · ')}`);
+    const sv = runAutoSalvage();
+    if (sv && (last.kind === 'gear' || last.kind === 'weekday')) setDropMsg((m) => `${m} · ${sv}`);
     bump();
   };
   // QoL: 소탕 — 남은 입장 전부 한 번에.
@@ -82,6 +92,8 @@ export default function ContentScreen({ state, bump, concept }) {
     if (sh.length) parts.push(sh.join(' '));
     if (r.currency) parts.push(`🪙${fmt(r.currency)}`);
     if (r.growth) parts.push(`💠${fmt(r.growth)}`);
+    const sv = runAutoSalvage();
+    if (sv) parts.push(sv);
     setDropMsg(parts.join(' · '));
     bump();
   };
@@ -94,7 +106,9 @@ export default function ContentScreen({ state, bump, concept }) {
       const r = sweepDungeon(state, type);
       if (r.ok) { total += r.count; dungeons++; }
     }
-    setDropMsg(total > 0 ? `🧹 전체 소탕 — 던전 ${dungeons}곳 · ${total}회 완료` : '소탕할 던전이 없습니다');
+    const sv = runAutoSalvage();
+    const base = total > 0 ? `🧹 전체 소탕 — 던전 ${dungeons}곳 · ${total}회 완료` : '소탕할 던전이 없습니다';
+    setDropMsg(sv ? `${base} · ${sv}` : base);
     fx(total > 0 ? 'success' : 'error');
     bump();
   };
@@ -315,6 +329,20 @@ export default function ContentScreen({ state, bump, concept }) {
         <View style={{ marginTop: 8 }}>
           <Btn small kind="gold" label="🧹 모두 소탕 (해금·입장 남은 던전 전부)" onPress={doSweepAll} />
         </View>
+        {/* 낮은 등급 장비 자동 분해 — 소탕/던전 드롭 후 하급 장비를 재화로 정리. */}
+        <View style={c.salvageRow}>
+          <Text style={c.salvageLabel}>♻️ 하급 장비 자동 분해</Text>
+          {[{ v: null, t: '끄기' }, { v: 'N', t: '노멀↓' }, { v: 'R', t: '레어↓' }].map((o) => {
+            const on = salvagePref === o.v;
+            return (
+              <TouchableOpacity key={o.t} activeOpacity={0.8}
+                onPress={() => { state.settings.autoSalvage = o.v; fx('tap'); bump(); }}
+                style={[c.salvageChip, on && c.salvageChipOn]}>
+                <Text style={[c.salvageChipTxt, on && c.salvageChipTxtOn]}>{o.t}</Text>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
         {/* 보유 재료 */}
         <View style={c.matBar}>
           <Text style={c.matChip}>{MATERIAL_META.elemEssence.emoji} {MATERIAL_META.elemEssence.label} {fmt(materialCount(state, 'elemEssence'))}</Text>
@@ -414,6 +442,12 @@ const c = StyleSheet.create({
   mLabel: { color: T.text, fontWeight: '700', fontSize: 14 },
   mReward: { color: T.muted, fontSize: 12, marginTop: 3 },
   dropMsg: { color: T.accent, fontSize: 12, fontWeight: '700', marginTop: 8 },
+  salvageRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 8, flexWrap: 'wrap' },
+  salvageLabel: { color: T.muted, fontSize: 12, fontWeight: '700', flex: 1 },
+  salvageChip: { backgroundColor: T.surface2, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 5, borderWidth: 1, borderColor: 'transparent' },
+  salvageChipOn: { borderColor: T.accent, backgroundColor: T.surface },
+  salvageChipTxt: { color: T.muted, fontSize: 12, fontWeight: '800' },
+  salvageChipTxtOn: { color: T.accent },
   bar: { height: 6, backgroundColor: T.surface2, borderRadius: 3, marginTop: 5, overflow: 'hidden' },
   barFill: { height: 6, backgroundColor: T.good, borderRadius: 3 },
   rowBetween: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 },
