@@ -85,6 +85,19 @@ export default function ContentScreen({ state, bump, concept }) {
     setDropMsg(parts.join(' · '));
     bump();
   };
+  // QoL: 전체 던전 일괄 소탕 — 해금·입장 남은 던전을 한 번에.
+  const doSweepAll = () => {
+    let total = 0, dungeons = 0;
+    for (const type of Object.keys(DUNGEONS)) {
+      if (!isUnlocked(state, DUNGEON_META[type].feature)) continue;
+      if (dungeonEntriesLeft(state, type) <= 0) continue;
+      const r = sweepDungeon(state, type);
+      if (r.ok) { total += r.count; dungeons++; }
+    }
+    setDropMsg(total > 0 ? `🧹 전체 소탕 — 던전 ${dungeons}곳 · ${total}회 완료` : '소탕할 던전이 없습니다');
+    fx(total > 0 ? 'success' : 'error');
+    bump();
+  };
   // QoL: 원탭 일일 전체수령.
   const doClaimAll = () => {
     const r = claimAllDaily(state);
@@ -298,6 +311,9 @@ export default function ContentScreen({ state, bump, concept }) {
               </TouchableOpacity>
             );
           })}
+        </View>
+        <View style={{ marginTop: 8 }}>
+          <Btn small kind="gold" label="🧹 모두 소탕 (해금·입장 남은 던전 전부)" onPress={doSweepAll} />
         </View>
         {/* 보유 재료 */}
         <View style={c.matBar}>
