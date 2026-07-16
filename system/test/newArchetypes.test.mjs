@@ -102,6 +102,7 @@ test('컨셉: 6원형 모두 N~UR 전 등급이 최소 1명씩 존재한다(등�
   const ARCHS = ['VANGUARD', 'STRIKER', 'SUPPORT', 'ROGUE', 'ARCHER', 'MAGE'];
   for (const cid of ['fantasy', 'scifi']) {
     const c = CONCEPTS[cid];
+    if (!c.roster.some((ch) => ch.rarity)) continue; // 등급 안 쓰는 일반 로스터는 커버리지 무관
     for (const arch of ARCHS) {
       for (const r of RARITIES) {
         const has = c.roster.some((ch) => ch.archetype === arch && ch.rarity === r);
