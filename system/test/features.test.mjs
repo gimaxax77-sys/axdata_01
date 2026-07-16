@@ -4,6 +4,7 @@ import assert from 'node:assert';
 import { FEATURES, isOn, simplePreset } from '../core/features.mjs';
 import { affinity } from '../core/elements.mjs';
 import { teamSynergy } from '../core/synergy.mjs';
+import { rarityBaseMult } from '../core/seed.mjs';
 
 test('기본값은 풀 모드(전 플래그 on)', () => {
   assert.equal(isOn('elements'), true);
@@ -28,5 +29,20 @@ test('속성 off: 상성 무관(항상 1, 스탯 전용)', () => {
     assert.ok(!syn.list.some((s) => s.id === 'elem_bond'), '속성 off면 속성 결속 없음');
   } finally {
     FEATURES.elements = true; // 다른 테스트 영향 없게 복구
+  }
+});
+
+test('등급 on: 전투력 등급 배수 적용', () => {
+  FEATURES.rarity = true;
+  assert.ok(rarityBaseMult({ rarity: 'UR' }) > rarityBaseMult({ rarity: 'N' }));
+});
+
+test('등급 off: 전투력 등급 무관(항상 1, 스탯 전용)', () => {
+  FEATURES.rarity = false;
+  try {
+    assert.equal(rarityBaseMult({ rarity: 'UR' }), 1.0);
+    assert.equal(rarityBaseMult({ rarity: 'N' }), 1.0);
+  } finally {
+    FEATURES.rarity = true; // 복구
   }
 });

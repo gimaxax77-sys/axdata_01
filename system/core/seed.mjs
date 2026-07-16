@@ -1,4 +1,5 @@
 import { intimacyLevel } from './intimacy.mjs';
+import { isOn } from './features.mjs';
 
 // ─────────────────────────────────────────────────────────────
 // 씨앗(Seed) — 모든 캐릭터의 "서사 발현" 시스템.
@@ -28,6 +29,7 @@ export const RARITY_BASE_MULT = { N: 1.0, R: 1.10, SR: 1.22, SSR: 1.36, UR: 1.50
 export const SEED_FULL = { N: 0.30, R: 0.22, SR: 0.14, SSR: 0.08, UR: 0.05 };
 
 export function rarityBaseMult(unit) {
+  if (!isOn('rarity')) return 1.0; // 등급 옵션 off → 전투력 등급 무관(스탯 전용)
   return RARITY_BASE_MULT[unit.rarity] ?? 1.0;
 }
 function tierOf(unit) {
