@@ -20,7 +20,7 @@ const FRONT_SIZE = 96;
 const BACK_SIZE = 76;
 
 // 스프라이트 파이터 — idle 순환, attackToken 변경 시 attack 1회 재생 후 idle 복귀.
-// 우리 파티는 왼쪽에서 오른쪽(적)을 향하므로 좌우 반전(scaleX:-1)한다.
+// 원본 스프라이트가 오른쪽(적 방향)을 향하므로 반전 없이 그대로 렌더한다.
 function SpriteFighter({ cid, ckey, front, attackToken }) {
   const [st, setSt] = useState('idle');
   useEffect(() => { if (attackToken > 0) setSt('attack'); }, [attackToken]);
@@ -28,13 +28,11 @@ function SpriteFighter({ cid, ckey, front, attackToken }) {
   const size = front ? FRONT_SIZE : BACK_SIZE;
   const scale = size / spr.frameH;
   return (
-    <View style={s.flip}>
-      <SpriteAnim
-        source={spr.source} frameW={spr.frameW} frameH={spr.frameH} frames={spr.frames}
-        state={st} playToken={attackToken} scale={scale}
-        onEnd={() => setSt('idle')}
-      />
-    </View>
+    <SpriteAnim
+      source={spr.source} frameW={spr.frameW} frameH={spr.frameH} frames={spr.frames}
+      state={st} playToken={attackToken} scale={scale}
+      onEnd={() => setSt('idle')}
+    />
   );
 }
 
@@ -156,7 +154,6 @@ const s = StyleSheet.create({
   formRow: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'center', gap: 2, height: 190 },
   formCol: { flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-end', gap: 0 },
   formColLunge: { transform: [{ translateX: 8 }] },
-  flip: { transform: [{ scaleX: -1 }] },
   miniEmoji: { fontSize: 30, opacity: 0.85 },
   miniEmojiFront: { fontSize: 40 },
   miniImg: { width: BACK_SIZE, height: BACK_SIZE, opacity: 0.92 },
