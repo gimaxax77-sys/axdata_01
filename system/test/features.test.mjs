@@ -64,3 +64,12 @@ test('단순 모드: 등급·속성 없는 유닛도 전투력·시너지 정상
     Object.assign(FEATURES, prev); // 복구
   }
 });
+
+test('코어 정의: 이름+원형만 있는 임의 형태 캐릭터도 로스터 유효', async () => {
+  const { ARCHETYPES } = await import('../core/archetypes.mjs');
+  // 등급·속성·시그니처·코스튬·대사 전혀 없는 캐릭터(로봇/몬스터/타장르 등 어떤 형태든)
+  const generic = { id: 'x_robot', name: '로봇병기', archetype: 'STRIKER' };
+  assert.ok(ARCHETYPES[generic.archetype], '원형만 있으면 유효');
+  const u = createUnit(generic.archetype, { characterId: generic.id, level: 5 });
+  assert.ok(computePower(u) > 0, '전투력 계산됨(속성·등급 없이도)');
+});

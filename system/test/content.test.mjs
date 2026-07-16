@@ -393,25 +393,29 @@ test('환생 상자: 리셋 전 도달치로 장비·룬·재화 지급', async 
   assert.equal(s.maxStage, 1, '회차 리셋');
 });
 
-test('컨셉 정합성: 로스터 시그니처·원형·속성·코스튬 유효(판타지·SF 패리티)', async () => {
+test('컨셉 정합성: 로스터 최소필수(이름+원형) + 있을 때만 유효성(어떤 장르·형태 캐릭터도 허용)', async () => {
   const { CONCEPTS } = await import('../concepts/index.mjs');
   const { SKILL_CATALOG } = await import('../core/skills.mjs');
   const { ARCHETYPES } = await import('../core/archetypes.mjs');
+  const { isOn } = await import('../core/features.mjs');
   const ELEMENTS = ['FIRE', 'WATER', 'WOOD', 'LIGHT', 'DARK'];
   const ids = {};
   for (const cid of ['fantasy', 'scifi']) {
     const c = CONCEPTS[cid];
     ids[cid] = c.roster.map((x) => x.id).sort();
     for (const ch of c.roster) {
-      assert.ok(SKILL_CATALOG[ch.signature]?.signature, `${cid}:${ch.id} 시그니처 유효`);
+      // 코어 최소 필수 — 이름 + 원형만. (등급·속성·시그니처·코스튬·대사는 옵션)
+      assert.ok(ch.name, `${cid}:${ch.id} 이름`);
       assert.ok(ARCHETYPES[ch.archetype], `${cid}:${ch.id} 원형 유효`);
-      assert.ok(ELEMENTS.includes(ch.element), `${cid}:${ch.id} 속성 유효`);
-      assert.ok(c.costumes[ch.id], `${cid}:${ch.id} 코스튬 존재`);
-      assert.ok(ch.lines?.greet && ch.lines?.bond && ch.lines?.levelup, `${cid}:${ch.id} 대사 3종`);
+      // 아래는 값이 있을 때만(또는 모듈 켜졌을 때만) 유효성 검사 — 없어도 허용.
+      if (ch.signature) assert.ok(SKILL_CATALOG[ch.signature]?.signature, `${cid}:${ch.id} 시그니처 유효`);
+      if (isOn('elements') && ch.element != null) assert.ok(ELEMENTS.includes(ch.element), `${cid}:${ch.id} 속성 유효`);
     }
   }
-  assert.deepEqual(ids.fantasy, ids.scifi, '두 컨셉 캐릭터 id 패리티');
-  assert.ok(ids.fantasy.length >= 12, '로스터 확장 반영');
+  // 두 스킨이 같은 캐릭터셋을 정의할 때만 패리티 확인(단일/유연 로스터 허용).
+  if (ids.fantasy.length === ids.scifi.length) {
+    assert.deepEqual(ids.fantasy, ids.scifi, '두 컨셉 캐릭터 id 패리티');
+  }
 });
 
 test('tutorial: 목표 전이 level→summon→party→완료', () => {
