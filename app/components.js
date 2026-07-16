@@ -288,6 +288,13 @@ export function repeat(fn, n) {
   return done;
 }
 
+// 퍼센트 너비 안전화 — 0~100 클램프 + 비유한값(NaN/Infinity)은 0.
+//   네이티브(Yoga)는 width:"NaN%" 에서 크래시(웹은 무시) → 진행바 너비는 반드시 이걸 통과.
+export function pctW(n) {
+  const v = Number(n);
+  return Number.isFinite(v) ? Math.max(0, Math.min(100, v)) : 0;
+}
+
 // 큰 수 접미사 — K/M/B/T/Q 이후 AA·AB···ZZ 로 확장(×1000 단위).
 //   1000^5=Q 다음부터 두 글자(AA=1000^6 …). ZZ까지 → 사실상 상한 없음(1e2000+).
 const FMT_SUFFIX = (() => {

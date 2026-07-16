@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { T } from '../theme';
-import { Card, Btn, fmt } from '../components';
+import { Card, Btn, fmt, pctW } from '../components';
 import { CodeTag } from '../uicode';
 import { effectivePower, powerMultOf } from '../useGame';
 import { idleGenre } from '../../system/genres/idle.mjs';
@@ -131,7 +131,7 @@ export default function IdleScreen({ state, bump, lastGain, concept, background 
         {/* 구역 진행 게이지 — 현재 구역(start~end)에서 어디쯤인지 한눈에. */}
         <View style={st.zoneBar}>
           <CodeTag id="a4" corner="br" />
-          <View style={[st.zoneBarFill, { width: `${Math.round(((state.stage - zone.start) / Math.max(1, zone.end - zone.start)) * 100)}%` }]} />
+          <View style={[st.zoneBarFill, { width: `${pctW(((state.stage - zone.start) / Math.max(1, zone.end - zone.start)) * 100)}%` }]} />
         </View>
       </Card>
 

@@ -13,7 +13,7 @@ function rarityColor(r) { return rarityMeta(r).color; }
 function rarityText(r) {
   return { backgroundColor: rarityMeta(r).color, color: '#160f28', fontWeight: '900', fontSize: 11, borderRadius: 4, overflow: 'hidden' };
 }
-import { Card, Btn, fmt, MultiToggle, multLabel, repeat, Portrait, StarBadge, PowerBadge } from '../components';
+import { Card, Btn, fmt, MultiToggle, multLabel, repeat, Portrait, StarBadge, PowerBadge, pctW } from '../components';
 import { CodeTag } from '../uicode';
 
 // 후보를 임시 장착했을 때의 실제 전투력 — 피커의 "변경 전후 비교"용.
@@ -456,8 +456,8 @@ export default function RosterScreen({ state, bump, concept }) {
                     return (
                       <View key={r.uid} style={g.dpsRow}>
                         <Text style={g.dpsName} numberOfLines={1}>{pm ? pm.name : r.uid}</Text>
-                        <View style={g.dpsBarTrack}><View style={[g.dpsBarFill, { width: `${Math.round(r.dpsShare * 100)}%` }]} /></View>
-                        <Text style={g.dpsPct}>{Math.round(r.dpsShare * 100)}%</Text>
+                        <View style={g.dpsBarTrack}><View style={[g.dpsBarFill, { width: `${pctW(r.dpsShare * 100)}%` }]} /></View>
+                        <Text style={g.dpsPct}>{pctW(Math.round(r.dpsShare * 100))}%</Text>
                       </View>
                     );
                   })}
@@ -595,7 +595,7 @@ export default function RosterScreen({ state, bump, concept }) {
                 return (
                   <View key={label} style={g.bdRow}>
                     <Text style={g.bdLabel}>{label}</Text>
-                    <View style={g.bdBarTrack}><View style={[g.bdBarFill, { width: `${Math.min(100, pct)}%` }]} /></View>
+                    <View style={g.bdBarTrack}><View style={[g.bdBarFill, { width: `${pctW(pct)}%` }]} /></View>
                     <Text style={g.bdVal}>{fmt(Math.round(val))}</Text>
                     <Text style={g.bdPct}>{pct.toFixed(0)}%</Text>
                   </View>
@@ -745,7 +745,7 @@ export default function RosterScreen({ state, bump, concept }) {
                 bump();
               }} />
           </View>
-          <View style={g.bar}><View style={[g.barFill, { width: `${intimacyProgress(unit).ratio * 100}%` }]} /></View>
+          <View style={g.bar}><View style={[g.barFill, { width: `${pctW(intimacyProgress(unit).ratio * 100)}%` }]} /></View>
         </Card>
       )}
 

@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { View, Text, ImageBackground, Image, TouchableOpacity, StyleSheet, Animated, Easing } from 'react-native';
-import { fmt } from '../components';
+import { fmt, pctW } from '../components';
 import { effectivePower, powerMultOf } from '../useGame';
 import { idleGenre } from '../../system/genres/idle.mjs';
 import { playStage, difficultyDef } from '../../system/core/difficulty.mjs';
@@ -41,7 +41,7 @@ function Px({ children, style, gold }) {
 function HpBar({ pct, color }) {
   return (
     <View style={ps.hpTrack}>
-      <View style={[ps.hpFill, { width: `${Math.max(0, Math.min(100, pct * 100))}%`, backgroundColor: color }]} />
+      <View style={[ps.hpFill, { width: `${pctW(pct * 100)}%`, backgroundColor: color }]} />
     </View>
   );
 }

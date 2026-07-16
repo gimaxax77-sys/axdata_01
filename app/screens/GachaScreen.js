@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, ScrollView, Animated, TouchableOpacity } from 'react-native';
 import { T, rarityMeta } from '../theme';
-import { Card, Btn, fmt, Portrait } from '../components';
+import { Card, Btn, fmt, Portrait, pctW } from '../components';
 import { CodeTag } from '../uicode';
 import { charImage } from '../charImages';
 import { fx } from '../feedback';
@@ -210,7 +210,7 @@ export default function GachaScreen({ state, bump, concept }) {
             label={info.claimable ? `Lv.${info.claimed + 1} 보상 받기` : info.maxed ? 'MAX' : '진행 중'}
             onPress={doClaim} />
         </View>
-        <View style={s.mBar}><View style={[s.mBarFill, { width: `${barPct}%` }]} /></View>
+        <View style={s.mBar}><View style={[s.mBarFill, { width: `${pctW(barPct)}%` }]} /></View>
         <Text style={s.mSub}>
           {nextThr ? `누적 ${info.count}/${nextThr}회` : `누적 ${info.count}회 · 최대`}
           {'  ·  '}다음: {nrText}

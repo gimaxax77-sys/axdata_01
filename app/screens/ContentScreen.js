@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, Animated, TouchableOpacity, Modal } from 'react-native';
 import { T } from '../theme';
-import { Card, Btn, fmt, MultiToggle, multLabel, repeat } from '../components';
+import { Card, Btn, fmt, MultiToggle, multLabel, repeat, pctW } from '../components';
 import { CodeTag } from '../uicode';
 import { fx } from '../feedback';
 import { reducedMotion } from '../motion';
@@ -244,7 +244,7 @@ export default function ContentScreen({ state, bump, concept }) {
         <CodeTag id="l1" corner="tl" />
         <Text style={c.sec}>{wev.emoji} 이번 주 · {wev.label} <Text style={c.dim}>{days(wev.endsInMs)}일 남음</Text></Text>
         <Text style={c.sub}>{wev.hint}</Text>
-        <View style={c.mBar}><View style={[c.mBarFill, { width: `${Math.min(100, (wev.progress / wev.goal) * 100)}%` }]} /></View>
+        <View style={c.mBar}><View style={[c.mBarFill, { width: `${pctW((wev.progress / wev.goal) * 100)}%` }]} /></View>
         <Text style={c.sub}>진행 {wev.progress}/{wev.goal}</Text>
         <View style={{ height: 8 }} />
         <Btn kind={wev.done && !wev.claimed ? 'gold' : 'ghost'} disabled={!wev.done || wev.claimed}
@@ -257,7 +257,7 @@ export default function ContentScreen({ state, bump, concept }) {
         <Text style={c.sec}>🏔️ 시즌 던전 <Text style={c.dim}>시즌 {sInfo.season} · {days(sInfo.endsInMs)}일 남음</Text></Text>
         <Text style={c.sub}>모두 평준화된 조건에서 겨루는 층 등반 — 스펙보다 편성·운영. (계정 배수 미적용)</Text>
         <Text style={c.sub}>도달 {sInfo.floor}/{SEASON_FLOORS}층 · 최고 {sInfo.best}층 · 평준화 전투력 {fmt(sInfo.power)}</Text>
-        <View style={c.mBar}><View style={[c.mBarFill, { width: `${(sInfo.floor / SEASON_FLOORS) * 100}%` }]} /></View>
+        <View style={c.mBar}><View style={[c.mBarFill, { width: `${pctW((sInfo.floor / SEASON_FLOORS) * 100)}%` }]} /></View>
         <View style={{ height: 8 }} />
         <Btn kind="gold" disabled={sInfo.floor >= SEASON_FLOORS} label={sInfo.floor >= SEASON_FLOORS ? '최고 층 달성' : `${sInfo.floor + 1}층 도전`} onPress={doSeasonFight} />
       </Card>
@@ -294,7 +294,7 @@ export default function ContentScreen({ state, bump, concept }) {
           <View key={m.id} style={c.mRow}>
             <View style={{ flex: 1 }}>
               <Text style={c.mLabel}>{m.label} <Text style={c.dim}>{m.progress}/{m.goal}</Text></Text>
-              <View style={c.bar}><View style={[c.barFill, { width: `${(m.progress / m.goal) * 100}%` }]} /></View>
+              <View style={c.bar}><View style={[c.barFill, { width: `${pctW((m.progress / m.goal) * 100)}%` }]} /></View>
               <Text style={c.mReward}>보상 {rewardText(concept, m.reward)}</Text>
             </View>
             <Btn small kind={m.claimed ? 'ghost' : 'gold'} disabled={!m.done || m.claimed}

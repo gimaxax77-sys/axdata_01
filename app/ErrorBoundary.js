@@ -10,7 +10,7 @@ import { T } from './theme';
 export default class ErrorBoundary extends React.Component {
   constructor(props) {
     super(props);
-    this.state = { error: null };
+    this.state = { error: null, stack: null };
   }
 
   static getDerivedStateFromError(error) {
@@ -18,7 +18,9 @@ export default class ErrorBoundary extends React.Component {
   }
 
   componentDidCatch(error, info) {
-    // 개발 중 원인 추적용(프로덕션에선 원격 로깅으로 대체 가능).
+    // 원인 추적용 — 컴포넌트 스택 상단을 화면에도 노출(테스트 단계).
+    const cs = (info && info.componentStack || '').trim().split('\n').slice(0, 3).join(' ‹ ').trim();
+    this.setState({ stack: cs });
     if (typeof console !== 'undefined') console.error('ErrorBoundary:', error, info?.componentStack);
   }
 
@@ -47,7 +49,11 @@ export default class ErrorBoundary extends React.Component {
             <Text style={s.btnGhostText}>{Platform.OS === 'web' ? '새로고침' : '재시작'}</Text>
           </TouchableOpacity>
         </View>
-        {__DEV__ ? <Text style={s.detail} numberOfLines={4}>{String(this.state.error?.message || this.state.error)}</Text> : null}
+        {/* 원인 표시(테스트 단계) — 메시지 + 컴포넌트 위치. */}
+        <Text style={s.detail} numberOfLines={6} selectable>
+          {String(this.state.error?.message || this.state.error)}
+          {this.state.stack ? `\n@ ${this.state.stack}` : ''}
+        </Text>
       </View>
     );
   }

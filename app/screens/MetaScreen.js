@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Modal } from 'react-native';
 import { T } from '../theme';
-import { Card, Btn, fmt, Portrait } from '../components';
+import { Card, Btn, fmt, Portrait, pctW } from '../components';
 import { CodeTag } from '../uicode';
 import { charImage } from '../charImages';
 import { elementMeta } from '../../system/concepts/index.mjs';
@@ -90,7 +90,7 @@ export default function MetaScreen({ state, bump, concept, embedded }) {
           {sp.premium && <Text style={c.premiumOn}>프리미엄 보유</Text>}
         </View>
         <Text style={c.sub}>진행도로 XP가 쌓입니다 · 다음 티어까지 {sp.per - sp.into}/{sp.per}</Text>
-        <View style={c.bar}><View style={[c.barFill, { width: `${(sp.into / sp.per) * 100}%` }]} /></View>
+        <View style={c.bar}><View style={[c.barFill, { width: `${pctW((sp.into / sp.per) * 100)}%` }]} /></View>
         {/* 티어 목록 — 세로 배열(가로 스크롤 대신). 티어 배지 + 무료/⭐프리미엄 보상 버튼. */}
         <View style={c.tierList}>
           {tiers.map((t) => (
