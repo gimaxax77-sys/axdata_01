@@ -6,6 +6,8 @@
 //             LIGHT ↔ DARK                 (서로 유리)
 // ─────────────────────────────────────────────────────────────
 
+import { isOn } from './features.mjs';
+
 export const ELEMENTS = ['FIRE', 'WATER', 'WOOD', 'LIGHT', 'DARK'];
 
 // key가 value를 이긴다.
@@ -16,6 +18,7 @@ const DISADVANTAGE = 0.8; // 불리 시 피해 배수
 
 // 공격자 속성이 방어자 속성에 대해 갖는 피해 배수.
 export function affinity(atk, def) {
+  if (!isOn('elements')) return 1; // 속성 옵션 off → 상성 무관(스탯 전용)
   if (!atk || !def) return 1; // 속성 없으면 무관
   if (BEATS[atk] === def) return ADVANTAGE;
   if (BEATS[def] === atk) return DISADVANTAGE;

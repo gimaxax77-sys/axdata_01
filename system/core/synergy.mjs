@@ -11,6 +11,8 @@
 
 // 원형 → 역할 카테고리(삼위일체 판정용). 딜러 계열(STRIKER/ROGUE/ARCHER/MAGE)
 // 중 하나라도 있으면 "공격" 카테고리 충족으로 친다.
+import { isOn } from './features.mjs';
+
 const CATEGORY = {
   VANGUARD: 'defense', STRIKER: 'attack', ROGUE: 'attack', ARCHER: 'attack', MAGE: 'attack', SUPPORT: 'support',
 };
@@ -43,16 +45,19 @@ export function teamSynergy(units) {
   if ((arch.ARCHER || 0) >= 3) add('archer_focus', '저격 진형', '궁수 3+ · 공격 +14%', { atk: 1.14 });
   if ((arch.MAGE || 0) >= 3) add('mage_focus', '비전 진형', '법사 3+ · 공격 +20%', { atk: 1.20 });
 
-  // 속성 결속 — 같은 속성 최대 그룹 크기에 비례
-  const maxElem = Math.max(0, ...Object.values(elem));
-  if (maxElem >= 2) {
-    const m = maxElem >= 4 ? 1.22 : maxElem >= 3 ? 1.15 : 1.08;
-    add('elem_bond', '속성 결속', `동일 속성 ${maxElem} · 공격 +${Math.round((m - 1) * 100)}%`, { atk: m });
-  }
-  // 오색 결속 — 전원(3+) 서로 다른 속성
-  const withElem = units.filter((u) => u.element).length;
-  if (withElem >= 3 && Object.keys(elem).length === withElem) {
-    add('rainbow', '오색 결속', '전원 다른 속성 · 공격·체력 +10%', { atk: 1.10, hp: 1.10 });
+  // 속성 결속·오색 — 속성 옵션이 켜져 있을 때만
+  if (isOn('elements')) {
+    // 속성 결속 — 같은 속성 최대 그룹 크기에 비례
+    const maxElem = Math.max(0, ...Object.values(elem));
+    if (maxElem >= 2) {
+      const m = maxElem >= 4 ? 1.22 : maxElem >= 3 ? 1.15 : 1.08;
+      add('elem_bond', '속성 결속', `동일 속성 ${maxElem} · 공격 +${Math.round((m - 1) * 100)}%`, { atk: m });
+    }
+    // 오색 결속 — 전원(3+) 서로 다른 속성
+    const withElem = units.filter((u) => u.element).length;
+    if (withElem >= 3 && Object.keys(elem).length === withElem) {
+      add('rainbow', '오색 결속', '전원 다른 속성 · 공격·체력 +10%', { atk: 1.10, hp: 1.10 });
+    }
   }
 
   return { mult, list };
