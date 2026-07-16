@@ -56,7 +56,8 @@ export default function IdleScreen({ state, bump, lastGain, concept, background 
     const slotOf = (uid) => {
       const u = byId.get(uid);
       if (!u) return { emoji: '⚔️', img: null };
-      return { emoji: identity(concept, u).emoji, img: battleImage(concept.id, u.characterId) };
+      // cid/key: 전투 스프라이트 조회용(BattleView). img: 스프라이트 없을 때 전신 폴백.
+      return { emoji: identity(concept, u).emoji, img: battleImage(concept.id, u.characterId), cid: concept.id, key: u.characterId };
     };
     return { front: sum.front.map(slotOf), mid: sum.mid.map(slotOf), back: sum.back.map(slotOf) };
   }, [formKey]);

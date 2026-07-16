@@ -2,6 +2,8 @@ import React, { useEffect, useRef, useState } from 'react';
 import { View, Text, Image, StyleSheet } from 'react-native';
 import { T } from '../theme';
 import { reducedMotion } from '../motion';
+import { unitSprite, hasUnitSprite } from '../unitSprites';
+import SpriteAnim from '../SpriteAnim';
 
 // reduce: 설정에서 전달(즉시 반영). 미전달 시 모듈 플래그 폴백.
 
@@ -9,18 +11,41 @@ import { reducedMotion } from '../motion';
 // 자동 전투 시각화 — 순수 연출(게임 로직 불변).
 // resolve()의 win/margin으로 "얼마나 우세한가"만 받아 페이스를 정한다.
 // HP 바 감소 + 공격 러지 + 데미지 숫자로 "돌아가는 전투"를 보여준다.
+// 캐릭터: 스프라이트(SpriteAnim, idle 순환→attack 1회) > 전신 이미지 > 이모지 폴백.
 // setInterval + ref 로 가볍게 구동(웹 export에서도 안정).
 // ─────────────────────────────────────────────────────────────
 
 const EMPTY_FORMATION = { front: [], mid: [], back: [] };
+const FRONT_SIZE = 96;
+const BACK_SIZE = 76;
 
-// 편성 한 칸 — 전신 아트(slot.img)가 있으면 그림, 없으면 이모지.
-// slot이 문자열이면 이모지로 취급(하위호환).
-function Fighter({ slot, front }) {
-  const img = slot && typeof slot === 'object' ? slot.img : null;
-  const emoji = slot && typeof slot === 'object' ? slot.emoji : slot;
-  if (img) return <Image source={img} style={front ? s.miniImgFront : s.miniImg} resizeMode="contain" />;
-  return <Text style={front ? s.miniEmojiFront : s.miniEmoji}>{emoji}</Text>;
+// 스프라이트 파이터 — idle 순환, attackToken 변경 시 attack 1회 재생 후 idle 복귀.
+// 우리 파티는 왼쪽에서 오른쪽(적)을 향하므로 좌우 반전(scaleX:-1)한다.
+function SpriteFighter({ cid, ckey, front, attackToken }) {
+  const [st, setSt] = useState('idle');
+  useEffect(() => { if (attackToken > 0) setSt('attack'); }, [attackToken]);
+  const spr = unitSprite(cid, ckey, st) || unitSprite(cid, ckey, 'idle');
+  const size = front ? FRONT_SIZE : BACK_SIZE;
+  const scale = size / spr.frameH;
+  return (
+    <View style={s.flip}>
+      <SpriteAnim
+        source={spr.source} frameW={spr.frameW} frameH={spr.frameH} frames={spr.frames}
+        state={st} playToken={attackToken} scale={scale}
+        onEnd={() => setSt('idle')}
+      />
+    </View>
+  );
+}
+
+// 편성 한 칸 — 스프라이트 > 전신 이미지 > 이모지. slot이 문자열이면 이모지(하위호환).
+function Fighter({ slot, front, attackToken }) {
+  const o = slot && typeof slot === 'object' ? slot : { emoji: slot };
+  if (o.cid && o.key && hasUnitSprite(o.cid, o.key)) {
+    return <SpriteFighter cid={o.cid} ckey={o.key} front={front} attackToken={attackToken} />;
+  }
+  if (o.img) return <Image source={o.img} style={front ? s.miniImgFront : s.miniImg} resizeMode="contain" />;
+  return <Text style={front ? s.miniEmojiFront : s.miniEmoji}>{o.emoji}</Text>;
 }
 
 function BattleView({ party = EMPTY_FORMATION, enemyEmoji = '👹', win = true, margin = 1, reduce }) {
@@ -29,6 +54,7 @@ function BattleView({ party = EMPTY_FORMATION, enemyEmoji = '👹', win = true, 
   const heroHp = useRef(1);
   const [, force] = useState(0);
   const [lunge, setLunge] = useState(false);
+  const [atk, setAtk] = useState(0);           // 공격 재생 트리거(스프라이트)
   const [enemyFlash, setEnemyFlash] = useState(false);
   const floats = useRef([]);
   const fid = useRef(0);
@@ -45,6 +71,7 @@ function BattleView({ party = EMPTY_FORMATION, enemyEmoji = '👹', win = true, 
       // 히어로 공격 (~0.48s)
       if (t % 4 === 0) {
         setLunge(true); setTimeout(() => setLunge(false), 120);
+        setAtk((a) => a + 1); // 스프라이트 attack 재생
         setEnemyFlash(true); setTimeout(() => setEnemyFlash(false), 120);
         const crit = Math.random() < 0.28;
         const mul = crit ? 1.9 : 1;
@@ -81,7 +108,7 @@ function BattleView({ party = EMPTY_FORMATION, enemyEmoji = '👹', win = true, 
     <Text key={f.id} style={[
       s.float,
       f.crit && s.floatCrit, f.big && s.floatBig,
-      { opacity: f.life / 9, bottom: 60 + (9 - f.life) * 7, left: `${45 + f.dx}%` },
+      { opacity: f.life / 9, bottom: 90 + (9 - f.life) * 7, left: `${45 + f.dx}%` },
     ]}>{typeof f.val === 'number' ? f.val.toLocaleString() : f.val}</Text>
   ));
 
@@ -94,13 +121,13 @@ function BattleView({ party = EMPTY_FORMATION, enemyEmoji = '👹', win = true, 
         {/* 편성 그대로: 후열 → 중열 → 전열(적과 가장 가까움) 3열. */}
         <View style={s.formRow}>
           <View style={s.formCol}>
-            {party.back.map((e, i) => <Fighter key={'b' + i} slot={e} front={false} />)}
+            {party.back.map((e, i) => <Fighter key={'b' + i} slot={e} front={false} attackToken={atk} />)}
           </View>
           <View style={s.formCol}>
-            {party.mid.map((e, i) => <Fighter key={'m' + i} slot={e} front={false} />)}
+            {party.mid.map((e, i) => <Fighter key={'m' + i} slot={e} front={false} attackToken={atk} />)}
           </View>
           <View style={[s.formCol, lunge && s.formColLunge]}>
-            {party.front.map((e, i) => <Fighter key={'f' + i} slot={e} front={true} />)}
+            {party.front.map((e, i) => <Fighter key={'f' + i} slot={e} front={true} attackToken={atk} />)}
           </View>
         </View>
         {bar(heroHp.current, T.good)}
@@ -117,26 +144,27 @@ function BattleView({ party = EMPTY_FORMATION, enemyEmoji = '👹', win = true, 
   );
 }
 
-// 방치 틱마다 부모가 리렌더돼도 props(이모지·win·margin)가 같으면 건너뛴다.
+// 방치 틱마다 부모가 리렌더돼도 props(파티·win·margin)가 같으면 건너뛴다.
 export default React.memo(BattleView);
 
 const s = StyleSheet.create({
-  arena: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-around', height: 132, marginVertical: 4 },
-  side: { alignItems: 'center', width: 110 },
+  arena: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-around', height: 220, marginVertical: 4 },
+  side: { alignItems: 'center', width: 120 },
   // 히어로 쪽 — 3열(후열·중열·전열) 편성을 그대로 보여주는 넓은 영역.
-  heroSide: { alignItems: 'center', width: 172 },
-  floatLayer: { position: 'absolute', left: 0, right: 0, bottom: 0, height: 120 },
-  formRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 5, height: 70 },
-  formCol: { flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 3 },
+  heroSide: { alignItems: 'center', width: 200 },
+  floatLayer: { position: 'absolute', left: 0, right: 0, bottom: 0, height: 180, zIndex: 5 },
+  formRow: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'center', gap: 2, height: 190 },
+  formCol: { flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-end', gap: 0 },
   formColLunge: { transform: [{ translateX: 8 }] },
-  miniEmoji: { fontSize: 17, opacity: 0.82 },
-  miniEmojiFront: { fontSize: 22 },
-  miniImg: { width: 34, height: 34, opacity: 0.9 },
-  miniImgFront: { width: 46, height: 46 },
-  emoji: { fontSize: 56 },
+  flip: { transform: [{ scaleX: -1 }] },
+  miniEmoji: { fontSize: 30, opacity: 0.85 },
+  miniEmojiFront: { fontSize: 40 },
+  miniImg: { width: BACK_SIZE, height: BACK_SIZE, opacity: 0.92 },
+  miniImgFront: { width: FRONT_SIZE, height: FRONT_SIZE },
+  emoji: { fontSize: 72 },
   emojiHit: { transform: [{ translateX: 6 }], opacity: 0.55 },
-  clash: { fontSize: 20, opacity: 0.6 },
-  barBg: { width: 96, height: 8, backgroundColor: T.surface, borderRadius: 4, marginTop: 8, overflow: 'hidden' },
+  clash: { fontSize: 22, opacity: 0.6 },
+  barBg: { width: 110, height: 8, backgroundColor: T.surface, borderRadius: 4, marginTop: 8, overflow: 'hidden' },
   barFill: { height: 8, borderRadius: 4 },
   label: { color: T.muted, fontSize: 12, marginTop: 4, fontWeight: '700' },
   float: { position: 'absolute', fontSize: 14, fontWeight: '800', color: T.text },
