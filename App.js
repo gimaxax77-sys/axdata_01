@@ -6,6 +6,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { T } from './app/theme';
 import { ResourceBar, Btn, fmt } from './app/components';
 import { useGame } from './app/useGame';
+import { isOn } from './system/core/features.mjs';
 import { setMuted, setHaptics, fx } from './app/feedback';
 import { setReduceMotion, setEco } from './app/motion';
 import { setUiCodes } from './app/uicode';
@@ -33,13 +34,15 @@ import { can } from './system/core/roles.mjs';
 // 탭 화면을 React.memo로 감싼다 — 방치 틱(초당)에는 rev/props가 안 바뀌어
 // 비활성 화면이 리렌더되지 않는다(탭 전환·조작 렉 제거).
 // 세나키우기식 타이트한 5탭. 경쟁→콘텐츠, 기록→영웅 서브탭으로 흡수(소환은 과금 노출 위해 유지).
-const TABS = [
+// 탭 목록 — feat 가 붙은 탭은 해당 선택 모듈이 켜졌을 때만 노출(컨트롤 판넬로 on/off).
+const ALL_TABS = [
   { key: 'idle', label: '전투', icon: '🏰', Screen: React.memo(IdleScreen) },
   { key: 'roster', label: '영웅', icon: '🦸', Screen: React.memo(RosterScreen) },
-  { key: 'gacha', label: '소환', icon: '🔮', Screen: React.memo(GachaScreen) },
+  { key: 'gacha', label: '소환', icon: '🔮', Screen: React.memo(GachaScreen), feat: 'gacha' },
   { key: 'content', label: '콘텐츠', icon: '📅', Screen: React.memo(ContentScreen) },
-  { key: 'shop', label: '상점', icon: '🛒', Screen: React.memo(ShopScreen) },
+  { key: 'shop', label: '상점', icon: '🛒', Screen: React.memo(ShopScreen), feat: 'shop' },
 ];
+const TABS = ALL_TABS.filter((tab) => !tab.feat || isOn(tab.feat));
 
 // 시트에 얹는 영웅 화면 — 메모된 인스턴스 재사용(초당 방치틱 리렌더 차단).
 const RosterMemo = TABS.find((t) => t.key === 'roster').Screen;

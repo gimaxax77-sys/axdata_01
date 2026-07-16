@@ -5,6 +5,8 @@ import { FEATURES, isOn, simplePreset } from '../core/features.mjs';
 import { affinity } from '../core/elements.mjs';
 import { teamSynergy } from '../core/synergy.mjs';
 import { rarityBaseMult } from '../core/seed.mjs';
+import { createUnit } from '../core/units.mjs';
+import { computePower } from '../core/stats.mjs';
 
 test('기본값은 풀 모드(전 플래그 on)', () => {
   assert.equal(isOn('elements'), true);
@@ -44,5 +46,21 @@ test('등급 off: 전투력 등급 무관(항상 1, 스탯 전용)', () => {
     assert.equal(rarityBaseMult({ rarity: 'N' }), 1.0);
   } finally {
     FEATURES.rarity = true; // 복구
+  }
+});
+
+test('단순 모드: 등급·속성 없는 유닛도 전투력·시너지 정상(크래시 없음)', () => {
+  const prev = { ...FEATURES };
+  Object.assign(FEATURES, simplePreset()); // 선택 모듈 전부 off
+  try {
+    // 원형만 있는 유닛(등급·속성 없음) — createUnit(archetype, opts)
+    const u = createUnit('VANGUARD', { level: 10, characterId: 'knight' });
+    const p = computePower(u);
+    assert.ok(Number.isFinite(p) && p > 0, `전투력 유한·양수 (=${p})`);
+    const syn = teamSynergy([u]);
+    assert.ok(syn && syn.mult && Number.isFinite(syn.mult.atk), '시너지 계산됨');
+    assert.ok(!syn.list.some((s) => s.id === 'elem_bond' || s.id === 'rainbow'), '속성 시너지 없음');
+  } finally {
+    Object.assign(FEATURES, prev); // 복구
   }
 });
