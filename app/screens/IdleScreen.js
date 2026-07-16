@@ -20,6 +20,7 @@ import { weeklyEvent, claimWeekly } from '../../system/core/events.mjs';
 import { unreadMailCount, claimAllMail } from '../../system/core/mailbox.mjs';
 import { spendNudges } from '../../system/core/nudges.mjs';
 import { fx } from '../feedback';
+import { battleImage } from '../battleImages';
 import BattleView from './BattleView';
 
 export default function IdleScreen({ state, bump, lastGain, concept, background }) {
@@ -51,8 +52,13 @@ export default function IdleScreen({ state, bump, lastGain, concept, background 
   const formKey = `${state.party.join(',')}|${JSON.stringify(state.formation)}`;
   const heroFormation = useMemo(() => {
     const sum = formationSummary(state);
-    const emojiOf = (uid) => { const u = byId.get(uid); return u ? identity(concept, u).emoji : '⚔️'; };
-    return { front: sum.front.map(emojiOf), mid: sum.mid.map(emojiOf), back: sum.back.map(emojiOf) };
+    // 전투 무대 표시용 — 전신 아트(있으면) + 이모지 폴백을 함께 넘긴다.
+    const slotOf = (uid) => {
+      const u = byId.get(uid);
+      if (!u) return { emoji: '⚔️', img: null };
+      return { emoji: identity(concept, u).emoji, img: battleImage(concept.id, u.characterId) };
+    };
+    return { front: sum.front.map(slotOf), mid: sum.mid.map(slotOf), back: sum.back.map(slotOf) };
   }, [formKey]);
 
   return (

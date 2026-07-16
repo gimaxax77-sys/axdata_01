@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, Image, StyleSheet } from 'react-native';
 import { T } from '../theme';
 import { reducedMotion } from '../motion';
 
@@ -13,6 +13,15 @@ import { reducedMotion } from '../motion';
 // ─────────────────────────────────────────────────────────────
 
 const EMPTY_FORMATION = { front: [], mid: [], back: [] };
+
+// 편성 한 칸 — 전신 아트(slot.img)가 있으면 그림, 없으면 이모지.
+// slot이 문자열이면 이모지로 취급(하위호환).
+function Fighter({ slot, front }) {
+  const img = slot && typeof slot === 'object' ? slot.img : null;
+  const emoji = slot && typeof slot === 'object' ? slot.emoji : slot;
+  if (img) return <Image source={img} style={front ? s.miniImgFront : s.miniImg} resizeMode="contain" />;
+  return <Text style={front ? s.miniEmojiFront : s.miniEmoji}>{emoji}</Text>;
+}
 
 function BattleView({ party = EMPTY_FORMATION, enemyEmoji = '👹', win = true, margin = 1, reduce }) {
   const noMotion = reduce !== undefined ? reduce : reducedMotion();
@@ -85,13 +94,13 @@ function BattleView({ party = EMPTY_FORMATION, enemyEmoji = '👹', win = true, 
         {/* 편성 그대로: 후열 → 중열 → 전열(적과 가장 가까움) 3열. */}
         <View style={s.formRow}>
           <View style={s.formCol}>
-            {party.back.map((e, i) => <Text key={'b' + i} style={s.miniEmoji}>{e}</Text>)}
+            {party.back.map((e, i) => <Fighter key={'b' + i} slot={e} front={false} />)}
           </View>
           <View style={s.formCol}>
-            {party.mid.map((e, i) => <Text key={'m' + i} style={s.miniEmoji}>{e}</Text>)}
+            {party.mid.map((e, i) => <Fighter key={'m' + i} slot={e} front={false} />)}
           </View>
           <View style={[s.formCol, lunge && s.formColLunge]}>
-            {party.front.map((e, i) => <Text key={'f' + i} style={s.miniEmojiFront}>{e}</Text>)}
+            {party.front.map((e, i) => <Fighter key={'f' + i} slot={e} front={true} />)}
           </View>
         </View>
         {bar(heroHp.current, T.good)}
@@ -122,6 +131,8 @@ const s = StyleSheet.create({
   formColLunge: { transform: [{ translateX: 8 }] },
   miniEmoji: { fontSize: 17, opacity: 0.82 },
   miniEmojiFront: { fontSize: 22 },
+  miniImg: { width: 34, height: 34, opacity: 0.9 },
+  miniImgFront: { width: 46, height: 46 },
   emoji: { fontSize: 56 },
   emojiHit: { transform: [{ translateX: 6 }], opacity: 0.55 },
   clash: { fontSize: 20, opacity: 0.6 },
