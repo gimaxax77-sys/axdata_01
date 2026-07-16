@@ -121,10 +121,13 @@ export const PowerBadge = React.memo(function PowerBadge({ power, onPress, expan
   useEffect(() => {
     if (power > prev.current) {
       scale.setValue(1); flash.setValue(1);
+      // 같은 노드에 scale(transform)과 flash(shadowRadius)를 함께 애니 → 드라이버 통일 필수.
+      // shadowRadius는 네이티브 드라이버 불가이므로 둘 다 JS(useNativeDriver:false)로 맞춘다.
+      // (섞으면 네이티브에서 "moved to native earlier" 크래시.)
       Animated.parallel([
         Animated.sequence([
-          Animated.spring(scale, { toValue: 1.08, useNativeDriver: true, speed: 30, bounciness: 10 }),
-          Animated.spring(scale, { toValue: 1, useNativeDriver: true, speed: 16, bounciness: 6 }),
+          Animated.spring(scale, { toValue: 1.08, useNativeDriver: false, speed: 30, bounciness: 10 }),
+          Animated.spring(scale, { toValue: 1, useNativeDriver: false, speed: 16, bounciness: 6 }),
         ]),
         Animated.timing(flash, { toValue: 0, duration: 750, useNativeDriver: false }),
       ]).start();
