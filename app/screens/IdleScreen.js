@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
 import { T } from '../theme';
 import { Card, Btn, fmt, pctW } from '../components';
 import { isOn } from '../../system/core/features.mjs';
+import { diffIcon } from '../uiIcons';
 import { CodeTag } from '../uicode';
 import { effectivePower, powerMultOf } from '../useGame';
 import { idleGenre } from '../../system/genres/idle.mjs';
@@ -112,7 +113,10 @@ export default function IdleScreen({ state, bump, lastGain, concept, background 
             <TouchableOpacity key={d.id} activeOpacity={0.8} disabled={!unlocked}
               onPress={() => { if (setDifficulty(state, d.id).ok) bump(); }}
               style={[st.diffCell, on && st.diffCellOn, !unlocked && st.diffCellLock]}>
-              <Text style={[st.diffLabel, on && st.diffLabelOn]}>{d.emoji} {d.label}</Text>
+              <View style={st.diffHead}>
+                {diffIcon(d.id) ? <Image source={diffIcon(d.id)} style={st.diffIcon} /> : <Text style={st.diffLabel}>{d.emoji}</Text>}
+                <Text style={[st.diffLabel, on && st.diffLabelOn]}>{d.label}</Text>
+              </View>
               <Text style={st.diffSub}>{unlocked ? `보상 ×${d.rewardMult}` : `${d.unlock}층`}</Text>
             </TouchableOpacity>
           );
@@ -238,6 +242,8 @@ const st = StyleSheet.create({
   diffCell: { flex: 1, backgroundColor: T.surface2, borderRadius: 10, paddingVertical: 8, alignItems: 'center', borderWidth: 1, borderColor: 'transparent' },
   diffCellOn: { borderColor: T.accent, backgroundColor: T.surface },
   diffCellLock: { opacity: 0.45 },
+  diffHead: { flexDirection: 'row', alignItems: 'center', gap: 3 },
+  diffIcon: { width: 18, height: 18 },
   diffLabel: { color: T.muted, fontSize: 13, fontWeight: '800' },
   diffLabelOn: { color: T.accent },
   diffSub: { color: T.muted, fontSize: 10, marginTop: 2 },

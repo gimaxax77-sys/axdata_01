@@ -35,3 +35,14 @@ export function gearIcon(blueprint) {
   const kind = blueprint && BLUEPRINT_ICON[blueprint];
   return (kind && GEAR_IMG[kind]) || null;
 }
+
+// 난이도 마커 3D(보석 색상별). 🟢🟡🔴🟣 대체.
+const DIFF_IMG = {
+  normal: require('../assets/ui/diff/normal.png'),
+  hard: require('../assets/ui/diff/hard.png'),
+  hell: require('../assets/ui/diff/hell.png'),
+  abyss: require('../assets/ui/diff/abyss.png'),
+};
+export function diffIcon(id) {
+  return (id && DIFF_IMG[id]) || null;
+}

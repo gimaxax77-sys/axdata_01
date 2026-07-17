@@ -1174,7 +1174,10 @@ function PickerModal({ picker, unit, state, onClose, onChange, concept }) {
               {bps.map((b) => (
                 <TouchableOpacity key={b.id} onPress={() => apply(() => { const c = craftGear(state, b.id); if (c.ok) { equipGear(state, unit.uid, c.item.uid); onClose(); } })}
                   style={m.opt} activeOpacity={0.8}>
-                  <Text style={m.optName}>{b.label} <Text style={m.optCost}>🪙{fmt(gearCraftCost(b.id).currency)}</Text></Text>
+                  <View style={m.optHead}>
+                    {gearIcon(b.id) && <Image source={gearIcon(b.id)} style={m.optIcon} resizeMode="contain" />}
+                    <Text style={m.optName}>{b.label} <Text style={m.optCost}>🪙{fmt(gearCraftCost(b.id).currency)}</Text></Text>
+                  </View>
                   <Text style={m.optDesc}>{describeGear(b)}</Text>
                 </TouchableOpacity>
               ))}
@@ -1184,8 +1187,11 @@ function PickerModal({ picker, unit, state, onClose, onChange, concept }) {
           renderItem={({ item: it }) => (
             <TouchableOpacity onPress={() => apply(() => { equipGear(state, unit.uid, it.uid); onClose(); })}
               style={[m.opt, it.rarity && { borderColor: rarityColor(it.rarity) }]} activeOpacity={0.8}>
-              <Text style={m.optName}>{GEAR_CATALOG[it.blueprint].label} +{it.level - 1}
-                {it.rarity ? <Text style={rarityText(it.rarity)}> {(GEAR_RARITY[it.rarity] || {}).label || it.rarity} </Text> : null}</Text>
+              <View style={m.optHead}>
+                {gearIcon(it.blueprint) && <Image source={gearIcon(it.blueprint)} style={m.optIcon} resizeMode="contain" />}
+                <Text style={m.optName}>{GEAR_CATALOG[it.blueprint].label} +{it.level - 1}
+                  {it.rarity ? <Text style={rarityText(it.rarity)}> {(GEAR_RARITY[it.rarity] || {}).label || it.rarity} </Text> : null}</Text>
+              </View>
               <Text style={m.optDesc}>{ov(describeGearItem(it))}</Text>
               <DeltaText cur={curP} next={powerWithGearItem(unit, slot, it)} />
             </TouchableOpacity>
@@ -1385,7 +1391,9 @@ const m = StyleSheet.create({
   opt: { backgroundColor: T.surface2, borderRadius: 12, padding: 12, marginBottom: 8, borderWidth: 1, borderColor: 'transparent' },
   optOn: { borderColor: T.accent },
   optDim: { opacity: 0.4 },
-  optName: { color: T.text, fontWeight: '800', fontSize: 14 },
+  optHead: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  optIcon: { width: 30, height: 30 },
+  optName: { color: T.text, fontWeight: '800', fontSize: 14, flexShrink: 1 },
   optCost: { color: T.accent, fontWeight: '700', fontSize: 12 },
   optDesc: { color: T.muted, fontSize: 12, marginTop: 2 },
   dmsg: { color: T.accent, fontSize: 13, fontWeight: '800', textAlign: 'center', marginTop: 8 },
