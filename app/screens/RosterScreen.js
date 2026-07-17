@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Modal, TextInput, useWindowDimensions, Animated, FlatList } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Modal, TextInput, useWindowDimensions, Animated, FlatList, Image } from 'react-native';
 import { T, rarityMeta } from '../theme';
 import { reducedMotion } from '../motion';
 import GrowthPanel from './GrowthPanel';
@@ -53,6 +53,7 @@ function DeltaText({ cur, next }) {
   );
 }
 import { charImage } from '../charImages';
+import { gearIcon } from '../uiIcons';
 import { fx } from '../feedback';
 import { togglePartyMember, MAX_PARTY, getPartyUnits, autoParty } from '../../system/core/gameState.mjs';
 import { teamSynergy } from '../../system/core/synergy.mjs';
@@ -953,7 +954,9 @@ export default function RosterScreen({ state, bump, concept }) {
                   <TouchableOpacity key={slot} onPress={() => setPicker({ mode: 'gear', slot })}
                     accessibilityRole="button" accessibilityLabel={item ? `${SLOT_META[slot].label} ${GEAR_CATALOG[item.blueprint].label} +${item.level - 1}` : `${SLOT_META[slot].label} 비어있음`}
                     style={[g.gearTile, item && item.rarity && { borderColor: rarityColor(item.rarity) }]} activeOpacity={0.8}>
-                    <Text style={g.gearTileEmoji}>{SLOT_META[slot].emoji}</Text>
+                    {item && gearIcon(item.blueprint)
+                      ? <Image source={gearIcon(item.blueprint)} style={g.gearTileIcon} resizeMode="contain" />
+                      : <Text style={g.gearTileEmoji}>{SLOT_META[slot].emoji}</Text>}
                     {item ? (<>
                       <Text style={g.runeLv}>+{item.level - 1}</Text>
                       {item.rarity ? <Text style={[rarityText(item.rarity), g.runeRar]}> {item.rarity} </Text> : null}
@@ -1325,6 +1328,7 @@ const g = StyleSheet.create({
   gearGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 2, marginBottom: 4 },
   gearTile: { width: 64, alignItems: 'center', justifyContent: 'center', paddingVertical: 10, borderRadius: 12, backgroundColor: T.surface2, borderWidth: 1.5, borderColor: T.line, gap: 2 },
   gearTileEmoji: { fontSize: 22 },
+  gearTileIcon: { width: 34, height: 34 },
   gearTileEmpty: { color: T.muted, fontSize: 9, textAlign: 'center' },
   gearCat: { color: T.muted, fontSize: 12, fontWeight: '800', marginTop: 10, marginBottom: 2 },
   dim: { color: T.muted, fontSize: 12, fontWeight: '400' },

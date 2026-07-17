@@ -13,3 +13,25 @@ const RES_ICONS = {
 export function resIcon(key) {
   return (key && RES_ICONS[key]) || null;
 }
+
+// 장비(무기·방패) 3D 아이콘 — 블루프린트별. 모델 없는 방어구·장신구는 미등록 → 이모지 폴백.
+const GEAR_IMG = {
+  sword: require('../assets/ui/gear/sword.png'),
+  dagger: require('../assets/ui/gear/dagger.png'),
+  bow: require('../assets/ui/gear/bow.png'),
+  axe: require('../assets/ui/gear/axe.png'),
+  greatsword: require('../assets/ui/gear/greatsword.png'),
+  shield: require('../assets/ui/gear/shield.png'),
+  tome: require('../assets/ui/gear/tome.png'),
+};
+// 장비 블루프린트 → 아이콘 종류.
+const BLUEPRINT_ICON = {
+  IRON_SWORD: 'sword', RUNE_BLADE: 'sword', VOID_EDGE: 'sword', DRAGON_FANG: 'sword', RAGE_BLADE: 'sword',
+  DAGGER: 'dagger', BOW: 'bow', AXE: 'axe', GREATSWORD: 'greatsword',
+  TOWER_SHIELD: 'shield', GUARDIAN_WALL: 'shield', BASTION_WALL: 'shield', ARCANE_TOME: 'tome',
+};
+// 장비 블루프린트 → 아이콘 소스 또는 null(이모지 폴백).
+export function gearIcon(blueprint) {
+  const kind = blueprint && BLUEPRINT_ICON[blueprint];
+  return (kind && GEAR_IMG[kind]) || null;
+}
