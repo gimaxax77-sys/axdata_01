@@ -43,10 +43,11 @@ function SpriteFighter({ cid, ckey, front, attackToken, hitToken, walkToken }) {
 // 적 파이터 — 왼쪽(파티) 향하는 몬스터 스프라이트. idle 순환, 히어로 공격 시 hit 재생.
 // 원본이 이미 왼쪽 방향으로 렌더돼 반전 불필요.
 const ENEMY_SIZE = 132;
-function EnemyFighter({ ekey, hitToken }) {
+function EnemyFighter({ ekey, hitToken, atkToken }) {
   const [st, setSt] = useState('idle');
   const [tok, setTok] = useState(0);
   useEffect(() => { if (hitToken > 0) { setSt('hit'); setTok((v) => v + 1); } }, [hitToken]);
+  useEffect(() => { if (atkToken > 0) { setSt('attack'); setTok((v) => v + 1); } }, [atkToken]);
   const spr = unitSprite('enemy', ekey, st) || unitSprite('enemy', ekey, 'idle');
   const scale = ENEMY_SIZE / spr.frameH;
   return (
@@ -72,8 +73,9 @@ function BattleView({ party = EMPTY_FORMATION, enemyEmoji = '👹', enemyKey = n
   const [, force] = useState(0);
   const [lunge, setLunge] = useState(false);
   const [atk, setAtk] = useState(0);           // 공격 재생 트리거(스프라이트)
-  const [hitTok, setHitTok] = useState(0);     // 피격 재생 트리거
+  const [hitTok, setHitTok] = useState(0);     // 파티 피격 재생 트리거
   const [walkTok, setWalkTok] = useState(0);   // 웨이브 전진(걷기) 트리거
+  const [enemyAtk, setEnemyAtk] = useState(0); // 적 공격(반격) 재생 트리거
   const [enemyFlash, setEnemyFlash] = useState(false);
   const floats = useRef([]);
   const fid = useRef(0);
@@ -102,11 +104,12 @@ function BattleView({ party = EMPTY_FORMATION, enemyEmoji = '👹', enemyKey = n
           setWalkTok((w) => w + 1); // 처치 → 다음 웨이브로 전진(걷기 1회)
         }
       }
-      // 적 반격 (~0.72s) — 파티 피격 모션
+      // 적 반격 (~0.72s) — 적 공격 모션 + 파티 피격 모션
       if (t % 6 === 0) {
         pushFloat(Math.round(heroDmg * 3000 * (0.85 + Math.random() * 0.3)), 'hero', false);
         heroHp.current = Math.max(win ? 0.35 : 0.12, heroHp.current - heroDmg);
         setHitTok((h) => h + 1);
+        setEnemyAtk((a) => a + 1);
       }
       // 히어로 자연 회복
       heroHp.current = Math.min(1, heroHp.current + 0.012);
@@ -155,7 +158,7 @@ function BattleView({ party = EMPTY_FORMATION, enemyEmoji = '👹', enemyKey = n
       <View style={s.side}>
         <View style={s.floatLayer}>{renderFloats('enemy')}</View>
         {enemyKey && hasUnitSprite('enemy', enemyKey)
-          ? <EnemyFighter ekey={enemyKey} hitToken={atk} />
+          ? <EnemyFighter ekey={enemyKey} hitToken={atk} atkToken={enemyAtk} />
           : <Text style={[s.emoji, enemyFlash && s.emojiHit]}>{enemyEmoji}</Text>}
         {bar(enemyHp.current, T.danger)}
         <Text style={s.label}>적</Text>

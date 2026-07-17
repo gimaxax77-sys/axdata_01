@@ -42,7 +42,7 @@ const SUBTABS = [
   { key: 'cosmetic', label: '코스튬', icon: '🎭' },
 ];
 
-export default function ShopScreen({ state, bump, concept, onOpenSettings, onTogglePixel }) {
+export default function ShopScreen({ state, bump, concept, onOpenSettings }) {
   const [mult, setMult] = useState(1);
   const [pkgMsg, setPkgMsg] = useState(null);
   const [grp, setGrp] = useState('currency'); // 현재 서브탭
@@ -76,16 +76,10 @@ export default function ShopScreen({ state, bump, concept, onOpenSettings, onTog
   return (
     <View style={s.flex}>
     <ScrollView ref={scrollRef} style={s.flex} contentContainerStyle={s.wrap}>
-      {/* 환경 설정 — 상단 헤더에서 이동(픽셀 화면·설정). 어느 서브탭에서나 접근. */}
-      {(onOpenSettings || onTogglePixel) && (
+      {/* 환경 설정 — 상단 헤더에서 이동. 어느 서브탭에서나 접근. */}
+      {onOpenSettings && (
         <View style={s.envRow}>
           <CodeTag id="o6" corner="tr" />
-          {onTogglePixel && (
-            <TouchableOpacity style={s.envBtn} onPress={onTogglePixel} activeOpacity={0.8}
-              accessibilityRole="button" accessibilityLabel="픽셀 방치 화면 전환">
-              <Text style={s.envIcon}>🎨</Text><Text style={s.envLabel}>픽셀 화면</Text>
-            </TouchableOpacity>
-          )}
           {onOpenSettings && (
             <TouchableOpacity style={s.envBtn} onPress={onOpenSettings} activeOpacity={0.8}
               accessibilityRole="button" accessibilityLabel="설정 열기">
