@@ -124,11 +124,8 @@ function BattleView({ party = EMPTY_FORMATION, enemyEmoji = '👹', win = true, 
     <View style={s.arena}>
       <View style={s.heroSide}>
         <View style={s.floatLayer}>{renderFloats('hero')}</View>
-        {/* 편성 그대로: 후열 → 중열 → 전열(적과 가장 가까움) 3열. */}
+        {/* 전투 화면은 1·2열(중열→전열)만 표시 — 후열은 숨겨 화면을 정리(전투 로직엔 영향 없음). */}
         <View style={s.formRow}>
-          <View style={s.formCol}>
-            {party.back.map((e, i) => <Fighter key={'b' + i} slot={e} front={false} attackToken={atk} hitToken={hitTok} walkToken={walkTok} />)}
-          </View>
           <View style={s.formCol}>
             {party.mid.map((e, i) => <Fighter key={'m' + i} slot={e} front={false} attackToken={atk} hitToken={hitTok} walkToken={walkTok} />)}
           </View>

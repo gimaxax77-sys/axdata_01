@@ -23,6 +23,21 @@ import { fx } from '../feedback';
 import { battleImage } from '../battleImages';
 import BattleView from './BattleView';
 
+// 전투 배경 — 10층마다 순환(층÷10). Metro는 정적 require만 되므로 배열로 등록 후 인덱싱.
+const BATTLE_BGS = [
+  require('../../assets/pixel/bg-battle-0.png'),
+  require('../../assets/pixel/bg-battle-1.png'),
+  require('../../assets/pixel/bg-battle-2.png'),
+  require('../../assets/pixel/bg-battle-3.png'),
+];
+// 난이도별 색조 오버레이(무대 위에 은은히) — 일반은 없음.
+const DIFF_TINT = {
+  normal: 'transparent',
+  hard: 'rgba(255,150,50,0.12)',
+  hell: 'rgba(215,50,50,0.16)',
+  abyss: 'rgba(120,50,170,0.20)',
+};
+
 export default function IdleScreen({ state, bump, lastGain, concept, background }) {
   const [boxMsg, setBoxMsg] = useState(null);
   const power = effectivePower(state);
@@ -97,8 +112,9 @@ export default function IdleScreen({ state, bump, lastGain, concept, background 
       {/* 자동 전투 무대 — 던전 배경 위에 파티/적이 바닥에 서서 싸운다.
           층·구역은 상단 배너(절대)로, 적 정보·시너지는 카드 밖(아래)로 빼서 전투 영역을 비운다. */}
       <Card style={st.stage}>
-        {/* 던전 배경(KayKit 렌더) — 콘텐츠 뒤에 절대배치, 둥근 모서리 클립. */}
-        <Image source={require('../../assets/pixel/bg-battle.png')} style={st.stageBg} resizeMode="cover" pointerEvents="none" />
+        {/* 던전 배경(KayKit 렌더) — 10층마다 순환 + 난이도 색조. 콘텐츠 뒤에 절대배치. */}
+        <Image source={BATTLE_BGS[Math.floor(state.stage / 10) % BATTLE_BGS.length]} style={st.stageBg} resizeMode="cover" pointerEvents="none" />
+        <View style={[st.stageTint, { backgroundColor: DIFF_TINT[curDiff.id] || 'transparent' }]} pointerEvents="none" />
         <CodeTag id="a3" corner="tl" />
         {/* 상단 배너: 층 + 구역 */}
         <View style={st.banner} pointerEvents="none">
@@ -203,6 +219,7 @@ const st = StyleSheet.create({
   stageInfo: { alignItems: 'center', gap: 3, paddingTop: 2 },
   // 던전 배경 — 무대(Card) 안쪽에 꽉 채우고 둥근 모서리 클립. 콘텐츠는 위에 렌더.
   stageBg: { position: 'absolute', left: 0, right: 0, top: 0, bottom: 0, width: '100%', height: '100%', borderRadius: 16, opacity: 0.9 },
+  stageTint: { position: 'absolute', left: 0, right: 0, top: 0, bottom: 0, borderRadius: 16 },
   stageLabel: { color: T.accent, fontWeight: '800', fontSize: 18, marginBottom: 2, textShadowColor: '#000', textShadowRadius: 5 },
   diffBadge: { color: T.danger, fontSize: 13, fontWeight: '800' },
   zone: { color: '#d8d0f0', fontSize: 12, marginBottom: 4, fontWeight: '700', textShadowColor: '#000', textShadowRadius: 4 },
