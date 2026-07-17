@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
 import { T } from '../theme';
 import { Card, Btn, fmt, pctW } from '../components';
 import { CodeTag } from '../uicode';
@@ -96,6 +96,8 @@ export default function IdleScreen({ state, bump, lastGain, concept, background 
 
       {/* 자동 전투 무대 */}
       <Card style={st.stage}>
+        {/* 던전 배경(KayKit 렌더) — 콘텐츠 뒤에 절대배치, 둥근 모서리 클립. */}
+        <Image source={require('../../assets/pixel/bg-battle.png')} style={st.stageBg} resizeMode="cover" pointerEvents="none" />
         <CodeTag id="a3" corner="tl" />
         <Text style={st.stageLabel}>
           {concept.terms.stage} {state.stage}
@@ -188,7 +190,9 @@ export default function IdleScreen({ state, bump, lastGain, concept, background 
 const st = StyleSheet.create({
   // 스크롤 없이 한 화면에 고정 — 전투무대(stage)가 남는 세로 공간을 흡수.
   wrap: { flex: 1, padding: 12, gap: 8 },
-  stage: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: T.surface2 },
+  stage: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: T.surface2, overflow: 'hidden' },
+  // 던전 배경 — 무대(Card) 안쪽에 꽉 채우고 둥근 모서리 클립. 콘텐츠는 위에 렌더.
+  stageBg: { position: 'absolute', left: 0, right: 0, top: 0, bottom: 0, width: '100%', height: '100%', borderRadius: 16, opacity: 0.9 },
   stageLabel: { color: T.accent, fontWeight: '800', fontSize: 18, marginBottom: 2 },
   diffBadge: { color: T.danger, fontSize: 13, fontWeight: '800' },
   zone: { color: T.muted, fontSize: 12, marginBottom: 4, fontWeight: '600' },
