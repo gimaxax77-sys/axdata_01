@@ -5,6 +5,7 @@ import { T, rarityMeta, SPACE } from './theme';
 import { fx } from './feedback';
 import { reducedMotion } from './motion';
 import { isOn } from '../system/core/features.mjs';
+import { resIcon } from './uiIcons';
 
 // ── 캐릭터 초상 — 등급 프레임 + 글로우. 로스터/파티/소환/도감 공용 ──
 //   image(있으면): 캐릭터 일러스트를 프레임 안에 렌더. 없으면 emoji 폴백.
@@ -162,7 +163,8 @@ const pb = StyleSheet.create({
 
 // 자원 셀 — 값이 늘면 살짝 튀며 금색으로 번쩍(획득 강조).
 //   방치 골드는 초당 흐르므로 강조 제외. 유의미한 재화(소환권·다이아)만 pulse.
-function ResCell({ emoji, value, pulse }) {
+function ResCell({ emoji, value, pulse, iconKey }) {
+  const icon = resIcon(iconKey);
   const prev = useRef(value);
   const scale = useRef(new Animated.Value(1)).current;
   const flash = useRef(new Animated.Value(0)).current;
@@ -184,7 +186,7 @@ function ResCell({ emoji, value, pulse }) {
     : T.text;
   return (
     <Animated.View style={[s.rescell, { transform: [{ scale }] }]}>
-      <Text style={s.resEmoji}>{emoji}</Text>
+      {icon ? <Image source={icon} style={s.resIcon} resizeMode="contain" /> : <Text style={s.resEmoji}>{emoji}</Text>}
       <Animated.Text style={[s.resVal, { color }]}>{fmt(value)}</Animated.Text>
     </Animated.View>
   );
@@ -196,7 +198,7 @@ export function ResourceBar({ concept, wallet }) {
   return (
     <LinearGradient colors={T.surfaceGrad} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={s.resbar}>
       {keys.map((k) => (
-        <ResCell key={k} emoji={concept.resources[k].emoji} value={wallet[k] || 0}
+        <ResCell key={k} iconKey={k} emoji={concept.resources[k].emoji} value={wallet[k] || 0}
           pulse={k === 'summon' || k === 'gem'} />
       ))}
     </LinearGradient>
@@ -341,6 +343,7 @@ const s = StyleSheet.create({
   resbar: { flexDirection: 'row', borderRadius: 14, padding: 6, gap: 6, borderWidth: 1, borderColor: T.line },
   rescell: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingVertical: 8 },
   resEmoji: { fontSize: 16 },
+  resIcon: { width: 22, height: 22 },
   resVal: { color: T.text, fontWeight: '800', fontSize: 15 },
   // 미니멀 정리: small 버튼이 라벨 대비 과하게 커 보이던 걸 축소
   // (paddingVertical 8→5, horizontal 12→10, 글로우도 함께 옅게).
