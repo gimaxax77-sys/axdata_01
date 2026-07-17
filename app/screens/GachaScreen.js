@@ -4,6 +4,7 @@ import { T, rarityMeta } from '../theme';
 import { Card, Btn, fmt, Portrait, pctW } from '../components';
 import { CodeTag } from '../uicode';
 import { charImage } from '../charImages';
+import { gearIcon } from '../uiIcons';
 import { fx } from '../feedback';
 import { reducedMotion } from '../motion';
 import { summonOne, summonMulti, PULL_COST } from '../../system/core/gacha.mjs';
@@ -106,7 +107,8 @@ export default function GachaScreen({ state, bump, concept }) {
     }
     if (banner === 'gear') {
       const r = summonGear(state); if (!r.ok) return { cell: null, spent: false };
-      return { cell: { rarity: r.rarity, emoji: SLOT_EMOJI[r.item.slot] || '⚔️', name: r.label }, spent: true };
+      // 무기·방패는 3D 아이콘, 그 외는 슬롯 이모지.
+      return { cell: { rarity: r.rarity, image: gearIcon(r.item.blueprint), emoji: SLOT_EMOJI[r.item.slot] || '⚔️', name: r.label }, spent: true };
     }
     if (banner === 'rune') {
       const r = summonRune(state); if (!r.ok) return { cell: null, spent: false };

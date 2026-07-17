@@ -34,6 +34,8 @@ const BATTLE_BGS = [
   require('../../assets/pixel/bg-battle-5.png'),
   require('../../assets/pixel/bg-battle-6.png'),
   require('../../assets/pixel/bg-battle-7.png'),
+  require('../../assets/pixel/bg-battle-8.png'), // 무덤(온전 울타리)
+  require('../../assets/pixel/bg-battle-9.png'), // 무덤(파손)
 ];
 // 적 몬스터 스프라이트 키 — 10층마다 순환(배경과 함께 변화). unitSprites 'enemy:<key>' 등록됨.
 const ENEMY_KEYS = ['skeleton_minion', 'skeleton_warrior', 'werewolf_wolf', 'skeleton_mage', 'skeleton_golem'];
