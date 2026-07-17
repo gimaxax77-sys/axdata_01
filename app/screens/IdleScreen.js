@@ -22,7 +22,6 @@ import { weeklyEvent, claimWeekly } from '../../system/core/events.mjs';
 import { unreadMailCount, claimAllMail } from '../../system/core/mailbox.mjs';
 import { spendNudges } from '../../system/core/nudges.mjs';
 import { fx } from '../feedback';
-import { battleImage } from '../battleImages';
 import BattleView from './BattleView';
 
 // 전투 배경 — 10층마다 순환(층÷10). Metro는 정적 require만 되므로 배열로 등록 후 인덱싱.
@@ -78,12 +77,11 @@ export default function IdleScreen({ state, bump, lastGain, concept, background 
   const formKey = `${state.party.join(',')}|${JSON.stringify(state.formation)}`;
   const heroFormation = useMemo(() => {
     const sum = formationSummary(state);
-    // 전투 무대 표시용 — 전신 아트(있으면) + 이모지 폴백을 함께 넘긴다.
+    // 전투 무대 표시용 — 스프라이트 조회 키(cid/key) + 이모지 폴백.
     const slotOf = (uid) => {
       const u = byId.get(uid);
-      if (!u) return { emoji: '⚔️', img: null };
-      // cid/key: 전투 스프라이트 조회용(BattleView). img: 스프라이트 없을 때 전신 폴백.
-      return { emoji: identity(concept, u).emoji, img: battleImage(concept.id, u.characterId), cid: concept.id, key: u.characterId };
+      if (!u) return { emoji: '⚔️' };
+      return { emoji: identity(concept, u).emoji, cid: concept.id, key: u.characterId };
     };
     return { front: sum.front.map(slotOf), mid: sum.mid.map(slotOf), back: sum.back.map(slotOf) };
   }, [formKey]);

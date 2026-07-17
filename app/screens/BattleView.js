@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { View, Text, Image, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
 import { T } from '../theme';
 import { reducedMotion } from '../motion';
 import { unitSprite, hasUnitSprite } from '../unitSprites';
@@ -11,7 +11,7 @@ import SpriteAnim from '../SpriteAnim';
 // 자동 전투 시각화 — 순수 연출(게임 로직 불변).
 // resolve()의 win/margin으로 "얼마나 우세한가"만 받아 페이스를 정한다.
 // HP 바 감소 + 공격 러지 + 데미지 숫자로 "돌아가는 전투"를 보여준다.
-// 캐릭터: 스프라이트(SpriteAnim, idle 순환→attack 1회) > 전신 이미지 > 이모지 폴백.
+// 캐릭터: 스프라이트(SpriteAnim, idle 순환 → attack/hit/walk 1회) > 이모지 폴백.
 // setInterval + ref 로 가볍게 구동(웹 export에서도 안정).
 // ─────────────────────────────────────────────────────────────
 
@@ -56,13 +56,12 @@ function EnemyFighter({ ekey, hitToken, atkToken }) {
   );
 }
 
-// 편성 한 칸 — 스프라이트 > 전신 이미지 > 이모지. slot이 문자열이면 이모지(하위호환).
+// 편성 한 칸 — 스프라이트, 없으면 이모지. slot이 문자열이면 이모지(하위호환).
 function Fighter({ slot, front, attackToken, hitToken, walkToken }) {
   const o = slot && typeof slot === 'object' ? slot : { emoji: slot };
   if (o.cid && o.key && hasUnitSprite(o.cid, o.key)) {
     return <SpriteFighter cid={o.cid} ckey={o.key} front={front} attackToken={attackToken} hitToken={hitToken} walkToken={walkToken} />;
   }
-  if (o.img) return <Image source={o.img} style={front ? s.miniImgFront : s.miniImg} resizeMode="contain" />;
   return <Text style={front ? s.miniEmojiFront : s.miniEmoji}>{o.emoji}</Text>;
 }
 
@@ -182,8 +181,6 @@ const s = StyleSheet.create({
   formColLunge: { transform: [{ translateX: 8 }] },
   miniEmoji: { fontSize: 34, opacity: 0.85 },
   miniEmojiFront: { fontSize: 46 },
-  miniImg: { width: BACK_SIZE, height: BACK_SIZE, opacity: 0.92 },
-  miniImgFront: { width: FRONT_SIZE, height: FRONT_SIZE },
   emoji: { fontSize: 104 },
   emojiHit: { transform: [{ translateX: 6 }], opacity: 0.55 },
   clash: { fontSize: 22, opacity: 0.5, marginBottom: 40 },

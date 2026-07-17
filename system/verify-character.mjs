@@ -5,6 +5,7 @@
 // 실행:  node system/verify-character.mjs   (실패 시 종료코드 1)
 // ─────────────────────────────────────────────────────────────
 
+import { FEATURES } from './core/features.mjs';
 import { createGameState } from './core/gameState.mjs';
 import { createUnit } from './core/units.mjs';
 import { earn } from './core/economy.mjs';
@@ -102,6 +103,8 @@ console.log('\n■ 캐릭터 성장 축 검증 (assert)\n');
 
 // ── 씨앗 (서사 발현 + 저등급 구제, UR 천장) ────────────────────
 {
+  // 이 블록은 등급(rarity) 규칙 자체를 검증 → 기본 off여도 명시적으로 켜고 확인 후 복구.
+  FEATURES.rarity = true;
   // 등급 없는 유닛(데모/시뮬)은 씨앗/등급배수 영향 0 → 하위호환
   const plain = createUnit('STRIKER', { level: 40, rank: 3 });
   const sp0 = seedStatPct(plain);
@@ -135,10 +138,13 @@ console.log('\n■ 캐릭터 성장 축 검증 (assert)\n');
   const before = computePower(growing);
   growing.level = 40; growing.rank = 3; // talent+breakthrough 조건 달성
   ok('씨앗 조건 달성이 전투력 증가에 기여', seedProgress(growing).met >= 2 && computePower(growing) > before);
+  FEATURES.rarity = false; // 기본값(off) 복구
 }
 
 // ── 팀 시너지 (편성 구성 보너스) ───────────────────────────────
 {
+  // 속성 결속/오색 검증 포함 → 속성을 명시적으로 켜고 확인 후 복구.
+  FEATURES.elements = true;
   const mk = (arch, elem) => { const u = createUnit(arch, { level: 20, rank: 2, element: elem }); return u; };
   const { teamSynergy } = await import('./core/synergy.mjs');
   ok('빈/단일 파티는 시너지 없음', teamSynergy([]).list.length === 0);
@@ -151,6 +157,7 @@ console.log('\n■ 캐릭터 성장 축 검증 (assert)\n');
   ok('속성 결속 발동 (동일 속성 3)', sf.list.some((s) => s.id === 'elem_bond'));
   ok('시너지가 공격 배수 실제 상승', sf.mult.atk > 1);
   ok('배타성: 동일속성 집중은 오색 미발동', !sf.list.some((s) => s.id === 'rainbow'));
+  FEATURES.elements = false; // 기본값(off) 복구
 }
 
 console.log(`\n결과: ${passed} 통과 / ${fails.length} 실패`);

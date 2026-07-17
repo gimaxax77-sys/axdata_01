@@ -8,7 +8,6 @@
 // 아래 맵에 한 줄만 추가하면 로스터·파티·소환·도감 전역에 자동 반영된다.
 // 등록 안 된 캐릭터는 이모지로 자연스럽게 폴백 → 점진 도입 가능.
 //
-//   예) 'fantasy:kael': require('../assets/char/fantasy/kael.png'),
 //       'scifi:kael':   require('../assets/char/scifi/kael.png'),
 // ─────────────────────────────────────────────────────────────
 
