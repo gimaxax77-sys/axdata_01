@@ -21,6 +21,7 @@ import { canClaimAttendance, missionList, claimAllDaily } from '../../system/cor
 import { weeklyEvent, claimWeekly } from '../../system/core/events.mjs';
 import { unreadMailCount, claimAllMail } from '../../system/core/mailbox.mjs';
 import { spendNudges } from '../../system/core/nudges.mjs';
+import { villageTier } from '../../system/core/village.mjs';
 import { fx } from '../feedback';
 import BattleView from './BattleView';
 
@@ -135,6 +136,17 @@ export default function IdleScreen({ state, bump, lastGain, concept, background 
             {curDiff.id !== 'normal' ? <Text style={st.diffBadge}>  {curDiff.emoji}{curDiff.label} ×{curDiff.rewardMult}</Text> : null}
           </Text>
           <Text style={st.zone}>{isOn('elements') ? `${elementMeta(concept, zone.element)?.emoji}${elementMeta(concept, zone.element)?.name} ` : ''}구역 ({zone.start}~{zone.end}층){isOn('elements') ? ` · 다음 ${elementMeta(concept, zone.nextElement)?.emoji}` : ''}</Text>
+          {/* 본진 발전 — 진행할수록 거점이 성장(소유의 만족감). */}
+          {(() => {
+            const vt = villageTier(state.peakStage || state.maxStage || 1);
+            return (
+              <Text style={st.village}>{vt.emoji} 본진: {vt.label}
+                {vt.next
+                  ? <Text style={st.villageDim}>  → {vt.next.label} {Math.round(vt.progress * 100)}%</Text>
+                  : <Text style={st.villageDim}>  · 최종</Text>}
+              </Text>
+            );
+          })()}
         </View>
         {/* 전투(무대 꽉 채움, 바닥 정렬) */}
         <BattleView
@@ -235,7 +247,9 @@ const st = StyleSheet.create({
   stageTint: { position: 'absolute', left: 0, right: 0, top: 0, bottom: 0, borderRadius: 16 },
   stageLabel: { color: T.accent, fontWeight: '800', fontSize: 18, marginBottom: 2, textShadowColor: '#000', textShadowRadius: 5 },
   diffBadge: { color: T.danger, fontSize: 13, fontWeight: '800' },
-  zone: { color: '#d8d0f0', fontSize: 12, marginBottom: 4, fontWeight: '700', textShadowColor: '#000', textShadowRadius: 4 },
+  zone: { color: '#d8d0f0', fontSize: 12, marginBottom: 2, fontWeight: '700', textShadowColor: '#000', textShadowRadius: 4 },
+  village: { color: T.accent, fontSize: 11, fontWeight: '700', textShadowColor: '#000', textShadowRadius: 4 },
+  villageDim: { color: '#c9c0e8', fontSize: 11, fontWeight: '600' },
   diffRow: { flexDirection: 'row', gap: 6 },
   diffCell: { flex: 1, backgroundColor: T.surface2, borderRadius: 10, paddingVertical: 8, alignItems: 'center', borderWidth: 1, borderColor: 'transparent' },
   diffCellOn: { borderColor: T.accent, backgroundColor: T.surface },
