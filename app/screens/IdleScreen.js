@@ -29,6 +29,10 @@ const BATTLE_BGS = [
   require('../../assets/pixel/bg-battle-1.png'),
   require('../../assets/pixel/bg-battle-2.png'),
   require('../../assets/pixel/bg-battle-3.png'),
+  require('../../assets/pixel/bg-battle-4.png'),
+  require('../../assets/pixel/bg-battle-5.png'),
+  require('../../assets/pixel/bg-battle-6.png'),
+  require('../../assets/pixel/bg-battle-7.png'),
 ];
 // 난이도별 색조 오버레이(무대 위에 은은히) — 일반은 없음.
 const DIFF_TINT = {
