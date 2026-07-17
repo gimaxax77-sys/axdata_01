@@ -94,16 +94,21 @@ export default function IdleScreen({ state, bump, lastGain, concept, background 
         })}
       </View>
 
-      {/* 자동 전투 무대 */}
+      {/* 자동 전투 무대 — 던전 배경 위에 파티/적이 바닥에 서서 싸운다.
+          층·구역은 상단 배너(절대)로, 적 정보·시너지는 카드 밖(아래)로 빼서 전투 영역을 비운다. */}
       <Card style={st.stage}>
         {/* 던전 배경(KayKit 렌더) — 콘텐츠 뒤에 절대배치, 둥근 모서리 클립. */}
         <Image source={require('../../assets/pixel/bg-battle.png')} style={st.stageBg} resizeMode="cover" pointerEvents="none" />
         <CodeTag id="a3" corner="tl" />
-        <Text style={st.stageLabel}>
-          {concept.terms.stage} {state.stage}
-          {curDiff.id !== 'normal' ? <Text style={st.diffBadge}>  {curDiff.emoji}{curDiff.label} ×{curDiff.rewardMult}</Text> : null}
-        </Text>
-        <Text style={st.zone}>{elementMeta(concept, zone.element)?.emoji}{elementMeta(concept, zone.element)?.name} 구역 ({zone.start}~{zone.end}층) · 다음 {elementMeta(concept, zone.nextElement)?.emoji}</Text>
+        {/* 상단 배너: 층 + 구역 */}
+        <View style={st.banner} pointerEvents="none">
+          <Text style={st.stageLabel}>
+            {concept.terms.stage} {state.stage}
+            {curDiff.id !== 'normal' ? <Text style={st.diffBadge}>  {curDiff.emoji}{curDiff.label} ×{curDiff.rewardMult}</Text> : null}
+          </Text>
+          <Text style={st.zone}>{elementMeta(concept, zone.element)?.emoji}{elementMeta(concept, zone.element)?.name} 구역 ({zone.start}~{zone.end}층) · 다음 {elementMeta(concept, zone.nextElement)?.emoji}</Text>
+        </View>
+        {/* 전투(무대 꽉 채움, 바닥 정렬) */}
         <BattleView
           party={heroFormation}
           enemyEmoji={elementMeta(concept, stageDef.challenge.element)?.emoji || '👹'}
@@ -111,6 +116,14 @@ export default function IdleScreen({ state, bump, lastGain, concept, background 
           margin={battle.margin}
           reduce={state.settings.reduceMotion || background}
         />
+        {/* 구역 진행 게이지 — 무대 하단(절대) */}
+        <View style={st.zoneBar}>
+          <View style={[st.zoneBarFill, { width: `${pctW(((state.stage - zone.start) / Math.max(1, zone.end - zone.start)) * 100)}%` }]} />
+        </View>
+      </Card>
+
+      {/* 적 정보 + 시너지 — 무대 아래 별도 스트립(전투 영역과 분리). */}
+      <View style={st.stageInfo}>
         <Text style={st.enemy}>적 HP {fmt(stageDef.challenge.hp)} · ATK {fmt(stageDef.challenge.atk)}</Text>
         {(() => {
           const enemyEl = stageDef.challenge.element;
@@ -130,12 +143,7 @@ export default function IdleScreen({ state, bump, lastGain, concept, background 
             {synergy.list.map((s) => <Text key={s.id} style={st.synTag}>✦ {s.label}</Text>)}
           </View>
         )}
-        {/* 구역 진행 게이지 — 현재 구역(start~end)에서 어디쯤인지 한눈에. */}
-        <View style={st.zoneBar}>
-          <CodeTag id="a4" corner="br" />
-          <View style={[st.zoneBarFill, { width: `${pctW(((state.stage - zone.start) / Math.max(1, zone.end - zone.start)) * 100)}%` }]} />
-        </View>
-      </Card>
+      </View>
 
       {/* 핵심 지표 스트립 — 전투력·최고층·초당수입 한 줄(세나키우기식 요약). */}
       <Card style={st.strip}>
@@ -190,12 +198,14 @@ export default function IdleScreen({ state, bump, lastGain, concept, background 
 const st = StyleSheet.create({
   // 스크롤 없이 한 화면에 고정 — 전투무대(stage)가 남는 세로 공간을 흡수.
   wrap: { flex: 1, padding: 12, gap: 8 },
-  stage: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: T.surface2, overflow: 'hidden' },
+  stage: { flex: 1, backgroundColor: T.surface2, overflow: 'hidden', padding: 0 },
+  banner: { position: 'absolute', top: 8, left: 0, right: 0, alignItems: 'center', zIndex: 3 },
+  stageInfo: { alignItems: 'center', gap: 3, paddingTop: 2 },
   // 던전 배경 — 무대(Card) 안쪽에 꽉 채우고 둥근 모서리 클립. 콘텐츠는 위에 렌더.
   stageBg: { position: 'absolute', left: 0, right: 0, top: 0, bottom: 0, width: '100%', height: '100%', borderRadius: 16, opacity: 0.9 },
-  stageLabel: { color: T.accent, fontWeight: '800', fontSize: 18, marginBottom: 2 },
+  stageLabel: { color: T.accent, fontWeight: '800', fontSize: 18, marginBottom: 2, textShadowColor: '#000', textShadowRadius: 5 },
   diffBadge: { color: T.danger, fontSize: 13, fontWeight: '800' },
-  zone: { color: T.muted, fontSize: 12, marginBottom: 4, fontWeight: '600' },
+  zone: { color: '#d8d0f0', fontSize: 12, marginBottom: 4, fontWeight: '700', textShadowColor: '#000', textShadowRadius: 4 },
   diffRow: { flexDirection: 'row', gap: 6 },
   diffCell: { flex: 1, backgroundColor: T.surface2, borderRadius: 10, paddingVertical: 8, alignItems: 'center', borderWidth: 1, borderColor: 'transparent' },
   diffCellOn: { borderColor: T.accent, backgroundColor: T.surface },
@@ -203,9 +213,9 @@ const st = StyleSheet.create({
   diffLabel: { color: T.muted, fontSize: 13, fontWeight: '800' },
   diffLabelOn: { color: T.accent },
   diffSub: { color: T.muted, fontSize: 10, marginTop: 2 },
-  enemy: { color: T.muted, fontSize: 12, marginTop: 8 },
-  affinity: { color: T.text, fontSize: 12, marginTop: 6, fontWeight: '600' },
-  synRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 10, justifyContent: 'center' },
+  enemy: { color: T.muted, fontSize: 12 },
+  affinity: { color: T.text, fontSize: 12, fontWeight: '600' },
+  synRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 4, justifyContent: 'center' },
   synTag: { color: T.accent, fontSize: 11, fontWeight: '800', backgroundColor: T.surface, borderRadius: 8, paddingHorizontal: 8, paddingVertical: 3, overflow: 'hidden' },
   mLabel: { color: T.muted, fontSize: 11, marginBottom: 3 },
   mVal: { color: T.text, fontWeight: '900', fontSize: 20 },
@@ -218,7 +228,7 @@ const st = StyleSheet.create({
   prestigeRow: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 10 },
   hintSm: { color: T.muted, fontSize: 11, marginTop: 2 },
   // 구역 진행 게이지.
-  zoneBar: { alignSelf: 'stretch', height: 5, backgroundColor: T.bg, borderRadius: 3, marginTop: 10, overflow: 'hidden' },
+  zoneBar: { position: 'absolute', left: 12, right: 12, bottom: 8, height: 5, backgroundColor: 'rgba(0,0,0,0.5)', borderRadius: 3, overflow: 'hidden', zIndex: 3 },
   zoneBarFill: { height: 5, backgroundColor: T.accent, borderRadius: 3 },
   // 원탭 전체수령 배너.
   claimRow: { flexDirection: 'row', alignItems: 'center', backgroundColor: T.surface, borderRadius: 12, borderWidth: 1.5, borderColor: T.good, paddingHorizontal: 14, paddingVertical: 10 },

@@ -16,8 +16,8 @@ import SpriteAnim from '../SpriteAnim';
 // ─────────────────────────────────────────────────────────────
 
 const EMPTY_FORMATION = { front: [], mid: [], back: [] };
-const FRONT_SIZE = 96;
-const BACK_SIZE = 76;
+const FRONT_SIZE = 120;
+const BACK_SIZE = 96;
 
 // 스프라이트 파이터 — idle 순환. 토큰 변경 시 해당 1회 모션(attack/hit/walk) 재생 후 idle.
 // 동시 발생 시 소스순(attack→hit→walk) 마지막이 우선(피격이 공격을 끊음 = 자연스러움).
@@ -154,21 +154,22 @@ function BattleView({ party = EMPTY_FORMATION, enemyEmoji = '👹', win = true, 
 export default React.memo(BattleView);
 
 const s = StyleSheet.create({
-  arena: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-around', height: 220, marginVertical: 4 },
-  side: { alignItems: 'center', width: 120 },
-  // 히어로 쪽 — 3열(후열·중열·전열) 편성을 그대로 보여주는 넓은 영역.
-  heroSide: { alignItems: 'center', width: 200 },
-  floatLayer: { position: 'absolute', left: 0, right: 0, bottom: 0, height: 180, zIndex: 5 },
-  formRow: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'center', gap: 2, height: 190 },
-  formCol: { flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-end', gap: 0 },
+  // 무대를 꽉 채우고 파티·적을 바닥선(flex-end)에 세운다(배경 위에 서 있게).
+  arena: { flex: 1, flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-around', paddingHorizontal: 4, paddingBottom: 6 },
+  side: { alignItems: 'center', width: 128, justifyContent: 'flex-end' },
+  // 히어로 쪽 — 3열(후열·중열·전열) 편성. 큰 스프라이트에 맞춰 넓게.
+  heroSide: { alignItems: 'center', width: 224, justifyContent: 'flex-end' },
+  floatLayer: { position: 'absolute', left: 0, right: 0, bottom: 40, height: 180, zIndex: 5 },
+  formRow: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'center', gap: 1 },
+  formCol: { flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-end', gap: -8 },
   formColLunge: { transform: [{ translateX: 8 }] },
-  miniEmoji: { fontSize: 30, opacity: 0.85 },
-  miniEmojiFront: { fontSize: 40 },
+  miniEmoji: { fontSize: 34, opacity: 0.85 },
+  miniEmojiFront: { fontSize: 46 },
   miniImg: { width: BACK_SIZE, height: BACK_SIZE, opacity: 0.92 },
   miniImgFront: { width: FRONT_SIZE, height: FRONT_SIZE },
-  emoji: { fontSize: 72 },
+  emoji: { fontSize: 104 },
   emojiHit: { transform: [{ translateX: 6 }], opacity: 0.55 },
-  clash: { fontSize: 22, opacity: 0.6 },
+  clash: { fontSize: 22, opacity: 0.5, marginBottom: 40 },
   barBg: { width: 110, height: 8, backgroundColor: T.surface, borderRadius: 4, marginTop: 8, overflow: 'hidden' },
   barFill: { height: 8, borderRadius: 4 },
   label: { color: T.muted, fontSize: 12, marginTop: 4, fontWeight: '700' },
