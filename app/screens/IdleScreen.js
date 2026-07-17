@@ -35,6 +35,9 @@ const BATTLE_BGS = [
   require('../../assets/pixel/bg-battle-6.png'),
   require('../../assets/pixel/bg-battle-7.png'),
 ];
+// 적 몬스터 스프라이트 키 — 10층마다 순환(배경과 함께 변화). unitSprites 'enemy:<key>' 등록됨.
+const ENEMY_KEYS = ['skeleton_minion', 'skeleton_warrior', 'werewolf_wolf', 'skeleton_mage', 'skeleton_golem'];
+
 // 난이도별 색조 오버레이(무대 위에 은은히) — 일반은 없음.
 const DIFF_TINT = {
   normal: 'transparent',
@@ -133,6 +136,7 @@ export default function IdleScreen({ state, bump, lastGain, concept, background 
         <BattleView
           party={heroFormation}
           enemyEmoji={elementMeta(concept, stageDef.challenge.element)?.emoji || '👹'}
+          enemyKey={ENEMY_KEYS[Math.floor(state.stage / 10) % ENEMY_KEYS.length]}
           win={battle.win}
           margin={battle.margin}
           reduce={state.settings.reduceMotion || background}

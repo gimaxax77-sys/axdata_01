@@ -40,6 +40,21 @@ function SpriteFighter({ cid, ckey, front, attackToken, hitToken, walkToken }) {
   );
 }
 
+// 적 파이터 — 왼쪽(파티) 향하는 몬스터 스프라이트. idle 순환, 히어로 공격 시 hit 재생.
+// 원본이 이미 왼쪽 방향으로 렌더돼 반전 불필요.
+const ENEMY_SIZE = 132;
+function EnemyFighter({ ekey, hitToken }) {
+  const [st, setSt] = useState('idle');
+  const [tok, setTok] = useState(0);
+  useEffect(() => { if (hitToken > 0) { setSt('hit'); setTok((v) => v + 1); } }, [hitToken]);
+  const spr = unitSprite('enemy', ekey, st) || unitSprite('enemy', ekey, 'idle');
+  const scale = ENEMY_SIZE / spr.frameH;
+  return (
+    <SpriteAnim source={spr.source} frameW={spr.frameW} frameH={spr.frameH} frames={spr.frames}
+      state={st} playToken={tok} scale={scale} onEnd={() => setSt('idle')} />
+  );
+}
+
 // 편성 한 칸 — 스프라이트 > 전신 이미지 > 이모지. slot이 문자열이면 이모지(하위호환).
 function Fighter({ slot, front, attackToken, hitToken, walkToken }) {
   const o = slot && typeof slot === 'object' ? slot : { emoji: slot };
@@ -50,7 +65,7 @@ function Fighter({ slot, front, attackToken, hitToken, walkToken }) {
   return <Text style={front ? s.miniEmojiFront : s.miniEmoji}>{o.emoji}</Text>;
 }
 
-function BattleView({ party = EMPTY_FORMATION, enemyEmoji = '👹', win = true, margin = 1, reduce }) {
+function BattleView({ party = EMPTY_FORMATION, enemyEmoji = '👹', enemyKey = null, win = true, margin = 1, reduce }) {
   const noMotion = reduce !== undefined ? reduce : reducedMotion();
   const enemyHp = useRef(1);
   const heroHp = useRef(1);
@@ -139,7 +154,9 @@ function BattleView({ party = EMPTY_FORMATION, enemyEmoji = '👹', win = true, 
       <Text style={s.clash}>⚔️</Text>
       <View style={s.side}>
         <View style={s.floatLayer}>{renderFloats('enemy')}</View>
-        <Text style={[s.emoji, enemyFlash && s.emojiHit]}>{enemyEmoji}</Text>
+        {enemyKey && hasUnitSprite('enemy', enemyKey)
+          ? <EnemyFighter ekey={enemyKey} hitToken={atk} />
+          : <Text style={[s.emoji, enemyFlash && s.emojiHit]}>{enemyEmoji}</Text>}
         {bar(enemyHp.current, T.danger)}
         <Text style={s.label}>적</Text>
       </View>

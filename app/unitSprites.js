@@ -27,6 +27,11 @@ const SHEETS = {
   'fantasy:mage': { frameW: 128, frameH: 128, frames: 16, idle: require('../assets/units/fantasy/mage/mage_idle.png'), attack: require('../assets/units/fantasy/mage/mage_attack.png'), hit: require('../assets/units/fantasy/mage/mage_hit.png'), walk: require('../assets/units/fantasy/mage/mage_walk.png') },
   'fantasy:necromancer': { frameW: 128, frameH: 128, frames: 16, idle: require('../assets/units/fantasy/necromancer/necromancer_idle.png'), attack: require('../assets/units/fantasy/necromancer/necromancer_attack.png'), hit: require('../assets/units/fantasy/necromancer/necromancer_hit.png'), walk: require('../assets/units/fantasy/necromancer/necromancer_walk.png') },
   'fantasy:skeleton_mage': { frameW: 128, frameH: 128, frames: 16, idle: require('../assets/units/fantasy/skeleton_mage/skeleton_mage_idle.png'), attack: require('../assets/units/fantasy/skeleton_mage/skeleton_mage_attack.png'), hit: require('../assets/units/fantasy/skeleton_mage/skeleton_mage_hit.png'), walk: require('../assets/units/fantasy/skeleton_mage/skeleton_mage_walk.png') },
+  'enemy:skeleton_warrior': { frameW: 128, frameH: 128, frames: 16, idle: require('../assets/units/enemy/skeleton_warrior/skeleton_warrior_idle.png'), hit: require('../assets/units/enemy/skeleton_warrior/skeleton_warrior_hit.png') },
+  'enemy:skeleton_minion': { frameW: 128, frameH: 128, frames: 16, idle: require('../assets/units/enemy/skeleton_minion/skeleton_minion_idle.png'), hit: require('../assets/units/enemy/skeleton_minion/skeleton_minion_hit.png') },
+  'enemy:skeleton_mage': { frameW: 128, frameH: 128, frames: 16, idle: require('../assets/units/enemy/skeleton_mage/skeleton_mage_idle.png'), hit: require('../assets/units/enemy/skeleton_mage/skeleton_mage_hit.png') },
+  'enemy:skeleton_golem': { frameW: 128, frameH: 128, frames: 16, idle: require('../assets/units/enemy/skeleton_golem/skeleton_golem_idle.png'), hit: require('../assets/units/enemy/skeleton_golem/skeleton_golem_hit.png') },
+  'enemy:werewolf_wolf': { frameW: 128, frameH: 128, frames: 16, idle: require('../assets/units/enemy/werewolf_wolf/werewolf_wolf_idle.png'), hit: require('../assets/units/enemy/werewolf_wolf/werewolf_wolf_hit.png') },
 };
 
 // 캐릭터의 특정 상태 스프라이트 조회. 없으면 null(→ 폴백).
