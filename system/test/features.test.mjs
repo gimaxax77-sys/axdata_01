@@ -8,9 +8,9 @@ import { rarityBaseMult } from '../core/seed.mjs';
 import { createUnit } from '../core/units.mjs';
 import { computePower } from '../core/stats.mjs';
 
-test('기본값은 풀 모드(전 플래그 on)', () => {
+test('기본 프리셋 값(등급은 off, 속성은 on)', () => {
   assert.equal(isOn('elements'), true);
-  assert.equal(isOn('rarity'), true);
+  assert.equal(isOn('rarity'), false); // 게임 기본: 등급 미적용
   assert.equal(simplePreset().elements, false);
 });
 
@@ -36,17 +36,17 @@ test('속성 off: 상성 무관(항상 1, 스탯 전용)', () => {
 
 test('등급 on: 전투력 등급 배수 적용', () => {
   FEATURES.rarity = true;
-  assert.ok(rarityBaseMult({ rarity: 'UR' }) > rarityBaseMult({ rarity: 'N' }));
+  try {
+    assert.ok(rarityBaseMult({ rarity: 'UR' }) > rarityBaseMult({ rarity: 'N' }));
+  } finally {
+    FEATURES.rarity = false; // 기본값(off)으로 복구
+  }
 });
 
 test('등급 off: 전투력 등급 무관(항상 1, 스탯 전용)', () => {
-  FEATURES.rarity = false;
-  try {
-    assert.equal(rarityBaseMult({ rarity: 'UR' }), 1.0);
-    assert.equal(rarityBaseMult({ rarity: 'N' }), 1.0);
-  } finally {
-    FEATURES.rarity = true; // 복구
-  }
+  FEATURES.rarity = false; // 기본값과 동일
+  assert.equal(rarityBaseMult({ rarity: 'UR' }), 1.0);
+  assert.equal(rarityBaseMult({ rarity: 'N' }), 1.0);
 });
 
 test('단순 모드: 등급·속성 없는 유닛도 전투력·시너지 정상(크래시 없음)', () => {

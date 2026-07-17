@@ -33,7 +33,7 @@ export const MODULE_META = {
 // 플래그 값 — 컨트롤 판넬이 이 블록의 true/false 만 토글한다(한 줄=한 모듈).
 export const FEATURES = {
   elements: true,
-  rarity: true,
+  rarity: false,
   gacha: true,
   summon: true,
   sigweapon: true,

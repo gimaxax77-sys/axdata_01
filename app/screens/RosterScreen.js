@@ -14,6 +14,7 @@ function rarityText(r) {
   return { backgroundColor: rarityMeta(r).color, color: '#160f28', fontWeight: '900', fontSize: 11, borderRadius: 4, overflow: 'hidden' };
 }
 import { Card, Btn, fmt, MultiToggle, multLabel, repeat, Portrait, StarBadge, PowerBadge, pctW } from '../components';
+import { isOn } from '../../system/core/features.mjs';
 import { CodeTag } from '../uicode';
 
 // 후보를 임시 장착했을 때의 실제 전투력 — 피커의 "변경 전후 비교"용.
@@ -540,7 +541,7 @@ export default function RosterScreen({ state, bump, concept }) {
               <View style={g.nameWrap}>
                 <CodeTag id="b2" corner="tl" />
                 <Text style={g.headName} numberOfLines={1}>{meta.name}</Text>
-                {unit.rarity ? (
+                {isOn('rarity') && unit.rarity ? (
                   <View style={[g.rarPill, { backgroundColor: rarityMeta(unit.rarity).color }]}>
                     <Text style={g.rarPillText}>{unit.rarity}</Text>
                   </View>
@@ -783,7 +784,7 @@ export default function RosterScreen({ state, bump, concept }) {
         const STAT_KO = { atk: '공격', hp: '체력', def: '방어', spd: '속도' };
         return (
           <Card style={{ marginTop: 8, borderColor: sp.fullyUnlocked ? T.good : T.line }}>
-            <Text style={g.slotDesc}>{unit.rarity || '?'}등급 · 완전 발현 시 전 스탯 최대 +{Math.round(sp.full * 100)}%. 낮은 등급일수록 보정이 크지만, 완전 발현해도 최고등급을 살짝 넘지 못합니다.</Text>
+            <Text style={g.slotDesc}>{isOn('rarity') ? `${unit.rarity || '?'}등급 · ` : ''}완전 발현 시 전 스탯 최대 +{Math.round(sp.full * 100)}%.{isOn('rarity') ? ' 낮은 등급일수록 보정이 크지만, 완전 발현해도 최고등급을 살짝 넘지 못합니다.' : ''}</Text>
             <View style={{ height: 8 }} />
             {conds.map((c) => (
               <View key={c.id} style={[g.seedRow, c.met && g.seedRowMet]}>

@@ -8,6 +8,7 @@ import { collectUnitModifiers } from '../core/modifiers.mjs';
 import { equipSkill, enhanceNode } from '../core/character.mjs';
 import { craftGear, equipGear } from '../core/gear.mjs';
 import { intimacyLevel, intimacyBonus, giveGift, giftCost, INTIMACY_MAX } from '../core/intimacy.mjs';
+import { FEATURES } from '../core/features.mjs';
 import { idleGenre } from '../genres/idle.mjs';
 
 test('elements: 상성 순환(가위바위보) + 빛↔어둠', () => {
@@ -107,19 +108,24 @@ test('강화가 실제 수치에 반영: 스킬 레벨·장비 강화 스케일'
 // 정렬 불변식(등급이 지배 + 딜러가 동급 투자 탱커에 안 밀림)을 명시적으로 잠근다.
 test('전투력 정렬 불변식: SSR 딜러 > 동급 투자 SR 탱커', async () => {
   const { computePower } = await import('../core/stats.mjs');
-  const opt = { level: 200, rank: 5 };
-  const dealer = createUnit('STRIKER', opt); dealer.rarity = 'SSR'; // 카엘류 SSR 딜러
-  const tank = createUnit('VANGUARD', opt); tank.rarity = 'SR';     // SR 탱커
-  assert.ok(
-    computePower(dealer) > computePower(tank),
-    `SSR 딜러(${computePower(dealer)}) 표시 전투력이 SR 탱커(${computePower(tank)})보다 높아야 함`,
-  );
-  // 같은 원형이라도 등급이 지배: SSR > SR (동일 레벨·랭크)
-  const srDealer = createUnit('STRIKER', opt); srDealer.rarity = 'SR';
-  assert.ok(computePower(dealer) > computePower(srDealer), '동일 원형 SSR > SR');
-  // HP가 큰 탱커라도 등급이 낮으면 SSR 딜러를 못 넘는다(HP 과대가중 재발 감지).
-  const srTankMax = createUnit('VANGUARD', { level: 200, rank: 5 }); srTankMax.rarity = 'SR';
-  assert.ok(computePower(dealer) > computePower(srTankMax), 'SSR 딜러 > 만렙 SR 탱커');
+  FEATURES.rarity = true; // 등급 지배 불변식 검증 → 등급 켬
+  try {
+    const opt = { level: 200, rank: 5 };
+    const dealer = createUnit('STRIKER', opt); dealer.rarity = 'SSR'; // 카엘류 SSR 딜러
+    const tank = createUnit('VANGUARD', opt); tank.rarity = 'SR';     // SR 탱커
+    assert.ok(
+      computePower(dealer) > computePower(tank),
+      `SSR 딜러(${computePower(dealer)}) 표시 전투력이 SR 탱커(${computePower(tank)})보다 높아야 함`,
+    );
+    // 같은 원형이라도 등급이 지배: SSR > SR (동일 레벨·랭크)
+    const srDealer = createUnit('STRIKER', opt); srDealer.rarity = 'SR';
+    assert.ok(computePower(dealer) > computePower(srDealer), '동일 원형 SSR > SR');
+    // HP가 큰 탱커라도 등급이 낮으면 SSR 딜러를 못 넘는다(HP 과대가중 재발 감지).
+    const srTankMax = createUnit('VANGUARD', { level: 200, rank: 5 }); srTankMax.rarity = 'SR';
+    assert.ok(computePower(dealer) > computePower(srTankMax), 'SSR 딜러 > 만렙 SR 탱커');
+  } finally {
+    FEATURES.rarity = false; // 기본값(off) 복구
+  }
 });
 
 test('받는 피해 감소(dmgReduce): 생존 여유↑', async () => {

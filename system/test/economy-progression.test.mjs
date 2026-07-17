@@ -5,6 +5,7 @@ import { getStage } from '../core/progression.mjs';
 import { createUnit } from '../core/units.mjs';
 import { computeStats, computePower } from '../core/stats.mjs';
 import { RARITY_BASE_MULT } from '../core/seed.mjs';
+import { FEATURES } from '../core/features.mjs';
 import { isUnlocked, unlockStage, UNLOCKS } from '../core/unlocks.mjs';
 
 test('economy: earn 누적, spend 성공/실패 원자성', () => {
@@ -38,11 +39,16 @@ test('stats: 레벨/랭크가 스탯을 올린다', () => {
 });
 
 test('stats: 등급 기본 배수 — 등급 없으면 1.0(하위호환)', () => {
-  const plain = createUnit('STRIKER', { level: 10, rank: 2 });
-  const ssr = createUnit('STRIKER', { level: 10, rank: 2 }); ssr.rarity = 'SSR';
-  const pp = computePower(plain), sp = computePower(ssr);
-  // SSR은 RARITY_BASE_MULT.SSR 배 강함
-  assert.ok(Math.abs(sp / pp - RARITY_BASE_MULT.SSR) < 0.02, `SSR/plain ≈ ${RARITY_BASE_MULT.SSR}`);
+  FEATURES.rarity = true; // 등급 배수 검증이므로 명시적으로 켬
+  try {
+    const plain = createUnit('STRIKER', { level: 10, rank: 2 });
+    const ssr = createUnit('STRIKER', { level: 10, rank: 2 }); ssr.rarity = 'SSR';
+    const pp = computePower(plain), sp = computePower(ssr);
+    // SSR은 RARITY_BASE_MULT.SSR 배 강함
+    assert.ok(Math.abs(sp / pp - RARITY_BASE_MULT.SSR) < 0.02, `SSR/plain ≈ ${RARITY_BASE_MULT.SSR}`);
+  } finally {
+    FEATURES.rarity = false; // 기본값(off) 복구
+  }
 });
 
 test('unlocks: peakStage 게이팅', () => {

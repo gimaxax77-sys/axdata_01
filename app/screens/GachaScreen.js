@@ -17,6 +17,7 @@ import { RUNE_SETS } from '../../system/core/runes.mjs';
 import { identity } from '../../system/concepts/index.mjs';
 import { recordMission } from '../../system/core/daily.mjs';
 import { isUnlocked, unlockStage } from '../../system/core/unlocks.mjs';
+import { isOn } from '../../system/core/features.mjs';
 import { LockedPanel } from '../components';
 import {
   recordSummon, summonMasteryInfo, claimSummonLevel,
@@ -28,7 +29,8 @@ const SLOT_EMOJI = { weapon: '⚔️', armor: '🛡️', accessory: '💍' };
 
 // 소환 결과 한 칸 — 등장 시 페이드+스케일 (등급 높을수록 늦게=강조).
 const RevealCell = React.memo(function RevealCell({ index, rarity, emoji, image, name, skip }) {
-  const rm = rarityMeta(rarity);
+  const showRarity = isOn('rarity');
+  const rm = rarityMeta(showRarity ? rarity : 'N');
   const instant = skip || reducedMotion();
   const a = useRef(new Animated.Value(instant ? 1 : 0)).current;
   useEffect(() => {
@@ -38,8 +40,8 @@ const RevealCell = React.memo(function RevealCell({ index, rarity, emoji, image,
   }, []);
   return (
     <Animated.View style={{ opacity: a, transform: [{ scale: a.interpolate({ inputRange: [0, 1], outputRange: [0.6, 1] }) }] }}>
-      <View style={[s.cell, { borderColor: rm.color }]}>
-        <Text style={[s.cellRarity, { color: rm.color }]}>{rm.label}</Text>
+      <View style={[s.cell, { borderColor: showRarity ? rm.color : T.line }]}>
+        {showRarity ? <Text style={[s.cellRarity, { color: rm.color }]}>{rm.label}</Text> : null}
         <Portrait emoji={emoji} image={image} rarity={rarity} size={52} badge />
         <Text style={s.cellName} numberOfLines={1}>{name}</Text>
       </View>
@@ -61,8 +63,8 @@ export default function GachaScreen({ state, bump, concept }) {
   const BANNERS = {
     hero: {
       label: '영웅', icon: '🦸', curr: 'summon', cost: PULL_COST.summon, multi: true,
-      sub: '확률: N 50 · R 33 · SR 14 · SSR 2.5 · UR 0.5 (%)',
-      note: '10연차 이상 최소 1개 SR 이상 보장',
+      sub: isOn('rarity') ? '확률: N 50 · R 33 · SR 14 · SSR 2.5 · UR 0.5 (%)' : '영웅을 뽑아 로스터를 모으세요',
+      note: isOn('rarity') ? '10연차 이상 최소 1개 SR 이상 보장' : '',
     },
     gear: {
       label: '장비', icon: '⚔️', curr: 'gem', cost: GEAR_PULL_COST.gem, multi: true,

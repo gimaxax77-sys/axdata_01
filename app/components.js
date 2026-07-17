@@ -4,17 +4,21 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { T, rarityMeta, SPACE } from './theme';
 import { fx } from './feedback';
 import { reducedMotion } from './motion';
+import { isOn } from '../system/core/features.mjs';
 
 // ── 캐릭터 초상 — 등급 프레임 + 글로우. 로스터/파티/소환/도감 공용 ──
 //   image(있으면): 캐릭터 일러스트를 프레임 안에 렌더. 없으면 emoji 폴백.
 //   React.memo — 방치 틱(초당 리렌더)에서 그라데이션 재계산을 건너뛴다.
 export const Portrait = React.memo(function Portrait({ emoji, image = null, rarity = 'N', size = 56, badge = false, glow = true, dim = false, style }) {
-  const rm = rarityMeta(rarity);
+  // 등급 모듈 off면 등급 무관(중립 'N' 프레임 · 글로우/배지 없음).
+  const showRarity = isOn('rarity');
+  const effRarity = showRarity ? rarity : 'N';
+  const rm = rarityMeta(effRarity);
   const radius = size * 0.26;
   const ring = Math.max(2, size * 0.045);
   const innerR = radius - ring;
   return (
-    <View style={[glow && { shadowColor: rm.color, shadowOpacity: rarity === 'N' ? 0 : 0.9, shadowRadius: size * 0.16, shadowOffset: { width: 0, height: 0 } }, style]}>
+    <View style={[glow && { shadowColor: rm.color, shadowOpacity: effRarity === 'N' ? 0 : 0.9, shadowRadius: size * 0.16, shadowOffset: { width: 0, height: 0 } }, style]}>
       <LinearGradient colors={rm.grad} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
         style={{ width: size, height: size, borderRadius: radius, padding: ring, alignItems: 'center', justifyContent: 'center' }}>
         <LinearGradient colors={[T.surface2, T.surface]} style={{ width: '100%', height: '100%', borderRadius: innerR, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
@@ -23,7 +27,7 @@ export const Portrait = React.memo(function Portrait({ emoji, image = null, rari
             : <Text style={{ fontSize: size * 0.5, opacity: dim ? 0.4 : 1 }}>{emoji}</Text>}
         </LinearGradient>
       </LinearGradient>
-      {badge && (
+      {badge && showRarity && (
         // 등급 배지 — 초상 크기에 비례해 렌더(화면마다 초상 크기가 달라도
         // 배지 비율은 일관). 등급 글자수(N~SSR)와 무관하게 동일 규격.
         <View style={{
