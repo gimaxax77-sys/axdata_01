@@ -2,6 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
 import { T } from '../theme';
 import { Card, Btn, fmt, pctW } from '../components';
+import { isOn } from '../../system/core/features.mjs';
 import { CodeTag } from '../uicode';
 import { effectivePower, powerMultOf } from '../useGame';
 import { idleGenre } from '../../system/genres/idle.mjs';
@@ -126,7 +127,7 @@ export default function IdleScreen({ state, bump, lastGain, concept, background 
             {concept.terms.stage} {state.stage}
             {curDiff.id !== 'normal' ? <Text style={st.diffBadge}>  {curDiff.emoji}{curDiff.label} ×{curDiff.rewardMult}</Text> : null}
           </Text>
-          <Text style={st.zone}>{elementMeta(concept, zone.element)?.emoji}{elementMeta(concept, zone.element)?.name} 구역 ({zone.start}~{zone.end}층) · 다음 {elementMeta(concept, zone.nextElement)?.emoji}</Text>
+          <Text style={st.zone}>{isOn('elements') ? `${elementMeta(concept, zone.element)?.emoji}${elementMeta(concept, zone.element)?.name} ` : ''}구역 ({zone.start}~{zone.end}층){isOn('elements') ? ` · 다음 ${elementMeta(concept, zone.nextElement)?.emoji}` : ''}</Text>
         </View>
         {/* 전투(무대 꽉 채움, 바닥 정렬) */}
         <BattleView
@@ -145,7 +146,7 @@ export default function IdleScreen({ state, bump, lastGain, concept, background 
       {/* 적 정보 + 시너지 — 무대 아래 별도 스트립(전투 영역과 분리). */}
       <View style={st.stageInfo}>
         <Text style={st.enemy}>적 HP {fmt(stageDef.challenge.hp)} · ATK {fmt(stageDef.challenge.atk)}</Text>
-        {(() => {
+        {isOn('elements') && (() => {
           const enemyEl = stageDef.challenge.element;
           const em = elementMeta(concept, enemyEl);
           const lm = lead && lead.element ? elementMeta(concept, lead.element) : null;

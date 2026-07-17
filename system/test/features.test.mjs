@@ -8,30 +8,30 @@ import { rarityBaseMult } from '../core/seed.mjs';
 import { createUnit } from '../core/units.mjs';
 import { computePower } from '../core/stats.mjs';
 
-test('기본 프리셋 값(등급은 off, 속성은 on)', () => {
-  assert.equal(isOn('elements'), true);
+test('기본 프리셋 값(등급·속성 모두 off)', () => {
+  assert.equal(isOn('elements'), false); // 게임 기본: 속성 미적용
   assert.equal(isOn('rarity'), false); // 게임 기본: 등급 미적용
   assert.equal(simplePreset().elements, false);
 });
 
 test('속성 on: 상성이 적용된다(FIRE>WOOD 유리)', () => {
   FEATURES.elements = true;
-  assert.ok(affinity('FIRE', 'WOOD') > 1);
-  assert.ok(affinity('WOOD', 'FIRE') < 1);
+  try {
+    assert.ok(affinity('FIRE', 'WOOD') > 1);
+    assert.ok(affinity('WOOD', 'FIRE') < 1);
+  } finally {
+    FEATURES.elements = false; // 기본값(off) 복구
+  }
 });
 
 test('속성 off: 상성 무관(항상 1, 스탯 전용)', () => {
-  FEATURES.elements = false;
-  try {
-    assert.equal(affinity('FIRE', 'WOOD'), 1);
-    assert.equal(affinity('LIGHT', 'DARK'), 1);
-    // 동일 속성 3인 파티 — off면 속성 결속이 안 붙는다
-    const units = [{ archetype: 'STRIKER', element: 'FIRE' }, { archetype: 'MAGE', element: 'FIRE' }, { archetype: 'SUPPORT', element: 'FIRE' }];
-    const syn = teamSynergy(units);
-    assert.ok(!syn.list.some((s) => s.id === 'elem_bond'), '속성 off면 속성 결속 없음');
-  } finally {
-    FEATURES.elements = true; // 다른 테스트 영향 없게 복구
-  }
+  FEATURES.elements = false; // 기본값과 동일
+  assert.equal(affinity('FIRE', 'WOOD'), 1);
+  assert.equal(affinity('LIGHT', 'DARK'), 1);
+  // 동일 속성 3인 파티 — off면 속성 결속이 안 붙는다
+  const units = [{ archetype: 'STRIKER', element: 'FIRE' }, { archetype: 'MAGE', element: 'FIRE' }, { archetype: 'SUPPORT', element: 'FIRE' }];
+  const syn = teamSynergy(units);
+  assert.ok(!syn.list.some((s) => s.id === 'elem_bond'), '속성 off면 속성 결속 없음');
 });
 
 test('등급 on: 전투력 등급 배수 적용', () => {

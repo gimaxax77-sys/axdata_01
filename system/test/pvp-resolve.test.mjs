@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { createUnit } from '../core/units.mjs';
 import { resolvePvP } from '../core/resolution.mjs';
 import { createGear, equipGear } from '../core/gear.mjs';
+import { FEATURES } from '../core/features.mjs';
 
 function party(n, { level = 40, rank = 4, rarity = 'SSR', element = null, arch = 'STRIKER' } = {}) {
   const arr = [];
@@ -41,12 +42,17 @@ test('PvP: 계정 파워 배수 반영', () => {
 });
 
 test('PvP: 속성 상성 반영(대표 속성)', () => {
-  // 공격 WATER vs 방어 FIRE → 유리(상성 1.3)
-  const water = party(3, { element: 'WATER' });
-  const fire = party(3, { element: 'FIRE' });
-  const adv = resolvePvP(water, fire).margin;
-  const neutral = resolvePvP(party(3, { element: 'LIGHT' }), fire).margin;
-  assert.ok(adv > neutral, '상성 유리 시 여유↑');
+  FEATURES.elements = true; // 상성 검증 → 속성 명시적으로 켬
+  try {
+    // 공격 WATER vs 방어 FIRE → 유리(상성 1.3)
+    const water = party(3, { element: 'WATER' });
+    const fire = party(3, { element: 'FIRE' });
+    const adv = resolvePvP(water, fire).margin;
+    const neutral = resolvePvP(party(3, { element: 'LIGHT' }), fire).margin;
+    assert.ok(adv > neutral, '상성 유리 시 여유↑');
+  } finally {
+    FEATURES.elements = false; // 기본값(off) 복구
+  }
 });
 
 test('PvP: 방어 유리(강한 방어팀)면 방어 성공', () => {

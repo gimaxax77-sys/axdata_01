@@ -202,7 +202,7 @@ export default function ContentScreen({ state, bump, concept }) {
           <Text style={c.storyText}>{nextCh.story}</Text>
           <View style={c.bossRow}>
             <Text style={c.bossInfo}>
-              보스 {elementMeta(concept, nextCh.boss.element)?.emoji} · HP {fmt(nextCh.boss.hp)} · ATK {fmt(nextCh.boss.atk)}
+              보스 {isOn('elements') ? `${elementMeta(concept, nextCh.boss.element)?.emoji} · ` : ''}HP {fmt(nextCh.boss.hp)} · ATK {fmt(nextCh.boss.atk)}
             </Text>
             <Text style={c.bossReward}>보상 {concept.resources.gem.emoji}{nextCh.reward.gem} {concept.resources.summon.emoji}{nextCh.reward.summon}</Text>
           </View>

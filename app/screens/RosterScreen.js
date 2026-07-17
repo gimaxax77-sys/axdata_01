@@ -1144,9 +1144,9 @@ function PickerModal({ picker, unit, state, onClose, onChange, concept }) {
             <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap' }}>
               <Btn small kind="gold" label={`강화 ${multLabel(emult)} (${fmt(gearEnhanceCost(item.level).currency)})`} onPress={() => applyN(() => enhanceGear(state, item.uid))} />
               {(item.subs || []).length > 0 && <Btn small kind="primary" label="재련 💎20" onPress={() => apply(() => rerollGearSubs(state, item.uid))} />}
-              <Btn small kind="gold" disabled={materialCount(state, 'elemEssence') < ELEM_OPTION_COST || (item.subs || []).length >= GEAR_SUB_MAX}
+              {isOn('elements') && <Btn small kind="gold" disabled={materialCount(state, 'elemEssence') < ELEM_OPTION_COST || (item.subs || []).length >= GEAR_SUB_MAX}
                 label={`속성 부여 ${MATERIAL_META.elemEssence.emoji}${ELEM_OPTION_COST}`}
-                onPress={() => apply(() => { const r = grantGearElementOption(state, item.uid); setDmsg(r.ok ? `${MATERIAL_META.elemEssence.emoji} 속성옵션 부여 (부옵션 ${r.subs.length})` : (r.reason || '실패')); })} />
+                onPress={() => apply(() => { const r = grantGearElementOption(state, item.uid); setDmsg(r.ok ? `${MATERIAL_META.elemEssence.emoji} 속성옵션 부여 (부옵션 ${r.subs.length})` : (r.reason || '실패')); })} />}
               {(() => {
                 const en = enchantInfo(item);
                 const lv = en ? en.level : 0;

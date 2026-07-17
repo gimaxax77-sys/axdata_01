@@ -12,16 +12,21 @@ import { FEATURES } from '../core/features.mjs';
 import { idleGenre } from '../genres/idle.mjs';
 
 test('elements: 상성 순환(가위바위보) + 빛↔어둠', () => {
-  assert.equal(affinity('FIRE', 'WOOD'), 1.3, 'FIRE>WOOD 유리');
-  assert.equal(affinity('WOOD', 'FIRE'), 0.8, '역은 불리');
-  assert.equal(affinity('WATER', 'FIRE'), 1.3, 'WATER>FIRE');
-  assert.equal(affinity('LIGHT', 'DARK'), 1.3);
-  assert.equal(affinity('DARK', 'LIGHT'), 1.3, '빛·어둠 상호 유리');
-  assert.equal(affinity('FIRE', 'LIGHT'), 1, '무관');
-  assert.equal(affinity(null, 'FIRE'), 1, '속성 없으면 무관');
-  assert.equal(affinityLabel('FIRE', 'WOOD'), '유리');
-  assert.equal(affinityLabel('WOOD', 'FIRE'), '불리');
-  assert.equal(affinityLabel('FIRE', 'DARK'), '무관');
+  FEATURES.elements = true; // 상성 검증 → 속성 명시적으로 켬
+  try {
+    assert.equal(affinity('FIRE', 'WOOD'), 1.3, 'FIRE>WOOD 유리');
+    assert.equal(affinity('WOOD', 'FIRE'), 0.8, '역은 불리');
+    assert.equal(affinity('WATER', 'FIRE'), 1.3, 'WATER>FIRE');
+    assert.equal(affinity('LIGHT', 'DARK'), 1.3);
+    assert.equal(affinity('DARK', 'LIGHT'), 1.3, '빛·어둠 상호 유리');
+    assert.equal(affinity('FIRE', 'LIGHT'), 1, '무관');
+    assert.equal(affinity(null, 'FIRE'), 1, '속성 없으면 무관');
+    assert.equal(affinityLabel('FIRE', 'WOOD'), '유리');
+    assert.equal(affinityLabel('WOOD', 'FIRE'), '불리');
+    assert.equal(affinityLabel('FIRE', 'DARK'), '무관');
+  } finally {
+    FEATURES.elements = false; // 기본값(off) 복구
+  }
 });
 
 test('modifiers: 스킬·각인·장비가 합산된다', () => {
