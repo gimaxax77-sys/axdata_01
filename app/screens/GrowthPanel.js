@@ -12,6 +12,7 @@ import { PETS, petSummon, equipPet, unequipPet, petEffectLabel, MAX_ACTIVE_PETS,
   petShardSummon, SHARD_SUMMON_COST, autoFusePets } from '../../system/core/pets.mjs';
 import { MATERIAL_META, SHARD_META, materialCount } from '../../system/core/materials.mjs';
 import { isUnlocked, unlockStage } from '../../system/core/unlocks.mjs';
+import { isOn } from '../../system/core/features.mjs';
 
 // 등급 인라인 배지.
 function rarityText(r) {
@@ -19,14 +20,16 @@ function rarityText(r) {
 }
 
 // 아이콘 타일 — 이모지 + 레벨 + 등급(+ 장착중 ✅). 탭하면 상세 팝업.
+// 등급 모듈 off면 등급 테두리·라벨 숨김.
 function Tile({ emoji, rarity, level, active, onPress, label }) {
+  const showR = rarity && isOn('rarity');
   return (
-    <TouchableOpacity onPress={onPress} style={[c.tile, rarity && { borderColor: rarityMeta(rarity).color }]} activeOpacity={0.8}
+    <TouchableOpacity onPress={onPress} style={[c.tile, showR && { borderColor: rarityMeta(rarity).color }]} activeOpacity={0.8}
       accessibilityRole="button" accessibilityLabel={`${label || ''}${level != null ? ` 레벨 ${level}` : ''}${active ? ' 장착중' : ''}`}>
       {active ? <Text style={c.tileActive}>✅</Text> : null}
       <Text style={c.tileEmoji}>{emoji}</Text>
       {level != null ? <Text style={c.tileLv}>Lv.{level}</Text> : null}
-      {rarity ? <Text style={rarityText(rarity)}> {rarity} </Text> : null}
+      {showR ? <Text style={rarityText(rarity)}> {rarity} </Text> : null}
     </TouchableOpacity>
   );
 }
@@ -236,7 +239,7 @@ export default function GrowthPanel({ state, bump, concept }) {
               <View style={c.mHead}>
                 <Text style={c.mEmoji}>{info.emoji}</Text>
                 <View style={{ flex: 1 }}>
-                  <Text style={c.mName}>{info.name} <Text style={rarityText(info.rarity)}> {info.rarity} </Text></Text>
+                  <Text style={c.mName}>{info.name}{isOn('rarity') && info.rarity ? <Text style={rarityText(info.rarity)}> {info.rarity} </Text> : null}</Text>
                   <Text style={c.mSub}>{info.sub}</Text>
                 </View>
               </View>

@@ -19,6 +19,7 @@ import { isUnlocked, unlockStage } from '../../system/core/unlocks.mjs';
 import { campaignChapters, fightChapter, CAMPAIGN_CHAPTER_COUNT, storyLog } from '../../system/core/campaign.mjs';
 import { elementMeta } from '../../system/concepts/index.mjs';
 import { weeklyEvent, claimWeekly } from '../../system/core/events.mjs';
+import { isOn } from '../../system/core/features.mjs';
 import { seasonInfo, seasonChallenge, SEASON_FLOORS } from '../../system/core/season.mjs';
 
 function rewardText(concept, reward) {
@@ -70,8 +71,8 @@ export default function ContentScreen({ state, bump, concept }) {
       return r;
     }, mult);
     if (!last) { setDropMsg(null); bump(); return; }
-    if (last.kind === 'gear') setDropMsg(`⚔️ 장비 ${count}개 · 최근 [${(GEAR_RARITY[last.rarity] || {}).label || last.rarity}] ${GEAR_CATALOG[last.item.blueprint].label}`);
-    else if (last.kind === 'rune') setDropMsg(`🔷 룬 ${count}개 · 최근 [${last.rarity}]`);
+    if (last.kind === 'gear') setDropMsg(`⚔️ 장비 ${count}개 · 최근 ${isOn('rarity') ? `[${(GEAR_RARITY[last.rarity] || {}).label || last.rarity}] ` : ''}${GEAR_CATALOG[last.item.blueprint].label}`);
+    else if (last.kind === 'rune') setDropMsg(`🔷 룬 ${count}개${isOn('rarity') ? ` · 최근 [${last.rarity}]` : ''}`);
     else if (last.kind === 'weekday') setDropMsg(`📅 장비 ${count}개 + 🎟️소환석 ${sm}`);
     else if (last.kind === 'element') setDropMsg(`🔷 속성정수 +${ess}`);
     else if (last.kind === 'petshard') setDropMsg(`🧩 펫조각 ${Object.entries(shards).map(([g, n]) => `${g} ${n}`).join(' · ')}`);

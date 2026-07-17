@@ -7,10 +7,12 @@ import MetaScreen from './MetaScreen';
 
 // 등급 순위(정렬용) — 인벤토리 상위 우선.
 const RARITY_RANK = { N: 0, R: 1, SR: 2, SSR: 3, UR: 4 };
-function rarityColor(r) { return rarityMeta(r).color; }
+// 등급 모듈 off면 등급 테두리는 중립색, 등급 라벨은 숨김(display:none).
+function rarityColor(r) { return isOn('rarity') ? rarityMeta(r).color : T.line; }
 // 등급 인라인 배지 스타일 — 다크 배경의 색텍스트는 대비가 약해, 등급색 배경 +
 // 어두운 글자로 시인성을 확보한다(Text 중첩 유지, 레이아웃 영향 없음).
 function rarityText(r) {
+  if (!isOn('rarity')) return { display: 'none' };
   return { backgroundColor: rarityMeta(r).color, color: '#160f28', fontWeight: '900', fontSize: 11, borderRadius: 4, overflow: 'hidden' };
 }
 import { Card, Btn, fmt, MultiToggle, multLabel, repeat, Portrait, StarBadge, PowerBadge, pctW } from '../components';
