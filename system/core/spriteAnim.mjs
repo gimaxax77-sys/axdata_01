@@ -36,6 +36,7 @@ export const SPRITE_STATES = {
   idle: { loop: true, fps: 20 },
   attack: { loop: false, fps: 28 },
   hit: { loop: false, fps: 24 },
+  walk: { loop: false, fps: 20 }, // 한 걸음 사이클 1회(웨이브 전진 연출)
   death: { loop: false, fps: 20 },
   spawn: { loop: false, fps: 24 },
 };

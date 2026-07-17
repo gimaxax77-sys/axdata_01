@@ -19,28 +19,32 @@ const EMPTY_FORMATION = { front: [], mid: [], back: [] };
 const FRONT_SIZE = 96;
 const BACK_SIZE = 76;
 
-// 스프라이트 파이터 — idle 순환, attackToken 변경 시 attack 1회 재생 후 idle 복귀.
+// 스프라이트 파이터 — idle 순환. 토큰 변경 시 해당 1회 모션(attack/hit/walk) 재생 후 idle.
+// 동시 발생 시 소스순(attack→hit→walk) 마지막이 우선(피격이 공격을 끊음 = 자연스러움).
 // 원본 스프라이트가 오른쪽(적 방향)을 향하므로 반전 없이 그대로 렌더한다.
-function SpriteFighter({ cid, ckey, front, attackToken }) {
+function SpriteFighter({ cid, ckey, front, attackToken, hitToken, walkToken }) {
   const [st, setSt] = useState('idle');
-  useEffect(() => { if (attackToken > 0) setSt('attack'); }, [attackToken]);
+  const [tok, setTok] = useState(0);
+  useEffect(() => { if (attackToken > 0) { setSt('attack'); setTok((v) => v + 1); } }, [attackToken]);
+  useEffect(() => { if (hitToken > 0) { setSt('hit'); setTok((v) => v + 1); } }, [hitToken]);
+  useEffect(() => { if (walkToken > 0) { setSt('walk'); setTok((v) => v + 1); } }, [walkToken]);
   const spr = unitSprite(cid, ckey, st) || unitSprite(cid, ckey, 'idle');
   const size = front ? FRONT_SIZE : BACK_SIZE;
   const scale = size / spr.frameH;
   return (
     <SpriteAnim
       source={spr.source} frameW={spr.frameW} frameH={spr.frameH} frames={spr.frames}
-      state={st} playToken={attackToken} scale={scale}
+      state={st} playToken={tok} scale={scale}
       onEnd={() => setSt('idle')}
     />
   );
 }
 
 // 편성 한 칸 — 스프라이트 > 전신 이미지 > 이모지. slot이 문자열이면 이모지(하위호환).
-function Fighter({ slot, front, attackToken }) {
+function Fighter({ slot, front, attackToken, hitToken, walkToken }) {
   const o = slot && typeof slot === 'object' ? slot : { emoji: slot };
   if (o.cid && o.key && hasUnitSprite(o.cid, o.key)) {
-    return <SpriteFighter cid={o.cid} ckey={o.key} front={front} attackToken={attackToken} />;
+    return <SpriteFighter cid={o.cid} ckey={o.key} front={front} attackToken={attackToken} hitToken={hitToken} walkToken={walkToken} />;
   }
   if (o.img) return <Image source={o.img} style={front ? s.miniImgFront : s.miniImg} resizeMode="contain" />;
   return <Text style={front ? s.miniEmojiFront : s.miniEmoji}>{o.emoji}</Text>;
@@ -53,6 +57,8 @@ function BattleView({ party = EMPTY_FORMATION, enemyEmoji = '👹', win = true, 
   const [, force] = useState(0);
   const [lunge, setLunge] = useState(false);
   const [atk, setAtk] = useState(0);           // 공격 재생 트리거(스프라이트)
+  const [hitTok, setHitTok] = useState(0);     // 피격 재생 트리거
+  const [walkTok, setWalkTok] = useState(0);   // 웨이브 전진(걷기) 트리거
   const [enemyFlash, setEnemyFlash] = useState(false);
   const floats = useRef([]);
   const fid = useRef(0);
@@ -78,12 +84,14 @@ function BattleView({ party = EMPTY_FORMATION, enemyEmoji = '👹', win = true, 
         if (enemyHp.current <= 0) {
           pushFloat('처치!', 'enemy', true, true);
           enemyHp.current = 1; // 다음 웨이브
+          setWalkTok((w) => w + 1); // 처치 → 다음 웨이브로 전진(걷기 1회)
         }
       }
-      // 적 반격 (~0.72s)
+      // 적 반격 (~0.72s) — 파티 피격 모션
       if (t % 6 === 0) {
         pushFloat(Math.round(heroDmg * 3000 * (0.85 + Math.random() * 0.3)), 'hero', false);
         heroHp.current = Math.max(win ? 0.35 : 0.12, heroHp.current - heroDmg);
+        setHitTok((h) => h + 1);
       }
       // 히어로 자연 회복
       heroHp.current = Math.min(1, heroHp.current + 0.012);
@@ -119,13 +127,13 @@ function BattleView({ party = EMPTY_FORMATION, enemyEmoji = '👹', win = true, 
         {/* 편성 그대로: 후열 → 중열 → 전열(적과 가장 가까움) 3열. */}
         <View style={s.formRow}>
           <View style={s.formCol}>
-            {party.back.map((e, i) => <Fighter key={'b' + i} slot={e} front={false} attackToken={atk} />)}
+            {party.back.map((e, i) => <Fighter key={'b' + i} slot={e} front={false} attackToken={atk} hitToken={hitTok} walkToken={walkTok} />)}
           </View>
           <View style={s.formCol}>
-            {party.mid.map((e, i) => <Fighter key={'m' + i} slot={e} front={false} attackToken={atk} />)}
+            {party.mid.map((e, i) => <Fighter key={'m' + i} slot={e} front={false} attackToken={atk} hitToken={hitTok} walkToken={walkTok} />)}
           </View>
           <View style={[s.formCol, lunge && s.formColLunge]}>
-            {party.front.map((e, i) => <Fighter key={'f' + i} slot={e} front={true} attackToken={atk} />)}
+            {party.front.map((e, i) => <Fighter key={'f' + i} slot={e} front={true} attackToken={atk} hitToken={hitTok} walkToken={walkTok} />)}
           </View>
         </View>
         {bar(heroHp.current, T.good)}

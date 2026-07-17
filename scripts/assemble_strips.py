@@ -31,6 +31,7 @@ ROSTER = [
 def clip_for(cid, state, arch):
     if state == "idle":   return "idle_a"
     if state == "hit":    return "hit_a"
+    if state == "walk":   return "walking_a"
     if state == "attack": return ATTACK[arch]
     raise ValueError(state)
 
@@ -52,7 +53,7 @@ made = 0
 for cid, arch in ROSTER:
     outdir = os.path.join(DST, cid)
     os.makedirs(outdir, exist_ok=True)
-    for state in ("idle","attack"):
+    for state in ("idle","attack","hit","walk"):
         clip = clip_for(cid, state, arch)
         strip, miss = build_strip(cid, clip)
         if strip is None:
