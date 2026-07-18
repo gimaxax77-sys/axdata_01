@@ -40,12 +40,13 @@ const DUNGEON_META = {
 };
 
 // 콘텐츠 서브탭 — 목적별 4묶음(하단 바). 상단 스크롤을 1/3로 줄인다.
+//   feats 붙은 그룹은 해당 모듈이 하나라도 켜졌을 때만 노출(control-panel on/off).
 const SUBTABS = [
   { key: 'daily', label: '일일', icon: '📅' },
-  { key: 'event', label: '이벤트', icon: '🎯' },
-  { key: 'arena', label: '경쟁', icon: '⚔️' },
+  { key: 'event', label: '이벤트', icon: '🎯', feats: ['events', 'season'] },
+  { key: 'arena', label: '경쟁', icon: '⚔️', feats: ['arena', 'guild', 'tower'] },
   { key: 'story', label: '스토리', icon: '📖' },
-];
+].filter((t) => !t.feats || t.feats.some(isOn));
 
 export default function ContentScreen({ state, bump, concept }) {
   const [mult, setMult] = useState(1);
@@ -241,6 +242,7 @@ export default function ContentScreen({ state, bump, concept }) {
 
       {grp === 'event' && (<>
       {/* 주간 테마 이벤트(미니 로드맵) */}
+      {isOn('events') && (
       <Card style={{ marginTop: 12, borderColor: T.accent }}>
         <CodeTag id="l1" corner="tl" />
         <Text style={c.sec}>{wev.emoji} 이번 주 · {wev.label} <Text style={c.dim}>{days(wev.endsInMs)}일 남음</Text></Text>
@@ -251,8 +253,10 @@ export default function ContentScreen({ state, bump, concept }) {
         <Btn kind={wev.done && !wev.claimed ? 'gold' : 'ghost'} disabled={!wev.done || wev.claimed}
           label={wev.claimed ? '이번 주 수령 완료' : wev.done ? '🎁 보상 받기' : '목표 진행 중'} onPress={doClaimWeekly} />
       </Card>
+      )}
 
       {/* 시즌 소프트리셋 던전(평준화 랭킹) */}
+      {isOn('season') && (
       <Card style={{ marginTop: 12 }}>
         <CodeTag id="l2" corner="tl" />
         <Text style={c.sec}>🏔️ 시즌 던전 <Text style={c.dim}>시즌 {sInfo.season} · {days(sInfo.endsInMs)}일 남음</Text></Text>
@@ -262,6 +266,7 @@ export default function ContentScreen({ state, bump, concept }) {
         <View style={{ height: 8 }} />
         <Btn kind="gold" disabled={sInfo.floor >= SEASON_FLOORS} label={sInfo.floor >= SEASON_FLOORS ? '최고 층 달성' : `${sInfo.floor + 1}층 도전`} onPress={doSeasonFight} />
       </Card>
+      )}
       </>)}
 
       {grp === 'daily' && (<>

@@ -131,6 +131,7 @@ export default function GrowthPanel({ state, bump, concept }) {
       {msg ? <Text style={c.msg}>{msg}</Text> : null}
 
       {/* 펫 */}
+      {isOn('pets') && (
       <Card style={{ marginTop: 4 }}>
         <CodeTag id="h2" corner="tl" />
         <View style={c.petHead}>
@@ -184,8 +185,10 @@ export default function GrowthPanel({ state, bump, concept }) {
           </View>
         )}
       </Card>
+      )}
 
       {/* 유물 */}
+      {isOn('relics') && (
       <Card style={{ marginTop: 12 }}>
         <CodeTag id="h3" corner="tl" />
         <Text style={c.sec}>🏺 유물 <Text style={c.dim}>(계정 영구 성장 · 탭하여 강화)</Text></Text>
@@ -196,8 +199,10 @@ export default function GrowthPanel({ state, bump, concept }) {
           ))}
         </View>
       </Card>
+      )}
 
       {/* 엠블럼 */}
+      {isOn('emblems') && (
       <Card style={{ marginTop: 12 }}>
         <CodeTag id="h4" corner="tl" />
         <Text style={c.sec}>🎖️ 엠블럼 <Text style={c.dim}>(문장 · 계정 공유)</Text></Text>
@@ -212,8 +217,10 @@ export default function GrowthPanel({ state, bump, concept }) {
           </View>
         )}
       </Card>
+      )}
 
       {/* 정령 */}
+      {isOn('guardians') && (
       <Card style={{ marginTop: 12, marginBottom: 12 }}>
         <CodeTag id="h5" corner="tl" />
         <View style={c.petHead}>
@@ -231,6 +238,7 @@ export default function GrowthPanel({ state, bump, concept }) {
           </View>
         )}
       </Card>
+      )}
 
       {/* 상세 팝업 — 변경 전후 능력치 비교 */}
       <Modal transparent animationType="fade" visible={!!info} onRequestClose={() => setDetail(null)}>
