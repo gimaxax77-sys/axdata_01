@@ -47,6 +47,7 @@ export function createGameState({ units = [], party = [] } = {}) {
     meta: { achv: {}, coll: {}, season: { claimed: {}, premium: false } }, // 도감·업적·시즌패스 청구 기록
     campaign: { cleared: 0 }, // 스토리 캠페인 클리어 챕터 수
     run: null, // 원정(로그라이트) 진행 중 스냅샷 — 없으면 null. run.mjs 참조
+    expedition: { maxFloor: 1, tokens: 0, upgrades: { might: 0, vigor: 0, fortune: 0 } }, // 원정 메타(층 해금·토큰·영구 업그레이드)
     tutorial: { introSeen: false }, // 온보딩: 첫 소개 확인 여부
     settings: { muted: false, haptics: true, reduceMotion: false, lang: 'ko' }, // 사운드·햅틱·전투연출·언어
     tower: { floor: 1, best: 1 }, // 무한의 탑 현재/최고 층

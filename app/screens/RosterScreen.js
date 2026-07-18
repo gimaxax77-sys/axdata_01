@@ -22,13 +22,12 @@ import { toggleFormation, formationSummary, autoFormation, ROLE_CAP, ROLE_LABEL,
 import { savePreset, loadPreset, presetInfo, PRESET_SLOTS } from '../../system/core/partyPresets.mjs';
 import { computeStats, computePower, powerBreakdown } from '../../system/core/stats.mjs';
 import { levelCap } from '../../system/core/units.mjs';
-import { skillSlots, SKILL_CATALOG, equippableSkills, skillPower } from '../../system/core/skills.mjs';
+import { skillSlots, SKILL_CATALOG, skillPower } from '../../system/core/skills.mjs';
 import { identity, elementMeta } from '../../system/concepts/index.mjs';
-import { GEAR_SLOTS, GEAR_CATALOG, SLOT_META, gearEnhanceCost, gearContribution } from '../../system/core/gear.mjs';
-import { levelUp, ascend, ascendCost, enhanceNode, equipSkill, unequipSkill, upgradeSkill, awakenSignature } from '../../system/core/character.mjs';
+import { GEAR_SLOTS, GEAR_CATALOG, SLOT_META } from '../../system/core/gear.mjs';
+import { levelUp, ascend, ascendCost, enhanceNode, awakenSignature } from '../../system/core/character.mjs';
 import { AWAKEN_MAX, awakenCost } from '../../system/core/skills.mjs';
-import { craftGear, equipGear, enhanceGear, unequipGear, gearCraftCost, activeGearSets, rerollGearSubs, GEAR_RARITY, grantGearElementOption, ELEM_OPTION_COST, GEAR_SUB_MAX, enchantGear, rerollEnchant, enchantInfo, enchantCost, ENCHANT_MAX } from '../../system/core/gear.mjs';
-import { materialCount, MATERIAL_META } from '../../system/core/materials.mjs';
+import { activeGearSets } from '../../system/core/gear.mjs';
 import { optimizeLoadout } from '../../system/core/loadout.mjs';
 import { recordMission } from '../../system/core/daily.mjs';
 import { intimacyLevel, intimacyProgress, giftCost, giveGift, INTIMACY_MAX } from '../../system/core/intimacy.mjs';
@@ -53,10 +52,7 @@ import {
   hasSigWeapon, canOwnSigWeapon, unlockSigWeapon, enhanceSigWeapon,
   sigWeaponUnlockCost, sigWeaponEnhanceCost, sigWeaponBoost, SIGWEAPON_MAX,
 } from '../../system/core/sigweapon.mjs';
-import {
-  RUNE_SLOTS, RUNE_SETS, RUNE_RARITY, summonRune, equipRune, unequipRune,
-  enhanceRune, runeMainValue, runeEnhanceCost, RUNE_MAX_LEVEL, RUNE_SUMMON_COST, activeRuneSets, rerollRuneSubs,
-} from '../../system/core/runes.mjs';
+import { RUNE_SLOTS, RUNE_SETS, summonRune, RUNE_SUMMON_COST, activeRuneSets } from '../../system/core/runes.mjs';
 
 // 장비 카드 계열 그룹핑(표시 순서·소제목).
 const GEAR_CATS = [

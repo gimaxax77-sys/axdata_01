@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 import { createGameState } from '../core/gameState.mjs';
 import { createUnit } from '../core/units.mjs';
 import { serialize, deserialize } from '../core/save.mjs';
-import { startRun, fightNode, pickBoon, endRun, currentNode, RUN_NODES } from '../core/run.mjs';
+import { startRun, fightNode, pickBoon, endRun, currentNode, RUN_NODES, expeditionMeta, buyUpgrade } from '../core/run.mjs';
 
 // 강한 파티(층1 노드를 압도) — 큰 margin으로 낮은 소모 → 완주 가능.
 function strongState(n = 5) {
@@ -54,6 +54,7 @@ test('pickBoon: 회복 boon이 생명 복구, offer 해제', () => {
 
 test('패배: 감당 못할 난이도면 런 종료(dead)', () => {
   const s = strongState();
+  s.expedition.maxFloor = 100; // 고층 해금(테스트)
   startRun(s, { floor: 50 }); // 극악 난이도
   const res = fightNode(s, () => 0);
   assert.ok(res.ok);
@@ -104,6 +105,38 @@ test('boon 심화: gambit 즉시 생명↓·파워↑, 광폭 생명소모 배�
   s.run.offer = ['berserk'];
   pickBoon(s, 'berserk');
   assert.ok(s.run.attritionMult > 1, '광폭은 생명소모 배수 증가');
+});
+
+test('메타: 완주 시 다음 층 해금 + 토큰 지급', () => {
+  const s = strongState();
+  const before = expeditionMeta(s).tokens;
+  startRun(s, { floor: 1 });
+  let guard = 0;
+  while (s.run && s.run.status === 'active' && guard++ < 60) {
+    if (s.run.offer) pickBoon(s, s.run.offer[0]); else fightNode(s, () => 0);
+  }
+  assert.equal(s.run.status, 'won');
+  const sum = endRun(s);
+  assert.ok(sum.tokens > 0, '토큰 지급');
+  assert.equal(sum.unlocked, true);
+  assert.equal(expeditionMeta(s).maxFloor, 2, '2층 해금');
+  assert.ok(expeditionMeta(s).tokens > before);
+});
+
+test('메타: 업그레이드 구매가 런 파워에 반영', () => {
+  const s = strongState();
+  const m = expeditionMeta(s); m.tokens = 50;
+  assert.ok(buyUpgrade(s, 'might').ok);
+  assert.equal(m.upgrades.might, 1);
+  assert.ok(m.tokens < 50, '토큰 차감');
+  startRun(s, { floor: 1 });
+  assert.ok(s.run.powerMult > 1, 'might 업그레이드가 powerMult 반영');
+});
+
+test('메타: 해금 안 된 층은 선택이 캡됨', () => {
+  const s = strongState();
+  startRun(s, { floor: 99 }); // maxFloor=1 → 1로 캡
+  assert.equal(s.run.floor, 1);
 });
 
 test('세이브 왕복: 진행 중 런 상태 보존', () => {
