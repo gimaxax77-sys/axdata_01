@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, Animated, StyleSheet } from 'react-native';
 import { T } from '../theme';
 import { reducedMotion } from '../motion';
 import { unitSprite, hasUnitSprite } from '../unitSprites';
@@ -22,7 +22,7 @@ const BACK_SIZE = 96;
 // 스프라이트 파이터 — idle 순환. 토큰 변경 시 해당 1회 모션(attack/hit/walk) 재생 후 idle.
 // 동시 발생 시 소스순(attack→hit→walk) 마지막이 우선(피격이 공격을 끊음 = 자연스러움).
 // 원본 스프라이트가 오른쪽(적 방향)을 향하므로 반전 없이 그대로 렌더한다.
-function SpriteFighter({ cid, ckey, front, attackToken, hitToken, walkToken }) {
+const SpriteFighter = React.memo(function SpriteFighter({ cid, ckey, front, attackToken, hitToken, walkToken }) {
   const [st, setSt] = useState('idle');
   const [tok, setTok] = useState(0);
   useEffect(() => { if (attackToken > 0) { setSt('attack'); setTok((v) => v + 1); } }, [attackToken]);
@@ -38,12 +38,12 @@ function SpriteFighter({ cid, ckey, front, attackToken, hitToken, walkToken }) {
       onEnd={() => setSt('idle')}
     />
   );
-}
+});
 
 // 적 파이터 — 왼쪽(파티) 향하는 몬스터 스프라이트. idle 순환, 히어로 공격 시 hit 재생.
 // 원본이 이미 왼쪽 방향으로 렌더돼 반전 불필요.
 const ENEMY_SIZE = 132;
-function EnemyFighter({ ekey, hitToken, atkToken }) {
+const EnemyFighter = React.memo(function EnemyFighter({ ekey, hitToken, atkToken }) {
   const [st, setSt] = useState('idle');
   const [tok, setTok] = useState(0);
   useEffect(() => { if (hitToken > 0) { setSt('hit'); setTok((v) => v + 1); } }, [hitToken]);
@@ -54,34 +54,59 @@ function EnemyFighter({ ekey, hitToken, atkToken }) {
     <SpriteAnim source={spr.source} frameW={spr.frameW} frameH={spr.frameH} frames={spr.frames}
       state={st} playToken={tok} scale={scale} onEnd={() => setSt('idle')} />
   );
-}
+});
 
 // 편성 한 칸 — 스프라이트, 없으면 이모지. slot이 문자열이면 이모지(하위호환).
-function Fighter({ slot, front, attackToken, hitToken, walkToken }) {
+const Fighter = React.memo(function Fighter({ slot, front, attackToken, hitToken, walkToken }) {
   const o = slot && typeof slot === 'object' ? slot : { emoji: slot };
   if (o.cid && o.key && hasUnitSprite(o.cid, o.key)) {
     return <SpriteFighter cid={o.cid} ckey={o.key} front={front} attackToken={attackToken} hitToken={hitToken} walkToken={walkToken} />;
   }
   return <Text style={front ? s.miniEmojiFront : s.miniEmoji}>{o.emoji}</Text>;
-}
+});
+
+// 데미지 숫자 한 개 — 마운트 시 스스로 떠오르며 사라진 뒤 onDone으로 제거.
+//   매 틱 부모 리렌더(force) 없이 자기 애니만 돌려 JS 스레드 부하↓.
+const FloatText = React.memo(function FloatText({ val, crit, big, dx, onDone }) {
+  const a = useRef(new Animated.Value(0)).current;
+  useEffect(() => {
+    Animated.timing(a, { toValue: 1, duration: 1100, useNativeDriver: false }).start(() => onDone());
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  return (
+    <Animated.Text style={[
+      s.float, crit && s.floatCrit, big && s.floatBig,
+      {
+        left: `${45 + dx}%`,
+        opacity: a.interpolate({ inputRange: [0, 0.7, 1], outputRange: [1, 1, 0] }),
+        bottom: a.interpolate({ inputRange: [0, 1], outputRange: [90, 146] }),
+      },
+    ]}>{typeof val === 'number' ? val.toLocaleString() : val}</Animated.Text>
+  );
+});
 
 function BattleView({ party = EMPTY_FORMATION, enemyEmoji = '👹', enemyKey = null, win = true, margin = 1, reduce }) {
   const noMotion = reduce !== undefined ? reduce : reducedMotion();
   const enemyHp = useRef(1);
   const heroHp = useRef(1);
-  const [, force] = useState(0);
+  // HP바는 Animated 너비로 구동 — 매 틱 리렌더 없이 노드만 갱신.
+  const enemyHpV = useRef(new Animated.Value(1)).current;
+  const heroHpV = useRef(new Animated.Value(1)).current;
   const [lunge, setLunge] = useState(false);
   const [atk, setAtk] = useState(0);           // 공격 재생 트리거(스프라이트)
   const [hitTok, setHitTok] = useState(0);     // 파티 피격 재생 트리거
   const [walkTok, setWalkTok] = useState(0);   // 웨이브 전진(걷기) 트리거
   const [enemyAtk, setEnemyAtk] = useState(0); // 적 공격(반격) 재생 트리거
   const [enemyFlash, setEnemyFlash] = useState(false);
-  const floats = useRef([]);
+  const [floats, setFloats] = useState([]);    // 데미지 숫자 — 생성/제거 시에만 렌더(이벤트 기반)
   const fid = useRef(0);
 
   useEffect(() => {
     enemyHp.current = 1; heroHp.current = 1;
-    if (noMotion) { enemyHp.current = win ? 0.45 : 0.85; heroHp.current = win ? 0.9 : 0.5; force((v) => v + 1); return; }
+    if (noMotion) {
+      enemyHp.current = win ? 0.45 : 0.85; heroHp.current = win ? 0.9 : 0.5;
+      enemyHpV.setValue(enemyHp.current); heroHpV.setValue(heroHp.current);
+      return;
+    }
     // 우세할수록 적 HP가 빨리 깎임. 열세(패배)면 파티 HP가 위태.
     const enemyDmg = win ? (margin > 2.2 ? 0.30 : margin > 1.4 ? 0.20 : 0.14) : 0.10;
     const heroDmg = win ? 0.05 : 0.16;
@@ -112,27 +137,28 @@ function BattleView({ party = EMPTY_FORMATION, enemyEmoji = '👹', enemyKey = n
       }
       // 히어로 자연 회복
       heroHp.current = Math.min(1, heroHp.current + 0.012);
-      // 데미지 숫자 수명
-      floats.current = floats.current.map((f) => ({ ...f, life: f.life - 1 })).filter((f) => f.life > 0);
-      force((v) => (v + 1) % 1e6);
+      // HP바 갱신(노드만) — 리렌더 없음.
+      enemyHpV.setValue(enemyHp.current); heroHpV.setValue(heroHp.current);
     }, 120);
     return () => clearInterval(iv);
   }, [win, margin, noMotion]);
 
   function pushFloat(val, side, crit, big) {
     fid.current += 1;
-    floats.current = [...floats.current.slice(-7), { id: fid.current, val, side, crit, big, life: 9, dx: Math.random() * 26 - 13 }];
+    setFloats((fs) => [...fs.slice(-7), { id: fid.current, val, side, crit, big, dx: Math.random() * 26 - 13 }]);
   }
+  const dropFloat = (id) => setFloats((fs) => fs.filter((f) => f.id !== id));
 
-  const bar = (ratio, color) => (
-    <View style={s.barBg}><View style={[s.barFill, { width: `${Math.max(0, Math.min(1, ratio)) * 100}%`, backgroundColor: color }]} /></View>
+  const bar = (v, color) => (
+    <View style={s.barBg}>
+      <Animated.View style={[s.barFill, {
+        width: v.interpolate({ inputRange: [0, 1], outputRange: ['0%', '100%'], extrapolate: 'clamp' }),
+        backgroundColor: color,
+      }]} />
+    </View>
   );
-  const renderFloats = (side) => floats.current.filter((f) => f.side === side).map((f) => (
-    <Text key={f.id} style={[
-      s.float,
-      f.crit && s.floatCrit, f.big && s.floatBig,
-      { opacity: f.life / 9, bottom: 90 + (9 - f.life) * 7, left: `${45 + f.dx}%` },
-    ]}>{typeof f.val === 'number' ? f.val.toLocaleString() : f.val}</Text>
+  const renderFloats = (side) => floats.filter((f) => f.side === side).map((f) => (
+    <FloatText key={f.id} val={f.val} crit={f.crit} big={f.big} dx={f.dx} onDone={() => dropFloat(f.id)} />
   ));
 
   const heroCount = party.front.length + party.mid.length + party.back.length;
@@ -150,7 +176,7 @@ function BattleView({ party = EMPTY_FORMATION, enemyEmoji = '👹', enemyKey = n
             {party.front.map((e, i) => <Fighter key={'f' + i} slot={e} front={true} attackToken={atk} hitToken={hitTok} walkToken={walkTok} />)}
           </View>
         </View>
-        {bar(heroHp.current, T.good)}
+        {bar(heroHpV, T.good)}
         <Text style={s.label}>내 파티 {heroCount}명</Text>
       </View>
       <Text style={s.clash}>⚔️</Text>
@@ -159,7 +185,7 @@ function BattleView({ party = EMPTY_FORMATION, enemyEmoji = '👹', enemyKey = n
         {enemyKey && hasUnitSprite('enemy', enemyKey)
           ? <EnemyFighter ekey={enemyKey} hitToken={atk} atkToken={enemyAtk} />
           : <Text style={[s.emoji, enemyFlash && s.emojiHit]}>{enemyEmoji}</Text>}
-        {bar(enemyHp.current, T.danger)}
+        {bar(enemyHpV, T.danger)}
         <Text style={s.label}>적</Text>
       </View>
     </View>
