@@ -1,6 +1,6 @@
 // 원정(로그라이트) 화면 — 시작 / 진행(노드맵·생명·전투·보상3택) / 종료 정산
 import React, { useState, useRef, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Image, Animated } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Image, Animated, ScrollView } from 'react-native';
 import { T } from '../theme';
 import { Card, Btn, fmt } from '../components';
 import { identity } from '../../system/concepts/index.mjs';
@@ -9,7 +9,7 @@ import { getPartyUnits } from '../../system/core/gameState.mjs';
 import { resolve } from '../../system/core/resolution.mjs';
 import { accountMods } from '../../system/core/balance.mjs';
 import { effectivePower } from '../useGame';
-import { startRun, fightNode, pickBoon, endRun, currentNode, BOONS, RUN_NODES } from '../../system/core/run.mjs';
+import { startRun, fightNode, pickBoon, endRun, currentNode, BOONS, RUN_NODES, expeditionMeta, buyUpgrade, upgradeCost, EXP_UPGRADES } from '../../system/core/run.mjs';
 import { fx } from '../feedback';
 import BattleView from './BattleView';
 
@@ -81,22 +81,53 @@ export default function RunScreen({ state, bump, concept }) {
   if (!r) {
     const power = effectivePower(state);
     const canStart = state.party.length > 0;
+    const meta = expeditionMeta(state);
+    const cappedFloor = Math.min(floor, meta.maxFloor);
     return (
       <View style={s.wrap}>
+        <ScrollView contentContainerStyle={{ gap: 10, paddingBottom: 12 }}>
         <Card style={s.panel}>
           <Text style={s.h1}>⚔️ 원정</Text>
           <Text style={s.desc}>파티를 이끌고 {RUN_NODES}개 관문을 좌→우로 진격합니다. 전투마다 강화 3택을 고르고, 아슬한 승리일수록 생명이 더 깎입니다. 쓰러지면 런 종료 — 도달한 만큼 보상을 얻습니다.</Text>
           <View style={s.floorRow}>
-            <Text style={s.floorLabel}>난이도(층)</Text>
+            <Text style={s.floorLabel}>층</Text>
             <TouchableOpacity style={s.step} onPress={() => { fx('tap'); setFloor((f) => Math.max(1, f - 1)); }}><Text style={s.stepTxt}>−</Text></TouchableOpacity>
-            <Text style={s.floorVal}>{floor}</Text>
-            <TouchableOpacity style={s.step} onPress={() => { fx('tap'); setFloor((f) => Math.min(30, f + 1)); }}><Text style={s.stepTxt}>+</Text></TouchableOpacity>
+            <Text style={s.floorVal}>{cappedFloor}</Text>
+            <TouchableOpacity style={s.step} onPress={() => { fx('tap'); setFloor((f) => Math.min(meta.maxFloor, f + 1)); }}><Text style={s.stepTxt}>+</Text></TouchableOpacity>
+            <Text style={s.floorMax}>해금 {meta.maxFloor}층</Text>
           </View>
           <Text style={s.partyLine}>내 파티 {state.party.length}명 · 전투력 {fmt(power)}</Text>
           <Btn label="원정 시작" disabled={!canStart}
-            onPress={() => { if (startRun(state, { floor }).ok) { fx('success'); setFlash(null); bump(); } }} />
+            onPress={() => { if (startRun(state, { floor: cappedFloor }).ok) { fx('success'); setFlash(null); bump(); } }} />
           {!canStart && <Text style={s.warn}>영웅 탭에서 파티를 먼저 편성하세요.</Text>}
+          <Text style={s.unlockHint}>💡 최고 층({meta.maxFloor}층)을 완주하면 다음 층이 열립니다.</Text>
         </Card>
+        {/* 원정 강화 상점 — 토큰으로 영구 업그레이드 */}
+        <Card style={s.shopCard}>
+          <View style={s.shopHead}>
+            <Text style={s.shopTitle}>🛒 원정 강화 <Text style={s.dim}>(영구)</Text></Text>
+            <Text style={s.tokens}>🎖️ {meta.tokens}</Text>
+          </View>
+          {Object.entries(EXP_UPGRADES).map(([key, u]) => {
+            const lv = meta.upgrades[key] || 0;
+            const maxed = lv >= u.max;
+            const cost = upgradeCost(lv);
+            const cant = maxed || meta.tokens < cost;
+            return (
+              <View key={key} style={s.upRow}>
+                <View style={{ flex: 1 }}>
+                  <Text style={s.upName}>{u.label} <Text style={s.dim}>Lv.{lv}/{u.max}</Text></Text>
+                  <Text style={s.upDesc}>{u.desc}</Text>
+                </View>
+                <TouchableOpacity disabled={cant} style={[s.upBtn, cant && s.upBtnOff]}
+                  onPress={() => { const rr = buyUpgrade(state, key); fx(rr.ok ? 'success' : 'error'); bump(); }}>
+                  <Text style={s.upBtnTxt}>{maxed ? 'MAX' : `🎖️${cost}`}</Text>
+                </TouchableOpacity>
+              </View>
+            );
+          })}
+        </Card>
+        </ScrollView>
       </View>
     );
   }
@@ -167,7 +198,7 @@ export default function RunScreen({ state, bump, concept }) {
       {ended ? (
         <Btn label="보상 받기" onPress={() => {
           const res = endRun(state); fx('success');
-          setFlash(`정산: 관문 ${res.cleared}개 · 젬 +${res.reward.gem} · 소환 +${res.reward.summon}`);
+          setFlash(`정산: 관문 ${res.cleared} · 젬+${res.reward.gem} · 🎖️+${res.tokens}${res.unlocked ? ` · ${res.maxFloor}층 해금!` : ''}`);
           bump();
         }} />
       ) : r.offer ? (
@@ -213,6 +244,19 @@ const s = StyleSheet.create({
   floorVal: { color: T.accent, fontSize: 22, fontWeight: '900', minWidth: 34, textAlign: 'center' },
   partyLine: { color: T.muted, fontSize: 13 },
   warn: { color: T.danger, fontSize: 12 },
+  floorMax: { color: T.muted, fontSize: 12, fontWeight: '700', marginLeft: 4 },
+  unlockHint: { color: T.muted, fontSize: 11, textAlign: 'center' },
+  dim: { color: T.muted, fontSize: 11, fontWeight: '400' },
+  shopCard: { padding: 14, gap: 8 },
+  shopHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  shopTitle: { color: T.text, fontSize: 15, fontWeight: '800' },
+  tokens: { color: T.accent, fontSize: 14, fontWeight: '900' },
+  upRow: { flexDirection: 'row', alignItems: 'center', gap: 8, borderTopWidth: 1, borderTopColor: T.line, paddingTop: 8 },
+  upName: { color: T.text, fontSize: 13, fontWeight: '700' },
+  upDesc: { color: T.muted, fontSize: 11, marginTop: 1 },
+  upBtn: { backgroundColor: T.accent, borderRadius: 9, paddingHorizontal: 12, paddingVertical: 8, minWidth: 56, alignItems: 'center' },
+  upBtnOff: { backgroundColor: T.surface2 },
+  upBtnTxt: { color: '#241a40', fontSize: 12, fontWeight: '900' },
 
   nodeRow: { flexDirection: 'row', justifyContent: 'space-between', gap: 3 },
   node: { flex: 1, aspectRatio: 1, maxWidth: 34, borderRadius: 8, backgroundColor: T.surface, alignItems: 'center', justifyContent: 'center', opacity: 0.5 },

@@ -14,6 +14,34 @@ export { BOONS } from './runBoons.mjs'; // 화면에서 카탈로그 참조
 
 export const RUN_NODES = 10; // 한 런의 노드 수(전투 + 엘리트 + 보스)
 
+// ── 원정 메타(영구 진행) ─────────────────────────────────────
+// 토큰으로 사는 영구 업그레이드 — 모든 런에 적용. 층은 완주로 해금.
+export const EXP_UPGRADES = {
+  might:   { label: '원정 전투력', desc: '레벨당 원정 전투력 +4%', max: 20, per: 0.04 },
+  vigor:   { label: '강인함',     desc: '레벨당 생명 소모 −3%',   max: 15, per: 0.03 },
+  fortune: { label: '행운',       desc: '레벨당 원정 보상 +8%',   max: 15, per: 0.08 },
+};
+
+// state.expedition 보장(구버전 세이브 대비) 후 반환.
+export function expeditionMeta(state) {
+  if (!state.expedition) state.expedition = { maxFloor: 1, tokens: 0, upgrades: { might: 0, vigor: 0, fortune: 0 } };
+  if (!state.expedition.upgrades) state.expedition.upgrades = { might: 0, vigor: 0, fortune: 0 };
+  return state.expedition;
+}
+export function upgradeCost(level) { return 3 + level * 2; } // 3,5,7,… 토큰
+// 업그레이드 구매 — 토큰 차감·레벨 상승.
+export function buyUpgrade(state, key) {
+  const m = expeditionMeta(state);
+  const u = EXP_UPGRADES[key];
+  if (!u) return { ok: false, reason: '없는 업그레이드' };
+  const lv = m.upgrades[key] || 0;
+  if (lv >= u.max) return { ok: false, reason: '최대 레벨' };
+  const cost = upgradeCost(lv);
+  if (m.tokens < cost) return { ok: false, reason: '토큰 부족' };
+  m.tokens -= cost; m.upgrades[key] = lv + 1;
+  return { ok: true, key, level: lv + 1, tokens: m.tokens };
+}
+
 // 노드 i(0-based)의 종류·난이도. 마지막=보스, 중간(5)=엘리트, 나머지=일반.
 function nodeAt(floor, i) {
   const stage = (floor - 1) * 18 + (i + 1) * 4; // 층·진행에 따라 상승
@@ -37,6 +65,9 @@ function attritionCost(margin) {
 export function startRun(state, { floor = 1 } = {}) {
   if (state.run && state.run.status === 'active') return { ok: false, reason: '이미 진행 중인 원정이 있습니다' };
   if (!state.party || !state.party.length) return { ok: false, reason: '파티를 먼저 편성하세요' };
+  const m = expeditionMeta(state);
+  floor = Math.max(1, Math.min(floor, m.maxFloor)); // 해금된 층까지만
+  const up = m.upgrades;
   const nodes = Array.from({ length: RUN_NODES }, (_, i) => nodeAt(floor, i));
   state.run = {
     floor,
@@ -44,8 +75,8 @@ export function startRun(state, { floor = 1 } = {}) {
     idx: 0,          // 클리어한 노드 수 = idx
     runHP: 1,        // 생명 풀(0~1)
     boons: [],       // 획득한 boon id
-    powerMult: 1,    // boon 누적 파워 배수
-    attritionMult: 1, // boon 누적 생명소모 배수
+    powerMult: 1 * (1 + (up.might || 0) * EXP_UPGRADES.might.per),   // 영구 업그레이드 반영
+    attritionMult: 1 * (1 - (up.vigor || 0) * EXP_UPGRADES.vigor.per), // 강인함=소모↓
     regen: 0,        // 관문마다 생명 회복량
     shield: 0,       // 피해 무효 충전(승리 시 소모전 1회 무효)
     party: [...state.party],
@@ -134,15 +165,23 @@ export function pickBoon(state, id) {
 export function endRun(state) {
   const r = state.run;
   if (!r) return { ok: false, reason: '원정 없음' };
+  const m = expeditionMeta(state);
   const cleared = r.idx;
   const won = r.status === 'won';
+  const fortuneMult = 1 + (m.upgrades.fortune || 0) * EXP_UPGRADES.fortune.per;
+  // 메타 토큰: 클리어 노드 + 완주 보너스, 행운 반영
+  const tokens = Math.round((cleared + (won ? 5 : 0)) * fortuneMult);
+  m.tokens += tokens;
+  // 완주 시 다음 층 해금(현재 최고층 이상 완주해야)
+  let unlocked = false;
+  if (won && r.floor >= m.maxFloor) { m.maxFloor = r.floor + 1; unlocked = true; }
   const reward = {
     ...r.loot,
-    gem: cleared * 3 + (won ? 30 : 0),
-    summon: cleared * 2 + (won ? 10 : 0),
+    gem: Math.round((cleared * 3 + (won ? 30 : 0)) * fortuneMult),
+    summon: Math.round((cleared * 2 + (won ? 10 : 0)) * fortuneMult),
   };
   earn(state.wallet, reward);
-  const summary = { cleared, won, floor: r.floor, boons: [...r.boons], reward };
+  const summary = { cleared, won, floor: r.floor, boons: [...r.boons], reward, tokens, unlocked, maxFloor: m.maxFloor };
   state.run = null;
   return { ok: true, ...summary };
 }
