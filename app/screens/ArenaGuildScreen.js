@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView } from 'react-native';
 import { T } from '../theme';
-import { Card, Btn, fmt, MultiToggle, multLabel, repeat } from '../components';
+import { Card, Btn, fmt, MultiToggle, multLabel, repeat, pctW } from '../components';
 import { CodeTag } from '../uicode';
 import { isUnlocked, unlockStage } from '../../system/core/unlocks.mjs';
 import { ARENA_ENTRIES, arenaEntriesLeft, arenaFight, arenaInfo, ladderInfo } from '../../system/core/arena.mjs';
@@ -163,7 +163,7 @@ export default function ArenaGuildScreen({ state, bump, concept, embedded }) {
         ) : (<>
           <Text style={c.sub}>매일 파티 딜로 보스를 공격합니다. 처치하면 티어가 오르고 {concept.resources.gem.emoji}다이아 + {concept.resources.summon.emoji}소환권 보너스.</Text>
           <View style={c.bossBar}>
-            <View style={[c.bossFill, { width: `${Math.max(0, (bossHp / bossMax) * 100)}%` }]} />
+            <View style={[c.bossFill, { width: `${pctW((bossHp / bossMax) * 100)}%` }]} />
             <Text style={c.bossText}>보스 HP {fmt(bossHp)} / {fmt(bossMax)}</Text>
           </View>
           <Text style={c.left}>오늘 공격 {gLeft}/{GUILD_ATTACKS}</Text>

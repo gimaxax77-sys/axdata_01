@@ -6,6 +6,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { T } from './app/theme';
 import { ResourceBar, Btn, fmt } from './app/components';
 import { useGame } from './app/useGame';
+import { isOn } from './system/core/features.mjs';
 import { setMuted, setHaptics, fx } from './app/feedback';
 import { setReduceMotion, setEco } from './app/motion';
 import { setUiCodes } from './app/uicode';
@@ -18,7 +19,7 @@ import { MailboxModal } from './app/screens/MailboxModal';
 import { unreadMailCount } from './system/core/mailbox.mjs';
 import { useFonts } from 'expo-font';
 import IdleScreen from './app/screens/IdleScreen';
-import PixelIdleScreen from './app/screens/PixelIdleScreen';
+import RunScreen from './app/screens/RunScreen';
 import RosterScreen from './app/screens/RosterScreen';
 import GachaScreen from './app/screens/GachaScreen';
 import ContentScreen from './app/screens/ContentScreen';
@@ -33,13 +34,16 @@ import { can } from './system/core/roles.mjs';
 // 탭 화면을 React.memo로 감싼다 — 방치 틱(초당)에는 rev/props가 안 바뀌어
 // 비활성 화면이 리렌더되지 않는다(탭 전환·조작 렉 제거).
 // 세나키우기식 타이트한 5탭. 경쟁→콘텐츠, 기록→영웅 서브탭으로 흡수(소환은 과금 노출 위해 유지).
-const TABS = [
+// 탭 목록 — feat 가 붙은 탭은 해당 선택 모듈이 켜졌을 때만 노출(컨트롤 판넬로 on/off).
+const ALL_TABS = [
   { key: 'idle', label: '전투', icon: '🏰', Screen: React.memo(IdleScreen) },
+  { key: 'expedition', label: '원정', icon: '⚔️', Screen: React.memo(RunScreen), feat: 'expedition' },
   { key: 'roster', label: '영웅', icon: '🦸', Screen: React.memo(RosterScreen) },
-  { key: 'gacha', label: '소환', icon: '🔮', Screen: React.memo(GachaScreen) },
+  { key: 'gacha', label: '소환', icon: '🔮', Screen: React.memo(GachaScreen), feat: 'gacha' },
   { key: 'content', label: '콘텐츠', icon: '📅', Screen: React.memo(ContentScreen) },
-  { key: 'shop', label: '상점', icon: '🛒', Screen: React.memo(ShopScreen) },
+  { key: 'shop', label: '상점', icon: '🛒', Screen: React.memo(ShopScreen), feat: 'shop' },
 ];
+const TABS = ALL_TABS.filter((tab) => !tab.feat || isOn(tab.feat));
 
 // 시트에 얹는 영웅 화면 — 메모된 인스턴스 재사용(초당 방치틱 리렌더 차단).
 const RosterMemo = TABS.find((t) => t.key === 'roster').Screen;
@@ -132,8 +136,6 @@ function AppInner() {
     'Galmuri11-Bold': require('./assets/fonts/Galmuri11-Bold.ttf'),
   });
   const [tab, setTab] = useState('idle');
-  const [pixelMode, setPixelMode] = useState(false); // 픽셀 방치 화면 미리보기
-  const showPixel = pixelMode && tab === 'idle';
 
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [adminOpen, setAdminOpen] = useState(false);
@@ -147,7 +149,7 @@ function AppInner() {
   const noticeText = game.remote?.notice?.text || null;
   const eventText = game.remote?.event?.text || null;
   const noticeSig = (noticeText || eventText) ? `${noticeText || ''}|${eventText || ''}` : null;
-  const showNoticePopup = !!noticeSig && !showPixel && !noticePopupClosed
+  const showNoticePopup = !!noticeSig && !noticePopupClosed
     && noticeSig !== game.state.settings.dismissedNotice;
   const dismissNoticePopup = useCallback(() => {
     game.state.settings.dismissedNotice = noticeSig;
@@ -160,7 +162,6 @@ function AppInner() {
   const consoleUnlocked = game.cloud.available && can(game.cloud.role, 'sendNotice');
   // 상점으로 옮긴 환경 버튼(픽셀 화면·설정) 핸들러 — memo 유지 위해 안정 참조(useCallback).
   const openSettings = useCallback(() => { fx('tap'); setSettingsOpen(true); }, []);
-  const togglePixel = useCallback(() => { fx('tap'); setPixelMode((v) => !v); }, []);
   // 영웅 탭은 방치 전투를 켠 채 바텀시트로 표시 — 베이스 화면은 방치(idle).
   const isRoster = tab === 'roster';
   const baseKey = isRoster ? 'idle' : tab;
@@ -205,8 +206,7 @@ function AppInner() {
       {/* 가로 wide: 넓은 화면에선 폰 폭으로 가운데 정렬한 프레임 안에 배치 */}
       <View style={[s.frame, wide && s.frameWide]}>
       {/* 게임명/장르 헤더 제거 — 자원바가 최상단. 픽셀 화면·설정은 상점 탭으로 이동. */}
-      {!showPixel && (
-        <View style={s.resWrap}>
+      <View style={s.resWrap}>
           <View style={s.topRow}>
             <View style={{ flex: 1 }}>
               <ResourceBar concept={game.concept} wallet={game.state.wallet} />
@@ -223,10 +223,9 @@ function AppInner() {
             </TouchableOpacity>
           </View>
         </View>
-      )}
 
       {/* 원격 공지/이벤트 배너 (Remote Config) — 탭 1회 닫기 */}
-      {!showPixel && (game.remote?.notice || game.remote?.event) && !noticeHidden && (
+      {(game.remote?.notice || game.remote?.event) && !noticeHidden && (
         <TouchableOpacity activeOpacity={0.85} onPress={() => setNoticeHidden(true)} style={s.notice}>
           <Text style={s.noticeText} numberOfLines={2}>
             {game.remote.event?.text ? `🎉 ${game.remote.event.text}` : `📢 ${game.remote.notice.text}`}
@@ -238,26 +237,15 @@ function AppInner() {
       {/* 화면 — rev(액션 신호)로만 리렌더. lastGain은 방치 탭에만 전달해
           다른 탭이 초당 리렌더되지 않게 한다. */}
       <View style={s.body}>
-        {showPixel ? (
-          <View style={{ flex: 1 }}>
-            <PixelIdleScreen state={game.state} rev={game.rev} bump={game.bump} concept={game.concept} lastGain={game.lastGain} />
-            <TouchableOpacity onPress={() => { fx('tap'); setPixelMode(false); }} style={s.pixelExit} activeOpacity={0.8}>
-              <Text style={s.pixelExitTxt}>✕ 일반</Text>
-            </TouchableOpacity>
-          </View>
-        ) : (
-          <>
-            <BaseScreen state={game.state} rev={game.rev} bump={game.bump} concept={game.concept}
-              lastGain={baseKey === 'idle' ? game.lastGain : undefined}
-              background={isRoster}
-              onOpenSettings={openSettings} onTogglePixel={togglePixel} />
-            {/* 영웅 강화 바텀시트 — 위 전투(방치 베이스) 유지, 아래에서 시트 등장. */}
-            {isRoster && (
-              <RosterSheet onClose={() => setTab('idle')} reduce={st.reduceMotion}>
-                <RosterMemo state={game.state} rev={game.rev} bump={game.bump} concept={game.concept} />
-              </RosterSheet>
-            )}
-          </>
+        <BaseScreen state={game.state} rev={game.rev} bump={game.bump} concept={game.concept}
+          lastGain={baseKey === 'idle' ? game.lastGain : undefined}
+          background={isRoster}
+          onOpenSettings={openSettings} />
+        {/* 영웅 강화 바텀시트 — 위 전투(방치 베이스) 유지, 아래에서 시트 등장. */}
+        {isRoster && (
+          <RosterSheet onClose={() => setTab('idle')} reduce={st.reduceMotion}>
+            <RosterMemo state={game.state} rev={game.rev} bump={game.bump} concept={game.concept} />
+          </RosterSheet>
         )}
       </View>
 
@@ -379,8 +367,6 @@ const s = StyleSheet.create({
   notice: { flexDirection: 'row', alignItems: 'center', gap: 10, marginHorizontal: 14, marginTop: 6, paddingHorizontal: 12, paddingVertical: 8, borderRadius: 10, backgroundColor: T.surface2, borderWidth: 1, borderColor: T.accent },
   noticeText: { color: T.text, fontSize: 12, fontWeight: '700', flex: 1 },
   noticeX: { color: T.muted, fontSize: 14, fontWeight: '900' },
-  pixelExit: { position: 'absolute', top: 8, right: 8, backgroundColor: 'rgba(20,15,40,0.85)', borderWidth: 1, borderColor: '#4a3f88', borderRadius: 4, paddingHorizontal: 8, paddingVertical: 4 },
-  pixelExitTxt: { color: '#e6ecf6', fontSize: 12, fontWeight: '800' },
   resWrap: { paddingHorizontal: 14, paddingVertical: 8 },
   topRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   mailBtn: { width: 46, height: 46, borderRadius: 12, backgroundColor: T.surface2, borderWidth: 1, borderColor: T.line, alignItems: 'center', justifyContent: 'center' },

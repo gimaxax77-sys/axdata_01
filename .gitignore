@@ -35,3 +35,6 @@ credentials.json
 # Python bytecode cache
 __pycache__/
 *.pyc
+
+# 임시 웹 빌드(우회 export)
+dist2/

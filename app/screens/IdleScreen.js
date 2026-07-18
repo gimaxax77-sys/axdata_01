@@ -1,7 +1,9 @@
 import React, { useState, useMemo } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
 import { T } from '../theme';
-import { Card, Btn, fmt } from '../components';
+import { Card, Btn, fmt, pctW } from '../components';
+import { isOn } from '../../system/core/features.mjs';
+import { diffIcon } from '../uiIcons';
 import { CodeTag } from '../uicode';
 import { effectivePower, powerMultOf } from '../useGame';
 import { idleGenre } from '../../system/genres/idle.mjs';
@@ -19,8 +21,33 @@ import { canClaimAttendance, missionList, claimAllDaily } from '../../system/cor
 import { weeklyEvent, claimWeekly } from '../../system/core/events.mjs';
 import { unreadMailCount, claimAllMail } from '../../system/core/mailbox.mjs';
 import { spendNudges } from '../../system/core/nudges.mjs';
+import { villageTier } from '../../system/core/village.mjs';
 import { fx } from '../feedback';
 import BattleView from './BattleView';
+
+// 전투 배경 — 10층마다 순환(층÷10). Metro는 정적 require만 되므로 배열로 등록 후 인덱싱.
+const BATTLE_BGS = [
+  require('../../assets/pixel/bg-battle-0.png'),
+  require('../../assets/pixel/bg-battle-1.png'),
+  require('../../assets/pixel/bg-battle-2.png'),
+  require('../../assets/pixel/bg-battle-3.png'),
+  require('../../assets/pixel/bg-battle-4.png'),
+  require('../../assets/pixel/bg-battle-5.png'),
+  require('../../assets/pixel/bg-battle-6.png'),
+  require('../../assets/pixel/bg-battle-7.png'),
+  require('../../assets/pixel/bg-battle-8.png'), // 무덤(온전 울타리)
+  require('../../assets/pixel/bg-battle-9.png'), // 무덤(파손)
+];
+// 적 몬스터 스프라이트 키 — 10층마다 순환(배경과 함께 변화). unitSprites 'enemy:<key>' 등록됨.
+const ENEMY_KEYS = ['skeleton_minion', 'skeleton_warrior', 'werewolf_wolf', 'skeleton_mage', 'skeleton_golem', 'demon', 'greendemon', 'cthulhu', 'cyclops', 'yeti', 'alien'];
+
+// 난이도별 색조 오버레이(무대 위에 은은히) — 일반은 없음.
+const DIFF_TINT = {
+  normal: 'transparent',
+  hard: 'rgba(255,150,50,0.12)',
+  hell: 'rgba(215,50,50,0.16)',
+  abyss: 'rgba(120,50,170,0.20)',
+};
 
 export default function IdleScreen({ state, bump, lastGain, concept, background }) {
   const [boxMsg, setBoxMsg] = useState(null);
@@ -51,8 +78,13 @@ export default function IdleScreen({ state, bump, lastGain, concept, background 
   const formKey = `${state.party.join(',')}|${JSON.stringify(state.formation)}`;
   const heroFormation = useMemo(() => {
     const sum = formationSummary(state);
-    const emojiOf = (uid) => { const u = byId.get(uid); return u ? identity(concept, u).emoji : '⚔️'; };
-    return { front: sum.front.map(emojiOf), mid: sum.mid.map(emojiOf), back: sum.back.map(emojiOf) };
+    // 전투 무대 표시용 — 스프라이트 조회 키(cid/key) + 이모지 폴백.
+    const slotOf = (uid) => {
+      const u = byId.get(uid);
+      if (!u) return { emoji: '⚔️' };
+      return { emoji: identity(concept, u).emoji, cid: concept.id, key: u.characterId };
+    };
+    return { front: sum.front.map(slotOf), mid: sum.mid.map(slotOf), back: sum.back.map(slotOf) };
   }, [formKey]);
 
   return (
@@ -80,30 +112,61 @@ export default function IdleScreen({ state, bump, lastGain, concept, background 
             <TouchableOpacity key={d.id} activeOpacity={0.8} disabled={!unlocked}
               onPress={() => { if (setDifficulty(state, d.id).ok) bump(); }}
               style={[st.diffCell, on && st.diffCellOn, !unlocked && st.diffCellLock]}>
-              <Text style={[st.diffLabel, on && st.diffLabelOn]}>{d.emoji} {d.label}</Text>
+              <View style={st.diffHead}>
+                {diffIcon(d.id) ? <Image source={diffIcon(d.id)} style={st.diffIcon} /> : <Text style={st.diffLabel}>{d.emoji}</Text>}
+                <Text style={[st.diffLabel, on && st.diffLabelOn]}>{d.label}</Text>
+              </View>
               <Text style={st.diffSub}>{unlocked ? `보상 ×${d.rewardMult}` : `${d.unlock}층`}</Text>
             </TouchableOpacity>
           );
         })}
       </View>
 
-      {/* 자동 전투 무대 */}
+      {/* 자동 전투 무대 — 던전 배경 위에 파티/적이 바닥에 서서 싸운다.
+          층·구역은 상단 배너(절대)로, 적 정보·시너지는 카드 밖(아래)로 빼서 전투 영역을 비운다. */}
       <Card style={st.stage}>
+        {/* 던전 배경(KayKit 렌더) — 10층마다 순환 + 난이도 색조. 콘텐츠 뒤에 절대배치. */}
+        <Image source={BATTLE_BGS[Math.floor(state.stage / 10) % BATTLE_BGS.length]} style={st.stageBg} resizeMode="cover" pointerEvents="none" />
+        <View style={[st.stageTint, { backgroundColor: DIFF_TINT[curDiff.id] || 'transparent' }]} pointerEvents="none" />
         <CodeTag id="a3" corner="tl" />
-        <Text style={st.stageLabel}>
-          {concept.terms.stage} {state.stage}
-          {curDiff.id !== 'normal' ? <Text style={st.diffBadge}>  {curDiff.emoji}{curDiff.label} ×{curDiff.rewardMult}</Text> : null}
-        </Text>
-        <Text style={st.zone}>{elementMeta(concept, zone.element)?.emoji}{elementMeta(concept, zone.element)?.name} 구역 ({zone.start}~{zone.end}층) · 다음 {elementMeta(concept, zone.nextElement)?.emoji}</Text>
+        {/* 상단 배너: 층 + 구역 */}
+        <View style={st.banner} pointerEvents="none">
+          <Text style={st.stageLabel}>
+            {concept.terms.stage} {state.stage}
+            {curDiff.id !== 'normal' ? <Text style={st.diffBadge}>  {curDiff.emoji}{curDiff.label} ×{curDiff.rewardMult}</Text> : null}
+          </Text>
+          <Text style={st.zone}>{isOn('elements') ? `${elementMeta(concept, zone.element)?.emoji}${elementMeta(concept, zone.element)?.name} ` : ''}구역 ({zone.start}~{zone.end}층){isOn('elements') ? ` · 다음 ${elementMeta(concept, zone.nextElement)?.emoji}` : ''}</Text>
+          {/* 본진 발전 — 진행할수록 거점이 성장(소유의 만족감). */}
+          {(() => {
+            const vt = villageTier(state.peakStage || state.maxStage || 1);
+            return (
+              <Text style={st.village}>{vt.emoji} 본진: {vt.label}
+                {vt.next
+                  ? <Text style={st.villageDim}>  → {vt.next.label} {Math.round(vt.progress * 100)}%</Text>
+                  : <Text style={st.villageDim}>  · 최종</Text>}
+              </Text>
+            );
+          })()}
+        </View>
+        {/* 전투(무대 꽉 채움, 바닥 정렬) */}
         <BattleView
           party={heroFormation}
           enemyEmoji={elementMeta(concept, stageDef.challenge.element)?.emoji || '👹'}
+          enemyKey={ENEMY_KEYS[Math.floor(state.stage / 10) % ENEMY_KEYS.length]}
           win={battle.win}
           margin={battle.margin}
           reduce={state.settings.reduceMotion || background}
         />
+        {/* 구역 진행 게이지 — 무대 하단(절대) */}
+        <View style={st.zoneBar}>
+          <View style={[st.zoneBarFill, { width: `${pctW(((state.stage - zone.start) / Math.max(1, zone.end - zone.start)) * 100)}%` }]} />
+        </View>
+      </Card>
+
+      {/* 적 정보 + 시너지 — 무대 아래 별도 스트립(전투 영역과 분리). */}
+      <View style={st.stageInfo}>
         <Text style={st.enemy}>적 HP {fmt(stageDef.challenge.hp)} · ATK {fmt(stageDef.challenge.atk)}</Text>
-        {(() => {
+        {isOn('elements') && (() => {
           const enemyEl = stageDef.challenge.element;
           const em = elementMeta(concept, enemyEl);
           const lm = lead && lead.element ? elementMeta(concept, lead.element) : null;
@@ -121,12 +184,7 @@ export default function IdleScreen({ state, bump, lastGain, concept, background 
             {synergy.list.map((s) => <Text key={s.id} style={st.synTag}>✦ {s.label}</Text>)}
           </View>
         )}
-        {/* 구역 진행 게이지 — 현재 구역(start~end)에서 어디쯤인지 한눈에. */}
-        <View style={st.zoneBar}>
-          <CodeTag id="a4" corner="br" />
-          <View style={[st.zoneBarFill, { width: `${Math.round(((state.stage - zone.start) / Math.max(1, zone.end - zone.start)) * 100)}%` }]} />
-        </View>
-      </Card>
+      </View>
 
       {/* 핵심 지표 스트립 — 전투력·최고층·초당수입 한 줄(세나키우기식 요약). */}
       <Card style={st.strip}>
@@ -181,20 +239,29 @@ export default function IdleScreen({ state, bump, lastGain, concept, background 
 const st = StyleSheet.create({
   // 스크롤 없이 한 화면에 고정 — 전투무대(stage)가 남는 세로 공간을 흡수.
   wrap: { flex: 1, padding: 12, gap: 8 },
-  stage: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: T.surface2 },
-  stageLabel: { color: T.accent, fontWeight: '800', fontSize: 18, marginBottom: 2 },
+  stage: { flex: 1, backgroundColor: T.surface2, overflow: 'hidden', padding: 0 },
+  banner: { position: 'absolute', top: 8, left: 0, right: 0, alignItems: 'center', zIndex: 3 },
+  stageInfo: { alignItems: 'center', gap: 3, paddingTop: 2 },
+  // 던전 배경 — 무대(Card) 안쪽에 꽉 채우고 둥근 모서리 클립. 콘텐츠는 위에 렌더.
+  stageBg: { position: 'absolute', left: 0, right: 0, top: 0, bottom: 0, width: '100%', height: '100%', borderRadius: 16, opacity: 0.9 },
+  stageTint: { position: 'absolute', left: 0, right: 0, top: 0, bottom: 0, borderRadius: 16 },
+  stageLabel: { color: T.accent, fontWeight: '800', fontSize: 18, marginBottom: 2, textShadowColor: '#000', textShadowRadius: 5 },
   diffBadge: { color: T.danger, fontSize: 13, fontWeight: '800' },
-  zone: { color: T.muted, fontSize: 12, marginBottom: 4, fontWeight: '600' },
+  zone: { color: '#d8d0f0', fontSize: 12, marginBottom: 2, fontWeight: '700', textShadowColor: '#000', textShadowRadius: 4 },
+  village: { color: T.accent, fontSize: 11, fontWeight: '700', textShadowColor: '#000', textShadowRadius: 4 },
+  villageDim: { color: '#c9c0e8', fontSize: 11, fontWeight: '600' },
   diffRow: { flexDirection: 'row', gap: 6 },
   diffCell: { flex: 1, backgroundColor: T.surface2, borderRadius: 10, paddingVertical: 8, alignItems: 'center', borderWidth: 1, borderColor: 'transparent' },
   diffCellOn: { borderColor: T.accent, backgroundColor: T.surface },
   diffCellLock: { opacity: 0.45 },
+  diffHead: { flexDirection: 'row', alignItems: 'center', gap: 3 },
+  diffIcon: { width: 18, height: 18 },
   diffLabel: { color: T.muted, fontSize: 13, fontWeight: '800' },
   diffLabelOn: { color: T.accent },
   diffSub: { color: T.muted, fontSize: 10, marginTop: 2 },
-  enemy: { color: T.muted, fontSize: 12, marginTop: 8 },
-  affinity: { color: T.text, fontSize: 12, marginTop: 6, fontWeight: '600' },
-  synRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 10, justifyContent: 'center' },
+  enemy: { color: T.muted, fontSize: 12 },
+  affinity: { color: T.text, fontSize: 12, fontWeight: '600' },
+  synRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 4, justifyContent: 'center' },
   synTag: { color: T.accent, fontSize: 11, fontWeight: '800', backgroundColor: T.surface, borderRadius: 8, paddingHorizontal: 8, paddingVertical: 3, overflow: 'hidden' },
   mLabel: { color: T.muted, fontSize: 11, marginBottom: 3 },
   mVal: { color: T.text, fontWeight: '900', fontSize: 20 },
@@ -207,7 +274,7 @@ const st = StyleSheet.create({
   prestigeRow: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 10 },
   hintSm: { color: T.muted, fontSize: 11, marginTop: 2 },
   // 구역 진행 게이지.
-  zoneBar: { alignSelf: 'stretch', height: 5, backgroundColor: T.bg, borderRadius: 3, marginTop: 10, overflow: 'hidden' },
+  zoneBar: { position: 'absolute', left: 12, right: 12, bottom: 8, height: 5, backgroundColor: 'rgba(0,0,0,0.5)', borderRadius: 3, overflow: 'hidden', zIndex: 3 },
   zoneBarFill: { height: 5, backgroundColor: T.accent, borderRadius: 3 },
   // 원탭 전체수령 배너.
   claimRow: { flexDirection: 'row', alignItems: 'center', backgroundColor: T.surface, borderRadius: 12, borderWidth: 1.5, borderColor: T.good, paddingHorizontal: 14, paddingVertical: 10 },

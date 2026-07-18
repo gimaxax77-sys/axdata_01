@@ -1,5 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { isOn } from '../core/features.mjs';
 import { createUnit } from '../core/units.mjs';
 import { getArchetype, ARCHETYPES } from '../core/archetypes.mjs';
 import { createGameState } from '../core/gameState.mjs';
@@ -96,11 +97,12 @@ test('컨셉: fantasy·scifi 모두 신규 원형(도적/궁수/법사) 라벨�
   }
 });
 
-test('컨셉: 6원형 모두 N~UR 전 등급이 최소 1명씩 존재한다(등급 공백 없음)', () => {
+test('컨셉: 6원형 모두 N~UR 전 등급이 최소 1명씩 존재한다(등급 공백 없음)', { skip: !isOn('rarity') && '등급 옵션 off — 커버리지 검증 생략' }, () => {
   const RARITIES = ['N', 'R', 'SR', 'SSR', 'UR'];
   const ARCHS = ['VANGUARD', 'STRIKER', 'SUPPORT', 'ROGUE', 'ARCHER', 'MAGE'];
   for (const cid of ['fantasy', 'scifi']) {
     const c = CONCEPTS[cid];
+    if (!c.roster.some((ch) => ch.rarity)) continue; // 등급 안 쓰는 일반 로스터는 커버리지 무관
     for (const arch of ARCHS) {
       for (const r of RARITIES) {
         const has = c.roster.some((ch) => ch.archetype === arch && ch.rarity === r);

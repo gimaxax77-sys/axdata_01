@@ -1,55 +1,20 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Modal, TextInput, useWindowDimensions, Animated, FlatList } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Modal, TextInput, useWindowDimensions, Animated, FlatList, Image } from 'react-native';
 import { T, rarityMeta } from '../theme';
 import { reducedMotion } from '../motion';
 import GrowthPanel from './GrowthPanel';
 import MetaScreen from './MetaScreen';
 
-// 등급 순위(정렬용) — 인벤토리 상위 우선.
-const RARITY_RANK = { N: 0, R: 1, SR: 2, SSR: 3, UR: 4 };
-function rarityColor(r) { return rarityMeta(r).color; }
-// 등급 인라인 배지 스타일 — 다크 배경의 색텍스트는 대비가 약해, 등급색 배경 +
-// 어두운 글자로 시인성을 확보한다(Text 중첩 유지, 레이아웃 영향 없음).
-function rarityText(r) {
-  return { backgroundColor: rarityMeta(r).color, color: '#160f28', fontWeight: '900', fontSize: 11, borderRadius: 4, overflow: 'hidden' };
-}
-import { Card, Btn, fmt, MultiToggle, multLabel, repeat, Portrait, StarBadge, PowerBadge } from '../components';
+import PickerModal from './RosterPickerModal';
+import {
+  RARITY_RANK, rarityColor, rarityText, statIcon, ov, describeSkill, describeAwaken, DeltaText,
+} from './rosterShared';
+import { Card, Btn, fmt, MultiToggle, multLabel, repeat, Portrait, StarBadge, PowerBadge, pctW } from '../components';
+import { isOn } from '../../system/core/features.mjs';
 import { CodeTag } from '../uicode';
 
-// 후보를 임시 장착했을 때의 실제 전투력 — 피커의 "변경 전후 비교"용.
-//   (loadout.mjs 추천 로직과 동일 기법: 넣어보고 계산 후 원복)
-function powerWithGearItem(unit, slot, item) {
-  const prev = unit.gear[slot];
-  unit.gear[slot] = item || null;
-  const p = computePower(unit);
-  unit.gear[slot] = prev;
-  return p;
-}
-function powerWithRuneItem(unit, i, rune) {
-  if (!unit.runes) unit.runes = [];
-  const prev = unit.runes[i];
-  unit.runes[i] = rune || null;
-  const p = computePower(unit);
-  unit.runes[i] = prev;
-  return p;
-}
-// 전후 차이 표시 — 델타를 '채운 배지'로 강조(하향=빨강 배지+흰 글자, 상향=초록 배지).
-function DeltaText({ cur, next }) {
-  const d = next - cur;
-  const up = d > 0, down = d < 0;
-  const badge = {
-    backgroundColor: up ? T.good : down ? T.danger : T.surface2,
-    color: up ? '#0f2a17' : down ? '#ffffff' : T.muted,
-    fontWeight: '900', fontSize: 12, borderRadius: 5, overflow: 'hidden',
-  };
-  return (
-    <Text style={{ color: T.muted, fontWeight: '700', fontSize: 12, marginTop: 4 }}>
-      전투력 {fmt(cur)} → <Text style={{ color: up ? T.good : down ? T.danger : T.text, fontWeight: '900' }}>{fmt(next)}</Text>
-      {'  '}<Text style={badge}> {up ? '▲ +' : down ? '▼ -' : '± '}{fmt(Math.abs(d))} </Text>
-    </Text>
-  );
-}
 import { charImage } from '../charImages';
+import { gearIcon } from '../uiIcons';
 import { fx } from '../feedback';
 import { togglePartyMember, MAX_PARTY, getPartyUnits, autoParty } from '../../system/core/gameState.mjs';
 import { teamSynergy } from '../../system/core/synergy.mjs';
@@ -93,7 +58,6 @@ import {
   enhanceRune, runeMainValue, runeEnhanceCost, RUNE_MAX_LEVEL, RUNE_SUMMON_COST, activeRuneSets, rerollRuneSubs,
 } from '../../system/core/runes.mjs';
 
-const SLOT_KO = Object.fromEntries(Object.entries(SLOT_META).map(([k, v]) => [k, v.label]));
 // 장비 카드 계열 그룹핑(표시 순서·소제목).
 const GEAR_CATS = [
   { cat: 'weapon', label: '무기' },
@@ -116,88 +80,6 @@ function costumeNeedText(cos, concept) {
   return SOURCE_LABEL[cos.source] || cos.source;
 }
 
-// 스탯 → 아이콘(룬·장비·스킬 표기 일관). 이름 대신 아이콘으로 간결·시각화.
-const STAT_ICON = {
-  atk: '⚔️', hp: '❤️', def: '🛡️', spd: '👟',
-  critChance: '💥', critDamage: '💥💥', lifesteal: '🩸', defPierce: '🏹',
-  dmgReduce: '🧱', evasion: '🌀', accuracy: '🎯', trueDamage: '⚡', absDef: '🔰',
-};
-function statIcon(key) { return STAT_ICON[key] || String(key).toUpperCase(); }
-// 치명피해(💥💥)만 겹쳐 보이도록 음수 자간 적용 — 문자열을 Text 자식 배열로 변환.
-//   critDamage가 없으면 원문 문자열 그대로 반환(오버헤드 0).
-function ov(text) {
-  const s = String(text);
-  if (!s.includes('💥💥')) return s;
-  const segs = s.split('💥💥');
-  const out = [];
-  segs.forEach((seg, i) => {
-    if (seg) out.push(seg);
-    if (i < segs.length - 1) out.push(<Text key={`cd${i}`} style={{ letterSpacing: -10 }}>💥💥</Text>);
-  });
-  return out;
-}
-
-// 효과 객체 → 사람이 읽는 문자열 (scale = 스킬 레벨/랭크 배수)
-function describeEffect(e = {}, scale = 1) {
-  const p = [];
-  const order = ['critChance', 'critDamage', 'lifesteal', 'defPierce', 'dmgReduce', 'evasion', 'accuracy', 'trueDamage', 'absDef'];
-  for (const k of order) if (e[k]) p.push(`${statIcon(k)} +${Math.round(e[k] * scale * 100)}%`);
-  return p;
-}
-// scale: 스킬 레벨/랭크 배수. 강화 시 실제 반영되는 수치를 그대로 보여준다.
-function describeSkill(id, scale = 1) {
-  const s = SKILL_CATALOG[id];
-  const p = [];
-  if (s.statPct) for (const [k, v] of Object.entries(s.statPct)) p.push(`${statIcon(k)} +${Math.round(v * scale * 100)}%`);
-  p.push(...describeEffect(s.effect, scale));
-  p.push(...describeTeamBuff(s.teamBuff, scale));
-  return p.join(' · ');
-}
-// 팀버프 3종 표시 (공격/피해경감/치명)
-function describeTeamBuff(tb = {}, scale = 1) {
-  const p = [];
-  if (tb.atk) p.push(`팀 ⚔️ +${Math.round(tb.atk * scale * 100)}%`);
-  if (tb.def) p.push(`팀 🛡️ +${Math.round(tb.def * scale * 100)}%`);
-  if (tb.critChance) p.push(`팀 🎯 +${Math.round(tb.critChance * scale * 100)}%`);
-  return p;
-}
-// 설계도 기준(강화 전 Lv1) 표시 — 제작 미리보기용.
-function describeGear(bp) {
-  const p = [];
-  for (const [k, v] of Object.entries(bp.flat || {})) p.push(`${statIcon(k)} +${v}`);
-  p.push(...describeEffect(bp.effect));
-  return p.join(' · ');
-}
-// 실제 장비 인스턴스(강화 레벨 + 등급 배수 + 부옵션 반영) 표시.
-function describeGearItem(item) {
-  const c = gearContribution(item);
-  const p = [];
-  for (const [k, v] of Object.entries(c.flat)) p.push(`${statIcon(k)} +${Math.round(v)}`);
-  for (const [k, v] of Object.entries(c.statPct)) p.push(`${statIcon(k)} +${Math.round(v * 100)}%`);
-  p.push(...describeEffect(c.effect));
-  return p.join(' · ');
-}
-// 장비 부옵션만 (재련 대상 강조용).
-function describeSubs(subs = []) {
-  return subs.map((s) => `${statIcon(s.key)} +${Math.round(s.value * 100)}%`).join(' · ');
-}
-// 시그니처 각성 2차 효과 설명
-function describeAwaken(a = {}) {
-  const p = [];
-  if (a.statPct) for (const [k, v] of Object.entries(a.statPct)) p.push(`${statIcon(k)} +${Math.round(v * 100)}%`);
-  p.push(...describeEffect(a.effect));
-  p.push(...describeTeamBuff(a.teamBuff));
-  return p.join(' · ');
-}
-// 룬 한 개 요약 (메인스탯 + 등급 + 부옵션)
-function describeRune(rune) {
-  const set = RUNE_SETS[rune.set];
-  const val = runeMainValue(rune);
-  const stat = statIcon(set.main.stat);
-  const pct = `${(val * 100).toFixed(1)}%`;
-  const subTxt = (rune.subs || []).length ? ` · ${describeSubs(rune.subs)}` : '';
-  return { title: `${set.emoji} ${set.label} +${rune.level}`, sub: `${stat} ${pct}${subTxt}`, rarity: rune.rarity, rarityLabel: RUNE_RARITY[rune.rarity].label };
-}
 
 // 영웅 탭 최상위 서브탭 — 영웅(그리드+상세) · 편성(파티·진형) · 성장(펫·유물·엠블럼·정령).
 const ROSTER_TABS = [
@@ -456,8 +338,8 @@ export default function RosterScreen({ state, bump, concept }) {
                     return (
                       <View key={r.uid} style={g.dpsRow}>
                         <Text style={g.dpsName} numberOfLines={1}>{pm ? pm.name : r.uid}</Text>
-                        <View style={g.dpsBarTrack}><View style={[g.dpsBarFill, { width: `${Math.round(r.dpsShare * 100)}%` }]} /></View>
-                        <Text style={g.dpsPct}>{Math.round(r.dpsShare * 100)}%</Text>
+                        <View style={g.dpsBarTrack}><View style={[g.dpsBarFill, { width: `${pctW(r.dpsShare * 100)}%` }]} /></View>
+                        <Text style={g.dpsPct}>{pctW(Math.round(r.dpsShare * 100))}%</Text>
                       </View>
                     );
                   })}
@@ -540,7 +422,7 @@ export default function RosterScreen({ state, bump, concept }) {
               <View style={g.nameWrap}>
                 <CodeTag id="b2" corner="tl" />
                 <Text style={g.headName} numberOfLines={1}>{meta.name}</Text>
-                {unit.rarity ? (
+                {isOn('rarity') && unit.rarity ? (
                   <View style={[g.rarPill, { backgroundColor: rarityMeta(unit.rarity).color }]}>
                     <Text style={g.rarPillText}>{unit.rarity}</Text>
                   </View>
@@ -595,7 +477,7 @@ export default function RosterScreen({ state, bump, concept }) {
                 return (
                   <View key={label} style={g.bdRow}>
                     <Text style={g.bdLabel}>{label}</Text>
-                    <View style={g.bdBarTrack}><View style={[g.bdBarFill, { width: `${Math.min(100, pct)}%` }]} /></View>
+                    <View style={g.bdBarTrack}><View style={[g.bdBarFill, { width: `${pctW(pct)}%` }]} /></View>
                     <Text style={g.bdVal}>{fmt(Math.round(val))}</Text>
                     <Text style={g.bdPct}>{pct.toFixed(0)}%</Text>
                   </View>
@@ -745,7 +627,7 @@ export default function RosterScreen({ state, bump, concept }) {
                 bump();
               }} />
           </View>
-          <View style={g.bar}><View style={[g.barFill, { width: `${intimacyProgress(unit).ratio * 100}%` }]} /></View>
+          <View style={g.bar}><View style={[g.barFill, { width: `${pctW(intimacyProgress(unit).ratio * 100)}%` }]} /></View>
         </Card>
       )}
 
@@ -783,7 +665,7 @@ export default function RosterScreen({ state, bump, concept }) {
         const STAT_KO = { atk: '공격', hp: '체력', def: '방어', spd: '속도' };
         return (
           <Card style={{ marginTop: 8, borderColor: sp.fullyUnlocked ? T.good : T.line }}>
-            <Text style={g.slotDesc}>{unit.rarity || '?'}등급 · 완전 발현 시 전 스탯 최대 +{Math.round(sp.full * 100)}%. 낮은 등급일수록 보정이 크지만, 완전 발현해도 최고등급을 살짝 넘지 못합니다.</Text>
+            <Text style={g.slotDesc}>{isOn('rarity') ? `${unit.rarity || '?'}등급 · ` : ''}완전 발현 시 전 스탯 최대 +{Math.round(sp.full * 100)}%.{isOn('rarity') ? ' 낮은 등급일수록 보정이 크지만, 완전 발현해도 최고등급을 살짝 넘지 못합니다.' : ''}</Text>
             <View style={{ height: 8 }} />
             {conds.map((c) => (
               <View key={c.id} style={[g.seedRow, c.met && g.seedRowMet]}>
@@ -950,7 +832,9 @@ export default function RosterScreen({ state, bump, concept }) {
                   <TouchableOpacity key={slot} onPress={() => setPicker({ mode: 'gear', slot })}
                     accessibilityRole="button" accessibilityLabel={item ? `${SLOT_META[slot].label} ${GEAR_CATALOG[item.blueprint].label} +${item.level - 1}` : `${SLOT_META[slot].label} 비어있음`}
                     style={[g.gearTile, item && item.rarity && { borderColor: rarityColor(item.rarity) }]} activeOpacity={0.8}>
-                    <Text style={g.gearTileEmoji}>{SLOT_META[slot].emoji}</Text>
+                    {item && gearIcon(item.blueprint)
+                      ? <Image source={gearIcon(item.blueprint)} style={g.gearTileIcon} resizeMode="contain" />
+                      : <Text style={g.gearTileEmoji}>{SLOT_META[slot].emoji}</Text>}
                     {item ? (<>
                       <Text style={g.runeLv}>+{item.level - 1}</Text>
                       {item.rarity ? <Text style={[rarityText(item.rarity), g.runeRar]}> {item.rarity} </Text> : null}
@@ -1006,199 +890,6 @@ export default function RosterScreen({ state, bump, concept }) {
       })}
     </View>
     </View>
-  );
-}
-
-// ── 모달: 스킬/장비/룬 선택 ───────────────────────────────────
-function PickerModal({ picker, unit, state, onClose, onChange, concept }) {
-  const [emult, setEmult] = useState(1); // 강화 배수 (×1/×10/×100/Max)
-  const [dmsg, setDmsg] = useState(null); // 강화 결과(전투력 증가) 표시
-  if (!picker) return null;
-  const apply = (fn) => { fn(); onChange(); };
-  // 강화 전용 — 선택 배수만큼 반복 + 전투력 증가분을 명확히 표시.
-  const applyN = (fn) => {
-    const before = computePower(unit);
-    const n = repeat(fn, emult);
-    const gained = computePower(unit) - before;
-    if (n > 0) { setDmsg(`⚔️ 전투력 +${fmt(gained)} (강화 ${n}회)`); fx('success'); }
-    else { setDmsg('재화 부족 또는 상한'); fx('error'); }
-    onChange();
-  };
-
-  let body;
-  if (picker.mode === 'rune') {
-    const i = picker.slot;
-    const equipped = (unit.runes || [])[i];
-    const curP = computePower(unit); // 변경 전 전투력(후보별 비교 기준)
-    // 가방: 등급↓ → 메인값↓ 정렬(상위 우선).
-    const bag = (state.runeBag || []).slice()
-      .sort((a, b) => (RARITY_RANK[b.rarity] || 0) - (RARITY_RANK[a.rarity] || 0) || (runeMainValue(b) - runeMainValue(a)));
-    body = (
-      <>
-        <Text style={m.title}>룬 선택 · 슬롯 {i + 1} <Text style={m.optDesc}>(가방 {bag.length})</Text></Text>
-        {equipped && (() => {
-          const d = describeRune(equipped);
-          const maxed = equipped.level >= RUNE_MAX_LEVEL;
-          const cost = runeEnhanceCost(equipped.level);
-          return (
-            <View style={[m.equippedRow, { borderWidth: 1.5, borderColor: rarityColor(equipped.rarity) }]}>
-              <View style={m.equippedHead}>
-                <Text style={m.equippedBadge}>✅ 장착중</Text>
-                <Text style={m.equippedName}>{d.title} <Text style={rarityText(equipped.rarity)}> {d.rarityLabel} </Text></Text>
-              </View>
-              <Text style={m.equippedDesc}>{ov(d.sub)}</Text>
-              {!maxed && <MultiToggle value={emult} onChange={setEmult} />}
-              <View style={{ flexDirection: 'row', gap: 8 }}>
-                <Btn small kind="gold" disabled={maxed || (state.wallet.currency || 0) < cost.currency}
-                  label={maxed ? 'MAX' : `강화 ${multLabel(emult)} ${fmt(cost.currency)}`} onPress={() => applyN(() => enhanceRune(state, equipped.uid))} />
-                {(equipped.subs || []).length > 0 && <Btn small kind="primary" label="재련 💎15" onPress={() => apply(() => rerollRuneSubs(state, equipped.uid))} />}
-                <Btn small kind="ghost" label="해제" onPress={() => apply(() => unequipRune(state, unit.uid, i))} />
-              </View>
-            </View>
-          );
-        })()}
-        {/* 가상화(FlatList) — 가방이 수백 개여도 보이는 행만 렌더(렉 제거). */}
-        <FlatList style={{ maxHeight: 360 }} data={bag} keyExtractor={(r) => r.uid}
-          initialNumToRender={10} maxToRenderPerBatch={10} windowSize={5}
-          ListEmptyComponent={<Text style={m.optDesc}>가방이 비었습니다. 룬 카드에서 발굴하세요.</Text>}
-          renderItem={({ item: r }) => {
-            const d = describeRune(r);
-            return (
-              <TouchableOpacity onPress={() => apply(() => { equipRune(state, unit.uid, i, r.uid); onClose(); })}
-                style={[m.opt, { borderColor: rarityColor(r.rarity) }]} activeOpacity={0.8}>
-                <Text style={m.optName}>{d.title} <Text style={rarityText(r.rarity)}> {RUNE_RARITY[r.rarity].label} </Text></Text>
-                <Text style={m.optDesc}>{ov(d.sub)}</Text>
-                <DeltaText cur={curP} next={powerWithRuneItem(unit, i, r)} />
-              </TouchableOpacity>
-            );
-          }} />
-      </>
-    );
-  } else if (picker.mode === 'skill') {
-    const i = picker.slot;
-    const equipped = unit.skills[i];
-    body = (
-      <>
-        <Text style={m.title}>스킬 선택 · 슬롯 {i + 1}</Text>
-        {equipped && (
-          <View style={m.equippedRow}>
-            <View style={m.equippedHead}>
-              <Text style={m.equippedBadge}>✅ 장착중</Text>
-              <Text style={m.equippedName}>{SKILL_CATALOG[equipped.id].label} +{equipped.level}</Text>
-            </View>
-            <Text style={m.equippedDesc}>{ov(describeSkill(equipped.id, skillPower(equipped.level)))}</Text>
-            <MultiToggle value={emult} onChange={setEmult} />
-            <View style={{ flexDirection: 'row', gap: 8 }}>
-              <Btn small kind="gold" label={`강화 ${multLabel(emult)}`} onPress={() => applyN(() => upgradeSkill(state, unit.uid, i))} />
-              <Btn small kind="ghost" label="해제" onPress={() => apply(() => unequipSkill(state, unit.uid, i))} />
-            </View>
-          </View>
-        )}
-        <ScrollView style={{ maxHeight: 360 }}>
-          {equippableSkills().map((s) => {
-            const on = equipped && equipped.id === s.id;
-            const dupOther = unit.skills.some((x, j) => x && x.id === s.id && j !== i);
-            return (
-              <TouchableOpacity key={s.id} disabled={dupOther} onPress={() => apply(() => { equipSkill(state, unit.uid, i, s.id); onClose(); })}
-                style={[m.opt, on && m.optOn, dupOther && m.optDim]} activeOpacity={0.8}>
-                <Text style={m.optName}>{s.label} {on ? '✓' : ''}{dupOther ? ' (다른 슬롯 장착중)' : ''}</Text>
-                <Text style={m.optDesc}>{ov(describeSkill(s.id))}</Text>
-              </TouchableOpacity>
-            );
-          })}
-        </ScrollView>
-      </>
-    );
-  } else {
-    const slot = picker.slot;
-    const item = unit.gear[slot];
-    const curP = computePower(unit); // 변경 전 전투력(후보별 비교 기준)
-    const bps = Object.values(GEAR_CATALOG).filter((b) => b.slot === slot);
-    // 인벤토리: 등급↓ → 강화레벨↓ 로 정렬(상위 우선).
-    const owned = state.inventory.filter((g2) => g2.slot === slot)
-      .sort((a, b) => (RARITY_RANK[b.rarity] || 0) - (RARITY_RANK[a.rarity] || 0) || (b.level - a.level));
-    body = (
-      <>
-        <Text style={m.title}>{SLOT_KO[slot]} 선택</Text>
-        {item && (
-          <View style={[m.equippedRow, item.rarity && { borderWidth: 1.5, borderColor: rarityColor(item.rarity) }]}>
-            <View style={m.equippedHead}>
-              <Text style={m.equippedBadge}>✅ 장착중</Text>
-              <Text style={m.equippedName}>
-                {GEAR_CATALOG[item.blueprint].label} +{item.level - 1}
-                {item.rarity ? <Text style={rarityText(item.rarity)}> {(GEAR_RARITY[item.rarity] || {}).label || item.rarity} </Text> : null}
-              </Text>
-            </View>
-            <Text style={m.equippedDesc}>{ov(describeGearItem(item))}</Text>
-            {(item.subs || []).length > 0 && <Text style={m.subLine}>부옵션: {ov(describeSubs(item.subs))}</Text>}
-            {(() => {
-              const en = enchantInfo(item);
-              return en
-                ? <Text style={m.subLine}>✨ 인챈트: {en.label} +{Math.round(en.value * 100)}% <Text style={g.dim}>Lv.{en.level}/{ENCHANT_MAX}</Text></Text>
-                : <Text style={m.subLine}>✨ 인챈트: 없음</Text>;
-            })()}
-            <MultiToggle value={emult} onChange={setEmult} />
-            <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap' }}>
-              <Btn small kind="gold" label={`강화 ${multLabel(emult)} (${fmt(gearEnhanceCost(item.level).currency)})`} onPress={() => applyN(() => enhanceGear(state, item.uid))} />
-              {(item.subs || []).length > 0 && <Btn small kind="primary" label="재련 💎20" onPress={() => apply(() => rerollGearSubs(state, item.uid))} />}
-              <Btn small kind="gold" disabled={materialCount(state, 'elemEssence') < ELEM_OPTION_COST || (item.subs || []).length >= GEAR_SUB_MAX}
-                label={`속성 부여 ${MATERIAL_META.elemEssence.emoji}${ELEM_OPTION_COST}`}
-                onPress={() => apply(() => { const r = grantGearElementOption(state, item.uid); setDmsg(r.ok ? `${MATERIAL_META.elemEssence.emoji} 속성옵션 부여 (부옵션 ${r.subs.length})` : (r.reason || '실패')); })} />
-              {(() => {
-                const en = enchantInfo(item);
-                const lv = en ? en.level : 0;
-                const c = enchantCost(lv).elemEssence;
-                return (<>
-                  <Btn small kind="primary" disabled={lv >= ENCHANT_MAX || materialCount(state, 'elemEssence') < c}
-                    label={`인챈트 ${MATERIAL_META.elemEssence.emoji}${c}`}
-                    onPress={() => apply(() => { const r = enchantGear(state, item.uid); setDmsg(r.ok ? `✨ ${r.info.label} 인챈트 Lv.${r.info.level}` : (r.reason || '실패')); })} />
-                  {en && <Btn small kind="ghost" label="효과변경 💎25" onPress={() => apply(() => { const r = rerollEnchant(state, item.uid); setDmsg(r.ok ? `✨ 인챈트 변경: ${r.info.label}` : (r.reason || '실패')); })} />}
-                </>);
-              })()}
-              <Btn small kind="ghost" label="해제" onPress={() => apply(() => unequipGear(state, unit.uid, slot))} />
-            </View>
-          </View>
-        )}
-        {/* 가상화 — 보유 장비가 많아도 보이는 행만 렌더. 제작 목록은 헤더로. */}
-        <FlatList style={{ maxHeight: 340 }} data={owned} keyExtractor={(it) => it.uid}
-          initialNumToRender={8} maxToRenderPerBatch={10} windowSize={5}
-          ListHeaderComponent={(
-            <>
-              <Text style={m.group}>제작</Text>
-              {bps.map((b) => (
-                <TouchableOpacity key={b.id} onPress={() => apply(() => { const c = craftGear(state, b.id); if (c.ok) { equipGear(state, unit.uid, c.item.uid); onClose(); } })}
-                  style={m.opt} activeOpacity={0.8}>
-                  <Text style={m.optName}>{b.label} <Text style={m.optCost}>🪙{fmt(gearCraftCost(b.id).currency)}</Text></Text>
-                  <Text style={m.optDesc}>{describeGear(b)}</Text>
-                </TouchableOpacity>
-              ))}
-              {owned.length > 0 && <Text style={m.group}>보유 장비</Text>}
-            </>
-          )}
-          renderItem={({ item: it }) => (
-            <TouchableOpacity onPress={() => apply(() => { equipGear(state, unit.uid, it.uid); onClose(); })}
-              style={[m.opt, it.rarity && { borderColor: rarityColor(it.rarity) }]} activeOpacity={0.8}>
-              <Text style={m.optName}>{GEAR_CATALOG[it.blueprint].label} +{it.level - 1}
-                {it.rarity ? <Text style={rarityText(it.rarity)}> {(GEAR_RARITY[it.rarity] || {}).label || it.rarity} </Text> : null}</Text>
-              <Text style={m.optDesc}>{ov(describeGearItem(it))}</Text>
-              <DeltaText cur={curP} next={powerWithGearItem(unit, slot, it)} />
-            </TouchableOpacity>
-          )} />
-      </>
-    );
-  }
-
-  return (
-    <Modal transparent animationType="slide" visible onRequestClose={onClose}>
-      <TouchableOpacity style={m.backdrop} activeOpacity={1} onPress={onClose}>
-        <TouchableOpacity activeOpacity={1} style={m.sheet}>
-          {body}
-          {dmsg && <Text style={m.dmsg}>{dmsg}</Text>}
-          <View style={{ height: 8 }} />
-          <Btn label="닫기" kind="ghost" onPress={onClose} />
-        </TouchableOpacity>
-      </TouchableOpacity>
-    </Modal>
   );
 }
 
@@ -1322,6 +1013,7 @@ const g = StyleSheet.create({
   gearGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 2, marginBottom: 4 },
   gearTile: { width: 64, alignItems: 'center', justifyContent: 'center', paddingVertical: 10, borderRadius: 12, backgroundColor: T.surface2, borderWidth: 1.5, borderColor: T.line, gap: 2 },
   gearTileEmoji: { fontSize: 22 },
+  gearTileIcon: { width: 34, height: 34 },
   gearTileEmpty: { color: T.muted, fontSize: 9, textAlign: 'center' },
   gearCat: { color: T.muted, fontSize: 12, fontWeight: '800', marginTop: 10, marginBottom: 2 },
   dim: { color: T.muted, fontSize: 12, fontWeight: '400' },
@@ -1362,24 +1054,4 @@ const g = StyleSheet.create({
   dtabLabel: { color: T.muted, fontSize: 11, fontWeight: '800', marginTop: 2 },
   dtabLabelOn: { color: '#241a40' },
   recMsg: { color: T.accent, fontSize: 12, fontWeight: '700', marginTop: 8, marginBottom: 2 },
-});
-
-const m = StyleSheet.create({
-  backdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'flex-end' },
-  sheet: { backgroundColor: T.surface, borderTopLeftRadius: 22, borderTopRightRadius: 22, padding: 18, borderTopWidth: 1, borderColor: T.line },
-  title: { color: T.text, fontWeight: '900', fontSize: 18, marginBottom: 12 },
-  equippedRow: { backgroundColor: T.surface2, borderRadius: 12, padding: 12, marginBottom: 10, gap: 8 },
-  equippedBadge: { color: '#0f2a17', backgroundColor: T.good, fontSize: 11, fontWeight: '900', borderRadius: 5, paddingHorizontal: 7, paddingVertical: 1, alignSelf: 'flex-start', overflow: 'hidden' },
-  equippedHead: { flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap' },
-  equippedName: { color: T.text, fontWeight: '700', fontSize: 14 },
-  equippedDesc: { color: T.muted, fontSize: 12 },
-  subLine: { color: T.accent, fontSize: 11, fontWeight: '600' },
-  group: { color: T.muted, fontSize: 12, fontWeight: '700', marginTop: 10, marginBottom: 6 },
-  opt: { backgroundColor: T.surface2, borderRadius: 12, padding: 12, marginBottom: 8, borderWidth: 1, borderColor: 'transparent' },
-  optOn: { borderColor: T.accent },
-  optDim: { opacity: 0.4 },
-  optName: { color: T.text, fontWeight: '800', fontSize: 14 },
-  optCost: { color: T.accent, fontWeight: '700', fontSize: 12 },
-  optDesc: { color: T.muted, fontSize: 12, marginTop: 2 },
-  dmsg: { color: T.accent, fontSize: 13, fontWeight: '800', textAlign: 'center', marginTop: 8 },
 });

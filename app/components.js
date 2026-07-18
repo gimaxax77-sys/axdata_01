@@ -4,17 +4,22 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { T, rarityMeta, SPACE } from './theme';
 import { fx } from './feedback';
 import { reducedMotion } from './motion';
+import { isOn } from '../system/core/features.mjs';
+import { resIcon } from './uiIcons';
 
 // ── 캐릭터 초상 — 등급 프레임 + 글로우. 로스터/파티/소환/도감 공용 ──
 //   image(있으면): 캐릭터 일러스트를 프레임 안에 렌더. 없으면 emoji 폴백.
 //   React.memo — 방치 틱(초당 리렌더)에서 그라데이션 재계산을 건너뛴다.
 export const Portrait = React.memo(function Portrait({ emoji, image = null, rarity = 'N', size = 56, badge = false, glow = true, dim = false, style }) {
-  const rm = rarityMeta(rarity);
+  // 등급 모듈 off면 등급 무관(중립 'N' 프레임 · 글로우/배지 없음).
+  const showRarity = isOn('rarity');
+  const effRarity = showRarity ? rarity : 'N';
+  const rm = rarityMeta(effRarity);
   const radius = size * 0.26;
   const ring = Math.max(2, size * 0.045);
   const innerR = radius - ring;
   return (
-    <View style={[glow && { shadowColor: rm.color, shadowOpacity: rarity === 'N' ? 0 : 0.9, shadowRadius: size * 0.16, shadowOffset: { width: 0, height: 0 } }, style]}>
+    <View style={[glow && { shadowColor: rm.color, shadowOpacity: effRarity === 'N' ? 0 : 0.9, shadowRadius: size * 0.16, shadowOffset: { width: 0, height: 0 } }, style]}>
       <LinearGradient colors={rm.grad} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
         style={{ width: size, height: size, borderRadius: radius, padding: ring, alignItems: 'center', justifyContent: 'center' }}>
         <LinearGradient colors={[T.surface2, T.surface]} style={{ width: '100%', height: '100%', borderRadius: innerR, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
@@ -23,7 +28,7 @@ export const Portrait = React.memo(function Portrait({ emoji, image = null, rari
             : <Text style={{ fontSize: size * 0.5, opacity: dim ? 0.4 : 1 }}>{emoji}</Text>}
         </LinearGradient>
       </LinearGradient>
-      {badge && (
+      {badge && showRarity && (
         // 등급 배지 — 초상 크기에 비례해 렌더(화면마다 초상 크기가 달라도
         // 배지 비율은 일관). 등급 글자수(N~SSR)와 무관하게 동일 규격.
         <View style={{
@@ -121,10 +126,13 @@ export const PowerBadge = React.memo(function PowerBadge({ power, onPress, expan
   useEffect(() => {
     if (power > prev.current) {
       scale.setValue(1); flash.setValue(1);
+      // 같은 노드에 scale(transform)과 flash(shadowRadius)를 함께 애니 → 드라이버 통일 필수.
+      // shadowRadius는 네이티브 드라이버 불가이므로 둘 다 JS(useNativeDriver:false)로 맞춘다.
+      // (섞으면 네이티브에서 "moved to native earlier" 크래시.)
       Animated.parallel([
         Animated.sequence([
-          Animated.spring(scale, { toValue: 1.08, useNativeDriver: true, speed: 30, bounciness: 10 }),
-          Animated.spring(scale, { toValue: 1, useNativeDriver: true, speed: 16, bounciness: 6 }),
+          Animated.spring(scale, { toValue: 1.08, useNativeDriver: false, speed: 30, bounciness: 10 }),
+          Animated.spring(scale, { toValue: 1, useNativeDriver: false, speed: 16, bounciness: 6 }),
         ]),
         Animated.timing(flash, { toValue: 0, duration: 750, useNativeDriver: false }),
       ]).start();
@@ -155,7 +163,8 @@ const pb = StyleSheet.create({
 
 // 자원 셀 — 값이 늘면 살짝 튀며 금색으로 번쩍(획득 강조).
 //   방치 골드는 초당 흐르므로 강조 제외. 유의미한 재화(소환권·다이아)만 pulse.
-function ResCell({ emoji, value, pulse }) {
+function ResCell({ emoji, value, pulse, iconKey }) {
+  const icon = resIcon(iconKey);
   const prev = useRef(value);
   const scale = useRef(new Animated.Value(1)).current;
   const flash = useRef(new Animated.Value(0)).current;
@@ -177,7 +186,7 @@ function ResCell({ emoji, value, pulse }) {
     : T.text;
   return (
     <Animated.View style={[s.rescell, { transform: [{ scale }] }]}>
-      <Text style={s.resEmoji}>{emoji}</Text>
+      {icon ? <Image source={icon} style={s.resIcon} resizeMode="contain" /> : <Text style={s.resEmoji}>{emoji}</Text>}
       <Animated.Text style={[s.resVal, { color }]}>{fmt(value)}</Animated.Text>
     </Animated.View>
   );
@@ -189,7 +198,7 @@ export function ResourceBar({ concept, wallet }) {
   return (
     <LinearGradient colors={T.surfaceGrad} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={s.resbar}>
       {keys.map((k) => (
-        <ResCell key={k} emoji={concept.resources[k].emoji} value={wallet[k] || 0}
+        <ResCell key={k} iconKey={k} emoji={concept.resources[k].emoji} value={wallet[k] || 0}
           pulse={k === 'summon' || k === 'gem'} />
       ))}
     </LinearGradient>
@@ -288,6 +297,13 @@ export function repeat(fn, n) {
   return done;
 }
 
+// 퍼센트 너비 안전화 — 0~100 클램프 + 비유한값(NaN/Infinity)은 0.
+//   네이티브(Yoga)는 width:"NaN%" 에서 크래시(웹은 무시) → 진행바 너비는 반드시 이걸 통과.
+export function pctW(n) {
+  const v = Number(n);
+  return Number.isFinite(v) ? Math.max(0, Math.min(100, v)) : 0;
+}
+
 // 큰 수 접미사 — K/M/B/T/Q 이후 AA·AB···ZZ 로 확장(×1000 단위).
 //   1000^5=Q 다음부터 두 글자(AA=1000^6 …). ZZ까지 → 사실상 상한 없음(1e2000+).
 const FMT_SUFFIX = (() => {
@@ -327,6 +343,7 @@ const s = StyleSheet.create({
   resbar: { flexDirection: 'row', borderRadius: 14, padding: 6, gap: 6, borderWidth: 1, borderColor: T.line },
   rescell: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingVertical: 8 },
   resEmoji: { fontSize: 16 },
+  resIcon: { width: 22, height: 22 },
   resVal: { color: T.text, fontWeight: '800', fontSize: 15 },
   // 미니멀 정리: small 버튼이 라벨 대비 과하게 커 보이던 걸 축소
   // (paddingVertical 8→5, horizontal 12→10, 글로우도 함께 옅게).

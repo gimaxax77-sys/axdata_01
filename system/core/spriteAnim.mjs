@@ -31,12 +31,14 @@ export function isPlaybackDone(elapsedMs, fps, frames) {
 }
 
 // 전투 상태별 재생 규약(기본값). fps·순환 여부.
+// 16프레임 기준 fps — 8프레임 대비 재생 시간은 같게 유지하며 부드러움만 2배.
 export const SPRITE_STATES = {
-  idle: { loop: true, fps: 10 },
-  attack: { loop: false, fps: 14 },
-  hit: { loop: false, fps: 12 },
-  death: { loop: false, fps: 10 },
-  spawn: { loop: false, fps: 12 },
+  idle: { loop: true, fps: 20 },
+  attack: { loop: false, fps: 28 },
+  hit: { loop: false, fps: 24 },
+  walk: { loop: false, fps: 20 }, // 한 걸음 사이클 1회(웨이브 전진 연출)
+  death: { loop: false, fps: 20 },
+  spawn: { loop: false, fps: 24 },
 };
 
 // 상태 정의 조회(미정의 상태는 idle 규약으로 폴백).

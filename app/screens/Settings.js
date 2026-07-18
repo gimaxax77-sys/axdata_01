@@ -47,9 +47,14 @@ export function SettingsModal({ visible, settings, onChange, onReset, onClose, o
   };
 
   const doExport = async () => {
-    const c2 = onExport ? onExport() : '';
-    const ok = await copyText(c2);
-    setMsg(ok ? t('copied') : c2); // 복사 실패 시 코드 자체를 노출
+    try {
+      const c2 = onExport ? onExport() : '';
+      const ok = await copyText(c2);
+      setMsg(ok ? t('copied') : c2); // 복사 실패 시 코드 자체를 노출
+    } catch (e) {
+      // 내보내기 실패가 앱을 죽이지 않게 — 원인을 화면에 노출.
+      setMsg('내보내기 오류: ' + String(e && e.message || e));
+    }
   };
   const doImport = () => {
     if (!onImport) return;

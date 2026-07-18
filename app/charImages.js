@@ -8,7 +8,6 @@
 // 아래 맵에 한 줄만 추가하면 로스터·파티·소환·도감 전역에 자동 반영된다.
 // 등록 안 된 캐릭터는 이모지로 자연스럽게 폴백 → 점진 도입 가능.
 //
-//   예) 'fantasy:kael': require('../assets/char/fantasy/kael.png'),
 //       'scifi:kael':   require('../assets/char/scifi/kael.png'),
 // ─────────────────────────────────────────────────────────────
 
@@ -16,20 +15,27 @@
 // 실제 일러스트가 오면 같은 경로(assets/char/<concept>/<id>.png)로 덮어쓰면 자동 반영.
 export const CHAR_IMAGES = {
   // fantasy
-  'fantasy:kael': require('../assets/char/fantasy/kael.png'),
-  'fantasy:luna': require('../assets/char/fantasy/luna.png'),
-  'fantasy:gwen': require('../assets/char/fantasy/gwen.png'),
-  'fantasy:ciel': require('../assets/char/fantasy/ciel.png'),
-  'fantasy:bran': require('../assets/char/fantasy/bran.png'),
-  'fantasy:ael': require('../assets/char/fantasy/ael.png'),
-  'fantasy:ara': require('../assets/char/fantasy/ara.png'),
-  'fantasy:mir': require('../assets/char/fantasy/mir.png'),
-  'fantasy:pyra': require('../assets/char/fantasy/pyra.png'),
-  'fantasy:frost': require('../assets/char/fantasy/frost.png'),
-  'fantasy:marina': require('../assets/char/fantasy/marina.png'),
-  'fantasy:signe': require('../assets/char/fantasy/signe.png'),
-  'fantasy:aurel': require('../assets/char/fantasy/aurel.png'),
-  'fantasy:nyx': require('../assets/char/fantasy/nyx.png'),
+  'fantasy:knight': require('../assets/char/fantasy/knight.png'),
+  'fantasy:paladin': require('../assets/char/fantasy/paladin.png'),
+  'fantasy:paladin_with_helmet': require('../assets/char/fantasy/paladin_with_helmet.png'),
+  'fantasy:skeleton_golem': require('../assets/char/fantasy/skeleton_golem.png'),
+  'fantasy:barbarian': require('../assets/char/fantasy/barbarian.png'),
+  'fantasy:barbarian_large': require('../assets/char/fantasy/barbarian_large.png'),
+  'fantasy:werewolf_man': require('../assets/char/fantasy/werewolf_man.png'),
+  'fantasy:werewolf_wolf': require('../assets/char/fantasy/werewolf_wolf.png'),
+  'fantasy:skeleton_warrior': require('../assets/char/fantasy/skeleton_warrior.png'),
+  'fantasy:skeleton_minion': require('../assets/char/fantasy/skeleton_minion.png'),
+  'fantasy:druid': require('../assets/char/fantasy/druid.png'),
+  'fantasy:animatronic_normal': require('../assets/char/fantasy/animatronic_normal.png'),
+  'fantasy:rogue': require('../assets/char/fantasy/rogue.png'),
+  'fantasy:rogue_hooded': require('../assets/char/fantasy/rogue_hooded.png'),
+  'fantasy:skeleton_rogue': require('../assets/char/fantasy/skeleton_rogue.png'),
+  'fantasy:animatronic_creepy': require('../assets/char/fantasy/animatronic_creepy.png'),
+  'fantasy:ranger': require('../assets/char/fantasy/ranger.png'),
+  'fantasy:engineer': require('../assets/char/fantasy/engineer.png'),
+  'fantasy:mage': require('../assets/char/fantasy/mage.png'),
+  'fantasy:necromancer': require('../assets/char/fantasy/necromancer.png'),
+  'fantasy:skeleton_mage': require('../assets/char/fantasy/skeleton_mage.png'),
   // scifi
   'scifi:kael': require('../assets/char/scifi/kael.png'),
   'scifi:luna': require('../assets/char/scifi/luna.png'),

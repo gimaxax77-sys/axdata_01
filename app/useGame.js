@@ -34,6 +34,26 @@ function activeConcept() {
 }
 const CONCEPT = activeConcept();
 
+// 로스터 변경 마이그레이션 — 세이브 유닛의 characterId가 현재 로스터에 없으면
+// 같은 원형의 로스터 캐릭터로 안정적으로 재매핑(스프라이트/초상 정상화).
+// 예전(클라우드) 세이브가 옛 캐릭터 id를 갖고 있어 전투에서 이모지로만 나오던 문제 해결.
+const ROSTER_IDS = new Set(CONCEPT.roster.map((c) => c.id));
+const ROSTER_BY_ARCH = CONCEPT.roster.reduce((m, c) => { (m[c.archetype] = m[c.archetype] || []).push(c.id); return m; }, {});
+function normalizeRoster(state) {
+  if (!state || !Array.isArray(state.units)) return state;
+  for (const u of state.units) {
+    if (u && (!u.characterId || !ROSTER_IDS.has(u.characterId))) {
+      const pool = ROSTER_BY_ARCH[u.archetype];
+      if (pool && pool.length) {
+        let h = 0; const key = String(u.uid || u.characterId || '');
+        for (let i = 0; i < key.length; i++) h = (h * 31 + key.charCodeAt(i)) >>> 0;
+        u.characterId = pool[h % pool.length];
+      }
+    }
+  }
+  return state;
+}
+
 function createFresh() {
   const starter = CONCEPT.roster.find((c) => c.id === 'mir') || CONCEPT.roster.find((c) => c.rarity === 'N') || CONCEPT.roster[0];
   const hero = createUnit(starter.archetype, {
@@ -49,6 +69,7 @@ function createFresh() {
 
 // 재접속 오프라인 정산을 상태에 반영해 로드된 세이브를 반환.
 function applyLoad(loaded, offlineRef) {
+  normalizeRoster(loaded); // 예전 로스터 세이브 → 현재 21종 재매핑
   const rew = idleGenre.collectOffline(loaded, Date.now());
   if (rew.gained && (rew.gained.currency > 0 || rew.gained.growth > 0)) {
     // 광고제거 패스: 오프라인 2배를 광고 없이 자동 지급.
@@ -185,7 +206,7 @@ export function useGame() {
   const importSave = useCallback((code) => {
     const loaded = importCode(code);
     if (!loaded) return false;
-    ref.current = loaded;
+    ref.current = normalizeRoster(loaded);
     save();
     saveBackup(serialize(ref.current));
     setOffline(null);
@@ -209,7 +230,7 @@ export function useGame() {
     const pick = chooseSave(local, remote);
     if (pick.pick === 'remote') {
       const loaded = deserialize(remote.blob);
-      if (loaded) { ref.current = loaded; applyOverrides(ref.current.admin && ref.current.admin.overrides); save(); saveBackup(remote.blob); bump(); }
+      if (loaded) { ref.current = normalizeRoster(loaded); applyOverrides(ref.current.admin && ref.current.admin.overrides); save(); saveBackup(remote.blob); bump(); }
       setCloud((c) => ({ ...c, status: 'ok', user: u, role: cloudRole(), msg: '원격 진행 불러옴' }));
     } else {
       await cloudPush(local);
