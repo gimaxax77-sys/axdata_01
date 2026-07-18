@@ -19,6 +19,7 @@ import { MailboxModal } from './app/screens/MailboxModal';
 import { unreadMailCount } from './system/core/mailbox.mjs';
 import { useFonts } from 'expo-font';
 import IdleScreen from './app/screens/IdleScreen';
+import RunScreen from './app/screens/RunScreen';
 import RosterScreen from './app/screens/RosterScreen';
 import GachaScreen from './app/screens/GachaScreen';
 import ContentScreen from './app/screens/ContentScreen';
@@ -36,6 +37,7 @@ import { can } from './system/core/roles.mjs';
 // 탭 목록 — feat 가 붙은 탭은 해당 선택 모듈이 켜졌을 때만 노출(컨트롤 판넬로 on/off).
 const ALL_TABS = [
   { key: 'idle', label: '전투', icon: '🏰', Screen: React.memo(IdleScreen) },
+  { key: 'expedition', label: '원정', icon: '⚔️', Screen: React.memo(RunScreen), feat: 'expedition' },
   { key: 'roster', label: '영웅', icon: '🦸', Screen: React.memo(RosterScreen) },
   { key: 'gacha', label: '소환', icon: '🔮', Screen: React.memo(GachaScreen), feat: 'gacha' },
   { key: 'content', label: '콘텐츠', icon: '📅', Screen: React.memo(ContentScreen) },

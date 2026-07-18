@@ -46,6 +46,7 @@ export function createGameState({ units = [], party = [] } = {}) {
     guild: { coins: 0, day: -1, attacks: 0, tier: 1, bossHp: null }, // 길드 보스 레이드
     meta: { achv: {}, coll: {}, season: { claimed: {}, premium: false } }, // 도감·업적·시즌패스 청구 기록
     campaign: { cleared: 0 }, // 스토리 캠페인 클리어 챕터 수
+    run: null, // 원정(로그라이트) 진행 중 스냅샷 — 없으면 null. run.mjs 참조
     tutorial: { introSeen: false }, // 온보딩: 첫 소개 확인 여부
     settings: { muted: false, haptics: true, reduceMotion: false, lang: 'ko' }, // 사운드·햅틱·전투연출·언어
     tower: { floor: 1, best: 1 }, // 무한의 탑 현재/최고 층
