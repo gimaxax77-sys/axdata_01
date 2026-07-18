@@ -1,5 +1,5 @@
-import React, { useRef, useEffect, useState } from 'react';
-import { View, Image, StyleSheet } from 'react-native';
+import React, { useRef, useEffect } from 'react';
+import { View, Animated, StyleSheet } from 'react-native';
 import { frameAt, stateSpec, isPlaybackDone } from '../system/core/spriteAnim.mjs';
 import { reducedMotion } from './motion';
 
@@ -16,21 +16,27 @@ export default function SpriteAnim({
 }) {
   const spec = stateSpec(state);
   const n = frames || 1;
-  const [frame, setFrame] = useState(0);
+  // 프레임을 React state가 아닌 Animated.Value(translateX)로 구동한다.
+  //   매 프레임 setState → 리렌더가 사라져 JS 스레드 부하·버벅거림 제거.
+  //   tx는 시트를 왼쪽으로 미는 픽셀량(음수). 노드만 직접 갱신, 재조정 없음.
+  const tx = useRef(new Animated.Value(0)).current;
+  // frameW·scale은 렌더마다 바뀔 수 있어 ref로 최신값 유지(tick 클로저 stale 방지).
+  const stepRef = useRef(frameW * scale);
+  stepRef.current = frameW * scale;
   const startRef = useRef(0);
   const rafRef = useRef(null);
   const endedRef = useRef(false);
 
   useEffect(() => {
     // 절전/모션끔: 정적(첫 프레임) — 루프 미시작으로 발열↓.
-    if (reducedMotion() || n <= 1) { setFrame(0); return undefined; }
+    if (reducedMotion() || n <= 1) { tx.setValue(0); return undefined; }
     startRef.current = Date.now();
     endedRef.current = false;
     let alive = true;
     const tick = () => {
       if (!alive) return;
       const elapsed = Date.now() - startRef.current;
-      setFrame(frameAt(elapsed, spec.fps, n, spec.loop));
+      tx.setValue(-frameAt(elapsed, spec.fps, n, spec.loop) * stepRef.current);
       if (!spec.loop && isPlaybackDone(elapsed, spec.fps, n)) {
         if (!endedRef.current) { endedRef.current = true; if (onEnd) onEnd(); }
         return; // 1회 재생 완료 → 마지막 프레임 유지
@@ -45,11 +51,11 @@ export default function SpriteAnim({
   const sheetW = frameW * n;
   return (
     <View style={[s.window, { width: frameW * scale, height: frameH * scale }]}>
-      <Image
+      <Animated.Image
         source={source}
         style={{
           width: sheetW * scale, height: frameH * scale,
-          transform: [{ translateX: -frame * frameW * scale }],
+          transform: [{ translateX: tx }],
         }}
         resizeMode="stretch"
         fadeDuration={0}
