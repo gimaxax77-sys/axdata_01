@@ -205,7 +205,8 @@ export default function GachaScreen({ state, bump, concept }) {
         </Text>
       </Card>
 
-      {/* 소환 레벨(숙련도) */}
+      {/* 소환 레벨(숙련도) — summon 모듈 on일 때만 */}
+      {isOn('summon') && (
       <Card style={{ marginTop: 12 }}>
         <CodeTag id="j2" corner="tl" />
         <View style={s.mHead}>
@@ -221,6 +222,7 @@ export default function GachaScreen({ state, bump, concept }) {
         </Text>
         <Text style={s.mNote}>기본 소환권+다이아 · 홀수 레벨 능력치 / 짝수 레벨 재화 추가</Text>
       </Card>
+      )}
 
       <View style={s.btns}>
         <CodeTag id="j3" corner="tl" />

@@ -88,12 +88,13 @@ const ROSTER_TABS = [
 // 캐릭터 상세 서브탭 — 9개 세로 스택을 목적별 4묶음으로.
 //   성장: 친밀도·씨앗·성장(레벨/돌파/각인) · 장비: 룬·전용무기·장비
 //   스킬: 전용스킬·스킬편성 · 꾸미기: 코스튬
+//   feat 붙은 탭은 해당 모듈이 켜졌을 때만 노출(control-panel on/off).
 const DETAIL_TABS = [
   { key: 'growth', label: '육성', icon: '📈' },
-  { key: 'gear', label: '장비', icon: '⚔️' },
+  { key: 'gear', label: '장비', icon: '⚔️', feat: 'gear' },
   { key: 'skill', label: '스킬', icon: '✨' },
-  { key: 'cosmetic', label: '꾸미기', icon: '🎭' },
-];
+  { key: 'cosmetic', label: '꾸미기', icon: '🎭', feat: 'costumes' },
+].filter((t) => !t.feat || isOn(t.feat));
 
 export default function RosterScreen({ state, bump, concept }) {
   const [selId, setSel] = useState(state.party[0] || state.units[0]?.uid);
@@ -577,7 +578,7 @@ export default function RosterScreen({ state, bump, concept }) {
       {/* 친밀도·씨앗 — 한 줄 반반 요약 타일. 탭하면 아래로 상세 펼침(아코디언). */}
       {dtab === 'growth' && (() => {
         const sp = seedProgress(unit);
-        const hasInti = !!lines;
+        const hasInti = !!lines && isOn('intimacy');
         if (!hasInti && !sp.hasSeed) return null;
         const iLv = intimacyLevel(unit);
         return (
@@ -605,7 +606,7 @@ export default function RosterScreen({ state, bump, concept }) {
       })()}
 
       {/* 친밀도 상세(펼침) */}
-      {dtab === 'growth' && expand === 'inti' && lines && (
+      {dtab === 'growth' && expand === 'inti' && lines && isOn('intimacy') && (
         <Card style={{ marginTop: 8 }}>
           <View style={g.bubble}>
             <Text style={g.bubbleEmoji}>{meta.emoji}</Text>
@@ -706,7 +707,7 @@ export default function RosterScreen({ state, bump, concept }) {
       })()}
 
       {/* 전용무기 — 캐릭터 전용 슬롯 (일반 장비와 별개). 시그니처 증폭 */}
-      {dtab === 'gear' && canOwnSigWeapon(unit) && (() => {
+      {dtab === 'gear' && isOn('sigweapon') && canOwnSigWeapon(unit) && (() => {
         const w = sigWeaponOf(concept, unit);
         const owned = hasSigWeapon(unit);
         const lv = owned ? unit.sigWeapon.level : 0;
@@ -738,7 +739,7 @@ export default function RosterScreen({ state, bump, concept }) {
       })()}
 
       {/* 룬 — 소켓형 서브스탯 + 세트 보너스 */}
-      {dtab === 'gear' && (
+      {dtab === 'gear' && isOn('runes') && (
       <Card style={{ marginTop: 12 }}>
         <CodeTag id="d2" corner="tl" />
         <View style={g.intiHead}>
