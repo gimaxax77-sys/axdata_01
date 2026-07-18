@@ -5,9 +5,11 @@
 import fs from 'node:fs';
 import path from 'node:path';
 
-const jsDir = 'dist/_expo/static/js/web';
+// 소스 export 폴더 — 기본 dist. dist가 잠겼을 때 PLAY_DIST=dist2 등으로 우회.
+const DIST = process.env.PLAY_DIST || 'dist';
+const jsDir = `${DIST}/_expo/static/js/web`;
 if (!fs.existsSync(jsDir)) {
-  console.error('dist가 없습니다. 먼저: EXPO_OFFLINE=1 npx expo export --platform web');
+  console.error(`${DIST}가 없습니다. 먼저: EXPO_OFFLINE=1 npx expo export --platform web --output-dir ${DIST}`);
   process.exit(1);
 }
 const jsFile = fs.readdirSync(jsDir).find((f) => f.endsWith('.js'));
@@ -29,7 +31,7 @@ function walkAssets(dir) {
     assetMap[e.name] = `data:${MIME[ext]};base64,${fs.readFileSync(p).toString('base64')}`;
   }
 }
-walkAssets('dist/assets');
+walkAssets(`${DIST}/assets`);
 // URL 조립부를 맵 조회로 감싼다(미니파이 변수명은 캡처해 대응).
 let rewrites = 0;
 js = js.replace(

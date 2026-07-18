@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, Modal, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, Modal, TouchableOpacity, Image } from 'react-native';
 import { T, rarityMeta } from '../theme';
 import { Card, Btn, fmt, MultiToggle, multLabel, repeat } from '../components';
+import { petIcon, guardianIcon } from '../uiIcons';
 import { CodeTag } from '../uicode';
 import { fx } from '../feedback';
 import { RELICS, relicUpgradeCost, upgradeRelic, relicCap } from '../../system/core/relics.mjs';
@@ -21,13 +22,13 @@ function rarityText(r) {
 
 // 아이콘 타일 — 이모지 + 레벨 + 등급(+ 장착중 ✅). 탭하면 상세 팝업.
 // 등급 모듈 off면 등급 테두리·라벨 숨김.
-function Tile({ emoji, rarity, level, active, onPress, label }) {
+function Tile({ emoji, image, rarity, level, active, onPress, label }) {
   const showR = rarity && isOn('rarity');
   return (
     <TouchableOpacity onPress={onPress} style={[c.tile, showR && { borderColor: rarityMeta(rarity).color }]} activeOpacity={0.8}
       accessibilityRole="button" accessibilityLabel={`${label || ''}${level != null ? ` 레벨 ${level}` : ''}${active ? ' 장착중' : ''}`}>
       {active ? <Text style={c.tileActive}>✅</Text> : null}
-      <Text style={c.tileEmoji}>{emoji}</Text>
+      {image ? <Image source={image} style={c.tileIcon} resizeMode="contain" /> : <Text style={c.tileEmoji}>{emoji}</Text>}
       {level != null ? <Text style={c.tileLv}>Lv.{level}</Text> : null}
       {showR ? <Text style={rarityText(rarity)}> {rarity} </Text> : null}
     </TouchableOpacity>
@@ -93,7 +94,7 @@ export default function GrowthPanel({ state, bump, concept }) {
     const effPct = Math.round(def.per * lv * 100);
     const opt = isPet && state.pets.opts && state.pets.opts[detail.id];
     return {
-      emoji: def.emoji, name: def.label, rarity: def.rarity,
+      emoji: def.emoji, image: isPet ? petIcon(detail.id) : guardianIcon(detail.id), name: def.label, rarity: def.rarity,
       sub: `${effLabel} +${effPct}% · Lv.${lv}${opt ? ` · 옵션 ${petOptLabel(opt, concept)}` : ''}`,
       compare: {
         curLabel: equipped ? '장착중' : '미장착', cur: equipped ? `+${effPct}%` : '—',
@@ -177,7 +178,7 @@ export default function GrowthPanel({ state, bump, concept }) {
         {petsUnlocked && (
           <View style={c.tileGrid}>
             {Object.entries(state.pets.owned).map(([id, lv]) => (
-              <Tile key={id} emoji={PETS[id].emoji} rarity={PETS[id].rarity} level={lv} label={PETS[id].label}
+              <Tile key={id} emoji={PETS[id].emoji} image={petIcon(id)} rarity={PETS[id].rarity} level={lv} label={PETS[id].label}
                 active={state.pets.active.includes(id)} onPress={() => setDetail({ type: 'pet', id })} />
             ))}
           </View>
@@ -224,7 +225,7 @@ export default function GrowthPanel({ state, bump, concept }) {
         {guardUnlocked && (
           <View style={c.tileGrid}>
             {Object.entries(state.guardians.owned).map(([id, lv]) => (
-              <Tile key={id} emoji={GUARDIANS[id].emoji} rarity={GUARDIANS[id].rarity} level={lv} label={GUARDIANS[id].label}
+              <Tile key={id} emoji={GUARDIANS[id].emoji} image={guardianIcon(id)} rarity={GUARDIANS[id].rarity} level={lv} label={GUARDIANS[id].label}
                 active={state.guardians.active.includes(id)} onPress={() => setDetail({ type: 'guardian', id })} />
             ))}
           </View>
@@ -237,7 +238,7 @@ export default function GrowthPanel({ state, bump, concept }) {
           <TouchableOpacity style={c.modalCard} activeOpacity={1} onPress={() => {}}>
             {info && (<>
               <View style={c.mHead}>
-                <Text style={c.mEmoji}>{info.emoji}</Text>
+                {info.image ? <Image source={info.image} style={c.mIcon} resizeMode="contain" /> : <Text style={c.mEmoji}>{info.emoji}</Text>}
                 <View style={{ flex: 1 }}>
                   <Text style={c.mName}>{info.name}{isOn('rarity') && info.rarity ? <Text style={rarityText(info.rarity)}> {info.rarity} </Text> : null}</Text>
                   <Text style={c.mSub}>{info.sub}</Text>
@@ -281,6 +282,8 @@ const c = StyleSheet.create({
   tileGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 8 },
   tile: { width: 64, alignItems: 'center', justifyContent: 'center', paddingVertical: 10, borderRadius: 12, backgroundColor: T.surface2, borderWidth: 1.5, borderColor: T.line, gap: 2 },
   tileEmoji: { fontSize: 24 },
+  tileIcon: { width: 40, height: 40 },
+  mIcon: { width: 52, height: 52 },
   tileLv: { color: T.text, fontSize: 10, fontWeight: '800' },
   tileActive: { position: 'absolute', top: 2, right: 3, fontSize: 11, zIndex: 2 },
   // 상세 팝업

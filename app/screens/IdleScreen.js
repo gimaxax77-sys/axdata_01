@@ -39,7 +39,7 @@ const BATTLE_BGS = [
   require('../../assets/pixel/bg-battle-9.png'), // 무덤(파손)
 ];
 // 적 몬스터 스프라이트 키 — 10층마다 순환(배경과 함께 변화). unitSprites 'enemy:<key>' 등록됨.
-const ENEMY_KEYS = ['skeleton_minion', 'skeleton_warrior', 'werewolf_wolf', 'skeleton_mage', 'skeleton_golem'];
+const ENEMY_KEYS = ['skeleton_minion', 'skeleton_warrior', 'werewolf_wolf', 'skeleton_mage', 'skeleton_golem', 'demon', 'greendemon', 'cthulhu', 'cyclops', 'yeti', 'alien'];
 
 // 난이도별 색조 오버레이(무대 위에 은은히) — 일반은 없음.
 const DIFF_TINT = {

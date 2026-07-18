@@ -32,6 +32,13 @@ const SHEETS = {
   'enemy:skeleton_mage': { frameW: 128, frameH: 128, frames: 16, idle: require('../assets/units/enemy/skeleton_mage/skeleton_mage_idle.png'), hit: require('../assets/units/enemy/skeleton_mage/skeleton_mage_hit.png'), attack: require('../assets/units/enemy/skeleton_mage/skeleton_mage_attack.png') },
   'enemy:skeleton_golem': { frameW: 128, frameH: 128, frames: 16, idle: require('../assets/units/enemy/skeleton_golem/skeleton_golem_idle.png'), hit: require('../assets/units/enemy/skeleton_golem/skeleton_golem_hit.png'), attack: require('../assets/units/enemy/skeleton_golem/skeleton_golem_attack.png') },
   'enemy:werewolf_wolf': { frameW: 128, frameH: 128, frames: 16, idle: require('../assets/units/enemy/werewolf_wolf/werewolf_wolf_idle.png'), hit: require('../assets/units/enemy/werewolf_wolf/werewolf_wolf_hit.png'), attack: require('../assets/units/enemy/werewolf_wolf/werewolf_wolf_attack.png') },
+  // Quaternius Cute Monsters(CC0) — 적 다양화(귀여운 몬스터, 왼쪽 향).
+  'enemy:demon': { frameW: 128, frameH: 128, frames: 16, idle: require('../assets/units/enemy/demon/demon_idle.png'), hit: require('../assets/units/enemy/demon/demon_hit.png'), attack: require('../assets/units/enemy/demon/demon_attack.png') },
+  'enemy:greendemon': { frameW: 128, frameH: 128, frames: 16, idle: require('../assets/units/enemy/greendemon/greendemon_idle.png'), hit: require('../assets/units/enemy/greendemon/greendemon_hit.png'), attack: require('../assets/units/enemy/greendemon/greendemon_attack.png') },
+  'enemy:cthulhu': { frameW: 128, frameH: 128, frames: 16, idle: require('../assets/units/enemy/cthulhu/cthulhu_idle.png'), hit: require('../assets/units/enemy/cthulhu/cthulhu_hit.png'), attack: require('../assets/units/enemy/cthulhu/cthulhu_attack.png') },
+  'enemy:cyclops': { frameW: 128, frameH: 128, frames: 16, idle: require('../assets/units/enemy/cyclops/cyclops_idle.png'), hit: require('../assets/units/enemy/cyclops/cyclops_hit.png'), attack: require('../assets/units/enemy/cyclops/cyclops_attack.png') },
+  'enemy:yeti': { frameW: 128, frameH: 128, frames: 16, idle: require('../assets/units/enemy/yeti/yeti_idle.png'), hit: require('../assets/units/enemy/yeti/yeti_hit.png'), attack: require('../assets/units/enemy/yeti/yeti_attack.png') },
+  'enemy:alien': { frameW: 128, frameH: 128, frames: 16, idle: require('../assets/units/enemy/alien/alien_idle.png'), hit: require('../assets/units/enemy/alien/alien_hit.png'), attack: require('../assets/units/enemy/alien/alien_attack.png') },
 };
 
 // 캐릭터의 특정 상태 스프라이트 조회. 없으면 null(→ 폴백).

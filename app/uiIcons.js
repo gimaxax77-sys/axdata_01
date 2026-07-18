@@ -36,6 +36,38 @@ export function gearIcon(blueprint) {
   return (kind && GEAR_IMG[kind]) || null;
 }
 
+// 펫·가디언 3D 아이콘 — Quaternius Cute Monsters(CC0) 렌더로 이모지 대체.
+//   창작 id → 몬스터 모델 매핑(의미 근접). 미매핑 id는 null → 이모지 폴백.
+const CREATURE_IMG = {
+  Pig: require('../assets/ui/creatures/Pig.png'),
+  Yeti: require('../assets/ui/creatures/Yeti.png'),
+  Chicken: require('../assets/ui/creatures/Chicken.png'),
+  Deer: require('../assets/ui/creatures/Deer.png'),
+  Panda: require('../assets/ui/creatures/Panda.png'),
+  Crab: require('../assets/ui/creatures/Crab.png'),
+  YellowDragon: require('../assets/ui/creatures/YellowDragon.png'),
+  Bat: require('../assets/ui/creatures/Bat.png'),
+  Bee: require('../assets/ui/creatures/Bee.png'),
+  Cthulhu: require('../assets/ui/creatures/Cthulhu.png'),
+  GreenDemon: require('../assets/ui/creatures/GreenDemon.png'),
+  Cyclops: require('../assets/ui/creatures/Cyclops.png'),
+  Demon: require('../assets/ui/creatures/Demon.png'),
+  Ghost: require('../assets/ui/creatures/Ghost.png'),
+  Mushroom: require('../assets/ui/creatures/Mushroom.png'),
+  Alien_Tall: require('../assets/ui/creatures/Alien_Tall.png'),
+  Penguin: require('../assets/ui/creatures/Penguin.png'),
+  Skull: require('../assets/ui/creatures/Skull.png'),
+};
+const PET_MONSTER = {
+  P_CAT: 'Pig', P_WOLF: 'Yeti', P_OWL: 'Chicken', P_FOX: 'Deer', P_BEAR: 'Panda', P_TURTLE: 'Crab',
+  P_DRAGON: 'YellowDragon', P_PHOENIX: 'Bat', P_UNICORN: 'Bee', P_KRAKEN: 'Cthulhu', P_KIRIN: 'GreenDemon', P_LEVIATHAN: 'Cyclops',
+};
+const GUARDIAN_MONSTER = {
+  G_SALAMANDER: 'Demon', G_UNDINE: 'Ghost', G_SYLPH: 'Mushroom', G_GOLEM: 'Alien_Tall', G_KELPIE: 'Penguin', G_PHOENIX: 'Skull',
+};
+export function petIcon(id) { const m = id && PET_MONSTER[id]; return (m && CREATURE_IMG[m]) || null; }
+export function guardianIcon(id) { const m = id && GUARDIAN_MONSTER[id]; return (m && CREATURE_IMG[m]) || null; }
+
 // 난이도 마커 3D(보석 색상별). 🟢🟡🔴🟣 대체.
 const DIFF_IMG = {
   normal: require('../assets/ui/diff/normal.png'),
