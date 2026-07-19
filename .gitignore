@@ -23,6 +23,10 @@ docs/core-system.html
 *.mobileprovision
 credentials.json
 
+# 로컬 안드로이드 빌드(expo prebuild 산출물) — 이 PC 절대경로(local.properties)·
+#   빌드 산출물(apk) 포함, 머신마다 달라 커밋 대상 아님. 필요시 `npx expo prebuild` 재생성.
+android/
+
 # Metro
 .metro-health-check*
 

@@ -32,6 +32,9 @@ export function isPlaybackDone(elapsedMs, fps, frames) {
 
 // 전투 상태별 재생 규약(기본값). fps·순환 여부.
 // 16프레임 기준 fps — 8프레임 대비 재생 시간은 같게 유지하며 부드러움만 2배.
+// fps를 낮춰 "느리게"를 노렸었지만, 프레임 수(16장)가 고정이라 fps를 낮추면
+//   프레임당 노출 시간만 늘어 오히려 뚝뚝 끊겨 보인다(부드러움 ≠ 느림).
+//   부드러움은 fps로, 체감 속도는 BattleView의 공격/반격 간격(틱 분주기)으로 분리해 조절한다.
 export const SPRITE_STATES = {
   idle: { loop: true, fps: 20 },
   attack: { loop: false, fps: 28 },

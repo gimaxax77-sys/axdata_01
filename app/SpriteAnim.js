@@ -12,7 +12,7 @@ import { reducedMotion } from './motion';
 // ─────────────────────────────────────────────────────────────
 export default function SpriteAnim({
   source, frameW = 128, frameH = 128, frames, state = 'idle',
-  scale = 1, onEnd, playToken,
+  scale = 1, onEnd, playToken, staggerMs = 0,
 }) {
   const spec = stateSpec(state);
   const n = frames || 1;
@@ -35,7 +35,9 @@ export default function SpriteAnim({
     let alive = true;
     const tick = () => {
       if (!alive) return;
-      const elapsed = Date.now() - startRef.current;
+      // staggerMs만큼 시작을 늦춰(0프레임에 머무름) 유닛마다 다른 순간에 움직이게 한다.
+      //   idle 순환은 프레임이 감싸돌아 위상만 어긋나고, 동작 클립은 자연스러운 딜레이가 된다.
+      const elapsed = Math.max(0, Date.now() - startRef.current - staggerMs);
       tx.setValue(-frameAt(elapsed, spec.fps, n, spec.loop) * stepRef.current);
       if (!spec.loop && isPlaybackDone(elapsed, spec.fps, n)) {
         if (!endedRef.current) { endedRef.current = true; if (onEnd) onEnd(); }
