@@ -1,15 +1,15 @@
-// 요새(메인) 화면 — 호드워 전투 화면 골격. 기준 docs/HORDWAR_SPEC.md.
-//   세로 배분 = VS 바 + 전투력 비교 줄 · 전투 필드(flex:1).
-//   필드 위 오버레이 = 우상단 전투 컨트롤(배속×2·⏸) · 우하단 재화/방치상자/모험.
-//   ※ 세븐 잔재(좌측 AUTO·🎥·💬 / 하단 스킬바 6칸 / 격자·기둥 장식)는 걷어냈다.
-//     호드워는 엘드리아처럼 상시 자동전투이므로 요새 탭은 전투 화면을 유지한다(Gim 결정).
+// 전투 화면 — 호드워 `전투 시작` 이후 화면. 기준: Gim 실기 캡처(2026-07-27).
+//   ⚠️ 2026-07-27 구조 변경 — 옛 IdleScreen(요새 탭)이 여기로 내려왔다(Gim 지시).
+//      요새 탭에는 요새 맵(FortressScreen)이 들어갔고, 이 화면은 모험 탭 → `전투 시작`으로 들어온다.
+//   골격 = VS 바 + 전투력 비교 · 전투 필드 · 하단 편성 패널(PartyStrip) · 최하단 뒤로.
+//   난이도 4단과 요새/모험 바로가기는 여기서 빠졌다 — 각각 모험 스테이지 화면과 요새 맵으로 갔다.
 import React, { useState, useMemo } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { T } from '../theme';
 import { fmt, pctW } from '../components';
 import { stageZone } from '../../system/core/progression.mjs';
-import { playStage, difficultyDef, DIFFICULTIES, difficultyUnlocked, setDifficulty } from '../../system/core/difficulty.mjs';
+import { playStage, difficultyDef } from '../../system/core/difficulty.mjs';
 import { identity, elementMeta } from '../../system/concepts/index.mjs';
 import { resolve } from '../../system/core/resolution.mjs';
 import { getPartyUnits } from '../../system/core/gameState.mjs';
@@ -18,9 +18,8 @@ import { accountMods } from '../../system/core/balance.mjs';
 import { canClaimAttendance, missionList, claimAllDaily } from '../../system/core/daily.mjs';
 import { unreadMailCount, claimAllMail } from '../../system/core/mailbox.mjs';
 import { fx } from '../feedback';
-import { isOn } from '../../system/core/features.mjs';
 import BattleView from './BattleView';
-import SummonScreen from './SummonScreen';
+import PartyStrip from './PartyStrip';
 
 // 난이도별 색조 오버레이(필드 위에 은은히) — 일반은 없음.
 const DIFF_TINT = {
@@ -30,11 +29,11 @@ const DIFF_TINT = {
   abyss: 'rgba(60,120,220,0.18)',
 };
 
-// onGo(tabKey) — 필드 위 바로가기에서 다른 탭으로 보낸다(App이 라우팅).
-export default function IdleScreen({ state, bump, lastGain, concept, background, onGo }) {
+// onBack() — 모험 스테이지 화면으로 돌아간다.
+export default function BattleScreen({ state, bump, lastGain, concept, background, onBack }) {
   const [speed, setSpeed] = useState(1);    // 호드워 배속 ×2
   const [paused, setPaused] = useState(false); // 호드워 ⏸
-  const [summon, setSummon] = useState(false); // 호드워 「영웅 제단」(모집) 전환
+  const [showParty, setShowParty] = useState(true); // 하단 편성 패널(캡처 기본 상태 = 펼침)
   const stageDef = playStage(state); // 난이도 배수 반영
   const zone = stageZone(state.stage);
   const curDiff = difficultyDef(state.difficulty);
@@ -69,11 +68,6 @@ export default function IdleScreen({ state, bump, lastGain, concept, background,
   const progPct = pctW(((state.stage - zone.start) / Math.max(1, zone.end - zone.start)) * 100);
   const zoneMeta = elementMeta(concept, zone.element); // 속성 구역명 = 적 스테이지 이름
 
-  // 「영웅 제단」을 누르면 요새 탭이 통째로 모집 화면으로 바뀐다(호드워와 동일 동선).
-  // 상단바는 App이 항상 그리므로 캡처처럼 그대로 남는다.
-  if (summon) {
-    return <SummonScreen state={state} bump={bump} concept={concept} onClose={() => setSummon(false)} />;
-  }
 
   return (
     <View style={st.wrap}>
@@ -104,29 +98,6 @@ export default function IdleScreen({ state, bump, lastGain, concept, background,
         <Text style={[st.pow, st.powFoe]} numberOfLines={1}>{fmt(battle.enemyScore || 0)} ⚔</Text>
       </View>
 
-      {/* 난이도 선택 — 파킹된 ContentScreen과 함께 경로가 사라졌던 것을 되살림.
-          해금은 역대 최고층 기준. 잠긴 것은 필요 층수를 보여준다. */}
-      <View style={st.diffRow}>
-        {DIFFICULTIES.map((d) => {
-          const on = curDiff.id === d.id;
-          const open = difficultyUnlocked(state, d.id);
-          return (
-            <TouchableOpacity key={d.id} style={[st.diff, on && st.diffOn, !open && st.diffLocked]} activeOpacity={0.85}
-              onPress={() => {
-                const r = setDifficulty(state, d.id);
-                fx(r.ok ? 'success' : 'error');
-                bump();
-              }}
-              accessibilityRole="button"
-              accessibilityState={{ selected: on, disabled: !open }}
-              accessibilityLabel={open ? `${d.label} 난이도 · 보상 ${d.rewardMult}배` : `${d.label} 난이도 잠김 · ${d.unlock}층 필요`}>
-              <Text style={[st.diffTx, on && st.diffTxOn]} numberOfLines={1}>
-                {d.emoji}{d.label}{open ? ` ×${d.rewardMult}` : ` ${d.unlock}층`}
-              </Text>
-            </TouchableOpacity>
-          );
-        })}
-      </View>
 
       {/* 전투 필드 — 남는 세로를 전부 흡수(flex:1). */}
       <View style={st.field}>
@@ -156,28 +127,34 @@ export default function IdleScreen({ state, bump, lastGain, concept, background,
           </TouchableOpacity>
         </View>
 
-        {/* 우측 하단 — 다이아 · 영웅 제단(모집) · 방치상자 · 모험 바로가기 */}
-        <View style={st.rightCol}>
-          <View style={st.rbtn}><Text style={st.rbtnIc}>{concept.resources.gem.emoji}</Text><Text style={st.rbtnTx}>{fmt(state.wallet.gem || 0)}</Text></View>
-          {/* 호드워는 요새 맵의 건물 노드. 엘드리아 요새 탭은 전투 화면이라 여기 바로가기로 둔다. */}
-          {isOn('gacha') && (
-            <TouchableOpacity style={st.rbtn} activeOpacity={0.85} onPress={() => { fx('tap'); setSummon(true); }}
-              accessibilityRole="button" accessibilityLabel="영웅 제단 — 모집(소환)">
-              <Text style={st.rbtnIc}>🗿</Text><Text style={st.rbtnTx}>영웅 제단</Text>
-              {(state.wallet.summon || 0) >= 100 && <View style={st.rbtnDot} />}
-            </TouchableOpacity>
-          )}
-          <TouchableOpacity style={st.rbtn} activeOpacity={0.85} onPress={doClaimAll}
-            accessibilityRole="button" accessibilityLabel="방치상자 수령">
-            <Text style={st.rbtnIc}>🎁</Text>
-            <Text style={st.rbtnTx}>방치 +{fmt(lastGain?.currency || 0)}/s</Text>
-            {claimN > 0 && <View style={st.rbtnDot} />}
+        {/* 좌하단 방치 수령 — 캡처의 `클리어 영상` 자리. 실제로 되는 것을 둔다. */}
+        <TouchableOpacity style={st.claim} activeOpacity={0.85} onPress={doClaimAll}
+          accessibilityRole="button" accessibilityLabel="방치 보상 수령">
+          <Text style={st.claimIc}>🎁</Text>
+          <Text style={st.claimTx}>+{fmt(lastGain?.currency || 0)}/s</Text>
+          {claimN > 0 && <View style={st.claimDot} />}
+        </TouchableOpacity>
+      </View>
+
+      {/* 하단 편성 패널 — 호드워 캡처와 동일. `전투`를 누르면 접고 전투만 본다. */}
+      {showParty && (
+        <PartyStrip state={state} bump={bump} concept={concept} onBattle={() => setShowParty(false)} />
+      )}
+
+      {/* 최하단 — 좌 뒤로 · (접었을 때) 편성 다시 열기 */}
+      <View style={st.foot}>
+        <TouchableOpacity style={st.back} activeOpacity={0.85} onPress={onBack}
+          accessibilityRole="button" accessibilityLabel="모험으로 돌아가기">
+          <Text style={st.backTx}>◀</Text>
+        </TouchableOpacity>
+        <View style={{ flex: 1 }} />
+        {!showParty && (
+          <TouchableOpacity style={st.openParty} activeOpacity={0.85}
+            onPress={() => { fx('tap'); setShowParty(true); }}
+            accessibilityRole="button" accessibilityLabel="편성 열기">
+            <Text style={st.openPartyTx}>👥 편성</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={st.rbtn} activeOpacity={0.85} onPress={() => { fx('tap'); onGo?.('adventure'); }}
-            accessibilityRole="button" accessibilityLabel="모험(스토리)">
-            <Text style={st.rbtnIc}>🧭</Text><Text style={st.rbtnTx}>모험</Text>
-          </TouchableOpacity>
-        </View>
+        )}
       </View>
     </View>
   );
@@ -230,6 +207,19 @@ const st = StyleSheet.create({
 
 
   // 우측 하단 재화/기능(알약형 3개).
+  // 좌하단 방치 수령
+  claim: { position: 'absolute', left: 6, bottom: 8, flexDirection: 'row', alignItems: 'center', gap: 3, backgroundColor: 'rgba(10,14,24,0.72)', borderWidth: 1, borderColor: 'rgba(150,180,230,0.3)', borderRadius: 16, paddingLeft: 6, paddingRight: 9, paddingVertical: 3, zIndex: 6 },
+  claimIc: { fontSize: 13 },
+  claimTx: { fontSize: 9, color: '#e8ecf5', fontWeight: '800' },
+  claimDot: { position: 'absolute', top: -2, right: -2, width: 8, height: 8, borderRadius: 4, backgroundColor: T.danger },
+
+  // 최하단 바 — 뒤로 · 편성 다시 열기
+  foot: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 8, paddingVertical: 5, backgroundColor: '#3b2d1d', borderTopWidth: 1, borderTopColor: '#6b543a' },
+  back: { width: 42, height: 30, borderRadius: 8, backgroundColor: '#7a2f22', borderWidth: 2, borderColor: '#b8543c', alignItems: 'center', justifyContent: 'center' },
+  backTx: { color: '#ffd9c8', fontSize: 14, fontWeight: '900' },
+  openParty: { paddingHorizontal: 14, paddingVertical: 7, borderRadius: 8, backgroundColor: T.accent, borderWidth: 2, borderColor: '#c8951f' },
+  openPartyTx: { color: '#3d2a00', fontSize: 12, fontWeight: '900' },
+
   rightCol: { position: 'absolute', right: 6, bottom: 10, gap: 6, zIndex: 6, alignItems: 'flex-end' },
   rbtn: { flexDirection: 'row', alignItems: 'center', gap: 3, backgroundColor: 'rgba(10,14,24,0.72)', borderWidth: 1, borderColor: 'rgba(150,180,230,0.3)', borderRadius: 16, paddingLeft: 5, paddingRight: 8, paddingVertical: 3 },
   rbtnIc: { fontSize: 13 },

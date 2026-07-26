@@ -17,7 +17,7 @@ import { NoticePopup } from './app/screens/NoticePopup';
 import { MailboxModal } from './app/screens/MailboxModal';
 import { unreadMailCount } from './system/core/mailbox.mjs';
 import { useFonts } from 'expo-font';
-import IdleScreen from './app/screens/IdleScreen';
+import FortressScreen from './app/screens/FortressScreen';
 import HeroScreen from './app/screens/HeroScreen';
 import AdventureScreen from './app/screens/AdventureScreen';
 import FieldScreen from './app/screens/FieldScreen';
@@ -43,7 +43,7 @@ import { can } from './system/core/roles.mjs';
 //    (docs/HORDWAR_SPEC.md "필드 · 길드 · 혜택 탭"). 화면은 만들되 안의 노드·목록은
 //    해당 모듈이 파킹 상태라 잠금 표시로 둔다.
 const TABS = [
-  { key: 'idle', label: '요새', icon: '🏰', Screen: React.memo(IdleScreen) },
+  { key: 'idle', label: '요새', icon: '🏰', Screen: React.memo(FortressScreen) },
   { key: 'field', label: '필드', icon: '🌄', Screen: React.memo(FieldScreen) },
   { key: 'guild', label: '길드', icon: '🏛️', Screen: React.memo(GuildScreen) },
   { key: 'hero', label: '영웅', icon: '🦸', Screen: React.memo(HeroScreen) },

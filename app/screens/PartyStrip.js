@@ -19,7 +19,7 @@ import { computePower } from '../../system/core/stats.mjs';
 import { togglePartyMember, MAX_PARTY } from '../../system/core/gameState.mjs';
 import { autoFormation } from '../../system/core/formation.mjs';
 
-export default function PartyStrip({ state, bump, concept, onGo }) {
+export default function PartyStrip({ state, bump, concept, onBattle }) {
   const [elemFilter, setElemFilter] = useState(null);
   const [barOpen, setBarOpen] = useState(true);
   const [msg, setMsg] = useState(null);
@@ -126,8 +126,8 @@ export default function PartyStrip({ state, bump, concept, onGo }) {
           <Text style={p.subTx}>일괄 진형 배치</Text>
         </TouchableOpacity>
         <TouchableOpacity style={p.main} activeOpacity={0.85}
-          onPress={() => { fx('tap'); onGo?.('idle'); }}
-          accessibilityRole="button" accessibilityLabel="전투 화면으로">
+          onPress={() => { fx('tap'); onBattle?.(); }}
+          accessibilityRole="button" accessibilityLabel="편성 닫고 전투 보기">
           <Text style={p.mainTx}>전투</Text>
         </TouchableOpacity>
       </View>
