@@ -1,4 +1,5 @@
 import { getStage } from './progression.mjs';
+import { TEST_MODE } from './testmode.mjs';
 
 // ─────────────────────────────────────────────────────────────
 // 스테이지 난이도 티어 — 방치 진행에 적·보상 배수를 건다.
@@ -23,6 +24,7 @@ export function difficultyDef(id) {
   return DIFFICULTIES.find((d) => d.id === id) || DIFFICULTIES[0];
 }
 export function difficultyUnlocked(state, id) {
+  if (TEST_MODE) return true; // 테스트 모드 — 난이도 4단 전부 선택 가능
   return (state.peakStage || 1) >= difficultyDef(id).unlock;
 }
 

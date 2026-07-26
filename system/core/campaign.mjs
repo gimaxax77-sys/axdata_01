@@ -3,6 +3,7 @@ import { resolve } from './resolution.mjs';
 import { getPartyUnits } from './gameState.mjs';
 import { accountMods } from './balance.mjs';
 import { earn } from './economy.mjs';
+import { TEST_MODE } from './testmode.mjs';
 
 // ─────────────────────────────────────────────────────────────
 // 스토리 캠페인 — 장르/컨셉 무관 진행 로직. 서사(텍스트)는 Concept가 제공.
@@ -35,7 +36,8 @@ export function campaignChapters(state, conceptCampaign = []) {
     const lore = conceptCampaign[i] || { title: `챕터 ${i + 1}`, story: '' };
     out.push({
       index: i, title: lore.title, story: lore.story,
-      unlocked: i <= cleared, cleared: i < cleared, isNext: i === cleared && i < CAMPAIGN_CHAPTER_COUNT,
+      // 테스트 모드 — 이전 챕터 클리어 없이 전부 진입 가능(system/core/testmode.mjs)
+      unlocked: TEST_MODE || i <= cleared, cleared: i < cleared, isNext: i === cleared && i < CAMPAIGN_CHAPTER_COUNT,
       boss: bossChallenge(i), bossStage: bossStageFor(i), reward: chapterReward(i),
     });
   }
@@ -56,7 +58,7 @@ export function storyLog(state, conceptCampaign = []) {
 // 챕터 도전. 승리 & 최초 클리어면 보상 + 진행.
 export function fightChapter(state, i) {
   const cleared = (state.campaign && state.campaign.cleared) || 0;
-  if (i > cleared) return { ok: false, reason: '이전 챕터를 먼저 클리어하세요' };
+  if (!TEST_MODE && i > cleared) return { ok: false, reason: '이전 챕터를 먼저 클리어하세요' };
   const party = getPartyUnits(state);
   if (!party.length) return { ok: false, reason: '파티 없음' };
   const res = resolve(party, bossChallenge(i), accountMods(state), state.formation);

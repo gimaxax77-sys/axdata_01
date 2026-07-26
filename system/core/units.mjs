@@ -4,6 +4,7 @@ import { collectUnitModifiers } from './modifiers.mjs';
 import { createEnhance } from './enhance.mjs';
 import { emptyGearSet } from './gear.mjs';
 import { BALANCE } from './balance.mjs';
+import { TEST_MODE, TEST_LEVEL_CAP } from './testmode.mjs';
 
 // ─────────────────────────────────────────────────────────────
 // 유닛 인스턴스 — 시스템이 다루는 최소 단위.
@@ -52,7 +53,9 @@ export function levelUpCost(unit) {
 }
 
 // 레벨 상한 = 랭크 × 20. 돌파(랭크업) 없이는 못 넘는다.
+// 테스트 모드에서는 상한을 사실상 없앤다(system/core/testmode.mjs).
 export function levelCap(unit) {
+  if (TEST_MODE) return TEST_LEVEL_CAP;
   return unit.rank * 20;
 }
 
