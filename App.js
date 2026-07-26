@@ -20,7 +20,9 @@ import { useFonts } from 'expo-font';
 import IdleScreen from './app/screens/IdleScreen';
 import HeroScreen from './app/screens/HeroScreen';
 import AdventureScreen from './app/screens/AdventureScreen';
-import StubScreen from './app/screens/StubScreen';
+import FieldScreen from './app/screens/FieldScreen';
+import GuildScreen from './app/screens/GuildScreen';
+import PerkScreen from './app/screens/PerkScreen';
 import { IntroModal } from './app/screens/Onboarding';
 import ErrorBoundary from './app/ErrorBoundary';
 import FixedStage from './app/FixedStage';
@@ -37,24 +39,15 @@ import { can } from './system/core/roles.mjs';
 //
 // ⚠️ 구축 단계에는 **6탭 전부 열어둔다**(Gim 지시). 호드워는 잠긴 탭을 자물쇠째 노출하지만,
 //    그건 출시 시점의 표현이지 지금 상태가 아니다. 자물쇠는 **출시 직전 최종 단계**에 채운다.
-//    내용이 아직 없는 탭은 StubScreen(빈 골격)으로 들어가지기만 하게 둔다 —
-//    호드워 캡처에서도 필드·길드·혜택은 잠겨 있어 베낄 화면이 없기 때문.
-const StubMemo = React.memo(StubScreen);
+//    필드·길드·혜택은 Gim이 2026-07-26 실기 캡처 3장을 추가로 제공해 골격을 확보했다
+//    (docs/HORDWAR_SPEC.md "필드 · 길드 · 혜택 탭"). 화면은 만들되 안의 노드·목록은
+//    해당 모듈이 파킹 상태라 잠금 표시로 둔다.
 const TABS = [
   { key: 'idle', label: '요새', icon: '🏰', Screen: React.memo(IdleScreen) },
-  { key: 'field', label: '필드', icon: '🌄', Screen: StubMemo, stub: {
-    icon: '🌄', title: '필드', desc: '호드워에서도 잠겨 있던 탭이라 참고할 화면이 없습니다.',
-    plan: ['월드맵 계약 노드', '원정(로그라이트) — 파킹된 RunScreen', '던전 목록'],
-  } },
-  { key: 'guild', label: '길드', icon: '🏛️', Screen: StubMemo, stub: {
-    icon: '🏛️', title: '길드', desc: '호드워에서도 잠겨 있던 탭이라 참고할 화면이 없습니다.',
-    plan: ['길드 · 아레나 · 무한의 탑 — 파킹된 ArenaGuildScreen'],
-  } },
+  { key: 'field', label: '필드', icon: '🌄', Screen: React.memo(FieldScreen) },
+  { key: 'guild', label: '길드', icon: '🏛️', Screen: React.memo(GuildScreen) },
   { key: 'hero', label: '영웅', icon: '🦸', Screen: React.memo(HeroScreen) },
-  { key: 'perk', label: '혜택', icon: '🎁', Screen: StubMemo, stub: {
-    icon: '🎁', title: '혜택', desc: '호드워에서도 잠겨 있던 탭이라 참고할 화면이 없습니다.',
-    plan: ['일일 임무 목록(체크+수령)', '이벤트 · 시즌패스', '상점 — 파킹된 ShopScreen'],
-  } },
+  { key: 'perk', label: '혜택', icon: '🎁', Screen: React.memo(PerkScreen) },
   { key: 'adventure', label: '모험', icon: '⚔️', Screen: React.memo(AdventureScreen), wide: true },
 ];
 
@@ -213,7 +206,7 @@ function AppInner() {
       <View style={s.body}>
         <BaseScreen state={game.state} rev={game.rev} bump={game.bump} concept={game.concept}
           lastGain={tab === 'idle' ? game.lastGain : undefined}
-          stub={route.stub}
+          onLocked={setLockMsg}
           onGo={setTab}
           onOpenSettings={openSettings} />
       </View>
