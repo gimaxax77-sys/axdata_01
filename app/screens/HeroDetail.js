@@ -90,14 +90,10 @@ export default function HeroDetail({ state, bump, concept, unit, onClose }) {
     <View style={d.wrap}>
       {/* ── 상단: 배경 + 전신 ── */}
       <View style={d.stage}>
-        <TouchableOpacity style={d.back} activeOpacity={0.85} onPress={onClose}
-          accessibilityRole="button" accessibilityLabel="뒤로">
-          <Text style={d.backTx}>◀</Text>
-        </TouchableOpacity>
+        {/* 좌상단 뒤로가기는 제거 — 하단 바에 같은 버튼이 있어 2곳이었다(Gim 지시 2026-07-27) */}
 
-        {/* 이름 리본 + 위쪽 속성 원형 — 겹치지 않게 완전히 띄운다(Gim 지적 2026-07-27) */}
+        {/* 이름 리본 — 위쪽 속성 원형은 제거(속성은 아래 idBar에 이미 있다, Gim 지시) */}
         <View style={d.nameWrap}>
-          {em ? <View style={d.elemRing}><Text style={d.elemTx}>{em.emoji}</Text></View> : null}
           <View style={d.ribbon}><Text style={d.ribbonTx} numberOfLines={1}>{id.name}</Text></View>
         </View>
 
@@ -123,13 +119,8 @@ export default function HeroDetail({ state, bump, concept, unit, onClose }) {
           <Portrait emoji={id.emoji} image={charImage(concept.id, unit.characterId)} rarity={unit.rarity} size={168} glow />
         </View>
 
-        {/* 우하단 LV / 전투력 */}
-        <View style={d.meters}>
-          <View style={d.meter}><Text style={d.meterKey}>LV</Text><Text style={d.meterVal}>{unit.level}</Text></View>
-          <View style={d.meter}><Text style={d.meterKey}>⚔</Text><Text style={d.meterVal}>{fmt(computePower(unit))}</Text></View>
-        </View>
-
-        {/* 좌하단 등급 · 역할 · 속성 (특성 바 traitBar는 Gim 지시로 제거 2026-07-27) */}
+        {/* 하단 한 줄 — 좌: 등급·역할·속성 / 우: LV·전투력.
+            LV/전투력을 띄워 두지 않고 이 줄에 맞춰 내렸다(Gim 지시 2026-07-27). */}
         <View style={d.idBar}>
           {isOn('rarity') && (
             <View style={[d.medal, { backgroundColor: GRADE_BG[unit.rarity] || '#6b6b6b' }]}>
@@ -139,6 +130,11 @@ export default function HeroDetail({ state, bump, concept, unit, onClose }) {
           <View style={d.tagRing}><Text style={d.tagIc}>{arch.emoji || '🛡️'}</Text></View>
           <Text style={d.tagLb}>{arch.roleLabel}</Text>
           {em ? (<><View style={d.tagRing}><Text style={d.tagIc}>{em.emoji}</Text></View><Text style={d.tagLb}>{em.name}</Text></>) : null}
+
+          <View style={d.meters}>
+            <View style={d.meter}><Text style={d.meterKey}>LV</Text><Text style={d.meterVal}>{unit.level}</Text></View>
+            <View style={d.meter}><Text style={d.meterKey}>⚔</Text><Text style={d.meterVal}>{fmt(computePower(unit))}</Text></View>
+          </View>
         </View>
       </View>
 
@@ -176,15 +172,16 @@ export default function HeroDetail({ state, bump, concept, unit, onClose }) {
               </Text>
             </View>
 
-            {/* 연속 3회 이상 눌렀을 때만 나오는 `최대 레벨 상승`(아래 버튼과 같은 크기) */}
-            {showBurst && (
-              <View style={d.actions}>
-                <TouchableOpacity style={[d.mainBtn, d.maxBtn]} activeOpacity={0.85} onPress={doLevelUpMax}
-                  accessibilityRole="button" accessibilityLabel={`최대 레벨 상승 — 상한 ${levelCap(unit)}까지 한 번에`}>
-                  <Text style={[d.mainTx, d.maxTx]}>⏫ 최대 레벨 상승</Text>
-                </TouchableOpacity>
-              </View>
-            )}
+            {/* `최대 레벨 상승` — 연속 3회 이상 눌러야 보인다.
+                자리는 **항상 잡아 둔다**(안 보일 땐 투명). 나타날 때 아래 버튼이
+                밀려 내려가면 거슬리기 때문(Gim 지시 2026-07-27). */}
+            <View style={[d.actions, !showBurst && d.ghost]} pointerEvents={showBurst ? 'auto' : 'none'}>
+              <TouchableOpacity style={[d.mainBtn, d.maxBtn]} activeOpacity={0.85} onPress={doLevelUpMax}
+                accessibilityElementsHidden={!showBurst} importantForAccessibility={showBurst ? 'auto' : 'no-hide-descendants'}
+                accessibilityRole="button" accessibilityLabel={`최대 레벨 상승 — 상한 ${levelCap(unit)}까지 한 번에`}>
+                <Text style={[d.mainTx, d.maxTx]}>⏫ 최대 레벨 상승</Text>
+              </TouchableOpacity>
+            </View>
 
             <View style={d.actions}>
               <TouchableOpacity style={d.mainBtn} activeOpacity={0.85} onPress={doLevelUp}
@@ -248,13 +245,8 @@ const d = StyleSheet.create({
 
   // ── 상단 무대 ──
   stage: { flex: 1, position: 'relative' },
-  back: { position: 'absolute', left: 8, top: 8, width: 32, height: 32, borderRadius: 8, backgroundColor: '#4a3a26', borderWidth: 1, borderColor: '#8a6d47', alignItems: 'center', justifyContent: 'center', zIndex: 5 },
-  backTx: { color: '#e6d3ae', fontSize: 14, fontWeight: '900' },
 
-  // 속성 원형은 리본 위에 **띄워서** 놓는다 — 겹치면 이름을 가린다(Gim 지적 2026-07-27).
   nameWrap: { alignItems: 'center', marginTop: 8 },
-  elemRing: { width: 26, height: 26, borderRadius: 13, backgroundColor: 'rgba(20,30,45,0.8)', borderWidth: 2, borderColor: '#cfe3f2', alignItems: 'center', justifyContent: 'center', marginBottom: 4 },
-  elemTx: { fontSize: 13 },
   ribbon: { minWidth: 180, maxWidth: '70%', paddingHorizontal: 26, paddingVertical: 6, borderRadius: 6, backgroundColor: '#f2e6c8', borderWidth: 2, borderColor: '#c8ab74' },
   ribbonTx: { color: '#3b2a12', fontSize: 15, fontWeight: '900', textAlign: 'center' },
 
@@ -272,16 +264,18 @@ const d = StyleSheet.create({
 
   art: { flex: 1, alignItems: 'center', justifyContent: 'center' },
 
-  meters: { position: 'absolute', right: 6, bottom: 46, gap: 4, alignItems: 'flex-end', zIndex: 4 },
+  // LV/전투력 — 띄우지 않고 idBar 줄 오른쪽 끝에 붙인다(marginLeft:'auto').
+  meters: { marginLeft: 'auto', gap: 3, alignItems: 'flex-end' },
   meter: { flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(40,25,15,0.85)', borderWidth: 1, borderColor: '#c8ab74', borderRadius: 6, overflow: 'hidden' },
-  meterKey: { color: '#f0d9a0', fontSize: 10, fontWeight: '900', paddingHorizontal: 7, paddingVertical: 3, backgroundColor: 'rgba(90,60,30,0.9)' },
+  meterKey: { color: '#f0d9a0', fontSize: 10, fontWeight: '900', paddingHorizontal: 7, paddingVertical: 2, backgroundColor: 'rgba(90,60,30,0.9)' },
   meterVal: { color: '#ffd873', fontSize: 13, fontWeight: '900', paddingHorizontal: 10 },
 
-  idBar: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingLeft: 6, paddingRight: 70, paddingBottom: 8 },
+  idBar: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingLeft: 6, paddingRight: 6, paddingBottom: 8 },
   medal: { width: 30, height: 30, borderRadius: 15, borderWidth: 2, borderColor: '#f0d9a0', alignItems: 'center', justifyContent: 'center' },
   medalTx: { color: '#fff', fontSize: 12, fontWeight: '900' },
-  tagRing: { width: 20, height: 20, borderRadius: 10, backgroundColor: 'rgba(30,20,30,0.8)', borderWidth: 1, borderColor: '#d090b0', alignItems: 'center', justifyContent: 'center' },
-  tagIc: { fontSize: 10 },
+  // 역할·속성 원형 — Gim 지시로 50% 확대(20→30, 글자 10→15).
+  tagRing: { width: 30, height: 30, borderRadius: 15, backgroundColor: 'rgba(30,20,30,0.8)', borderWidth: 1, borderColor: '#d090b0', alignItems: 'center', justifyContent: 'center' },
+  tagIc: { fontSize: 15 },
   tagLb: { color: '#f0e0c8', fontSize: 9, fontWeight: '800' },
 
   // ── 하단 패널 ──
@@ -310,6 +304,8 @@ const d = StyleSheet.create({
   // `최대 레벨 상승` — 크기는 아래 버튼과 동일, 색만 달리해 다른 동작임을 알린다.
   maxBtn: { backgroundColor: '#e07a2a', borderColor: '#a8531a' },
   maxTx: { color: '#fff4e2' },
+  // 자리는 차지하되 안 보이게 — 버튼이 나타날 때 아래가 밀리지 않게 한다.
+  ghost: { opacity: 0 },
   msg: { color: '#7a3a1a', fontSize: 10, fontWeight: '800', textAlign: 'center', marginTop: 6 },
 
   gearRow: { flexDirection: 'row', justifyContent: 'space-around', marginTop: 4 },
