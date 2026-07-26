@@ -5,6 +5,8 @@
 //     · `계약`(동시 출전 보너스) · `공략` · `무료 부활` — 호드워 고유 시스템이라 잠금 표시만.
 //     · `장비` 탭 — gear 파킹이라 슬롯 4칸을 잠금으로 두고 버튼도 잠금(docs/PARKED.md).
 //     · `5레벨 상승` — 엘드리아는 1레벨씩 오르므로 **최대 5회 반복**으로 구현(비용 부족 시 되는 만큼).
+//     · 그 버튼을 **연속 3회 이상** 누르면 바로 위에 `최대 레벨 상승`이 생긴다 — 올릴 수 있는
+//       데까지 한 번에(Gim 지시 2026-07-27). 반복 상한은 "남은 레벨"이라 무한 루프가 불가능하다.
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { T } from '../theme';
@@ -32,11 +34,15 @@ const PAGES = {
 const GRADE = { UR: 'S+', SSR: 'S', SR: 'A', R: 'B', N: 'C' };
 const GRADE_BG = { UR: '#c0392b', SSR: '#c9962a', SR: '#2f8f7f', R: '#3a6ea8', N: '#6b6b6b' };
 const LEVEL_STEP = 5; // 호드워 `5레벨 상승` — 한 번에 시도할 레벨업 횟수
+const BURST_TAPS = 3; // 이만큼 연속으로 누르면 `최대 레벨 상승` 버튼이 나온다
 
 export default function HeroDetail({ state, bump, concept, unit, onClose }) {
   const [tab, setTab] = useState('stat'); // 'stat' | 'gear'
   const [page, setPage] = useState(null); // 'pact' | 'guide'
   const [msg, setMsg] = useState(null);
+  // `5레벨 상승`을 연속 3회 이상 누르면 위에 `최대 레벨 상승` 버튼이 생긴다(Gim 지시 2026-07-27).
+  // uid를 같이 들고 있어야 다른 영웅으로 넘어갔을 때 카운트가 새로 시작된다.
+  const [burst, setBurst] = useState({ uid: null, taps: 0 });
   if (!unit) return null;
   if (page) {
     return <ComingSoon {...PAGES[page]} onBack={() => setPage(null)}
@@ -54,14 +60,26 @@ export default function HeroDetail({ state, bump, concept, unit, onClose }) {
   const slots = skillSlots(unit);
   const gearMsg = () => { fx('error'); setMsg('🔒 장비 모듈이 아직 붙어 있지 않습니다'); };
 
-  // `5레벨 상승` — 되는 만큼 올린다(상한·재화 부족에서 멈춤).
-  const doLevelUp = () => {
+  // 레벨업 공통 — times회까지 시도하고 상한·재화 부족에서 멈춘다.
+  const runLevelUp = (times) => {
     let n = 0;
-    for (let i = 0; i < LEVEL_STEP; i++) { if (!levelUp(state, unit.uid).ok) break; n++; }
+    for (let i = 0; i < times; i++) { if (!levelUp(state, unit.uid).ok) break; n++; }
     if (n > 0) recordMission(state, 'upgrade', n);
     setMsg(n > 0 ? `⬆ ${n}레벨 상승` : (atCap ? '⚠ 레벨 상한 — 돌파가 필요합니다' : '⚠ 성장 재료 부족'));
     fx(n > 0 ? 'success' : 'error'); bump();
   };
+
+  // `5레벨 상승` — 되는 만큼 올린다. 연속 탭 수를 세어 3회째부터 최대 버튼을 띄운다.
+  const doLevelUp = () => {
+    setBurst((b) => (b.uid === unit.uid ? { uid: unit.uid, taps: b.taps + 1 } : { uid: unit.uid, taps: 1 }));
+    runLevelUp(LEVEL_STEP);
+  };
+
+  // `최대 레벨 상승` — 올릴 수 있는 데까지 한 번에.
+  // 반복 상한을 "남은 레벨"로 잡아 무한 루프가 원천적으로 불가능하게 한다.
+  const doLevelUpMax = () => runLevelUp(Math.max(0, levelCap(unit) - unit.level));
+
+  const showBurst = burst.uid === unit.uid && burst.taps >= BURST_TAPS;
 
   return (
     <View style={d.wrap}>
@@ -72,10 +90,12 @@ export default function HeroDetail({ state, bump, concept, unit, onClose }) {
           <Text style={d.backTx}>◀</Text>
         </TouchableOpacity>
 
-        {/* 이름 리본 + 위쪽 속성 원형 */}
+        {/* 이름 리본 + 위쪽 속성 원형
+            속성 원형을 **리본보다 나중에** 그린다 — 먼저 그리면 리본이 위를 덮는다
+            (zIndex는 RN-Web에서 확실하지 않아 그리기 순서로 해결. Gim 지적 2026-07-27). */}
         <View style={d.nameWrap}>
-          {em ? <View style={d.elemRing}><Text style={d.elemTx}>{em.emoji}</Text></View> : null}
           <View style={d.ribbon}><Text style={d.ribbonTx} numberOfLines={1}>{id.name}</Text></View>
+          {em ? <View style={d.elemRing}><Text style={d.elemTx}>{em.emoji}</Text></View> : null}
         </View>
 
         {/* 좌측 계약 패널 — 호드워 고유 시스템이라 잠금 */}
@@ -162,6 +182,19 @@ export default function HeroDetail({ state, bump, concept, unit, onClose }) {
               </Text>
             </View>
 
+            {/* 연속 3회 이상 눌렀을 때만 나오는 `최대 레벨 상승`.
+                아래 버튼과 크기를 똑같이 맞추려고 같은 행 구조(side 폭 자리)를 그대로 쓴다. */}
+            {showBurst && (
+              <View style={d.actions}>
+                <View style={d.side} />
+                <TouchableOpacity style={[d.mainBtn, d.maxBtn]} activeOpacity={0.85} onPress={doLevelUpMax}
+                  accessibilityRole="button" accessibilityLabel={`최대 레벨 상승 — 상한 ${levelCap(unit)}까지 한 번에`}>
+                  <Text style={[d.mainTx, d.maxTx]}>⏫ 최대 레벨 상승</Text>
+                </TouchableOpacity>
+                <View style={d.side} />
+              </View>
+            )}
+
             <View style={d.actions}>
               <TouchableOpacity style={d.side} activeOpacity={0.85}
                 onPress={() => { togglePartyMember(state, unit.uid); fx('tap'); bump(); }}
@@ -233,8 +266,10 @@ const d = StyleSheet.create({
   back: { position: 'absolute', left: 8, top: 8, width: 32, height: 32, borderRadius: 8, backgroundColor: '#4a3a26', borderWidth: 1, borderColor: '#8a6d47', alignItems: 'center', justifyContent: 'center', zIndex: 5 },
   backTx: { color: '#e6d3ae', fontSize: 14, fontWeight: '900' },
 
-  nameWrap: { alignItems: 'center', marginTop: 10 },
-  elemRing: { width: 26, height: 26, borderRadius: 13, backgroundColor: 'rgba(20,30,45,0.8)', borderWidth: 2, borderColor: '#cfe3f2', alignItems: 'center', justifyContent: 'center', marginBottom: -6, zIndex: 3 },
+  // 리본 위쪽 20px을 비워 두고 그 자리에 속성 원형을 절대배치한다.
+  // (원형 26px 중 6px이 리본에 겹쳐 물리는 모양 — 겹침 값은 종전과 동일)
+  nameWrap: { alignItems: 'center', marginTop: 10, paddingTop: 20 },
+  elemRing: { position: 'absolute', top: 0, width: 26, height: 26, borderRadius: 13, backgroundColor: 'rgba(20,30,45,0.8)', borderWidth: 2, borderColor: '#cfe3f2', alignItems: 'center', justifyContent: 'center' },
   elemTx: { fontSize: 13 },
   ribbon: { minWidth: 180, maxWidth: '70%', paddingHorizontal: 26, paddingVertical: 6, borderRadius: 6, backgroundColor: '#f2e6c8', borderWidth: 2, borderColor: '#c8ab74' },
   ribbonTx: { color: '#3b2a12', fontSize: 15, fontWeight: '900', textAlign: 'center' },
@@ -293,6 +328,9 @@ const d = StyleSheet.create({
   sideTx: { color: '#5c4526', fontSize: 9, fontWeight: '900' },
   mainBtn: { flex: 1, maxWidth: 190, paddingVertical: 11, borderRadius: 8, backgroundColor: T.accent, borderWidth: 2, borderColor: '#c8951f', alignItems: 'center' },
   mainTx: { color: '#3d2a00', fontSize: 15, fontWeight: '900' },
+  // `최대 레벨 상승` — 크기는 아래 버튼과 동일, 색만 달리해 다른 동작임을 알린다.
+  maxBtn: { backgroundColor: '#e07a2a', borderColor: '#a8531a' },
+  maxTx: { color: '#fff4e2' },
   msg: { color: '#7a3a1a', fontSize: 10, fontWeight: '800', textAlign: 'center', marginTop: 8 },
 
   gearRow: { flexDirection: 'row', justifyContent: 'space-around', marginTop: 4 },
