@@ -1,7 +1,9 @@
 # 인수인계 — 엘드리아 호드워 UI 전환
 
 > **최종 갱신 2026-07-26.** 이전 세븐나이츠 기준 인수인계는 폐기하고 현재 상태로 다시 씀.
+> **작업 폴더: `D:\.CODE\AXdata\axdata_01_엘드리아`** (이 문서의 모든 경로는 여기 기준)
 > 폰 확인 링크 **https://gimaxax77-sys.github.io/axdata_01/?v=17**
+> 브랜치 `claude/3d-poc` · 최신 커밋 `a0ac20f` · 작업 트리 깨끗
 
 ## 0. 먼저 읽을 순서
 
@@ -56,8 +58,8 @@ VICTORY 팝업 · 이벤트 팝업 · 장비/유물 인벤토리 · 속성 보�
 
 ## 3. 빌드·배포 (함정 있음)
 
+작업 폴더 = `D:\.CODE\AXdata\axdata_01_엘드리아` (여기가 프로젝트 루트).
 ```
-cd 엘드리아
 EXPO_OFFLINE=1 npx expo export --platform web && node scripts/build-play.mjs
 ```
 → `docs/play.html` (약 24.5MB 단일 파일). Windows npm run은 env prefix가 안 먹어 **Git Bash에서 직접** 실행.
