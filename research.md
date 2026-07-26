@@ -655,3 +655,49 @@ VICTORY 팝업 · 이벤트 팝업 · 캐릭터 상세 전신 이미지 · 장�
 ### 절차 교훈 (두 번 당함)
 - 로컬 정적 서버(`python -m http.server`/`npx serve`)가 **dist를 잠가 `expo export`가 EBUSY로 실패**한다. 그런데 `build-play.mjs`는 옛 dist로 조용히 성공해 **옛 내용이 배포될 뻔했다.**
 - 앞으로: ① 빌드 전 서버 종료 → ② `expo export` 출력에서 **번들 해시 변경 확인** → ③ `grep`로 새 코드 문자열이 play.html에 들어갔는지 확인 → ④ 배포. 이번엔 `grep -c expireSlots docs/play.html` = 2로 확인 후 올림.
+
+## [2026-07-26] 전체 재점검 → 순서대로 수정 (`?v=12`)
+
+**Gim 지시**: "현재 코드 전체 깊이있게 재점검 하고 내용 정리해서 브리핑" → 브리핑 후 "순서대로 정리하고 진행해".
+
+### 재점검 결과 (요약)
+구조는 건강. 활성 화면 11 / 파킹 15, **활성 코드의 파킹 모듈 import 0건**, core 배럴 미참조(파킹 코어가 번들에 안 들어감), 미사용 스타일 1개뿐.
+
+### 1단계 — 실제 버그 3건 수정
+| 버그 | 원인 | 수정 |
+|---|---|---|
+| 돌파 비용이 항상 `돌파 0` | `ascendCost()`는 `{summon}`을 반환하는데 HeroScreen이 `.growth`를 읽음 | `asc.summon` + 소환석 이모지. 실측 `돌파 🔮80` 확인 |
+| 레벨업해도 전투 화면 레벨 뱃지가 안 바뀜 | `heroFormation` 메모 키에 레벨이 없었음. 슬롯이 `u.level`을 **숫자로 복사**해 담으므로 편성이 바뀌기 전까지 옛 값 유지 | formKey를 `uid:level` 조합으로 변경 |
+| 초상화 경로에 컨셉 하드코딩 | `charImage('fantasy', …)` — sci-fi 컨셉이 실제 존재 | `concept.id` 사용. 단 `HeroCard`는 `concept`을 안 받으므로 **부모가 이미지를 계산해 `img` prop으로 전달**(그대로 `concept.id`를 쓰면 ReferenceError) |
+
+### 2단계 — 온보딩 정리
+- 첫 실행 소개가 **불가능한 일을 약속**하고 있었음 — "스테이지 8에서 소환이 열립니다", "환생으로 영구 배수를". 둘 다 파킹으로 경로 없음. → 진형·모험 안내로 교체하고 "지금 되는 것만 약속한다"를 주석으로 못박음.
+- `ObjectiveBanner` — 아무도 렌더하지 않는 죽은 코드인데다 목적지가 `roster/gacha/content` 등 **없는 옛 탭 이름**. → `app/parked/ObjectiveBanner.js`로 파킹(되살릴 때 tutorial.mjs의 tab 값과 App.js TABS 키를 맞추라는 주석 포함).
+
+### 3단계 — 파킹 부작용으로 끊겼던 경로 복구
+**둘 다 파킹 대상이 아니었는데 화면이 같이 날아가면서 경로만 사라진 것.** 내가 놓친 부분.
+- **난이도 선택** — `difficulty.mjs`는 코어인데 이를 띄우던 ContentScreen이 파킹돼 영원히 '일반' 고정이었음(험난 ×8 · 지옥 ×40 · 나락 ×200 보상 배수가 전부 사장). → 요새 화면 전투력 줄 아래에 4단계 선택 줄 신설. 잠긴 것은 흐리게 + 필요 층수 표시. 진행바 텍스트의 난이도 중복 제거.
+- **일일 미션 기록** — `recordMission` 호출부가 전부 파킹 화면(RosterScreen·GachaScreen)에 있어 미션이 절대 완료되지 않았음. → HeroScreen 레벨업·돌파 성공 시 `recordMission(state,'upgrade',1)`.
+
+### 4단계 — 커밋 정리 (3개로 분리)
+1. `617dcc0` chore: 이전 세션 WIP(지침서 12원칙, 세븐식 테마, FixedStage, 기준 문서)
+2. `b3de1c4` feat(core): 양팀 전투력 비교 + 속성 배정 + 데미지 숫자 고정 슬롯
+3. `665df5b` refactor(ui): 옵션 모듈 18종 파킹 + 호드워 6탭 골격 + 재점검 반영
+- 브랜치 `claude/3d-poc`. **push는 안 함** — 필요하면 지시 주시면 올림.
+
+### 잔재 정리
+미사용 import 제거(HeroScreen `pctW`, AdventureScreen `fmt`, BattleView `FLOAT_SLOTS`), 미사용 스타일 제거(App.js `menuRowDot`).
+
+### 아직 남은 것 (경로 없는 코어 기능)
+- **소환** — 영웅이 1명에서 안 늘어남. 되살릴 1순위.
+- **환생(prestige)** — `accountMods.powerMult`가 영원히 ×1.
+- **본진(village)** · **도감·업적·시즌(meta)** — 코어는 살아 있고 화면만 없음.
+
+### 지침서 보완
+`D:\.CODE\AXdata\CLAUDE.md`(루트)에 **"답변·기록 규칙"** 섹션이 누락돼 있어 추가함(엘드리아 하위 CLAUDE.md에는 이미 있었음).
+
+### 검증
+- `node --test system/test/*.test.mjs` → **295개 전부 통과**.
+- 로컬 스모크: 난이도 4단계 접근성 라벨 확인(`험난 난이도 잠김 · 30층 필요`), `돌파 🔮80` 확인.
+- 배포 절차 준수 — 서버 종료 → 번들 해시 변경 확인(`afb1993a…`) → play.html에 새 코드 문자열 확인 → 배포.
+- 배포: `?v=12` → https://gimaxax77-sys.github.io/axdata_01/?v=12
