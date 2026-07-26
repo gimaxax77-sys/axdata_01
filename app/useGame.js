@@ -39,6 +39,7 @@ const CONCEPT = activeConcept();
 // 예전(클라우드) 세이브가 옛 캐릭터 id를 갖고 있어 전투에서 이모지로만 나오던 문제 해결.
 const ROSTER_IDS = new Set(CONCEPT.roster.map((c) => c.id));
 const ROSTER_BY_ARCH = CONCEPT.roster.reduce((m, c) => { (m[c.archetype] = m[c.archetype] || []).push(c.id); return m; }, {});
+const ROSTER_ELEMENT = CONCEPT.roster.reduce((m, c) => { m[c.id] = c.element || null; return m; }, {});
 function normalizeRoster(state) {
   if (!state || !Array.isArray(state.units)) return state;
   for (const u of state.units) {
@@ -50,6 +51,8 @@ function normalizeRoster(state) {
         u.characterId = pool[h % pool.length];
       }
     }
+    // 속성 도입 전 세이브는 element가 null — 도감 값으로 채운다(전투 상성이 unit.element를 읽음).
+    if (u && !u.element) u.element = ROSTER_ELEMENT[u.characterId] || null;
   }
   return state;
 }
