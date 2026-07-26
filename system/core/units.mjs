@@ -52,11 +52,17 @@ export function levelUpCost(unit) {
   };
 }
 
+// 랭크가 여는 레벨 상한 = 랭크 × 20. 규칙 그 자체(테스트 모드와 무관).
+// 초월 화면이 "다음 랭크에서 열리는 상한"을 보여줄 때 이 값을 쓴다 — 공식을 복제하지 않기 위해.
+export function rankLevelCap(rank) {
+  return rank * 20;
+}
+
 // 레벨 상한 = 랭크 × 20. 돌파(랭크업) 없이는 못 넘는다.
 // 테스트 모드에서는 상한을 사실상 없앤다(system/core/testmode.mjs).
 export function levelCap(unit) {
   if (TEST_MODE) return TEST_LEVEL_CAP;
-  return unit.rank * 20;
+  return rankLevelCap(unit.rank);
 }
 
 // 한 유닛을 팀 판정에 쓸 "전투 프로필"로 변환.

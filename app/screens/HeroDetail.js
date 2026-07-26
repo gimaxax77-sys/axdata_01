@@ -1,9 +1,10 @@
 // 영웅 상세 — 호드워 "영웅 클릭 후" 전체화면. 기준: Gim 실기 캡처 2장(2026-07-26).
 //   골격 = 상단 이름 리본 · 좌측 계약 패널 · 중앙 전신 · 우측 공략 · 우하단 LV/전투력
-//          · 좌하단 등급/역할/속성/스킬명 바 · 하단 서브탭 패널(속성 | 장비).
+//          · 하단 한 줄(등급/역할/속성 + LV/전투력) · 하단 서브탭 패널 4종.
+//   서브탭 패널은 각각 별도 모듈이다 — HeroGearPanel · HeroAscendPanel · HeroCostumePanel.
 //   엘드리아 대응 / 의도적 차이
-//     · `계약`(동시 출전 보너스) · `공략` · `무료 부활` — 호드워 고유 시스템이라 잠금 표시만.
-//     · `장비` 탭 — gear 파킹이라 슬롯 4칸을 잠금으로 두고 버튼도 잠금(docs/PARKED.md).
+//     · `계약`(동시 출전 보너스) · `공략` — 호드워 고유 시스템이라 잠금 표시만.
+//     · `돌파(ascend)`는 속성 탭에서 빠지고 **초월 탭**으로 옮겨갔다(Gim 지시 2026-07-27).
 //     · `5레벨 상승` — 엘드리아는 1레벨씩 오르므로 **최대 5회 반복**으로 구현(비용 부족 시 되는 만큼).
 //     · 그 버튼을 **연속 3회 이상** 누르면 바로 위에 `최대 레벨 상승`이 생긴다 — 올릴 수 있는
 //       데까지 한 번에(Gim 지시 2026-07-27). 반복 상한은 "남은 레벨"이라 무한 루프가 불가능하다.
@@ -22,6 +23,9 @@ import { levelUp } from '../../system/core/character.mjs';
 import { SKILL_CATALOG, skillSlots } from '../../system/core/skills.mjs';
 import { recordMission } from '../../system/core/daily.mjs';
 import ComingSoon from './ComingSoon';
+import HeroGearPanel from './HeroGearPanel';
+import HeroAscendPanel from './HeroAscendPanel';
+import HeroCostumePanel from './HeroCostumePanel';
 
 // 아직 붙지 않은 자리 — 막지 않고 준비 중 패널로 **들어가게** 한다(Gim 지시 2026-07-26).
 const PAGES = {
@@ -30,12 +34,12 @@ const PAGES = {
 };
 
 // 하단 서브탭 — 호드워 캐릭터 상세의 `속성 · 장비 · 승성 · 코스튬` 자리.
-// 초월·코스튬은 대응 모듈이 없어 안내만 띄운다(docs/PARKED.md 자물쇠 정책).
+// 각 패널은 별도 모듈이다(규칙 14: 한 기능 = 한 모듈).
 const SUBTABS = [
   { k: 'stat', l: '속성', i: '📊' },
   { k: 'gear', l: '장비', i: '⚔️', dot: true },
-  { k: 'trans', l: '초월', i: '🌟', note: '초월 — 등급을 넘어서는 성장 단계가 들어올 자리입니다' },
-  { k: 'costume', l: '코스튬', i: '👗', note: '코스튬 — 외형 변경이 들어올 자리입니다(costumes 파킹)' },
+  { k: 'trans', l: '초월', i: '🌟' },
+  { k: 'costume', l: '코스튬', i: '👗' },
 ];
 
 const GRADE = { UR: 'S+', SSR: 'S', SR: 'A', R: 'B', N: 'C' };
@@ -63,7 +67,6 @@ export default function HeroDetail({ state, bump, concept, unit, onClose }) {
   const lvCost = levelUpCost(unit);
   const atCap = unit.level >= levelCap(unit);
   const slots = skillSlots(unit);
-  const gearMsg = () => { fx('error'); setMsg('🔒 장비 모듈이 아직 붙어 있지 않습니다'); };
 
   // 레벨업 공통 — times회까지 시도하고 상한·재화 부족에서 멈춘다.
   const runLevelUp = (times) => {
@@ -191,32 +194,15 @@ export default function HeroDetail({ state, bump, concept, unit, onClose }) {
             </View>
             {msg ? <Text style={d.msg}>{msg}</Text> : null}
           </ScrollView>
-        ) : tab !== 'gear' ? (
-          // 초월 · 코스튬 — 자리와 동선만 잡아 둔 상태
-          <View style={d.panelIn}>
-            <Text style={d.soonIc}>{SUBTABS.find((x) => x.k === tab).i}</Text>
-            <Text style={d.gearNote}>{SUBTABS.find((x) => x.k === tab).note}</Text>
-          </View>
+        ) : tab === 'gear' ? (
+          <HeroGearPanel concept={concept} unit={unit} onMsg={setMsg} />
+        ) : tab === 'trans' ? (
+          <HeroAscendPanel state={state} bump={bump} concept={concept} unit={unit} onMsg={setMsg} />
         ) : (
-          <View style={d.panelIn}>
-            <View style={d.gearRow}>
-              {Array.from({ length: 4 }).map((_, i) => (
-                <View key={i} style={d.gearSlot}><Text style={d.gearIc}>🔒</Text></View>
-              ))}
-            </View>
-            <View style={d.actions}>
-              <TouchableOpacity style={d.gearOff} activeOpacity={0.85} onPress={gearMsg}
-                accessibilityRole="button" accessibilityLabel="일괄 해제">
-                <Text style={d.gearOffTx}>일괄 해제</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={d.mainBtn} activeOpacity={0.85} onPress={gearMsg}
-                accessibilityRole="button" accessibilityLabel="일괄 장착">
-                <Text style={d.mainTx}>일괄 장착</Text>
-              </TouchableOpacity>
-            </View>
-            <Text style={d.gearNote}>{msg || '장비 슬롯 4칸 · 세트 효과가 들어올 자리입니다'}</Text>
-          </View>
+          <HeroCostumePanel state={state} concept={concept} unit={unit} onMsg={setMsg} />
         )}
+        {/* 속성 탭 밖에서는 메시지를 패널 아래에 한 줄로 보여준다 */}
+        {tab !== 'stat' && msg ? <Text style={d.msg}>{msg}</Text> : null}
       </View>
 
       {/* 하단 바 — 좌 뒤로 · 우 서브탭(속성 · 장비) */}
@@ -308,13 +294,6 @@ const d = StyleSheet.create({
   ghost: { opacity: 0 },
   msg: { color: '#7a3a1a', fontSize: 10, fontWeight: '800', textAlign: 'center', marginTop: 6 },
 
-  gearRow: { flexDirection: 'row', justifyContent: 'space-around', marginTop: 4 },
-  gearSlot: { width: 58, height: 58, borderRadius: 7, backgroundColor: '#9b9b9b', borderWidth: 2, borderColor: '#7d7d7d', alignItems: 'center', justifyContent: 'center' },
-  gearIc: { fontSize: 20, opacity: 0.7 },
-  gearOff: { paddingHorizontal: 20, paddingVertical: 10, borderRadius: 8, backgroundColor: '#8a6d47', alignItems: 'center' },
-  gearOffTx: { color: '#e8d5ae', fontSize: 12, fontWeight: '900' },
-  gearNote: { color: '#7a6238', fontSize: 10, fontWeight: '700', textAlign: 'center', marginTop: 10 },
-  soonIc: { fontSize: 30, textAlign: 'center', marginTop: 14 },
 
   // ── 하단 바 ──
   tabbar: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 8, paddingVertical: 5, backgroundColor: '#3b2d1d', borderTopWidth: 1, borderTopColor: '#6b543a' },
