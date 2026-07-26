@@ -46,6 +46,26 @@ export default function PartyStrip({ state, bump, concept, onGo }) {
     bump();
   };
 
+  // `일괄 진형 배치` — 빈 자리를 먼저 채우고 나서 진형을 배치한다.
+  //   autoFormation은 **이미 편성된 파티만** 배치한다. 파티가 1명이면 1명만 배치돼
+  //   "일괄"이라는 말과 어긋난다(Gim 지적 2026-07-27).
+  //   코어의 autoParty는 쓰지 않는다 — 파티를 통째로 갈아치워서 Gim이 직접 고른
+  //   조합이 소리 없이 사라진다. 여기서는 **빈 자리만** 강한 순으로 메운다.
+  const doArrange = () => {
+    let added = 0;
+    for (const u of cards) {
+      if (state.party.length >= MAX_PARTY) break;
+      if (partySet.has(u.uid)) continue;
+      if (togglePartyMember(state, u.uid).ok) added += 1;
+    }
+    const r = autoFormation(state);
+    if (!r.ok) { setMsg(`⚠ ${r.reason}`); fx('error'); bump(); return; }
+    setMsg(added ? `🪄 ${added}명 편성 · 전열 ${r.front.length} · 후열 ${r.back.length}`
+                 : `🪄 진형 재배치 · 전열 ${r.front.length} · 후열 ${r.back.length}`);
+    fx('success');
+    bump();
+  };
+
   return (
     <View style={p.wrap}>
       {/* 카드 가로 목록 */}
@@ -101,9 +121,8 @@ export default function PartyStrip({ state, bump, concept, onGo }) {
 
       {/* 하단 액션 — 일괄 진형 배치 · 전투 */}
       <View style={p.actions}>
-        <TouchableOpacity style={p.sub} activeOpacity={0.85}
-          onPress={() => { const r = autoFormation(state); setMsg(r.ok ? '🪄 진형을 다시 배치했습니다' : `⚠ ${r.reason}`); fx(r.ok ? 'success' : 'error'); bump(); }}
-          accessibilityRole="button" accessibilityLabel="일괄 진형 배치">
+        <TouchableOpacity style={p.sub} activeOpacity={0.85} onPress={doArrange}
+          accessibilityRole="button" accessibilityLabel="일괄 진형 배치 — 빈 자리를 채우고 전열·후열로 배치">
           <Text style={p.subTx}>일괄 진형 배치</Text>
         </TouchableOpacity>
         <TouchableOpacity style={p.main} activeOpacity={0.85}

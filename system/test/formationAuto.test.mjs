@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { createUnit } from '../core/units.mjs';
-import { createGameState, autoParty, MAX_PARTY } from '../core/gameState.mjs';
+import { createGameState, autoParty, togglePartyMember, MAX_PARTY } from '../core/gameState.mjs';
 import { computePower } from '../core/stats.mjs';
 import { autoFormation, unitRole, ROLE_CAP, formationSummary } from '../core/formation.mjs';
 import { savePreset, loadPreset, presetInfo, listPresetInfo, clearPreset, PRESET_SLOTS } from '../core/partyPresets.mjs';
@@ -208,4 +208,59 @@ test('프리셋: 세이브 왕복 보존', () => {
   savePreset(s, 4);
   const loaded = deserialize(serialize(s));
   assert.equal(presetInfo(loaded, 4).exists, true);
+});
+
+// ── 2026-07-27 Gim 지적: "일괄 진형배치를 눌러도 1개 캐릭만 배치됨" ──
+// 원인은 autoFormation의 버그가 아니라 **역할 분담**이었다. 이 경계를 고정해 둔다.
+test('자동배치는 파티를 채우지 않는다 — 편성된 인원만 배치한다', () => {
+  const s = createGameState({ units: [], party: [] });
+  const units = Array.from({ length: 6 }, () => createUnit('STRIKER', { level: 20, rank: 2 }));
+  s.units.push(...units);
+  s.party = [units[0].uid]; // 1명만 편성
+
+  const r = autoFormation(s);
+  assert.equal(r.ok, true);
+  const sum = formationSummary(s);
+  assert.equal(sum.front.length + sum.back.length, 1,
+    'autoFormation은 보유 유닛을 파티에 넣지 않는다 — 배치만 한다');
+});
+
+test('빈 자리를 먼저 채우면 정원 전원이 배치된다 (PartyStrip 일괄 진형 배치의 계약)', () => {
+  const s = createGameState({ units: [], party: [] });
+  const units = Array.from({ length: 8 }, () => createUnit('STRIKER', { level: 20, rank: 2 }));
+  s.units.push(...units);
+  s.party = [units[0].uid];
+
+  // 화면이 하는 일: 빈 자리를 강한 순으로 채운 뒤 배치.
+  const inParty = new Set(s.party);
+  for (const u of s.units) {
+    if (s.party.length >= MAX_PARTY) break;
+    if (inParty.has(u.uid)) continue;
+    togglePartyMember(s, u.uid);
+  }
+  assert.equal(s.party.length, MAX_PARTY, '정원까지 채워져야 함');
+
+  const r = autoFormation(s);
+  assert.equal(r.ok, true);
+  const sum = formationSummary(s);
+  assert.equal(sum.front.length, ROLE_CAP.front);
+  assert.equal(sum.back.length, ROLE_CAP.back);
+  assert.equal(sum.front.length + sum.back.length, MAX_PARTY);
+});
+
+test('빈 자리 채우기는 기존 선택을 지우지 않는다', () => {
+  const s = createGameState({ units: [], party: [] });
+  const units = Array.from({ length: 8 }, () => createUnit('STRIKER', { level: 20, rank: 2 }));
+  s.units.push(...units);
+  const picked = [units[5].uid, units[7].uid]; // 일부러 약한(뒤쪽) 유닛을 고른 상황
+  s.party = [...picked];
+
+  for (const u of s.units) {
+    if (s.party.length >= MAX_PARTY) break;
+    if (s.party.includes(u.uid)) continue;
+    togglePartyMember(s, u.uid);
+  }
+  for (const uid of picked) {
+    assert.ok(s.party.includes(uid), '직접 고른 영웅이 빠지면 안 된다');
+  }
 });
