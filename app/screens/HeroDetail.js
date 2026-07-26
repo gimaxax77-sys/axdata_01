@@ -21,15 +21,27 @@ import { SKILL_CATALOG, skillSlots } from '../../system/core/skills.mjs';
 import { recordMission } from '../../system/core/daily.mjs';
 import { togglePartyMember, MAX_PARTY } from '../../system/core/gameState.mjs';
 import { starOf } from '../../system/core/starGrade.mjs';
+import ComingSoon from './ComingSoon';
+
+// 아직 붙지 않은 자리 — 막지 않고 준비 중 패널로 **들어가게** 한다(Gim 지시 2026-07-26).
+const PAGES = {
+  pact: { icon: '🤝', title: '계약', plan: ['영웅 2인 계약', '동시 출전 시 능력치 보너스'] },
+  guide: { icon: '📖', title: '공략', plan: ['추천 진형·스킬 세팅', '상성 안내'] },
+};
 
 const GRADE = { UR: 'S+', SSR: 'S', SR: 'A', R: 'B', N: 'C' };
 const GRADE_BG = { UR: '#c0392b', SSR: '#c9962a', SR: '#2f8f7f', R: '#3a6ea8', N: '#6b6b6b' };
 const LEVEL_STEP = 5; // 호드워 `5레벨 상승` — 한 번에 시도할 레벨업 횟수
 
-export default function HeroDetail({ state, bump, concept, unit, onClose, onLocked }) {
+export default function HeroDetail({ state, bump, concept, unit, onClose }) {
   const [tab, setTab] = useState('stat'); // 'stat' | 'gear'
+  const [page, setPage] = useState(null); // 'pact' | 'guide'
   const [msg, setMsg] = useState(null);
   if (!unit) return null;
+  if (page) {
+    return <ComingSoon {...PAGES[page]} onBack={() => setPage(null)}
+      note="이 기능이 아직 붙어 있지 않습니다. 자리와 동선만 잡아 둔 상태예요." />;
+  }
 
   const id = identity(concept, unit);
   const arch = getArchetype(unit.archetype);
@@ -40,7 +52,7 @@ export default function HeroDetail({ state, bump, concept, unit, onClose, onLock
   const atCap = unit.level >= levelCap(unit);
   const inParty = state.party.includes(unit.uid);
   const slots = skillSlots(unit);
-  const lock = (what) => { fx('error'); onLocked?.(`🔒 ${what} — 준비 중입니다`); };
+  const gearMsg = () => { fx('error'); setMsg('🔒 장비 모듈이 아직 붙어 있지 않습니다'); };
 
   // `5레벨 상승` — 되는 만큼 올린다(상한·재화 부족에서 멈춤).
   const doLevelUp = () => {
@@ -67,8 +79,8 @@ export default function HeroDetail({ state, bump, concept, unit, onClose, onLock
         </View>
 
         {/* 좌측 계약 패널 — 호드워 고유 시스템이라 잠금 */}
-        <TouchableOpacity style={d.pact} activeOpacity={0.85} onPress={() => lock('계약')}
-          accessibilityRole="button" accessibilityLabel="계약 잠김">
+        <TouchableOpacity style={d.pact} activeOpacity={0.85} onPress={() => { fx('tap'); setPage('pact'); }}
+          accessibilityRole="button" accessibilityLabel="계약 (준비 중)">
           <Text style={d.pactTitle}>계약</Text>
           <View style={d.pactCard}>
             <Portrait emoji={id.emoji} image={charImage(concept.id, unit.characterId)} rarity={unit.rarity} size={38} />
@@ -78,8 +90,8 @@ export default function HeroDetail({ state, bump, concept, unit, onClose, onLock
         </TouchableOpacity>
 
         {/* 우측 공략 — 잠금 */}
-        <TouchableOpacity style={d.guide} activeOpacity={0.85} onPress={() => lock('공략')}
-          accessibilityRole="button" accessibilityLabel="공략 잠김">
+        <TouchableOpacity style={d.guide} activeOpacity={0.85} onPress={() => { fx('tap'); setPage('guide'); }}
+          accessibilityRole="button" accessibilityLabel="공략 (준비 중)">
           <Text style={d.guideIc}>📖</Text><Text style={d.guideTx}>공략</Text>
         </TouchableOpacity>
 
@@ -178,16 +190,16 @@ export default function HeroDetail({ state, bump, concept, unit, onClose, onLock
               ))}
             </View>
             <View style={d.actions}>
-              <TouchableOpacity style={d.gearOff} activeOpacity={0.85} onPress={() => lock('일괄 해제')}
-                accessibilityRole="button" accessibilityLabel="일괄 해제 잠김">
+              <TouchableOpacity style={d.gearOff} activeOpacity={0.85} onPress={gearMsg}
+                accessibilityRole="button" accessibilityLabel="일괄 해제">
                 <Text style={d.gearOffTx}>일괄 해제</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={d.mainBtn} activeOpacity={0.85} onPress={() => lock('일괄 장착')}
-                accessibilityRole="button" accessibilityLabel="일괄 장착 잠김">
+              <TouchableOpacity style={d.mainBtn} activeOpacity={0.85} onPress={gearMsg}
+                accessibilityRole="button" accessibilityLabel="일괄 장착">
                 <Text style={d.mainTx}>일괄 장착</Text>
               </TouchableOpacity>
             </View>
-            <Text style={d.gearNote}>장비는 준비 중입니다</Text>
+            <Text style={d.gearNote}>{msg || '장비 슬롯 4칸 · 세트 효과가 들어올 자리입니다'}</Text>
           </View>
         )}
       </View>

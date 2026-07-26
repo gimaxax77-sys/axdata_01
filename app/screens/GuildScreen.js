@@ -1,55 +1,52 @@
 // 길드 탭 — 호드워식 길드 목록 화면. 기준 docs/HORDWAR_SPEC.md "길드".
-//   골격 = 상단 배경+플레이어 카드+랭킹 · 검색바 · 길드 목록 패널 · 하단 [길드 창설][일괄 신청].
-//   ⚠️ 지금은 **골격만**이다(Gim 결정). guild 모듈이 파킹 상태라 목록·신청은 잠금.
-//      되살릴 때는 docs/PARKED.md 절차대로 `features.guild = true` + app/parked/ArenaGuildScreen.js 참고.
-import React from 'react';
+//   골격 = 검색바 · 길드 목록 패널 · 하단 [길드 창설][일괄 신청].
+//   ⚠️ 플레이어 카드(초상+닉+레벨+경험치바)는 **그리지 않는다.** App.js 글로벌 상단바에
+//      이미 같은 정보가 있어 화면에 두 번 나왔다(2026-07-26 Gim 지적). 호드워는 탭마다
+//      상단바가 없어 각 화면이 직접 그렸지만, 엘드리아는 상단바가 항상 떠 있다.
+//   ⚠️ guild 모듈이 파킹 상태지만 **잠금으로 막지 않고 준비 중 패널로 들어가게** 둔다
+//      (Gim 지시: 테스트·레이아웃 작업을 위해 개방, 출시 전에 정식으로 잠근다).
+import React, { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { T } from '../theme';
-import { fmt } from '../components';
 import { fx } from '../feedback';
-import { playerLevel, playerTitle } from '../../system/core/player.mjs';
-import { getPartyUnits } from '../../system/core/gameState.mjs';
-import { resolve } from '../../system/core/resolution.mjs';
-import { playStage } from '../../system/core/difficulty.mjs';
-import { accountMods } from '../../system/core/balance.mjs';
+import ComingSoon from './ComingSoon';
 
-export default function GuildScreen({ state, onLocked }) {
-  const lvl = playerLevel(state);
-  const expPct = Math.round(((Math.sqrt(Math.max(1, state.peakStage || 1)) * 2) % 1) * 100);
-  const power = resolve(getPartyUnits(state), playStage(state).challenge, accountMods(state), state.formation).score || 0;
-  const lock = (what) => { fx('error'); onLocked?.(`🔒 ${what} — 길드는 준비 중입니다`); };
+const PAGES = {
+  rank: { icon: '🏅', title: '길드 랭킹', plan: ['길드 전투력 순위', '주간 기여도 랭킹'] },
+  search: { icon: '🔍', title: '길드 검색', plan: ['길드 ID/이름으로 찾기', '가입 조건 필터'] },
+  create: { icon: '🏗️', title: '길드 창설', plan: ['길드명·문장 설정', '창설 비용', '가입 조건 지정'] },
+  apply: { icon: '📨', title: '일괄 신청', plan: ['조건이 맞는 길드에 한 번에 신청', '신청 현황 확인'] },
+};
+
+export default function GuildScreen() {
+  const [page, setPage] = useState(null);
+  const open = (k) => { fx('tap'); setPage(k); };
+
+  if (page) return <ComingSoon {...PAGES[page]} onBack={() => setPage(null)}
+    note="길드 모듈이 아직 붙어 있지 않습니다. 자리와 동선만 잡아 둔 상태예요." />;
 
   return (
     <View style={g.wrap}>
-      {/* 상단 배경 + 플레이어 카드 + 랭킹 (호드워: 길드 마을 일러스트 자리) */}
-      <View style={g.hero}>
-        <View style={g.pcard}>
-          <View style={g.face}><Text style={g.faceTx}>🧝</Text><View style={g.faceLv}><Text style={g.faceLvTx}>{lvl}</Text></View></View>
-          <View style={g.pcol}>
-            <Text style={g.pname} numberOfLines={1}>{playerTitle(lvl)}</Text>
-            <View style={g.exp}><View style={[g.expFill, { width: `${expPct}%` }]} /></View>
-            <Text style={g.ppow}>⚜ {fmt(power)}</Text>
-          </View>
-        </View>
-        <TouchableOpacity style={g.rank} activeOpacity={0.85} onPress={() => lock('랭킹')}
-          accessibilityRole="button" accessibilityLabel="길드 랭킹 잠김">
-          <Text style={g.rankIc}>🏅</Text><Text style={g.rankTx}>랭킹</Text>
-        </TouchableOpacity>
-      </View>
-
       {/* 검색바 */}
-      <TouchableOpacity style={g.search} activeOpacity={0.85} onPress={() => lock('길드 검색')}
-        accessibilityRole="button" accessibilityLabel="길드 ID/이름 찾기 잠김">
+      <TouchableOpacity style={g.search} activeOpacity={0.85} onPress={() => open('search')}
+        accessibilityRole="button" accessibilityLabel="길드 ID/이름 찾기">
         <Text style={g.searchPh}>길드 ID/이름 찾기</Text>
         <Text style={g.searchIc}>🔍</Text>
       </TouchableOpacity>
 
       {/* 길드 목록 패널 */}
       <View style={g.panel}>
-        <Text style={g.panelTitle}>길드 목록</Text>
+        <View style={g.panelHead}>
+          <View style={{ width: 44 }} />
+          <Text style={g.panelTitle}>길드 목록</Text>
+          <TouchableOpacity style={g.rank} activeOpacity={0.85} onPress={() => open('rank')}
+            accessibilityRole="button" accessibilityLabel="길드 랭킹">
+            <Text style={g.rankIc}>🏅</Text><Text style={g.rankTx}>랭킹</Text>
+          </TouchableOpacity>
+        </View>
         <ScrollView style={g.flex} contentContainerStyle={{ paddingBottom: 8 }}>
           <View style={g.empty}>
-            <Text style={g.emptyIc}>🏛️</Text>
+            <Text style={g.emptyIc}>🔒🏛️</Text>
             <Text style={g.emptyTx}>길드는 준비 중입니다</Text>
             <Text style={g.emptySub}>
               들어올 내용 — 길드 문장 · 이름 · 레벨 · 길드장 · 전투력 · 인원 수 · 신청 버튼{'\n'}
@@ -61,12 +58,12 @@ export default function GuildScreen({ state, onLocked }) {
 
       {/* 하단 고정 2버튼 — 호드워: 길드 창설(어두움) · 일괄 신청(금색) */}
       <View style={g.actions}>
-        <TouchableOpacity style={g.actDark} activeOpacity={0.85} onPress={() => lock('길드 창설')}
-          accessibilityRole="button" accessibilityLabel="길드 창설 잠김">
+        <TouchableOpacity style={g.actDark} activeOpacity={0.85} onPress={() => open('create')}
+          accessibilityRole="button" accessibilityLabel="길드 창설">
           <Text style={g.actDarkTx}>길드 창설</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={g.actGold} activeOpacity={0.85} onPress={() => lock('일괄 신청')}
-          accessibilityRole="button" accessibilityLabel="일괄 신청 잠김">
+        <TouchableOpacity style={g.actGold} activeOpacity={0.85} onPress={() => open('apply')}
+          accessibilityRole="button" accessibilityLabel="일괄 신청">
           <Text style={g.actGoldTx}>일괄 신청</Text>
         </TouchableOpacity>
       </View>
@@ -78,29 +75,19 @@ const g = StyleSheet.create({
   wrap: { flex: 1 },
   flex: { flex: 1 },
 
-  hero: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', paddingHorizontal: 10, paddingTop: 10, paddingBottom: 12, backgroundColor: '#20321f' },
-  pcard: { flexDirection: 'row', gap: 7, flex: 1 },
-  face: { width: 40, height: 40, borderRadius: 8, borderWidth: 2, borderColor: T.good, backgroundColor: 'rgba(0,0,0,0.4)', alignItems: 'center', justifyContent: 'center' },
-  faceTx: { fontSize: 20 },
-  faceLv: { position: 'absolute', right: -4, bottom: -4, minWidth: 17, borderRadius: 9, backgroundColor: '#1a1a1a', borderWidth: 1, borderColor: T.good, alignItems: 'center' },
-  faceLvTx: { color: '#fff', fontSize: 8, fontWeight: '900' },
-  pcol: { flex: 1, justifyContent: 'center' },
-  pname: { color: '#fff', fontSize: 12, fontWeight: '900' },
-  exp: { height: 5, borderRadius: 3, backgroundColor: 'rgba(0,0,0,0.5)', overflow: 'hidden', marginTop: 3 },
-  expFill: { height: 5, borderRadius: 3, backgroundColor: T.accent },
-  ppow: { color: T.accent, fontSize: 11, fontWeight: '900', marginTop: 3 },
-  rank: { alignItems: 'center', paddingHorizontal: 6 },
-  rankIc: { fontSize: 22, opacity: 0.7 },
-  rankTx: { color: '#cbd6c4', fontSize: 8, fontWeight: '800' },
-
-  search: { flexDirection: 'row', alignItems: 'center', marginHorizontal: 10, marginTop: -8, paddingHorizontal: 12, paddingVertical: 8, borderRadius: 10, backgroundColor: 'rgba(0,0,0,0.45)', borderWidth: 1, borderColor: T.line },
+  search: { flexDirection: 'row', alignItems: 'center', marginHorizontal: 10, marginTop: 10, paddingHorizontal: 12, paddingVertical: 9, borderRadius: 10, backgroundColor: 'rgba(0,0,0,0.45)', borderWidth: 1, borderColor: T.line },
   searchPh: { color: T.muted, fontSize: 11, fontWeight: '700', flex: 1 },
   searchIc: { fontSize: 13 },
 
   panel: { flex: 1, margin: 10, borderRadius: 12, backgroundColor: T.surface, borderWidth: 1, borderColor: T.line, paddingBottom: 4 },
-  panelTitle: { color: T.accent, fontSize: 12, fontWeight: '900', textAlign: 'center', paddingVertical: 8 },
+  panelHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 6, paddingTop: 4 },
+  panelTitle: { color: T.accent, fontSize: 12, fontWeight: '900', textAlign: 'center', paddingVertical: 6 },
+  rank: { width: 44, alignItems: 'center' },
+  rankIc: { fontSize: 17, opacity: 0.8 },
+  rankTx: { color: T.muted, fontSize: 8, fontWeight: '900' },
+
   empty: { alignItems: 'center', paddingHorizontal: 20, paddingVertical: 26 },
-  emptyIc: { fontSize: 38, opacity: 0.55 },
+  emptyIc: { fontSize: 32, opacity: 0.6 },
   emptyTx: { color: T.text, fontSize: 13, fontWeight: '900', marginTop: 8 },
   emptySub: { color: T.muted, fontSize: 10, lineHeight: 17, textAlign: 'center', marginTop: 8 },
 

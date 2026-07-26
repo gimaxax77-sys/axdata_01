@@ -1,12 +1,13 @@
 // 필드 탭 — 호드워식 세로 스크롤 월드맵. 기준 docs/HORDWAR_SPEC.md "필드 = 세로 스크롤 월드맵".
 //   노드를 좌·우·중앙 지그재그로 흩어 배치하고, 각 노드는 [아이콘/🔒] 이름 › 라벨 알약을 단다.
-//   ⚠️ 지금은 **골격만**이다(Gim 결정). 노드가 가리키는 모듈이 전부 파킹 상태라 전부 잠금 표시.
-//      되살릴 때는 docs/PARKED.md 절차대로 플래그를 켜고 아래 NODES의 `go`에 탭 키를 넣으면 된다.
+//   ⚠️ 노드가 가리키는 모듈이 전부 파킹 상태지만, **잠금으로 막지 않고 준비 중 패널로 들어가게** 둔다
+//      (Gim 지시 2026-07-26: 테스트·레이아웃 작업을 위해 개방. 🔒 표시는 유지, 출시 전에 정식으로 잠근다).
+//      되살릴 때는 docs/PARKED.md 절차대로 플래그를 켜고 노드에서 실제 화면으로 보내면 된다.
 //   아트는 이모지 + 라벨 알약으로 먼저 간다(Gim 결정). 나중에 이미지만 갈아끼울 수 있게 emoji 자리를 분리해 뒀다.
-import React from 'react';
+import React, { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
-import { T } from '../theme';
 import { fx } from '../feedback';
+import ComingSoon from './ComingSoon';
 
 // 지그재그 배치 — align: 'l'(좌) · 'c'(중앙) · 'r'(우). 호드워 지도의 흩어진 느낌을 만든다.
 // note = 이 자리에 들어올 엘드리아 모듈(다음 세션이 매핑을 다시 추론하지 않도록 남긴다).
@@ -24,7 +25,15 @@ const NODES = [
 
 const ALIGN = { l: 'flex-start', c: 'center', r: 'flex-end' };
 
-export default function FieldScreen({ onLocked }) {
+export default function FieldScreen() {
+  const [open, setOpen] = useState(null); // 진입한 노드 key
+
+  if (open) {
+    const n = NODES.find((x) => x.key === open);
+    return <ComingSoon icon={n.emoji} title={n.name} plan={[n.note]} onBack={() => setOpen(null)}
+      note="이 노드로 들어오는 콘텐츠가 아직 붙어 있지 않습니다. 자리와 동선만 잡아 둔 상태예요." />;
+  }
+
   return (
     <View style={f.wrap}>
       {/* 양피지 톤 지도 배경 — 아트가 생기면 이 View를 이미지로 교체한다. */}
@@ -34,8 +43,8 @@ export default function FieldScreen({ onLocked }) {
           <View key={n.key} style={[f.slot, { alignItems: ALIGN[n.align] }]}>
             {n.tag ? <Text style={f.tag}>{n.tag}</Text> : null}
             <TouchableOpacity activeOpacity={0.85} style={f.node}
-              onPress={() => { fx('error'); onLocked?.(`🔒 ${n.name} — 준비 중입니다`); }}
-              accessibilityRole="button" accessibilityLabel={`${n.name} 잠김 — ${n.note}`}>
+              onPress={() => { fx('tap'); setOpen(n.key); }}
+              accessibilityRole="button" accessibilityLabel={`${n.name} — ${n.note}`}>
               <Text style={f.nodeArt}>{n.emoji}</Text>
               <View style={f.pill}>
                 <Text style={f.pillLock}>🔒</Text>

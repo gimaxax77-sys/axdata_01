@@ -20,14 +20,17 @@ import { teamSynergy } from '../../system/core/synergy.mjs';
 import { computePower } from '../../system/core/stats.mjs';
 import FormationModal from './FormationModal';
 import HeroDetail from './HeroDetail';
+import ComingSoon from './ComingSoon';
 
 // 호드워 등급 메달 표기 — 엘드리아 N~UR을 같은 자리에 얹는다.
 const GRADE = { UR: 'S+', SSR: 'S', SR: 'A', R: 'B', N: 'C' };
 const GRADE_BG = { UR: '#c0392b', SSR: '#c9962a', SR: '#2f8f7f', R: '#3a6ea8', N: '#6b6b6b' };
 
+// lock 이 있어도 **막지 않고 들어간다** — 준비 중 패널을 보여준다(Gim 지시 2026-07-26).
+// 🔒 표시만 남기고, 출시 전에 정식으로 잠근다.
 const SUBS = [
-  { key: 'gear', label: '장신구', lock: '장비는 준비 중입니다' },
-  { key: 'dex', label: '도감', lock: '도감은 준비 중입니다' },
+  { key: 'gear', label: '장신구', lock: true, icon: '💍', plan: ['장비·장신구 착용 슬롯', '강화·분해', '세트 효과'] },
+  { key: 'dex', label: '도감', lock: true, icon: '📖', plan: ['보유 영웅 도감', '업적', '시즌 패스'] },
   { key: 'hero', label: '영웅' },
 ];
 
@@ -62,7 +65,7 @@ const HeroCard = React.memo(function HeroCard({ u, name, emoji, elemIc, roleIc, 
   );
 });
 
-export default function HeroScreen({ state, bump, concept, onLocked }) {
+export default function HeroScreen({ state, bump, concept }) {
   const [sub, setSub] = useState('hero');
   const [elemFilter, setElemFilter] = useState(null);
   const [barOpen, setBarOpen] = useState(true);
@@ -92,7 +95,7 @@ export default function HeroScreen({ state, bump, concept, onLocked }) {
   if (unit) {
     return (
       <HeroDetail state={state} bump={bump} concept={concept} unit={unit}
-        onClose={() => setDetail(null)} onLocked={onLocked} />
+        onClose={() => setDetail(null)} />
     );
   }
 
@@ -108,9 +111,9 @@ export default function HeroScreen({ state, bump, concept, onLocked }) {
           const on = s.key === sub;
           return (
             <TouchableOpacity key={s.key} style={[c.sub, on && c.subOn]} activeOpacity={0.85}
-              onPress={() => { if (s.lock) { fx('error'); onLocked?.(`🔒 ${s.lock}`); } else { fx('tap'); setSub(s.key); } }}
+              onPress={() => { fx('tap'); setSub(s.key); }}
               accessibilityRole="tab" accessibilityState={{ selected: on }}
-              accessibilityLabel={s.lock ? `${s.label} 잠김` : s.label}>
+              accessibilityLabel={s.lock ? `${s.label} (준비 중)` : s.label}>
               <Text style={[c.subTx, on && c.subTxOn]}>{s.label}</Text>
               {s.lock && <Text style={c.subLock}>🔒</Text>}
             </TouchableOpacity>
@@ -118,7 +121,15 @@ export default function HeroScreen({ state, bump, concept, onLocked }) {
         })}
       </View>
 
+      {/* 장신구·도감 서브탭 — 막지 않고 준비 중 패널로 들어간다 */}
+      {sub !== 'hero' && (() => {
+        const s = SUBS.find((x) => x.key === sub);
+        return <ComingSoon icon={s.icon} title={s.label} plan={s.plan}
+          note="해당 모듈이 아직 붙어 있지 않습니다. 자리와 동선만 잡아 둔 상태예요." />;
+      })()}
+
       {/* 카드 그리드 4열 */}
+      {sub === 'hero' && (<>
       <ScrollView style={c.flex} contentContainerStyle={c.grid}>
         {shown.length === 0 && <Text style={c.empty}>이 속성의 {concept.terms.unit}이 없습니다</Text>}
         {shown.map((u) => {
@@ -169,6 +180,7 @@ export default function HeroScreen({ state, bump, concept, onLocked }) {
         </TouchableOpacity>
       </View>
       {msg ? <Text style={c.msg}>{msg}</Text> : null}
+      </>)}
 
       <FormationModal visible={formOpen} state={state} bump={bump} concept={concept}
         onClose={() => setFormOpen(false)} onMsg={setMsg} />

@@ -6,7 +6,6 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { T } from '../theme';
-import { fmt } from '../components';
 import { fx } from '../feedback';
 import { ATTENDANCE, canClaimAttendance, claimAttendance } from '../../system/core/daily.mjs';
 
@@ -23,7 +22,7 @@ function rewardText(r, concept) {
   return Object.entries(r).map(([k, v]) => `${R[k] ? R[k].emoji : ''}${v}`).join(' ');
 }
 
-export default function PerkScreen({ state, bump, concept, onLocked }) {
+export default function PerkScreen({ state, bump, concept }) {
   const [sub, setSub] = useState('attend');
   const [msg, setMsg] = useState(null);
 
@@ -85,13 +84,9 @@ export default function PerkScreen({ state, bump, concept, onLocked }) {
           const on = s.key === sub;
           return (
             <TouchableOpacity key={s.key} style={[p.sub_, on && p.subOn]} activeOpacity={0.85}
-              onPress={() => {
-                if (s.lock) { fx('error'); onLocked?.(`🔒 ${s.lock}`); }
-                else { fx('tap'); setMsg(null); }
-                setSub(s.key);
-              }}
+              onPress={() => { fx('tap'); setMsg(null); setSub(s.key); }}
               accessibilityRole="tab" accessibilityState={{ selected: on }}
-              accessibilityLabel={s.lock ? `${s.label} 잠김` : s.label}>
+              accessibilityLabel={s.lock ? `${s.label} (준비 중)` : s.label}>
               <Text style={p.subIc}>{s.icon}</Text>
               <Text style={[p.subTx, on && p.subTxOn]} numberOfLines={1}>{s.label}</Text>
               {s.lock && <Text style={p.subLock}>🔒</Text>}
