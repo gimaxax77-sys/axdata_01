@@ -18,7 +18,9 @@ import { accountMods } from '../../system/core/balance.mjs';
 import { canClaimAttendance, missionList, claimAllDaily } from '../../system/core/daily.mjs';
 import { unreadMailCount, claimAllMail } from '../../system/core/mailbox.mjs';
 import { fx } from '../feedback';
+import { isOn } from '../../system/core/features.mjs';
 import BattleView from './BattleView';
+import SummonScreen from './SummonScreen';
 
 // 난이도별 색조 오버레이(필드 위에 은은히) — 일반은 없음.
 const DIFF_TINT = {
@@ -32,6 +34,7 @@ const DIFF_TINT = {
 export default function IdleScreen({ state, bump, lastGain, concept, background, onGo }) {
   const [speed, setSpeed] = useState(1);    // 호드워 배속 ×2
   const [paused, setPaused] = useState(false); // 호드워 ⏸
+  const [summon, setSummon] = useState(false); // 호드워 「영웅 제단」(모집) 전환
   const stageDef = playStage(state); // 난이도 배수 반영
   const zone = stageZone(state.stage);
   const curDiff = difficultyDef(state.difficulty);
@@ -65,6 +68,12 @@ export default function IdleScreen({ state, bump, lastGain, concept, background,
 
   const progPct = pctW(((state.stage - zone.start) / Math.max(1, zone.end - zone.start)) * 100);
   const zoneMeta = elementMeta(concept, zone.element); // 속성 구역명 = 적 스테이지 이름
+
+  // 「영웅 제단」을 누르면 요새 탭이 통째로 모집 화면으로 바뀐다(호드워와 동일 동선).
+  // 상단바는 App이 항상 그리므로 캡처처럼 그대로 남는다.
+  if (summon) {
+    return <SummonScreen state={state} bump={bump} concept={concept} onClose={() => setSummon(false)} />;
+  }
 
   return (
     <View style={st.wrap}>
@@ -147,9 +156,17 @@ export default function IdleScreen({ state, bump, lastGain, concept, background,
           </TouchableOpacity>
         </View>
 
-        {/* 우측 하단 — 다이아 · 방치상자 · 모험 바로가기 */}
+        {/* 우측 하단 — 다이아 · 영웅 제단(모집) · 방치상자 · 모험 바로가기 */}
         <View style={st.rightCol}>
           <View style={st.rbtn}><Text style={st.rbtnIc}>{concept.resources.gem.emoji}</Text><Text style={st.rbtnTx}>{fmt(state.wallet.gem || 0)}</Text></View>
+          {/* 호드워는 요새 맵의 건물 노드. 엘드리아 요새 탭은 전투 화면이라 여기 바로가기로 둔다. */}
+          {isOn('gacha') && (
+            <TouchableOpacity style={st.rbtn} activeOpacity={0.85} onPress={() => { fx('tap'); setSummon(true); }}
+              accessibilityRole="button" accessibilityLabel="영웅 제단 — 모집(소환)">
+              <Text style={st.rbtnIc}>🗿</Text><Text style={st.rbtnTx}>영웅 제단</Text>
+              {(state.wallet.summon || 0) >= 100 && <View style={st.rbtnDot} />}
+            </TouchableOpacity>
+          )}
           <TouchableOpacity style={st.rbtn} activeOpacity={0.85} onPress={doClaimAll}
             accessibilityRole="button" accessibilityLabel="방치상자 수령">
             <Text style={st.rbtnIc}>🎁</Text>

@@ -9,7 +9,7 @@
 //     · 상세 — 카드를 탭하면 **전체화면 HeroDetail**로 전환한다(호드워 캐프처와 동일).
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
-import { T } from '../theme';
+import { T, GRADE, GRADE_BG } from '../theme';
 import { Portrait } from '../components';
 import { charImage } from '../charImages';
 import { fx } from '../feedback';
@@ -22,9 +22,7 @@ import FormationModal from './FormationModal';
 import HeroDetail from './HeroDetail';
 import ComingSoon from './ComingSoon';
 
-// 호드워 등급 메달 표기 — 엘드리아 N~UR을 같은 자리에 얹는다.
-const GRADE = { UR: 'S+', SSR: 'S', SR: 'A', R: 'B', N: 'C' };
-const GRADE_BG = { UR: '#c0392b', SSR: '#c9962a', SR: '#2f8f7f', R: '#3a6ea8', N: '#6b6b6b' };
+// 등급 메달 표기(GRADE·GRADE_BG)는 소환 결과와 공유하므로 theme.js에 있다.
 
 // lock 이 있어도 **막지 않고 들어간다** — 준비 중 패널을 보여준다(Gim 지시 2026-07-26).
 // 🔒 표시만 남기고, 출시 전에 정식으로 잠근다.

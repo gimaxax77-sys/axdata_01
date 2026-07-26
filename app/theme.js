@@ -38,6 +38,11 @@ export function rarityMeta(r) {
   return RARITY_META[r] || RARITY_META.N;
 }
 
+// 호드워 등급 메달 표기 — 엘드리아 N~UR을 호드워의 S+/S/A/B/C 자리에 얹는다.
+// 영웅 카드·소환 결과가 같은 표기를 써야 해서 여기(공용)에 둔다.
+export const GRADE = { UR: 'S+', SSR: 'S', SR: 'A', R: 'B', N: 'C' };
+export const GRADE_BG = { UR: '#c0392b', SSR: '#c9962a', SR: '#2f8f7f', R: '#3a6ea8', N: '#6b6b6b' };
+
 export const RES_META = {
   currency: { color: T.currency },
   growth: { color: T.growth },

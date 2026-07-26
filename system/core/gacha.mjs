@@ -20,8 +20,8 @@ export const RARITY = {
 
 const ARCH_IDS = ['VANGUARD', 'STRIKER', 'SUPPORT'];
 export const PULL_COST = { summon: 10 };
-const PITY_HARD = 90; // 이 횟수 안에 SSR 보장
-const MULTI_FLOOR = 'SR'; // 10연차 최소 1개 보장 등급
+export const PITY_HARD = 90; // 이 횟수 안에 SSR 보장 (화면의 천장 게이지가 같은 값을 쓴다)
+export const MULTI_FLOOR = 'SR'; // 10연차 최소 1개 보장 등급
 
 function rollRarity(rng) {
   return weightedPick(

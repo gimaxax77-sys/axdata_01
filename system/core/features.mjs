@@ -41,7 +41,7 @@ export const MODULE_META = {
 export const FEATURES = {
   elements: true,  // 유지 — 호드워 속성 필터·속성 아이콘
   rarity: true,    // 유지 — 호드워 등급 원형 뱃지
-  gacha: false,
+  gacha: true,     // 되살림 2026-07-26 — 호드워 「영웅 제단」(모집). app/screens/SummonScreen.js
   summon: false,
   sigweapon: false,
   gear: false,

@@ -15,24 +15,28 @@
 | 캠페인 | `campaign` |
 | 살림 | `economy` `save` `rng` `daily` `mailbox` `unlocks` `player` `tutorial` `meta` |
 
-## 파킹한 선택 모듈 18종
+## 파킹한 선택 모듈 17종
 
 `system/core/features.mjs` 의 플래그를 `false` 로 내렸습니다. **파일은 그대로** 있습니다.
 
-`gacha` · `summon` · `sigweapon` · `gear` · `runes` · `relics` · `emblems` · `pets` · `guardians` · `costumes` · `arena` · `guild` · `tower` · `expedition` · `season` · `events` · `intimacy` · `shop`
+`summon` · `sigweapon` · `gear` · `runes` · `relics` · `emblems` · `pets` · `guardians` · `costumes` · `arena` · `guild` · `tower` · `expedition` · `season` · `events` · `intimacy` · `shop`
 
-### 켜둔 2종과 그 이유
+### 켜둔 3종과 그 이유
 
-| 모듈 | 왜 안 껐나 |
+| 모듈 | 왜 켜져 있나 |
 |---|---|
 | `elements` | **호드워 UI 자체의 구성요소.** 편성 화면의 속성 필터 바(ALL+속성 원형 아이콘)와 전투 유닛의 속성 아이콘이 이걸 쓴다. |
 | `rarity` | 같은 이유. 호드워 편성 카드의 **등급 원형 뱃지(S+/S/A)** 가 이걸 쓴다. 엘드리아 N~UR을 S+/S/A/B/C로 매핑해 표시한다. |
+| `gacha` | **2026-07-26 되살림(Gim 지시).** 호드워 「영웅 제단」(모집). 영웅이 1명에서 안 늘어나 편성·진형·속성 필터·시너지를 전부 확인할 수 없었다. |
+
+> ⚠️ `gacha`와 `summon`은 **다른 모듈**이다. `gacha`=영웅 뽑기(되살림), `summon`=소환 숙련도(누적 보상, 계속 파킹).
+> 파킹된 `GachaScreen.js`는 **되살리지 않았다** — 배너 6개 중 5개가 파킹 모듈(장비·룬·펫·정령·코스튬)이라 통째로 되살리면 파킹 결정이 무너진다. 대신 영웅 배너만 다루는 `SummonScreen.js`를 호드워 캡처 기준으로 새로 만들었다.
 
 ## 화면 파일 이동 — `app/screens/` → `app/parked/`
 
 | 파일 | 무엇 | 되살리는 법 |
 |---|---|---|
-| `GachaScreen.js` | 소환(영웅·장비·룬·코스튬·정령) | `app/screens/`로 되돌리고 App.js `TABS`에 등록 + `features.gacha = true` |
+| `GachaScreen.js` | 소환(영웅·장비·룬·코스튬·정령) | **되살리지 않는다.** 영웅 배너는 새 `SummonScreen.js`가 대체. 나머지 5개 배너는 각 모듈을 켤 때 그 화면에 붙인다 |
 | `ContentScreen.js` | 일일임무·이벤트·던전·시즌·**캠페인** | 캠페인은 새 `AdventureScreen.js`가 대체함. 나머지 되살리려면 위와 동일 |
 | `ShopScreen.js` | 상점·과금 | `features.shop = true` |
 | `ArenaGuildScreen.js` | 아레나·길드·무한의 탑 | `features.arena/guild/tower = true` |
@@ -52,6 +56,8 @@
 
 | 파일 | 무엇 |
 |---|---|
+| `app/screens/SummonScreen.js` | 모집(소환) — 호드워 「영웅 제단」. 천장 게이지 · 배너 캐러셀 3 · 1회/10회 모집 · 애니메이션 토글 |
+| `app/screens/SummonResult.js` | 10연 결과 오버레이 — 카드 3·4·3 · 등급별 카드색 · 순차 등장 |
 | `app/screens/HeroScreen.js` | 호드워 편성 화면 — 속성 필터 바 · 등급 원형 뱃지 카드 그리드 · 상세(스탯/레벨업/돌파) · 진형 · 하단 액션 바(자동편성·일괄 진형 배치·**전투**) |
 | `app/screens/AdventureScreen.js` | 모험(스토리 캠페인) — BOSS COMING 카드 · 챕터 목록 · 정주행 |
 

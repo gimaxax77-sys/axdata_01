@@ -9,10 +9,12 @@ import { createUnit } from '../core/units.mjs';
 import { computePower } from '../core/stats.mjs';
 
 // 2026-07-25 호드워 전환 — 선택 모듈 18종 파킹, 호드워 UI가 쓰는 2종만 켜둔다.
-test('기본 프리셋 값(속성·등급만 on, 나머지 18종 파킹)', () => {
+// 2026-07-26 gacha 되살림(Gim 지시) — 호드워 「영웅 제단」(모집). 파킹 목록에서 뺀다.
+test('기본 프리셋 값(속성·등급·소환 on, 나머지 17종 파킹)', () => {
   assert.equal(isOn('elements'), true); // 호드워 속성 필터·속성 아이콘
   assert.equal(isOn('rarity'), true);   // 호드워 등급 원형 뱃지
-  for (const k of ['gacha', 'gear', 'runes', 'pets', 'arena', 'guild', 'tower', 'expedition', 'shop']) {
+  assert.equal(isOn('gacha'), true);    // 호드워 영웅 제단(모집)
+  for (const k of ['gear', 'runes', 'pets', 'arena', 'guild', 'tower', 'expedition', 'shop']) {
     assert.equal(isOn(k), false, `${k} 는 파킹 상태여야 함(docs/PARKED.md)`);
   }
   assert.equal(simplePreset().elements, false);
