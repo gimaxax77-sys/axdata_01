@@ -1,14 +1,17 @@
-// 모험 탭 — 스토리 캠페인(챕터 보스전 + 정주행 로그).
+// 모험 탭 — 스토리 캠페인(챕터 보스전 + 정주행 로그) + 하단 편성 줄.
 //   호드워의 '모험' = 주 진행 축. 하단 메뉴바에서 혼자 넓은 주버튼으로 들어온다.
 //   코어 모듈(campaign.mjs)만 쓴다 — 선택 모듈은 파킹(docs/PARKED.md).
+//   ⚠️ 하단 PartyStrip이 **파티에 영웅을 넣는 유일한 경로**다(Gim 결정 2026-07-27).
+//      영웅 상세의 `편성` 버튼을 없앤 뒤 경로가 끊겨 있었다.
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { T } from '../theme';
 import { Card, pctW } from '../components';
 import { fx } from '../feedback';
 import { campaignChapters, fightChapter, storyLog, CAMPAIGN_CHAPTER_COUNT } from '../../system/core/campaign.mjs';
+import PartyStrip from './PartyStrip';
 
-export default function AdventureScreen({ state, bump, concept }) {
+export default function AdventureScreen({ state, bump, concept, onGo }) {
   const [result, setResult] = useState(null);
   const [openStory, setOpenStory] = useState(null); // 펼친 챕터 index
 
@@ -83,6 +86,9 @@ export default function AdventureScreen({ state, bump, concept }) {
         })}
         <View style={{ height: 10 }} />
       </ScrollView>
+
+      {/* 하단 편성 줄 — 파티에 영웅을 넣는 유일한 경로(Gim 결정 2026-07-27) */}
+      <PartyStrip state={state} bump={bump} concept={concept} onGo={onGo} />
     </View>
   );
 }
