@@ -6,23 +6,20 @@
 //     · 보유수 — 호드워는 107/200(용량 과금). 엘드리아엔 상한 개념이 없어 **보유수만** 표시.
 //     · '핵심' 라벨, '상위 5명 최저레벨 공유' 안내 — 호드워 고유 시스템이라 넣지 않음.
 //     · 공명 — 대응이 없어 팀 시너지 개수로 대체.
-//     · 상세 — 참조 화면엔 없지만 레벨업·돌파 경로가 필요해 **카드 탭 시 모달**로 띄운다.
+//     · 상세 — 카드를 탭하면 **전체화면 HeroDetail**로 전환한다(호드워 캐프처와 동일).
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Modal } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { T } from '../theme';
-import { Btn, fmt, Portrait } from '../components';
+import { Portrait } from '../components';
 import { charImage } from '../charImages';
 import { fx } from '../feedback';
 import { isOn } from '../../system/core/features.mjs';
 import { identity, elementMeta } from '../../system/concepts/index.mjs';
-import { togglePartyMember, MAX_PARTY, getPartyUnits } from '../../system/core/gameState.mjs';
+import { getPartyUnits } from '../../system/core/gameState.mjs';
 import { teamSynergy } from '../../system/core/synergy.mjs';
-import { computeStats, computePower } from '../../system/core/stats.mjs';
-import { levelCap } from '../../system/core/units.mjs';
-import { levelUp, ascend, ascendCost } from '../../system/core/character.mjs';
-import { recordMission } from '../../system/core/daily.mjs';
-import { starOf } from '../../system/core/starGrade.mjs';
+import { computePower } from '../../system/core/stats.mjs';
 import FormationModal from './FormationModal';
+import HeroDetail from './HeroDetail';
 
 // 호드워 등급 메달 표기 — 엘드리아 N~UR을 같은 자리에 얹는다.
 const GRADE = { UR: 'S+', SSR: 'S', SR: 'A', R: 'B', N: 'C' };
@@ -69,7 +66,7 @@ export default function HeroScreen({ state, bump, concept, onLocked }) {
   const [sub, setSub] = useState('hero');
   const [elemFilter, setElemFilter] = useState(null);
   const [barOpen, setBarOpen] = useState(true);
-  const [detail, setDetail] = useState(null);   // 상세 모달 uid
+  const [detail, setDetail] = useState(null);   // 상세 전환 대상 uid
   const [formOpen, setFormOpen] = useState(false);
   const [msg, setMsg] = useState(null);
 
@@ -90,6 +87,14 @@ export default function HeroScreen({ state, bump, concept, onLocked }) {
 
   const synCount = teamSynergy(getPartyUnits(state)).list.length;
   const unit = detail && state.units.find((u) => u.uid === detail);
+
+  // 영웅을 고르면 목록 대신 **전체화면 상세**로 바뀐다(호드워 캡처와 동일).
+  if (unit) {
+    return (
+      <HeroDetail state={state} bump={bump} concept={concept} unit={unit}
+        onClose={() => setDetail(null)} onLocked={onLocked} />
+    );
+  }
 
   return (
     <View style={c.wrap}>
@@ -165,43 +170,6 @@ export default function HeroScreen({ state, bump, concept, onLocked }) {
       </View>
       {msg ? <Text style={c.msg}>{msg}</Text> : null}
 
-      {/* 상세 모달 — 참조 화면엔 없지만 육성 경로가 필요해 추가 */}
-      <Modal transparent animationType="fade" visible={!!unit} onRequestClose={() => setDetail(null)}>
-        <TouchableOpacity style={c.backdrop} activeOpacity={1} onPress={() => setDetail(null)}
-          accessibilityRole="button" accessibilityLabel="닫기">
-          {unit && (() => {
-            const id = identity(concept, unit);
-            const st8 = computeStats(unit);
-            const asc = ascendCost(unit);
-            const inParty = state.party.includes(unit.uid);
-            const atCap = unit.level >= levelCap(unit);
-            return (
-              <TouchableOpacity activeOpacity={1} style={c.dcard}>
-                <Portrait emoji={id.emoji} image={charImage(concept.id, unit.characterId)} rarity={unit.rarity} size={84} badge />
-                <Text style={c.dname}>
-                  {id.element ? `${elementMeta(concept, id.element).emoji} ` : ''}{id.name}
-                </Text>
-                <Text style={c.dsub}>Lv.{unit.level}/{levelCap(unit)} · R{unit.rank} · {starOf(unit)}★ · ⚔{fmt(computePower(unit))}</Text>
-                <View style={c.dstats}>
-                  <Text style={c.dstat}>❤️ {fmt(st8.hp)}</Text>
-                  <Text style={c.dstat}>⚔️ {fmt(st8.atk)}</Text>
-                  <Text style={c.dstat}>🛡️ {fmt(st8.def)}</Text>
-                </View>
-                <View style={c.dbtns}>
-                  <Btn small kind={inParty ? 'ghost' : 'gold'} label={inParty ? '편성 해제' : '편성'}
-                    disabled={!inParty && state.party.length >= MAX_PARTY}
-                    onPress={() => { togglePartyMember(state, unit.uid); fx('tap'); bump(); }} />
-                  <Btn small kind="primary" label="레벨업" disabled={atCap}
-                    onPress={() => { const r = levelUp(state, unit.uid); if (r.ok) recordMission(state, 'upgrade', 1); else setMsg(`⚠ ${r.reason}`); fx(r.ok ? 'success' : 'error'); bump(); }} />
-                  <Btn small kind="ghost" label={`돌파 ${concept.resources.summon.emoji}${fmt(asc.summon || 0)}`}
-                    onPress={() => { const r = ascend(state, unit.uid); if (r.ok) recordMission(state, 'upgrade', 1); setMsg(r.ok ? '⭐ 돌파 성공' : `⚠ ${r.reason}`); fx(r.ok ? 'success' : 'error'); bump(); }} />
-                </View>
-              </TouchableOpacity>
-            );
-          })()}
-        </TouchableOpacity>
-      </Modal>
-
       <FormationModal visible={formOpen} state={state} bump={bump} concept={concept}
         onClose={() => setFormOpen(false)} onMsg={setMsg} />
     </View>
@@ -260,13 +228,4 @@ const c = StyleSheet.create({
   formIc: { fontSize: 17 },
   formTx: { color: '#e6d3ae', fontSize: 8, fontWeight: '900' },
   msg: { color: T.accent, fontSize: 10, fontWeight: '800', textAlign: 'center', paddingBottom: 4, backgroundColor: '#2b2013' },
-
-  // 상세 모달
-  backdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.7)', alignItems: 'center', justifyContent: 'center', padding: 24 },
-  dcard: { width: '100%', maxWidth: 320, alignItems: 'center', backgroundColor: T.surface, borderRadius: 16, borderWidth: 1, borderColor: T.accent, padding: 18 },
-  dname: { color: T.text, fontSize: 16, fontWeight: '900', marginTop: 8 },
-  dsub: { color: T.muted, fontSize: 10, fontWeight: '700', marginTop: 3 },
-  dstats: { flexDirection: 'row', gap: 12, marginTop: 10 },
-  dstat: { color: T.text, fontSize: 11, fontWeight: '700' },
-  dbtns: { flexDirection: 'row', gap: 6, marginTop: 14 },
 });
