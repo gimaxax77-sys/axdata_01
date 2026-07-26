@@ -21,7 +21,7 @@ export function IntroModal({ concept, visible, onDone }) {
   const slides = [
     { emoji: '🏰', title: `${concept.title}에 오신 걸 환영합니다`, body: `방치형 수집 RPG — 접속하지 않아도 ${ga(U)} 자동으로 싸우고 보상을 모읍니다.` },
     { emoji: '⚔️', title: `${eul(U)} 키우세요`, body: `영웅 탭에서 레벨업·돌파로 강해집니다. 강할수록 더 깊은 ${S}로 자동 전진해요.` },
-    { emoji: '🛡️', title: '진형을 짜세요', body: `영웅 탭에서 전열·중열·후열에 배치하면 전열은 방어가, 후열은 공격이 오릅니다.` },
+    { emoji: '🛡️', title: '진형을 짜세요', body: `영웅 탭 편성에서 전열 2명·후열 3명을 배치합니다. 전열은 방어가, 후열은 공격이 오릅니다.` },
     { emoji: '📖', title: '모험으로 나아가세요', body: '모험 탭의 챕터 보스를 잡아 이야기를 열고 보상을 받으세요. 이제 시작해봅시다!' },
   ];
   const last = i >= slides.length - 1;

@@ -1,5 +1,6 @@
 // 자동 전투 시각화 — 호드워식 **좌우 대치 진형**. 순수 연출(게임 로직 불변).
-//   기준: docs/HORDWAR_SPEC.md "전투 구조" — 아군 좌 3열 / 적 우 3열로 마주 본다.
+//   기준: docs/HORDWAR_SPEC.md "전투 구조" — 아군 좌 / 적 우로 마주 본다.
+//   아군은 진형 2단(후열·전열), 적은 3열. 2026-07-26 편성 5인 전환으로 중열이 없어졌다.
 //   resolve()의 win/margin으로 "얼마나 우세한가"만 받아 페이스를 정한다.
 //   유닛 표시 = 속성 아이콘 + 레벨 뱃지 + 발밑 **분홍 타원 그림자**(호드워 고유).
 //   (구 세븐식 세로 자유 산개 Wander 난전은 이 파일에서 걷어냈다 — 4번째 기준 변경.)
@@ -11,13 +12,13 @@ import { unitSprite, hasUnitSprite } from '../unitSprites';
 import SpriteAnim from '../SpriteAnim';
 import { emptySlots, nextSlot, writeSlot, expireSlots, FLOAT_MS } from '../../system/core/battleFloats.mjs';
 
-const EMPTY_FORMATION = { front: [], mid: [], back: [] };
-// 좌우 대치 — 아군은 왼쪽 3열(후열이 가장 왼쪽), 적은 오른쪽 3열. 한 열에 최대 3명.
+const EMPTY_FORMATION = { front: [], back: [] };
+// 좌우 대치 — 아군은 왼쪽 2열(후열이 왼쪽·전열이 오른쪽), 적은 오른쪽 3열.
 const ALLY_SIZE = 62;
 const FOE_SIZE = 58;
 const MONSTER_EMOJIS = ['👹', '👺', '👻', '💀', '🧟', '🦇', '🐺', '🕷️', '🦂', '🐉', '👿', '🧛'];
 
-// 적 진형(우측 3열) — 열마다 1~3마리. 아군 전열/중열/후열과 마주 본다.
+// 적 진형(우측 3열) — 열마다 1~3마리. 아군 전열/후열과 마주 본다.
 const rollFoes = () => {
   const cols = [1 + Math.floor(Math.random() * 2), 1 + Math.floor(Math.random() * 3), 1 + Math.floor(Math.random() * 2)];
   return cols.map((n) => Array.from({ length: n }, () => MONSTER_EMOJIS[Math.floor(Math.random() * MONSTER_EMOJIS.length)]));
@@ -229,10 +230,9 @@ function BattleView({ party = EMPTY_FORMATION, win = true, margin = 1, reduce, s
     setFloats((fs) => writeSlot(fs, idx, { tok: tokRef.current, born, val, side, crit, big }));
   }
 
-  // 아군 3열 — 호드워는 후열이 가장 뒤(왼쪽), 전열이 적과 맞닿는다(오른쪽).
+  // 아군 2열 — 후열이 뒤(왼쪽), 전열이 적과 맞닿는다(오른쪽). 2026-07-26 중열 폐지.
   const allyCols = [
     { key: 'back', list: party.back, lunge: 0 },
-    { key: 'mid', list: party.mid, lunge: 0 },
     { key: 'front', list: party.front, lunge: 1 },
   ];
 

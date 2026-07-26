@@ -1,7 +1,7 @@
 // 편성 모달 — 호드워 '편성' 오버레이. 기준 docs/HORDWAR_SPEC.md "영웅 탭 · 편성".
 //   골격 = 제목 배너 · 파티 프리셋 카드 세로 목록(슬롯 격자 + 마수 패널 + [파티 편집] 금색).
 //   엘드리아 대응
-//     · 슬롯 — 호드워는 5칸(2+3). 엘드리아 진형은 전열2·중열3·후열2 = 7칸이라 **2/3/2 세 줄**로 확장했다.
+//     · 슬롯 — 호드워와 동일한 **5칸(전열2 + 후열3)**. 2026-07-26 중열을 없애 정확히 맞췄다.
 //     · 마수 — 펫·가디언이 파킹 상태라 자물쇠 원형 3칸으로만 둔다(docs/PARKED.md).
 //     · 5인/3인 파티 탭 — 엘드리아엔 파티 인원 모드가 없어 넣지 않았다.
 import React from 'react';
@@ -11,10 +11,10 @@ import { Portrait } from '../components';
 import { charImage } from '../charImages';
 import { fx } from '../feedback';
 import { identity } from '../../system/concepts/index.mjs';
-import { formationSummary, ROLE_CAP, ROLE_LABEL } from '../../system/core/formation.mjs';
+import { formationSummary, ROLE_CAP, ROLE_LABEL, PARTY_CAP } from '../../system/core/formation.mjs';
 import { savePreset, loadPreset, presetInfo, PRESET_SLOTS } from '../../system/core/partyPresets.mjs';
 
-const ROWS = ['front', 'mid', 'back']; // 위→아래. 호드워의 2+3 배치를 2/3/2로 확장.
+const ROWS = ['front', 'back']; // 위→아래. 전열2 + 후열3 = 호드워 2+3 배치와 동일.
 
 // 프리셋 한 장의 슬롯 격자. 현재 편성(active)일 때만 실제 영웅을 그리고, 나머지는 인원수만 안다.
 function SlotGrid({ state, concept, active }) {
@@ -62,7 +62,7 @@ export default function FormationModal({ visible, state, bump, concept, onClose,
                 <View key={slot} style={m.card}>
                   <View style={m.cardHead}>
                     <Text style={m.cardTitle}>
-                      {active ? `현재 편성 (${cur}/7)` : `파티 프리셋${slot}`}
+                      {active ? `현재 편성 (${cur}/${PARTY_CAP})` : `파티 프리셋${slot}`}
                       {!active && info.exists ? <Text style={m.cardSub}>  {info.count}명 저장됨</Text> : null}
                     </Text>
                     <Text style={m.cardGo}>›</Text>

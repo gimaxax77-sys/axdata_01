@@ -45,7 +45,7 @@ export default function IdleScreen({ state, bump, lastGain, concept, background,
   const doClaimAll = () => { claimAllDaily(state); claimAllMail(state); fx('success'); bump(); };
 
   const battle = resolve(getPartyUnits(state), stageDef.challenge, accountMods(state), state.formation);
-  // 편성(전열2·중열3·후열2)을 전투 화면에 그대로 표시 — 방치 틱마다 새 객체를
+  // 편성(전열2·후열3)을 전투 화면에 그대로 표시 — 방치 틱마다 새 객체를
   // 만들면 BattleView(React.memo)가 매번 재렌더되므로, 편성이 실제로 바뀔 때만
   // (uid 구성·역할) 재계산해 레퍼런스를 안정시킨다.
   //   레벨도 키에 넣는다 — 슬롯이 u.level을 숫자로 복사해 담으므로, 레벨이 빠지면
@@ -60,7 +60,7 @@ export default function IdleScreen({ state, bump, lastGain, concept, background,
       const id = identity(concept, u);
       return { emoji: id.emoji, elem: elementMeta(concept, id.element)?.emoji || null, level: u.level };
     };
-    return { front: sum.front.map(slotOf), mid: sum.mid.map(slotOf), back: sum.back.map(slotOf) };
+    return { front: sum.front.map(slotOf), back: sum.back.map(slotOf) };
   }, [formKey]);
 
   const progPct = pctW(((state.stage - zone.start) / Math.max(1, zone.end - zone.start)) * 100);
