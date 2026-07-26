@@ -2,7 +2,7 @@
 
 > **최종 갱신 2026-07-27.** 이전 세븐나이츠 기준 인수인계는 폐기하고 현재 상태로 다시 씀.
 > **작업 폴더: `D:\.CODE\AXdata\axdata_01_엘드리아`** (이 문서의 모든 경로는 여기 기준)
-> 폰 확인 링크 **https://gimaxax77-sys.github.io/axdata_01/?v=17**
+> 폰 확인 링크 **https://gimaxax77-sys.github.io/axdata_01/?v=19**
 > 브랜치 `claude/3d-poc` · 테스트 **306개** 통과
 
 ## 0. 먼저 읽을 순서
