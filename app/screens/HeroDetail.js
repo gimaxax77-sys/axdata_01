@@ -18,11 +18,9 @@ import { identity, elementMeta } from '../../system/concepts/index.mjs';
 import { getArchetype } from '../../system/core/archetypes.mjs';
 import { computeStats, computePower } from '../../system/core/stats.mjs';
 import { levelCap, levelUpCost } from '../../system/core/units.mjs';
-import { levelUp, ascend, ascendCost } from '../../system/core/character.mjs';
+import { levelUp } from '../../system/core/character.mjs';
 import { SKILL_CATALOG, skillSlots } from '../../system/core/skills.mjs';
 import { recordMission } from '../../system/core/daily.mjs';
-import { togglePartyMember, MAX_PARTY } from '../../system/core/gameState.mjs';
-import { starOf } from '../../system/core/starGrade.mjs';
 import ComingSoon from './ComingSoon';
 
 // 아직 붙지 않은 자리 — 막지 않고 준비 중 패널로 **들어가게** 한다(Gim 지시 2026-07-26).
@@ -30,6 +28,15 @@ const PAGES = {
   pact: { icon: '🤝', title: '계약', plan: ['영웅 2인 계약', '동시 출전 시 능력치 보너스'] },
   guide: { icon: '📖', title: '공략', plan: ['추천 진형·스킬 세팅', '상성 안내'] },
 };
+
+// 하단 서브탭 — 호드워 캐릭터 상세의 `속성 · 장비 · 승성 · 코스튬` 자리.
+// 초월·코스튬은 대응 모듈이 없어 안내만 띄운다(docs/PARKED.md 자물쇠 정책).
+const SUBTABS = [
+  { k: 'stat', l: '속성', i: '📊' },
+  { k: 'gear', l: '장비', i: '⚔️', dot: true },
+  { k: 'trans', l: '초월', i: '🌟', note: '초월 — 등급을 넘어서는 성장 단계가 들어올 자리입니다' },
+  { k: 'costume', l: '코스튬', i: '👗', note: '코스튬 — 외형 변경이 들어올 자리입니다(costumes 파킹)' },
+];
 
 const GRADE = { UR: 'S+', SSR: 'S', SR: 'A', R: 'B', N: 'C' };
 const GRADE_BG = { UR: '#c0392b', SSR: '#c9962a', SR: '#2f8f7f', R: '#3a6ea8', N: '#6b6b6b' };
@@ -53,10 +60,8 @@ export default function HeroDetail({ state, bump, concept, unit, onClose }) {
   const arch = getArchetype(unit.archetype);
   const em = id.element && elementMeta(concept, id.element);
   const st8 = computeStats(unit);
-  const asc = ascendCost(unit);
   const lvCost = levelUpCost(unit);
   const atCap = unit.level >= levelCap(unit);
-  const inParty = state.party.includes(unit.uid);
   const slots = skillSlots(unit);
   const gearMsg = () => { fx('error'); setMsg('🔒 장비 모듈이 아직 붙어 있지 않습니다'); };
 
@@ -90,12 +95,10 @@ export default function HeroDetail({ state, bump, concept, unit, onClose }) {
           <Text style={d.backTx}>◀</Text>
         </TouchableOpacity>
 
-        {/* 이름 리본 + 위쪽 속성 원형
-            속성 원형을 **리본보다 나중에** 그린다 — 먼저 그리면 리본이 위를 덮는다
-            (zIndex는 RN-Web에서 확실하지 않아 그리기 순서로 해결. Gim 지적 2026-07-27). */}
+        {/* 이름 리본 + 위쪽 속성 원형 — 겹치지 않게 완전히 띄운다(Gim 지적 2026-07-27) */}
         <View style={d.nameWrap}>
-          <View style={d.ribbon}><Text style={d.ribbonTx} numberOfLines={1}>{id.name}</Text></View>
           {em ? <View style={d.elemRing}><Text style={d.elemTx}>{em.emoji}</Text></View> : null}
+          <View style={d.ribbon}><Text style={d.ribbonTx} numberOfLines={1}>{id.name}</Text></View>
         </View>
 
         {/* 좌측 계약 패널 — 호드워 고유 시스템이라 잠금 */}
@@ -115,10 +118,9 @@ export default function HeroDetail({ state, bump, concept, unit, onClose }) {
           <Text style={d.guideIc}>📖</Text><Text style={d.guideTx}>공략</Text>
         </TouchableOpacity>
 
-        {/* 중앙 전신 */}
+        {/* 중앙 전신 — 발밑 돌 받침대(pedestal)는 Gim 지시로 제거(2026-07-27) */}
         <View style={d.art}>
           <Portrait emoji={id.emoji} image={charImage(concept.id, unit.characterId)} rarity={unit.rarity} size={168} glow />
-          <View style={d.pedestal} />
         </View>
 
         {/* 우하단 LV / 전투력 */}
@@ -127,7 +129,7 @@ export default function HeroDetail({ state, bump, concept, unit, onClose }) {
           <View style={d.meter}><Text style={d.meterKey}>⚔</Text><Text style={d.meterVal}>{fmt(computePower(unit))}</Text></View>
         </View>
 
-        {/* 좌하단 등급 · 역할 · 속성 · 스킬명 */}
+        {/* 좌하단 등급 · 역할 · 속성 (특성 바 traitBar는 Gim 지시로 제거 2026-07-27) */}
         <View style={d.idBar}>
           {isOn('rarity') && (
             <View style={[d.medal, { backgroundColor: GRADE_BG[unit.rarity] || '#6b6b6b' }]}>
@@ -137,11 +139,6 @@ export default function HeroDetail({ state, bump, concept, unit, onClose }) {
           <View style={d.tagRing}><Text style={d.tagIc}>{arch.emoji || '🛡️'}</Text></View>
           <Text style={d.tagLb}>{arch.roleLabel}</Text>
           {em ? (<><View style={d.tagRing}><Text style={d.tagIc}>{em.emoji}</Text></View><Text style={d.tagLb}>{em.name}</Text></>) : null}
-          <View style={d.traitBar}>
-            <Text style={d.traitTx} numberOfLines={1}>
-              {unit.signature && SKILL_CATALOG[unit.signature] ? SKILL_CATALOG[unit.signature].label : arch.role} · {starOf(unit)}★
-            </Text>
-          </View>
         </View>
       </View>
 
@@ -172,49 +169,37 @@ export default function HeroDetail({ state, bump, concept, unit, onClose }) {
               })}
             </View>
 
-            {/* 비용 2줄 — 레벨업(정수) · 돌파(소환석) */}
+            {/* 레벨업 비용 — 돌파(소환석) 줄은 돌파 버튼과 함께 제거했다(Gim 지시 2026-07-27) */}
             <View style={d.costs}>
               <Text style={d.cost}>
                 {concept.resources.growth.emoji} {fmt(state.wallet.growth || 0)}/{fmt(lvCost.growth || 0)}
               </Text>
-              <Text style={d.cost}>
-                {concept.resources.summon.emoji} {fmt(state.wallet.summon || 0)}/{fmt(asc.summon || 0)}
-              </Text>
             </View>
 
-            {/* 연속 3회 이상 눌렀을 때만 나오는 `최대 레벨 상승`.
-                아래 버튼과 크기를 똑같이 맞추려고 같은 행 구조(side 폭 자리)를 그대로 쓴다. */}
+            {/* 연속 3회 이상 눌렀을 때만 나오는 `최대 레벨 상승`(아래 버튼과 같은 크기) */}
             {showBurst && (
               <View style={d.actions}>
-                <View style={d.side} />
                 <TouchableOpacity style={[d.mainBtn, d.maxBtn]} activeOpacity={0.85} onPress={doLevelUpMax}
                   accessibilityRole="button" accessibilityLabel={`최대 레벨 상승 — 상한 ${levelCap(unit)}까지 한 번에`}>
                   <Text style={[d.mainTx, d.maxTx]}>⏫ 최대 레벨 상승</Text>
                 </TouchableOpacity>
-                <View style={d.side} />
               </View>
             )}
 
             <View style={d.actions}>
-              <TouchableOpacity style={d.side} activeOpacity={0.85}
-                onPress={() => { togglePartyMember(state, unit.uid); fx('tap'); bump(); }}
-                disabled={!inParty && state.party.length >= MAX_PARTY}
-                accessibilityRole="button" accessibilityLabel={inParty ? '편성 해제' : '편성'}>
-                <Text style={d.sideIc}>{inParty ? '➖' : '➕'}</Text>
-                <Text style={d.sideTx}>{inParty ? '편성 해제' : '편성'}</Text>
-              </TouchableOpacity>
               <TouchableOpacity style={d.mainBtn} activeOpacity={0.85} onPress={doLevelUp}
                 accessibilityRole="button" accessibilityLabel={`최대 ${LEVEL_STEP}레벨 상승`}>
                 <Text style={d.mainTx}>{LEVEL_STEP}레벨 상승</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={d.side} activeOpacity={0.85}
-                onPress={() => { const r = ascend(state, unit.uid); if (r.ok) recordMission(state, 'upgrade', 1); setMsg(r.ok ? '⭐ 돌파 성공' : `⚠ ${r.reason}`); fx(r.ok ? 'success' : 'error'); bump(); }}
-                accessibilityRole="button" accessibilityLabel="돌파">
-                <Text style={d.sideIc}>⭐</Text><Text style={d.sideTx}>돌파</Text>
-              </TouchableOpacity>
             </View>
             {msg ? <Text style={d.msg}>{msg}</Text> : null}
           </ScrollView>
+        ) : tab !== 'gear' ? (
+          // 초월 · 코스튬 — 자리와 동선만 잡아 둔 상태
+          <View style={d.panelIn}>
+            <Text style={d.soonIc}>{SUBTABS.find((x) => x.k === tab).i}</Text>
+            <Text style={d.gearNote}>{SUBTABS.find((x) => x.k === tab).note}</Text>
+          </View>
         ) : (
           <View style={d.panelIn}>
             <View style={d.gearRow}>
@@ -244,13 +229,13 @@ export default function HeroDetail({ state, bump, concept, unit, onClose }) {
           <Text style={d.tabBackTx}>◀</Text>
         </TouchableOpacity>
         <View style={{ flex: 1 }} />
-        {[{ k: 'stat', l: '속성', i: '📊' }, { k: 'gear', l: '장비', i: '⚔️' }].map((x) => (
+        {SUBTABS.map((x) => (
           <TouchableOpacity key={x.k} style={[d.tab, tab === x.k && d.tabOn]} activeOpacity={0.85}
-            onPress={() => { fx('tap'); setTab(x.k); }}
+            onPress={() => { fx('tap'); setTab(x.k); setMsg(null); }}
             accessibilityRole="tab" accessibilityState={{ selected: tab === x.k }} accessibilityLabel={x.l}>
             <Text style={d.tabIc}>{x.i}</Text>
             <Text style={[d.tabTx, tab === x.k && d.tabTxOn]}>{x.l}</Text>
-            {x.k === 'gear' && <Text style={d.tabDot}>❗</Text>}
+            {x.dot && <Text style={d.tabDot}>❗</Text>}
           </TouchableOpacity>
         ))}
       </View>
@@ -266,10 +251,9 @@ const d = StyleSheet.create({
   back: { position: 'absolute', left: 8, top: 8, width: 32, height: 32, borderRadius: 8, backgroundColor: '#4a3a26', borderWidth: 1, borderColor: '#8a6d47', alignItems: 'center', justifyContent: 'center', zIndex: 5 },
   backTx: { color: '#e6d3ae', fontSize: 14, fontWeight: '900' },
 
-  // 리본 위쪽 20px을 비워 두고 그 자리에 속성 원형을 절대배치한다.
-  // (원형 26px 중 6px이 리본에 겹쳐 물리는 모양 — 겹침 값은 종전과 동일)
-  nameWrap: { alignItems: 'center', marginTop: 10, paddingTop: 20 },
-  elemRing: { position: 'absolute', top: 0, width: 26, height: 26, borderRadius: 13, backgroundColor: 'rgba(20,30,45,0.8)', borderWidth: 2, borderColor: '#cfe3f2', alignItems: 'center', justifyContent: 'center' },
+  // 속성 원형은 리본 위에 **띄워서** 놓는다 — 겹치면 이름을 가린다(Gim 지적 2026-07-27).
+  nameWrap: { alignItems: 'center', marginTop: 8 },
+  elemRing: { width: 26, height: 26, borderRadius: 13, backgroundColor: 'rgba(20,30,45,0.8)', borderWidth: 2, borderColor: '#cfe3f2', alignItems: 'center', justifyContent: 'center', marginBottom: 4 },
   elemTx: { fontSize: 13 },
   ribbon: { minWidth: 180, maxWidth: '70%', paddingHorizontal: 26, paddingVertical: 6, borderRadius: 6, backgroundColor: '#f2e6c8', borderWidth: 2, borderColor: '#c8ab74' },
   ribbonTx: { color: '#3b2a12', fontSize: 15, fontWeight: '900', textAlign: 'center' },
@@ -287,8 +271,6 @@ const d = StyleSheet.create({
   guideTx: { color: '#e6d3ae', fontSize: 9, fontWeight: '900' },
 
   art: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  // 돌 원형 무대
-  pedestal: { position: 'absolute', bottom: -6, width: 200, height: 34, borderRadius: 100, backgroundColor: 'rgba(120,130,140,0.45)', zIndex: -1 },
 
   meters: { position: 'absolute', right: 6, bottom: 46, gap: 4, alignItems: 'flex-end', zIndex: 4 },
   meter: { flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(40,25,15,0.85)', borderWidth: 1, borderColor: '#c8ab74', borderRadius: 6, overflow: 'hidden' },
@@ -301,8 +283,6 @@ const d = StyleSheet.create({
   tagRing: { width: 20, height: 20, borderRadius: 10, backgroundColor: 'rgba(30,20,30,0.8)', borderWidth: 1, borderColor: '#d090b0', alignItems: 'center', justifyContent: 'center' },
   tagIc: { fontSize: 10 },
   tagLb: { color: '#f0e0c8', fontSize: 9, fontWeight: '800' },
-  traitBar: { flex: 1, backgroundColor: 'rgba(40,25,15,0.8)', borderRadius: 5, paddingHorizontal: 8, paddingVertical: 4, marginLeft: 3 },
-  traitTx: { color: '#f0e0c8', fontSize: 10, fontWeight: '800' },
 
   // ── 하단 패널 ──
   panel: { height: '32%', backgroundColor: '#e8d5ae', borderTopWidth: 2, borderTopColor: '#8a6d47' },
@@ -310,7 +290,7 @@ const d = StyleSheet.create({
   statRow: { flexDirection: 'row', justifyContent: 'space-between', backgroundColor: '#d3bd93', borderRadius: 7, paddingHorizontal: 8, paddingVertical: 5 },
   stat: { color: '#3b2a12', fontSize: 11, fontWeight: '900' },
 
-  skills: { flexDirection: 'row', justifyContent: 'space-around', marginTop: 10 },
+  skills: { flexDirection: 'row', justifyContent: 'space-around', marginTop: 8 },
   skill: { width: 46, height: 46, borderRadius: 23, backgroundColor: '#b9a888', borderWidth: 2, borderColor: '#8a6d47', alignItems: 'center', justifyContent: 'center' },
   skillOn: { backgroundColor: '#8a3a2a', borderWidth: 2, borderColor: '#e0a050' },
   skillLocked: { opacity: 0.45 },
@@ -319,19 +299,18 @@ const d = StyleSheet.create({
   skillLvTx: { color: '#f0d9a0', fontSize: 9, fontWeight: '900' },
   ult: { position: 'absolute', top: -8, color: '#3d2a00', backgroundColor: T.accent, fontSize: 7, fontWeight: '900', borderRadius: 4, paddingHorizontal: 3, overflow: 'hidden' },
 
-  costs: { flexDirection: 'row', justifyContent: 'center', gap: 14, marginTop: 10 },
+  costs: { flexDirection: 'row', justifyContent: 'center', gap: 14, marginTop: 8 },
   cost: { color: '#2f6b30', fontSize: 11, fontWeight: '900' },
 
-  actions: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, marginTop: 10 },
-  side: { alignItems: 'center', minWidth: 52 },
-  sideIc: { fontSize: 16 },
-  sideTx: { color: '#5c4526', fontSize: 9, fontWeight: '900' },
-  mainBtn: { flex: 1, maxWidth: 190, paddingVertical: 11, borderRadius: 8, backgroundColor: T.accent, borderWidth: 2, borderColor: '#c8951f', alignItems: 'center' },
+  // 버튼 2개가 세로로 쌓여도 패널(32%) 안에 들어가도록 높이를 줄였다 — 스크롤바 방지
+  // (Gim 지적 2026-07-27: paddingVertical 11 · marginTop 10 이던 것을 8 · 6 으로).
+  actions: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, marginTop: 6 },
+  mainBtn: { flex: 1, maxWidth: 220, paddingVertical: 8, borderRadius: 8, backgroundColor: T.accent, borderWidth: 2, borderColor: '#c8951f', alignItems: 'center' },
   mainTx: { color: '#3d2a00', fontSize: 15, fontWeight: '900' },
   // `최대 레벨 상승` — 크기는 아래 버튼과 동일, 색만 달리해 다른 동작임을 알린다.
   maxBtn: { backgroundColor: '#e07a2a', borderColor: '#a8531a' },
   maxTx: { color: '#fff4e2' },
-  msg: { color: '#7a3a1a', fontSize: 10, fontWeight: '800', textAlign: 'center', marginTop: 8 },
+  msg: { color: '#7a3a1a', fontSize: 10, fontWeight: '800', textAlign: 'center', marginTop: 6 },
 
   gearRow: { flexDirection: 'row', justifyContent: 'space-around', marginTop: 4 },
   gearSlot: { width: 58, height: 58, borderRadius: 7, backgroundColor: '#9b9b9b', borderWidth: 2, borderColor: '#7d7d7d', alignItems: 'center', justifyContent: 'center' },
@@ -339,6 +318,7 @@ const d = StyleSheet.create({
   gearOff: { paddingHorizontal: 20, paddingVertical: 10, borderRadius: 8, backgroundColor: '#8a6d47', alignItems: 'center' },
   gearOffTx: { color: '#e8d5ae', fontSize: 12, fontWeight: '900' },
   gearNote: { color: '#7a6238', fontSize: 10, fontWeight: '700', textAlign: 'center', marginTop: 10 },
+  soonIc: { fontSize: 30, textAlign: 'center', marginTop: 14 },
 
   // ── 하단 바 ──
   tabbar: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 8, paddingVertical: 5, backgroundColor: '#3b2d1d', borderTopWidth: 1, borderTopColor: '#6b543a' },
