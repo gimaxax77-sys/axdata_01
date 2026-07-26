@@ -1,36 +1,36 @@
-// 판타지 컨셉 기반 앱 테마 (라이트 퍼플 + 골드 게임 UI) — 밝은 톤 개편.
+// 세븐나이츠 키우기 톤 — 딥 네이비 + 금색 + 밝은 파랑(보라 완전 제거).
 export const T = {
-  bg: '#241a40',
-  bgGrad: ['#2f2158', '#241a40', '#1c1434'], // 화면 배경 그라데이션
-  surface: '#3b2d66',
-  surfaceGrad: ['#453573', '#372a5e'], // 카드 그라데이션
-  surface2: '#4b3b7d',
-  line: '#63519e',
-  primary: '#a186ec',
-  primaryGrad: ['#b298f5', '#8266d6'],
-  accent: '#ffd257',
-  accentGrad: ['#ffe27a', '#f0b52e'],
-  text: '#f9f6ff',
-  muted: '#c3b7e2',
-  good: '#7fe3a0',
-  danger: '#ff5f7e',
+  bg: '#111a2b',
+  bgGrad: ['#1a2742', '#111a2b', '#0c131f'], // 화면 배경 그라데이션
+  surface: '#1d2c49',
+  surfaceGrad: ['#26395f', '#1b2942'], // 카드 그라데이션
+  surface2: '#2a3d62',
+  line: '#3e568c',
+  primary: '#3f9bff',
+  primaryGrad: ['#5bb2ff', '#2f7fe0'],
+  accent: '#ffc93c',
+  accentGrad: ['#ffdd72', '#f0a81c'],
+  text: '#f2f7ff',
+  muted: '#9fb4d6',
+  good: '#4fd98a',
+  danger: '#ff5d6c',
   shadow: '#000',
   // 자원 색
-  currency: '#ffd257',
-  growth: '#71dcec',
-  summon: '#d4a5ff',
+  currency: '#ffc93c',
+  growth: '#3fd0e6',
+  summon: '#5aa8ff',
 };
 
 // 여백 스케일 — 화면마다 제각각이던 padding/margin 매직넘버를 한 곳에서
-// 조정하기 위한 공용 토큰. 미니멀 정리 1단계: 카드 패딩·카드간 간격을
-// 여기 값으로 통일해 전역에서 한 번에 조율한다.
+// 조정하기 위한 공용 토큰.
 export const SPACE = { xs: 4, sm: 8, md: 12, lg: 16, xl: 20 };
 
 // 등급별 스타일 — 색·글로우·그라데이션. 초상/결과/도감 전역에서 공유.
+//   에픽(SR)은 보라 대신 청록으로(보라 톤 제거 방침).
 export const RARITY_META = {
-  N: { label: '노멀', color: '#9aa0b5', grad: ['#8891a8', '#5c6480'], glow: 'rgba(154,160,181,0.0)' },
+  N: { label: '노멀', color: '#9aa6bf', grad: ['#8894ad', '#5c6784'], glow: 'rgba(154,166,191,0.0)' },
   R: { label: '레어', color: '#5aa9e6', grad: ['#6cbcf5', '#3a7fc4'], glow: 'rgba(90,169,230,0.45)' },
-  SR: { label: '에픽', color: '#c98bff', grad: ['#d9a0ff', '#9b5fe0'], glow: 'rgba(201,139,255,0.5)' },
+  SR: { label: '에픽', color: '#2fd6c4', grad: ['#5fe8d8', '#1fb0a2'], glow: 'rgba(47,214,196,0.5)' },
   SSR: { label: '전설', color: '#f5c542', grad: ['#ffe27a', '#e8a91f'], glow: 'rgba(245,197,66,0.6)' },
   UR: { label: '신화', color: '#ff5e8a', grad: ['#ff9ec4', '#e0407a'], glow: 'rgba(255,94,138,0.7)' },
 };
