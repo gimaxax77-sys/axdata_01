@@ -13,6 +13,8 @@ import SpriteAnim from '../SpriteAnim';
 import { emptySlots, nextSlot, writeSlot, expireSlots, FLOAT_MS } from '../../system/core/battleFloats.mjs';
 
 const EMPTY_FORMATION = { front: [], back: [] };
+// 유닛 하나당 연출 지연(ms) — 배속 ×1 기준. 키우면 파도가 느려지고 줄이면 뭉친다.
+const FX_STEP_MS = 90;
 // 좌우 대치 — 아군은 왼쪽 2열(후열이 왼쪽·전열이 오른쪽), 적은 오른쪽 3열.
 const ALLY_SIZE = 62;
 const FOE_SIZE = 58;
@@ -35,17 +37,22 @@ const Shadow = ({ w = 30 }) => <View style={[s.shadow, { width: w }]} />;
 // 유닛 연출 공통 — 토큰이 바뀌면 **자기 순번만큼 늦게** 재생한다(Gim 지시 2026-07-27).
 //   전원이 동시에 터지면 "일시일괄"로 보여 생동감이 없다. 순번(idx)으로 파도처럼 번지게 하고,
 //   매번 약간의 흔들림을 더해 기계적으로 반복되지 않게 한다.
-//   지연 최대 ≈ 4*45+40 = 220ms — 배속 ×2에서 공격 간격(300ms)보다 짧아 겹치지 않는다.
+//
+//   step = 유닛 하나당 지연(ms). **부모가 배속에 맞춰 내려준다**(FX_STEP_MS / speed).
+//   고정값을 키우면 ×2 배속에서 다음 타격과 겹치므로 배속에 비례해야 한다.
+//     ×1 : step 90 → 5칸이 0·90·180·270·360ms 에 번짐(공격 간격 600ms 안)
+//     ×2 : step 45 → 최대 ~200ms (공격 간격 300ms 안)
+//
 //   값은 1(연출 끝 = 안 보임)로 시작하고, **지연이 끝난 뒤에** 0으로 떨어뜨린다.
 //   (지연 전에 0으로 두면 기다리는 동안 화면에 박혀 있다.)
-function useStaggeredPlay(token, idx, duration) {
+function useStaggeredPlay(token, idx, duration, step = 90) {
   const a = useRef(new Animated.Value(1)).current;
   useEffect(() => {
     if (!token) return undefined;
     const id = setTimeout(() => {
       a.setValue(0);
       Animated.timing(a, { toValue: 1, duration, useNativeDriver: true }).start();
-    }, idx * 45 + Math.random() * 40);
+    }, idx * step + Math.random() * step * 0.5);
     return () => clearTimeout(id);
   }, [token]); // eslint-disable-line react-hooks/exhaustive-deps
   return a;
@@ -56,8 +63,8 @@ function useStaggeredPlay(token, idx, duration) {
 //   dmg = { tok, val, crit } — tok 이 바뀔 때만 다시 재생한다.
 //   idx 로 값을 조금씩 흔들어 유닛마다 다른 숫자가 뜨게 한다(같은 숫자 5개는 부자연스럽다).
 //   위치를 top 이 아닌 translateY 로 옮겨 네이티브 드라이버를 쓴다.
-const DmgFloat = React.memo(function DmgFloat({ dmg, idx }) {
-  const a = useStaggeredPlay(dmg ? dmg.tok : 0, idx, FLOAT_MS);
+const DmgFloat = React.memo(function DmgFloat({ dmg, idx, step }) {
+  const a = useStaggeredPlay(dmg ? dmg.tok : 0, idx, FLOAT_MS, step);
   if (!dmg || typeof dmg.val !== 'number') return null;
   const val = Math.round(dmg.val * (0.85 + ((idx * 37) % 31) / 100));
   return (
@@ -72,8 +79,8 @@ const DmgFloat = React.memo(function DmgFloat({ dmg, idx }) {
 //   전에는 적 한 마리(ci===0 && i===0)에만 붙어 있었고 아군에는 아예 없었다.
 //   숫자와 같은 시차 규약을 쓴다 — 공유 Animated.Value 하나로 몰면 전원이 동시에 터진다.
 //   token: 적 = 아군 공격 토큰(atk) · 아군 = 피격 토큰(hitTok).
-const HitFx = React.memo(function HitFx({ token, idx }) {
-  const a = useStaggeredPlay(token, idx, 180);
+const HitFx = React.memo(function HitFx({ token, idx, step }) {
+  const a = useStaggeredPlay(token, idx, 180, step);
   return (
     <Animated.Text pointerEvents="none" style={[s.slash, {
       opacity: a.interpolate({ inputRange: [0, 0.15, 1], outputRange: [0, 1, 0] }),
@@ -122,7 +129,7 @@ const SpriteFighter = React.memo(function SpriteFighter({ cid, ckey, size, lunge
 });
 
 // 아군 한 칸 — 호드워: 속성 아이콘 + 레벨 뱃지 + 분홍 타원 그림자 + HP바.
-const Ally = React.memo(function Ally({ slot, lungeDir, attackToken, hitToken, walkToken, staggerMs, hp, dmg, idx = 0 }) {
+const Ally = React.memo(function Ally({ slot, lungeDir, attackToken, hitToken, walkToken, staggerMs, hp, dmg, idx = 0, step }) {
   const o = slot && typeof slot === 'object' ? slot : { emoji: slot };
   const art = o.cid && o.key && hasUnitSprite(o.cid, o.key)
     ? <SpriteFighter cid={o.cid} ckey={o.key} size={ALLY_SIZE} lungeDir={lungeDir}
@@ -137,8 +144,8 @@ const Ally = React.memo(function Ally({ slot, lungeDir, attackToken, hitToken, w
       {art}
       <Shadow w={30} />
       <HpBar pct={hp} />
-      <HitFx token={hitToken} idx={idx} />
-      <DmgFloat dmg={dmg} idx={idx} />
+      <HitFx token={hitToken} idx={idx} step={step} />
+      <DmgFloat dmg={dmg} idx={idx} step={step} />
     </View>
   );
 });
@@ -189,6 +196,8 @@ function BattleView({ party = EMPTY_FORMATION, win = true, margin = 1, reduce, s
   const slotRef = useRef(0);
   const tokRef = useRef(0);
   const [foes, setFoes] = useState(rollFoes);
+  // 유닛당 연출 지연 — 배속이 빠르면 간격도 같이 좁힌다(안 그러면 다음 타격과 겹친다).
+  const fxStep = Math.max(20, Math.round(FX_STEP_MS / speed));
 
   const shakeX = useRef(new Animated.Value(0)).current;   // 크리티컬 무대 셰이크
   const flashA = useRef(new Animated.Value(1)).current;   // 적 피격 플래시
@@ -316,7 +325,7 @@ function BattleView({ party = EMPTY_FORMATION, win = true, margin = 1, reduce, s
               <Ally key={c.key + i} slot={slot} lungeDir={c.lunge}
                 attackToken={atk} hitToken={hitTok} walkToken={walkTok}
                 staggerMs={(ci * 60 + i * 40) % 160} hp={heroHp.current}
-                dmg={heroDmg} idx={ci * 3 + i} />
+                dmg={heroDmg} idx={ci * 3 + i} step={fxStep} />
             ))}
           </View>
         ))}
@@ -331,8 +340,8 @@ function BattleView({ party = EMPTY_FORMATION, win = true, margin = 1, reduce, s
                 <Text style={s.foeEmoji}>{em}</Text>
                 <Shadow w={26} />
                 <HpBar pct={enemyHp.current} foe />
-                <HitFx token={atk} idx={ci * 3 + i} />
-                <DmgFloat dmg={foeDmg} idx={ci * 3 + i} />
+                <HitFx token={atk} idx={ci * 3 + i} step={fxStep} />
+                <DmgFloat dmg={foeDmg} idx={ci * 3 + i} step={fxStep} />
               </View>
             ))}
           </View>
