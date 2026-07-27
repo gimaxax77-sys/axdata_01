@@ -32,23 +32,32 @@ const rollFoes = () =>
 // 발밑 분홍 타원 그림자(호드워) — 유닛이 바닥에 서 있다는 접지감을 준다.
 const Shadow = ({ w = 30 }) => <View style={[s.shadow, { width: w }]} />;
 
-// 피격 이펙트 💥 — 맞는 쪽 **모든 유닛** 위에 뜬다(Gim 지시 2026-07-27).
-//   전에는 적 한 마리(ci===0 && i===0)에만 붙어 있었고 아군에는 아예 없었다.
-//   anim 은 부모가 들고 있는 Animated.Value(적=slashA · 아군=counterA)라
-//   레퍼런스가 고정이다 → React.memo 가 그대로 먹는다.
+// 유닛 연출 공통 — 토큰이 바뀌면 **자기 순번만큼 늦게** 재생한다(Gim 지시 2026-07-27).
+//   전원이 동시에 터지면 "일시일괄"로 보여 생동감이 없다. 순번(idx)으로 파도처럼 번지게 하고,
+//   매번 약간의 흔들림을 더해 기계적으로 반복되지 않게 한다.
+//   지연 최대 ≈ 4*45+40 = 220ms — 배속 ×2에서 공격 간격(300ms)보다 짧아 겹치지 않는다.
+//   값은 1(연출 끝 = 안 보임)로 시작하고, **지연이 끝난 뒤에** 0으로 떨어뜨린다.
+//   (지연 전에 0으로 두면 기다리는 동안 화면에 박혀 있다.)
+function useStaggeredPlay(token, idx, duration) {
+  const a = useRef(new Animated.Value(1)).current;
+  useEffect(() => {
+    if (!token) return undefined;
+    const id = setTimeout(() => {
+      a.setValue(0);
+      Animated.timing(a, { toValue: 1, duration, useNativeDriver: true }).start();
+    }, idx * 45 + Math.random() * 40);
+    return () => clearTimeout(id);
+  }, [token]); // eslint-disable-line react-hooks/exhaustive-deps
+  return a;
+}
+
 // 유닛별 데미지 숫자 — 맞은 유닛 머리 위에서 떠오르며 사라진다(Gim 지시 2026-07-27).
 //   전에는 화면 전체에 5칸짜리 공용 슬롯 하나로 숫자를 돌려썼다(누가 맞았는지 알 수 없었다).
 //   dmg = { tok, val, crit } — tok 이 바뀔 때만 다시 재생한다.
 //   idx 로 값을 조금씩 흔들어 유닛마다 다른 숫자가 뜨게 한다(같은 숫자 5개는 부자연스럽다).
 //   위치를 top 이 아닌 translateY 로 옮겨 네이티브 드라이버를 쓴다.
 const DmgFloat = React.memo(function DmgFloat({ dmg, idx }) {
-  const a = useRef(new Animated.Value(1)).current; // 1 = 연출 끝(안 보임)
-  const tok = dmg ? dmg.tok : 0;
-  useEffect(() => {
-    if (!tok) return;
-    a.setValue(0);
-    Animated.timing(a, { toValue: 1, duration: FLOAT_MS, useNativeDriver: true }).start();
-  }, [tok]); // eslint-disable-line react-hooks/exhaustive-deps
+  const a = useStaggeredPlay(dmg ? dmg.tok : 0, idx, FLOAT_MS);
   if (!dmg || typeof dmg.val !== 'number') return null;
   const val = Math.round(dmg.val * (0.85 + ((idx * 37) % 31) / 100));
   return (
@@ -59,11 +68,16 @@ const DmgFloat = React.memo(function DmgFloat({ dmg, idx }) {
   );
 });
 
-const HitFx = React.memo(function HitFx({ anim }) {
+// 피격 이펙트 💥 — 맞는 쪽 **모든 유닛** 위에 뜬다(Gim 지시 2026-07-27).
+//   전에는 적 한 마리(ci===0 && i===0)에만 붙어 있었고 아군에는 아예 없었다.
+//   숫자와 같은 시차 규약을 쓴다 — 공유 Animated.Value 하나로 몰면 전원이 동시에 터진다.
+//   token: 적 = 아군 공격 토큰(atk) · 아군 = 피격 토큰(hitTok).
+const HitFx = React.memo(function HitFx({ token, idx }) {
+  const a = useStaggeredPlay(token, idx, 180);
   return (
     <Animated.Text pointerEvents="none" style={[s.slash, {
-      opacity: anim.interpolate({ inputRange: [0, 0.15, 1], outputRange: [0, 1, 0] }),
-      transform: [{ scale: anim.interpolate({ inputRange: [0, 1], outputRange: [0.5, 1.7] }) }],
+      opacity: a.interpolate({ inputRange: [0, 0.15, 1], outputRange: [0, 1, 0] }),
+      transform: [{ scale: a.interpolate({ inputRange: [0, 1], outputRange: [0.5, 1.7] }) }],
     }]}>💥</Animated.Text>
   );
 });
@@ -108,7 +122,7 @@ const SpriteFighter = React.memo(function SpriteFighter({ cid, ckey, size, lunge
 });
 
 // 아군 한 칸 — 호드워: 속성 아이콘 + 레벨 뱃지 + 분홍 타원 그림자 + HP바.
-const Ally = React.memo(function Ally({ slot, lungeDir, attackToken, hitToken, walkToken, staggerMs, hp, hitFx, dmg, idx = 0 }) {
+const Ally = React.memo(function Ally({ slot, lungeDir, attackToken, hitToken, walkToken, staggerMs, hp, dmg, idx = 0 }) {
   const o = slot && typeof slot === 'object' ? slot : { emoji: slot };
   const art = o.cid && o.key && hasUnitSprite(o.cid, o.key)
     ? <SpriteFighter cid={o.cid} ckey={o.key} size={ALLY_SIZE} lungeDir={lungeDir}
@@ -123,7 +137,7 @@ const Ally = React.memo(function Ally({ slot, lungeDir, attackToken, hitToken, w
       {art}
       <Shadow w={30} />
       <HpBar pct={hp} />
-      {hitFx ? <HitFx anim={hitFx} /> : null}
+      <HitFx token={hitToken} idx={idx} />
       <DmgFloat dmg={dmg} idx={idx} />
     </View>
   );
@@ -177,19 +191,14 @@ function BattleView({ party = EMPTY_FORMATION, win = true, margin = 1, reduce, s
   const [foes, setFoes] = useState(rollFoes);
 
   const shakeX = useRef(new Animated.Value(0)).current;   // 크리티컬 무대 셰이크
-  // 💥 값은 **1(연출 끝 = 안 보임)로 시작**한다. 0으로 두면 opacity 보간이 0→1이라
-  // 첫 공격 전부터 💥가 떠 있다(유닛 1개일 땐 안 보였지만 10개로 늘리면 드러난다).
-  const slashA = useRef(new Animated.Value(1)).current;   // 아군 공격 → 적 전원 피격 💥
-  const counterA = useRef(new Animated.Value(1)).current; // 적 반격 → 아군 전원 피격 💥
   const flashA = useRef(new Animated.Value(1)).current;   // 적 피격 플래시
   const foeX = useRef(new Animated.Value(0)).current;     // 다음 웨이브 적 슬라이드인(우→좌)
   const heroFlashA = useRef(new Animated.Value(1)).current;
   const heroShakeX = useRef(new Animated.Value(0)).current;
   const dangerA = useRef(new Animated.Value(0)).current;
 
+  // 💥는 유닛이 각자 토큰으로 재생한다(useStaggeredPlay). 여기선 진영 단위 연출만 담당.
   const fxAttack = (crit) => {
-    slashA.setValue(0);
-    Animated.timing(slashA, { toValue: 1, duration: 180, useNativeDriver: true }).start();
     flashA.setValue(0.35);
     Animated.timing(flashA, { toValue: 1, duration: 200, useNativeDriver: true }).start();
     if (crit) {
@@ -210,9 +219,6 @@ function BattleView({ party = EMPTY_FORMATION, win = true, margin = 1, reduce, s
     ]).start();
   };
   const fxCounter = () => {
-    // 적 공격을 아군이 맞는다 — 아군 전원에게 💥 (적 피격과 같은 규약).
-    counterA.setValue(0);
-    Animated.timing(counterA, { toValue: 1, duration: 180, useNativeDriver: true }).start();
     heroFlashA.setValue(0.5);
     Animated.timing(heroFlashA, { toValue: 1, duration: 220, useNativeDriver: true }).start();
     heroShakeX.setValue(0);
@@ -227,8 +233,6 @@ function BattleView({ party = EMPTY_FORMATION, win = true, margin = 1, reduce, s
     enemyHp.current = 1; heroHp.current = 1;
     if (noMotion || paused) {
       // ⏸ 정지 중에는 숫자가 얼어붙은 채 남으므로 화면을 비워 둔다.
-      // 💥도 애니 도중에 멈추면 그대로 박혀 있으므로 "끝난 상태"로 되돌린다.
-      slashA.setValue(1); counterA.setValue(1);
       if (paused) { setFloats(emptySlots()); setFoeDmg(null); setHeroDmg(null); }
       enemyHp.current = win ? 0.45 : 0.85; heroHp.current = win ? 0.9 : 0.5;
       return;
@@ -311,7 +315,7 @@ function BattleView({ party = EMPTY_FORMATION, win = true, margin = 1, reduce, s
             {(c.list || []).map((slot, i) => (
               <Ally key={c.key + i} slot={slot} lungeDir={c.lunge}
                 attackToken={atk} hitToken={hitTok} walkToken={walkTok}
-                staggerMs={(ci * 60 + i * 40) % 160} hp={heroHp.current} hitFx={counterA}
+                staggerMs={(ci * 60 + i * 40) % 160} hp={heroHp.current}
                 dmg={heroDmg} idx={ci * 3 + i} />
             ))}
           </View>
@@ -327,7 +331,7 @@ function BattleView({ party = EMPTY_FORMATION, win = true, margin = 1, reduce, s
                 <Text style={s.foeEmoji}>{em}</Text>
                 <Shadow w={26} />
                 <HpBar pct={enemyHp.current} foe />
-                <HitFx anim={slashA} />
+                <HitFx token={atk} idx={ci * 3 + i} />
                 <DmgFloat dmg={foeDmg} idx={ci * 3 + i} />
               </View>
             ))}
