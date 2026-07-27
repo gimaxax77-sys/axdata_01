@@ -131,7 +131,8 @@ export default function PartyStrip({ state, bump, concept, onBattle }) {
           <Text style={p.mainTx}>전투</Text>
         </TouchableOpacity>
       </View>
-      {msg ? <Text style={p.msg}>{msg}</Text> : null}
+      {/* 자리를 항상 차지한다 — 조건부로 띄우면 문구가 뜰 때 버튼이 밀려 올라간다(Gim 지시 2026-07-27) */}
+      <Text style={p.msg} numberOfLines={1}>{msg || ' '}</Text>
     </View>
   );
 }

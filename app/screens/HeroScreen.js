@@ -186,7 +186,8 @@ export default function HeroScreen({ state, bump, concept }) {
           <Text style={c.formIc}>👥</Text><Text style={c.formTx}>편성</Text>
         </TouchableOpacity>
       </View>
-      {msg ? <Text style={c.msg}>{msg}</Text> : null}
+      {/* 자리를 항상 차지한다 — 뜰 때 필터바(편성 버튼)가 밀리지 않게(Gim 지시 2026-07-27) */}
+      <Text style={c.msg} numberOfLines={1}>{msg || ' '}</Text>
       </>)}
 
       <FormationModal visible={formOpen} state={state} bump={bump} concept={concept}

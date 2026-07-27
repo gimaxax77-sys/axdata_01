@@ -177,7 +177,8 @@ export default function SummonScreen({ state, bump, concept, onClose }) {
         </TouchableOpacity>
       </View>
       <Text style={s.bal}>보유 {sumE} {fmt(bal)}</Text>
-      {msg ? <Text style={s.msg}>{msg}</Text> : null}
+      {/* 자리를 항상 차지한다 — 뜰 때 모집 버튼이 밀리지 않게(Gim 지시 2026-07-27) */}
+      <Text style={s.msg} numberOfLines={1}>{msg || ' '}</Text>
 
       {/* 하단 — 좌 뒤로 · 우 애니메이션 토글 */}
       <View style={s.footer}>
