@@ -36,6 +36,29 @@ const Shadow = ({ w = 30 }) => <View style={[s.shadow, { width: w }]} />;
 //   전에는 적 한 마리(ci===0 && i===0)에만 붙어 있었고 아군에는 아예 없었다.
 //   anim 은 부모가 들고 있는 Animated.Value(적=slashA · 아군=counterA)라
 //   레퍼런스가 고정이다 → React.memo 가 그대로 먹는다.
+// 유닛별 데미지 숫자 — 맞은 유닛 머리 위에서 떠오르며 사라진다(Gim 지시 2026-07-27).
+//   전에는 화면 전체에 5칸짜리 공용 슬롯 하나로 숫자를 돌려썼다(누가 맞았는지 알 수 없었다).
+//   dmg = { tok, val, crit } — tok 이 바뀔 때만 다시 재생한다.
+//   idx 로 값을 조금씩 흔들어 유닛마다 다른 숫자가 뜨게 한다(같은 숫자 5개는 부자연스럽다).
+//   위치를 top 이 아닌 translateY 로 옮겨 네이티브 드라이버를 쓴다.
+const DmgFloat = React.memo(function DmgFloat({ dmg, idx }) {
+  const a = useRef(new Animated.Value(1)).current; // 1 = 연출 끝(안 보임)
+  const tok = dmg ? dmg.tok : 0;
+  useEffect(() => {
+    if (!tok) return;
+    a.setValue(0);
+    Animated.timing(a, { toValue: 1, duration: FLOAT_MS, useNativeDriver: true }).start();
+  }, [tok]); // eslint-disable-line react-hooks/exhaustive-deps
+  if (!dmg || typeof dmg.val !== 'number') return null;
+  const val = Math.round(dmg.val * (0.85 + ((idx * 37) % 31) / 100));
+  return (
+    <Animated.Text pointerEvents="none" style={[s.uFloat, dmg.crit && s.floatCrit, {
+      opacity: a.interpolate({ inputRange: [0, 0.7, 1], outputRange: [1, 1, 0] }),
+      transform: [{ translateY: a.interpolate({ inputRange: [0, 1], outputRange: [0, -24] }) }],
+    }]}>{val.toLocaleString()}</Animated.Text>
+  );
+});
+
 const HitFx = React.memo(function HitFx({ anim }) {
   return (
     <Animated.Text pointerEvents="none" style={[s.slash, {
@@ -85,7 +108,7 @@ const SpriteFighter = React.memo(function SpriteFighter({ cid, ckey, size, lunge
 });
 
 // 아군 한 칸 — 호드워: 속성 아이콘 + 레벨 뱃지 + 분홍 타원 그림자 + HP바.
-const Ally = React.memo(function Ally({ slot, lungeDir, attackToken, hitToken, walkToken, staggerMs, hp, hitFx }) {
+const Ally = React.memo(function Ally({ slot, lungeDir, attackToken, hitToken, walkToken, staggerMs, hp, hitFx, dmg, idx = 0 }) {
   const o = slot && typeof slot === 'object' ? slot : { emoji: slot };
   const art = o.cid && o.key && hasUnitSprite(o.cid, o.key)
     ? <SpriteFighter cid={o.cid} ckey={o.key} size={ALLY_SIZE} lungeDir={lungeDir}
@@ -101,6 +124,7 @@ const Ally = React.memo(function Ally({ slot, lungeDir, attackToken, hitToken, w
       <Shadow w={30} />
       <HpBar pct={hp} />
       {hitFx ? <HitFx anim={hitFx} /> : null}
+      <DmgFloat dmg={dmg} idx={idx} />
     </View>
   );
 });
@@ -142,7 +166,12 @@ function BattleView({ party = EMPTY_FORMATION, win = true, margin = 1, reduce, s
   const [atk, setAtk] = useState(0);
   const [hitTok, setHitTok] = useState(0);
   const [walkTok, setWalkTok] = useState(0);
+  // 공용 슬롯은 이제 **`처치!` 같은 전체 이벤트 전용**이다.
+  // 데미지 숫자는 유닛별(DmgFloat)로 내려갔다(Gim 지시 2026-07-27).
   const [floats, setFloats] = useState(emptySlots); // 길이 고정 슬롯(늘어날 수 없음)
+  const [foeDmg, setFoeDmg] = useState(null);   // 적 전원에게 뜨는 피해 { tok, val, crit }
+  const [heroDmg, setHeroDmg] = useState(null); // 아군 전원에게 뜨는 피해
+  const dmgTok = useRef(0);
   const slotRef = useRef(0);
   const tokRef = useRef(0);
   const [foes, setFoes] = useState(rollFoes);
@@ -200,7 +229,7 @@ function BattleView({ party = EMPTY_FORMATION, win = true, margin = 1, reduce, s
       // ⏸ 정지 중에는 숫자가 얼어붙은 채 남으므로 화면을 비워 둔다.
       // 💥도 애니 도중에 멈추면 그대로 박혀 있으므로 "끝난 상태"로 되돌린다.
       slashA.setValue(1); counterA.setValue(1);
-      if (paused) setFloats(emptySlots());
+      if (paused) { setFloats(emptySlots()); setFoeDmg(null); setHeroDmg(null); }
       enemyHp.current = win ? 0.45 : 0.85; heroHp.current = win ? 0.9 : 0.5;
       return;
     }
@@ -215,7 +244,8 @@ function BattleView({ party = EMPTY_FORMATION, win = true, margin = 1, reduce, s
         fxAttack(crit);
         const mul = crit ? 1.9 : 1;
         enemyHp.current -= enemyDmg * mul * (0.85 + Math.random() * 0.3);
-        pushFloat(Math.round(enemyDmg * mul * 4200 * (0.85 + Math.random() * 0.3)), 'enemy', crit);
+        dmgTok.current += 1;
+        setFoeDmg({ tok: dmgTok.current, val: Math.round(enemyDmg * mul * 4200), crit });
         if (enemyHp.current <= 0) {
           pushFloat('처치!', 'enemy', true, true);
           fxKill();
@@ -225,7 +255,8 @@ function BattleView({ party = EMPTY_FORMATION, win = true, margin = 1, reduce, s
         }
       }
       if (t % 6 === 0) { // 적 반격
-        pushFloat(Math.round(heroDmg * 3000 * (0.85 + Math.random() * 0.3)), 'hero', false);
+        dmgTok.current += 1;
+        setHeroDmg({ tok: dmgTok.current, val: Math.round(heroDmg * 3000), crit: false });
         heroHp.current = Math.max(win ? 0.35 : 0.12, heroHp.current - heroDmg);
         setHitTok((h) => h + 1);
         fxCounter();
@@ -280,7 +311,8 @@ function BattleView({ party = EMPTY_FORMATION, win = true, margin = 1, reduce, s
             {(c.list || []).map((slot, i) => (
               <Ally key={c.key + i} slot={slot} lungeDir={c.lunge}
                 attackToken={atk} hitToken={hitTok} walkToken={walkTok}
-                staggerMs={(ci * 60 + i * 40) % 160} hp={heroHp.current} hitFx={counterA} />
+                staggerMs={(ci * 60 + i * 40) % 160} hp={heroHp.current} hitFx={counterA}
+                dmg={heroDmg} idx={ci * 3 + i} />
             ))}
           </View>
         ))}
@@ -296,6 +328,7 @@ function BattleView({ party = EMPTY_FORMATION, win = true, margin = 1, reduce, s
                 <Shadow w={26} />
                 <HpBar pct={enemyHp.current} foe />
                 <HitFx anim={slashA} />
+                <DmgFloat dmg={foeDmg} idx={ci * 3 + i} />
               </View>
             ))}
           </View>
@@ -329,6 +362,8 @@ const s = StyleSheet.create({
   floatLayer: { position: 'absolute', left: 0, right: 0, top: 0, bottom: 0, zIndex: 5 },
   slash: { position: 'absolute', top: '10%', fontSize: 24, zIndex: 6 },
   float: { position: 'absolute', fontSize: 12, fontWeight: '800', color: T.text },
+  // 유닛 머리 위 데미지 숫자 — 유닛 칸 기준 절대배치.
+  uFloat: { position: 'absolute', top: -4, fontSize: 12, fontWeight: '900', color: '#fff0a8', textShadowColor: '#000', textShadowRadius: 3, zIndex: 7 },
   floatCrit: { fontSize: 15, color: T.accent },
   floatBig: { fontSize: 14, color: T.good },
 });
