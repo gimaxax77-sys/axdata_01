@@ -15,6 +15,15 @@ import { emptySlots, nextSlot, writeSlot, expireSlots, FLOAT_MS } from '../../sy
 const EMPTY_FORMATION = { front: [], back: [] };
 // 유닛 하나당 연출 지연(ms) — 배속 ×1 기준. 키우면 파도가 느려지고 줄이면 뭉친다.
 const FX_STEP_MS = 90;
+
+// ── 연출 페이스(Gim 지시 2026-07-27 "전체 속도가 빠른 것 같다" → 연출만 늦춤) ──
+//   ⚠️ 여기 값은 **보이는 속도만** 바꾼다. 층 진행·보상·오프라인 정산은
+//      useGame의 TICK_GAME_SEC / idle.mjs AUTO_ADVANCE_MARGIN 소관이라 그대로다.
+const TICK_MS = 220;          // 연출 틱(전 150). 아군 공격=4틱 · 적 반격=6틱
+//   웨이브 전멸까지 필요한 타수를 정하는 값. 낮출수록 한 웨이브가 오래 간다.
+//   기대 피해 = 값 × 1.252(치명 28%·산포 반영). 1.0 을 깎으면 전멸.
+//     0.18 → 약 4.4타 ≈ 3.9초 · 0.13 → 약 6.1타 ≈ 5.4초 (전에는 1.6~3.4초로 너무 빨랐다)
+const WAVE_DMG = { strong: 0.18, mid: 0.13, weak: 0.10, lose: 0.07 };
 // 좌우 대치 — 아군은 왼쪽 2열(후열이 왼쪽·전열이 오른쪽), 적은 오른쪽 3열.
 const ALLY_SIZE = 62;
 const FOE_SIZE = 58;
@@ -40,8 +49,9 @@ const Shadow = ({ w = 30 }) => <View style={[s.shadow, { width: w }]} />;
 //
 //   step = 유닛 하나당 지연(ms). **부모가 배속에 맞춰 내려준다**(FX_STEP_MS / speed).
 //   고정값을 키우면 ×2 배속에서 다음 타격과 겹치므로 배속에 비례해야 한다.
-//     ×1 : step 90 → 5칸이 0·90·180·270·360ms 에 번짐(공격 간격 600ms 안)
-//     ×2 : step 45 → 최대 ~200ms (공격 간격 300ms 안)
+//     ×1 : step 90 → 5칸이 0·90·180·270·360ms 에 번짐(공격 간격 880ms 안)
+//     ×2 : step 45 → 최대 ~200ms (공격 간격 440ms 안)
+//   연출 틱을 220ms로 늦추면서 여유가 늘었다 — 더 벌려도 되면 FX_STEP_MS를 올린다.
 //
 //   값은 1(연출 끝 = 안 보임)로 시작하고, **지연이 끝난 뒤에** 0으로 떨어뜨린다.
 //   (지연 전에 0으로 두면 기다리는 동안 화면에 박혀 있다.)
@@ -246,7 +256,9 @@ function BattleView({ party = EMPTY_FORMATION, win = true, margin = 1, reduce, s
       enemyHp.current = win ? 0.45 : 0.85; heroHp.current = win ? 0.9 : 0.5;
       return;
     }
-    const enemyDmg = win ? (margin > 2.2 ? 0.30 : margin > 1.4 ? 0.20 : 0.14) : 0.10;
+    const enemyDmg = win
+      ? (margin > 2.2 ? WAVE_DMG.strong : margin > 1.4 ? WAVE_DMG.mid : WAVE_DMG.weak)
+      : WAVE_DMG.lose;
     const heroDmg = win ? 0.05 : 0.16;
     let t = 0;
     const iv = setInterval(() => {
@@ -279,7 +291,7 @@ function BattleView({ party = EMPTY_FORMATION, win = true, margin = 1, reduce, s
       //   비어 있으면 같은 배열을 돌려줘 불필요한 리렌더를 만들지 않는다.
       const now = Date.now();
       setFloats((fs) => expireSlots(fs, now));
-    }, Math.round(150 / speed)); // 배속 ×2 = 틱 간격 절반
+    }, Math.round(TICK_MS / speed)); // 배속 ×2 = 틱 간격 절반
     let dangerLoop = null;
     if (!win) {
       dangerLoop = Animated.loop(Animated.sequence([
