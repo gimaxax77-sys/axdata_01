@@ -85,8 +85,13 @@ export default function BattleScreen({ state, bump, lastGain, concept, backgroun
         </View>
         <Text style={st.crest}>★</Text>
       </View>
-      {/* 양팀 전투력 비교 — 큰 쪽이 반드시 이긴다(resolve 승리조건과 동치). */}
+      {/* 양팀 전투력 비교 — 큰 쪽이 반드시 이긴다(resolve 승리조건과 동치).
+          양 끝의 보이지 않는 ★은 **자리맞춤용**이다(Gim 지시 2026-07-27).
+          위 VS 바가 [★][진영명]…[스테이지][★] 구조라, 같은 폭의 별을 여기도 두어야
+          전투력 숫자가 위 패널의 좌·우 끝과 정확히 맞는다. 별 크기를 바꿔도 같이 따라온다
+          (여백을 숫자로 박아두면 폰트가 바뀔 때 조용히 어긋난다). */}
       <View style={st.powRow}>
+        <Text style={[st.crest, st.crestGhost]}>★</Text>
         <Text style={[st.pow, st.powMine]} numberOfLines={1}>⚔ {fmt(battle.score || 0)}</Text>
         <View style={st.stageProg}>
           <View style={[st.stageProgFill, { width: `${progPct}%` }]} />
@@ -96,6 +101,7 @@ export default function BattleScreen({ state, bump, lastGain, concept, backgroun
           </View>
         </View>
         <Text style={[st.pow, st.powFoe]} numberOfLines={1}>{fmt(battle.enemyScore || 0)} ⚔</Text>
+        <Text style={[st.crest, st.crestGhost]}>★</Text>
       </View>
 
 
@@ -174,10 +180,12 @@ const st = StyleSheet.create({
   vsSword: { color: T.accent, fontSize: 13, fontWeight: '900' },
 
   // 양팀 전투력 비교 — 아군 금색 · 적 적색. 가운데는 스테이지 진행바.
-  powRow: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 8, paddingVertical: 3 },
-  pow: { fontSize: 11, fontWeight: '900', minWidth: 62 },
-  powMine: { color: T.accent, textAlign: 'left' },  // 아군 — 좌측 유지
-  powFoe: { color: T.danger, textAlign: 'right' },  // 적군 — 우측 끝(Gim 지시 2026-07-27)
+  // vsRow와 gap·padding을 똑같이 맞춘다 — 그래야 양 끝이 위 패널과 정렬된다.
+  powRow: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 8, paddingVertical: 3 },
+  crestGhost: { opacity: 0 }, // 자리만 차지하는 별(위 VS 바의 ★과 같은 폭)
+  pow: { flex: 1, fontSize: 11, fontWeight: '900' },
+  powMine: { color: T.accent, textAlign: 'left' },  // 아군 — 원정대 패널 왼쪽 끝에 맞춤
+  powFoe: { color: T.danger, textAlign: 'right' },  // 적군 — 스테이지 패널 오른쪽 끝에 맞춤
 
   // 난이도 선택 줄 — 4단계 균등. 잠긴 것은 흐리게 + 필요 층수 표시.
   diffRow: { flexDirection: 'row', gap: 3, paddingHorizontal: 8, paddingBottom: 3 },
@@ -194,9 +202,9 @@ const st = StyleSheet.create({
   ctrlTx: { color: '#cdd6e8', fontSize: 11, fontWeight: '900' },
   ctrlTxOn: { color: T.accent },
 
-  // flex:1 이 빠져 있어 폭이 0으로 붕괴했고, 그 탓에 양팀 전투력이 왼쪽에 붙어 있었다
-  // (Gim 지적 2026-07-27). 진행바가 가운데를 채워야 적 전투력이 우측 끝으로 간다.
-  stageProg: { flex: 1, height: 12, backgroundColor: 'rgba(0,0,0,0.55)', borderRadius: 6, overflow: 'hidden', marginTop: 2 },
+  // 게이지는 고정 폭으로 가운데만 차지한다(Gim 지시 2026-07-27 "길이 축소").
+  // flex를 주면 남는 폭을 전부 먹어 화면 끝까지 늘어난다 — 남는 폭은 양옆 전투력이 나눠 갖는다.
+  stageProg: { width: 132, height: 12, backgroundColor: 'rgba(0,0,0,0.55)', borderRadius: 6, overflow: 'hidden', marginTop: 2 },
   stageProgFill: { height: 12, backgroundColor: T.accent, borderRadius: 6 },
   stageProgTxWrap: { position: 'absolute', left: 0, right: 0, top: 0, bottom: 0, alignItems: 'center', justifyContent: 'center' },
   stageProgTx: { color: '#fff', fontSize: 8, fontWeight: '800', textShadowColor: '#000', textShadowRadius: 2 },
