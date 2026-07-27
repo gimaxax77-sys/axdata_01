@@ -176,8 +176,8 @@ const st = StyleSheet.create({
   // 양팀 전투력 비교 — 아군 금색 · 적 적색. 가운데는 스테이지 진행바.
   powRow: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 8, paddingVertical: 3 },
   pow: { fontSize: 11, fontWeight: '900', minWidth: 62 },
-  powMine: { color: T.accent, textAlign: 'right' },
-  powFoe: { color: T.danger, textAlign: 'left' },
+  powMine: { color: T.accent, textAlign: 'left' },  // 아군 — 좌측 유지
+  powFoe: { color: T.danger, textAlign: 'right' },  // 적군 — 우측 끝(Gim 지시 2026-07-27)
 
   // 난이도 선택 줄 — 4단계 균등. 잠긴 것은 흐리게 + 필요 층수 표시.
   diffRow: { flexDirection: 'row', gap: 3, paddingHorizontal: 8, paddingBottom: 3 },
@@ -194,7 +194,9 @@ const st = StyleSheet.create({
   ctrlTx: { color: '#cdd6e8', fontSize: 11, fontWeight: '900' },
   ctrlTxOn: { color: T.accent },
 
-  stageProg: { height: 12, backgroundColor: 'rgba(0,0,0,0.55)', borderRadius: 6, overflow: 'hidden', marginTop: 2 },
+  // flex:1 이 빠져 있어 폭이 0으로 붕괴했고, 그 탓에 양팀 전투력이 왼쪽에 붙어 있었다
+  // (Gim 지적 2026-07-27). 진행바가 가운데를 채워야 적 전투력이 우측 끝으로 간다.
+  stageProg: { flex: 1, height: 12, backgroundColor: 'rgba(0,0,0,0.55)', borderRadius: 6, overflow: 'hidden', marginTop: 2 },
   stageProgFill: { height: 12, backgroundColor: T.accent, borderRadius: 6 },
   stageProgTxWrap: { position: 'absolute', left: 0, right: 0, top: 0, bottom: 0, alignItems: 'center', justifyContent: 'center' },
   stageProgTx: { color: '#fff', fontSize: 8, fontWeight: '800', textShadowColor: '#000', textShadowRadius: 2 },

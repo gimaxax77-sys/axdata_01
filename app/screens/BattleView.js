@@ -18,11 +18,12 @@ const ALLY_SIZE = 62;
 const FOE_SIZE = 58;
 const MONSTER_EMOJIS = ['👹', '👺', '👻', '💀', '🧟', '🦇', '🐺', '🕷️', '🦂', '🐉', '👿', '🧛'];
 
-// 적 진형(우측 3열) — 열마다 1~3마리. 아군 전열/후열과 마주 본다.
-const rollFoes = () => {
-  const cols = [1 + Math.floor(Math.random() * 2), 1 + Math.floor(Math.random() * 3), 1 + Math.floor(Math.random() * 2)];
-  return cols.map((n) => Array.from({ length: n }, () => MONSTER_EMOJIS[Math.floor(Math.random() * MONSTER_EMOJIS.length)]));
-};
+// 적 진형 — **항상 5마리 고정**(Gim 지시 2026-07-27). 전에는 열마다 1~3마리를 굴려
+// 3~7마리가 나왔다. 아군 진형(전열2·후열3)을 그대로 마주보게 뒤집었다:
+// 아군과 맞닿는 왼쪽 열이 2, 뒤쪽 열이 3. 매 웨이브 종류(이모지)만 다시 뽑는다.
+const FOE_COLS = [2, 3];
+const rollFoes = () =>
+  FOE_COLS.map((n) => Array.from({ length: n }, () => MONSTER_EMOJIS[Math.floor(Math.random() * MONSTER_EMOJIS.length)]));
 
 // 발밑 분홍 타원 그림자(호드워) — 유닛이 바닥에 서 있다는 접지감을 준다.
 const Shadow = ({ w = 30 }) => <View style={[s.shadow, { width: w }]} />;
