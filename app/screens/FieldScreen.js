@@ -69,8 +69,10 @@ const f = StyleSheet.create({
   // 호드워는 갈색 양피지 지도. 아트 없이 톤만 맞춘다.
   parchment: { position: 'absolute', left: 0, right: 0, top: 0, bottom: 0, backgroundColor: '#2a2418' },
 
-  // 9개 노드가 남는 세로를 나눠 갖는다 — 기기 높이가 달라도 스크롤이 생기지 않는다.
-  map: { flex: 1, justifyContent: 'space-between', paddingHorizontal: 14, paddingVertical: 4 },
+  // 9개 노드를 좁은 간격으로 묶어 세로 가운데 정렬한다(Gim 지시 2026-07-27 "간격 좀 더 줄여줘").
+  //   space-between은 남는 세로를 **노드 사이에** 전부 뿌려 간격이 벌어졌다.
+  //   center + 작은 gap 으로 바꿔 남는 여백이 위아래로 가게 했다. 스크롤은 여전히 없다.
+  map: { flex: 1, justifyContent: 'center', gap: 6, paddingHorizontal: 14, paddingVertical: 4 },
 
   // 노드 위 말풍선(도전 가능 · 신규 기능).
   tag: { color: '#1a2b12', backgroundColor: '#b7e08a', fontSize: 8, fontWeight: '900', borderRadius: 8, paddingHorizontal: 6, paddingVertical: 1, marginBottom: 1, overflow: 'hidden' },
