@@ -8,7 +8,7 @@
 //     · `5레벨 상승` — 엘드리아는 1레벨씩 오르므로 **최대 5회 반복**으로 구현(비용 부족 시 되는 만큼).
 //     · 그 버튼을 **연속 3회 이상** 누르면 바로 위에 `최대 레벨 상승`이 생긴다 — 올릴 수 있는
 //       데까지 한 번에(Gim 지시 2026-07-27). 반복 상한은 "남은 레벨"이라 무한 루프가 불가능하다.
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { T } from '../theme';
 import { fmt, Portrait } from '../components';
@@ -47,13 +47,16 @@ const GRADE_BG = { UR: '#c0392b', SSR: '#c9962a', SR: '#2f8f7f', R: '#3a6ea8', N
 const LEVEL_STEP = 5; // 호드워 `5레벨 상승` — 한 번에 시도할 레벨업 횟수
 const BURST_TAPS = 3; // 이만큼 연속으로 누르면 `최대 레벨 상승` 버튼이 나온다
 
-export default function HeroDetail({ state, bump, concept, unit, onClose }) {
+export default function HeroDetail({ state, bump, concept, unit, onClose, onStep, stepInfo }) {
   const [tab, setTab] = useState('stat'); // 'stat' | 'gear'
   const [page, setPage] = useState(null); // 'pact' | 'guide'
   const [msg, setMsg] = useState(null);
   // `5레벨 상승`을 연속 3회 이상 누르면 위에 `최대 레벨 상승` 버튼이 생긴다(Gim 지시 2026-07-27).
   // uid를 같이 들고 있어야 다른 영웅으로 넘어갔을 때 카운트가 새로 시작된다.
   const [burst, setBurst] = useState({ uid: null, taps: 0 });
+  // 영웅을 넘기면 이전 영웅의 안내 문구가 남아 헷갈린다 — 비운다.
+  const uid = unit && unit.uid;
+  useEffect(() => { setMsg(null); }, [uid]);
   if (!unit) return null;
   if (page) {
     return <ComingSoon {...PAGES[page]} onBack={() => setPage(null)}
@@ -121,6 +124,22 @@ export default function HeroDetail({ state, bump, concept, unit, onClose }) {
         <View style={d.art}>
           <Portrait emoji={id.emoji} image={charImage(concept.id, unit.characterId)} rarity={unit.rarity} size={168} glow />
         </View>
+
+        {/* 좌우 영웅 전환 화살표 — 목록으로 나가지 않고 넘긴다(Gim 지시 2026-07-27).
+            영웅이 1명뿐이면 넘길 곳이 없어 아예 그리지 않는다. */}
+        {onStep && (<>
+          <TouchableOpacity style={[d.nav, d.navL]} activeOpacity={0.7}
+            onPress={() => { fx('tap'); onStep(-1); }}
+            accessibilityRole="button" accessibilityLabel="이전 영웅">
+            <Text style={d.navTx}>‹</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={[d.nav, d.navR]} activeOpacity={0.7}
+            onPress={() => { fx('tap'); onStep(1); }}
+            accessibilityRole="button" accessibilityLabel="다음 영웅">
+            <Text style={d.navTx}>›</Text>
+          </TouchableOpacity>
+          {stepInfo ? <Text style={d.navInfo}>{stepInfo}</Text> : null}
+        </>)}
 
         {/* 하단 한 줄 — 좌: 등급·역할·속성 / 우: LV·전투력.
             LV/전투력을 띄워 두지 않고 이 줄에 맞춰 내렸다(Gim 지시 2026-07-27). */}
@@ -249,6 +268,13 @@ const d = StyleSheet.create({
   guideTx: { color: '#e6d3ae', fontSize: 9, fontWeight: '900' },
 
   art: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+
+  // 좌우 영웅 전환 화살표 — 캡처처럼 전신 양옆 중간 높이에 띄운다.
+  nav: { position: 'absolute', top: '46%', width: 38, height: 46, alignItems: 'center', justifyContent: 'center', zIndex: 6 },
+  navL: { left: 4 },
+  navR: { right: 4 },
+  navTx: { color: T.accent, fontSize: 40, fontWeight: '900', lineHeight: 44, textShadowColor: 'rgba(0,0,0,0.75)', textShadowRadius: 4 },
+  navInfo: { position: 'absolute', top: '58%', alignSelf: 'center', color: '#e6d3ae', fontSize: 9, fontWeight: '900', backgroundColor: 'rgba(0,0,0,0.45)', borderRadius: 8, paddingHorizontal: 7, paddingVertical: 1, overflow: 'hidden', zIndex: 6 },
 
   // LV/전투력 — 띄우지 않고 idBar 줄 오른쪽 끝에 붙인다(marginLeft:'auto').
   meters: { marginLeft: 'auto', gap: 3, alignItems: 'flex-end' },

@@ -91,8 +91,17 @@ export default function HeroScreen({ state, bump, concept }) {
 
   // 영웅을 고르면 목록 대신 **전체화면 상세**로 바뀐다(호드워 캡처와 동일).
   if (unit) {
+    // 좌우 화살표로 목록을 벗어나지 않고 영웅을 넘긴다(Gim 지시 2026-07-27).
+    // 순환식 — 끝에서 누르면 반대쪽 끝으로 간다. 기준 목록은 화면에 보이는 것과 같다.
+    const idx = cards.findIndex((u) => u.uid === detail);
+    const step = (delta) => {
+      if (cards.length < 2 || idx < 0) return;
+      setDetail(cards[(idx + delta + cards.length) % cards.length].uid);
+    };
     return (
       <HeroDetail state={state} bump={bump} concept={concept} unit={unit}
+        onStep={cards.length > 1 ? step : null}
+        stepInfo={idx >= 0 ? `${idx + 1}/${cards.length}` : null}
         onClose={() => setDetail(null)} />
     );
   }
