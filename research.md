@@ -1497,3 +1497,71 @@ RN-Web이 합성 클릭을 받지 않아 탭 전환조차 불가능하다. 나�
 24h 1,571요청/10세션 · 7d 7,670요청/28세션. **사용량의 94~96%가 >150k 컨텍스트에서 발생**,
 7d 기준 81%가 8시간 이상 장기 세션. 캐시 적중 99% · Opus 100% · Claude Browser MCP 17%(24h).
 → **주제가 바뀔 때 세션을 끊는 것**이 가장 큰 절감. 브라우저 확인은 새 화면·새 import가 있을 때만.
+
+---
+
+# 2026-07-29 — 로컬 APK 빌드 (한글 경로 함정 3연속 실패)
+
+## 1. 무엇을 왜 했나
+
+Gim 지시: "apk로 빌드하고 파일 업로드 해." 전역 규칙(3트랙 게임팩)에 따라
+**EAS 클라우드가 아닌 로컬 빌드** → `G:\내 드라이브\APK\` 업로드로 진행했다.
+
+## 2. 세 번 실패한 원인 — 전부 **폴더명의 한글**
+
+작업 폴더가 `D:\.CODE\AXdata\axdata_01_엘드리아`다. 이 한글 4글자가 두 군데서 걸렸다.
+
+| # | 증상 | 진짜 원인 | 처리 |
+|---|---|---|---|
+| 1 | `Included build '…\node_modules\@react-native\gradle-plugin' does not exist` (**폴더는 실제로 존재**) | `settings.gradle:7`이 `["node","--print",…].execute().text`로 경로를 받는데, Groovy의 `Process.text`가 **JVM 기본 문자셋(MS949)** 으로 디코딩한다. node는 UTF-8로 내보낸다 → `엘드리아`가 `?��?��리아`로 깨져 "없는 경로" | `org.gradle.jvmargs`에 **`-Dfile.encoding=UTF-8`** |
+| 2 | `Your project path contains non-ASCII characters.` | AGP가 non-ASCII 경로를 **명시적으로 차단**(b.android.com/95744) | **`android.overridePathCheck=true`** |
+| 3 | (1번의 재발) | Git Bash → PowerShell로 셸을 바꿔 재시도했으나 **동일 실패** | 셸 문제가 아님이 확인됨 |
+
+**셸을 의심한 것이 첫 오진이었다.** `chcp`는 65001인데 JVM은 `-XshowSettings:properties`에서
+`file.encoding = MS949` / `sun.jnu.encoding = MS949`를 보고했다. **콘솔 코드페이지와 JVM 문자셋은 별개다.**
+추측 대신 JVM 속성을 직접 찍어 확인한 뒤에야 원인이 잡혔다(규칙 9 — 에러는 읽는다).
+
+## 3. ⚠️ 이 수정은 저장소에 남지 않는다
+
+`android/`는 **`.gitignore` 28번 줄로 제외**돼 있다. 위 두 줄은 `android/gradle.properties`에만 있고
+커밋되지 않는다. **`expo prebuild`로 폴더가 재생성되면 조용히 사라지고 다음 빌드가 처음부터 다시 실패한다.**
+
+7/19자 APK(92MB)가 같은 경로에서 나와 있었는데 설정만 없어져 있던 것이 그 증거다 —
+즉 **이미 한 번 겪고 고쳤던 문제를 설정 유실로 다시 겪었다.**
+→ 기억에 남겼다(`eldria-apk-korean-path`). 다음에 같은 에러를 보면 추측하지 말고 `gradle.properties`부터 본다.
+
+## 4. 산출물
+
+| 항목 | 값 |
+|---|---|
+| 명령 | `$env:JAVA_HOME="D:\Android\jdk17"; .\gradlew.bat assembleRelease --no-daemon` |
+| 시간 | **6분 31초** (726 tasks) |
+| APK | `android/app/build/outputs/apk/release/app-release.apk` · **87,843,572 B (87.8MB)** |
+| 업로드 | `G:\내 드라이브\APK\엘드리아_20260729_1022_호드워UI.apk` |
+| 무결성 | 로컬·드라이브 **sha256 일치**(`323B9627…CFA00D`) |
+| 서명 | **debug 키스토어**(`android/app/build.gradle`의 release가 `signingConfigs.debug`를 그대로 씀). 사이드로딩엔 무방하나 **플레이스토어 업로드는 불가** |
+
+APK 내부 검증 — `assets/index.android.bundle` **1,598,364 B**(Hermes 바이트코드) 존재,
+네이티브 라이브러리 4 ABI 전부 포함.
+
+## 5. 아키텍처별 실측 (용량 줄이기 판단 근거)
+
+`gradle.properties`의 `reactNativeArchitectures`가 4종 전부다. APK 내 `lib/` 실측.
+
+| ABI | 크기 | 무엇 |
+|---|---|---|
+| arm64-v8a | **14.4MB** | 2016년 이후 거의 모든 실기기(Gim 폰 포함) |
+| armeabi-v7a | 9.8MB | 구형 32비트 기기 |
+| x86 | 14.5MB | 에뮬레이터 |
+| x86_64 | 14.7MB | 에뮬레이터 |
+
+→ arm64만 남기면 **39MB 감소 → 약 49MB.**
+(빌드 전 "30MB 안팎"이라 말했던 것은 실측 전 어림이었고 **틀렸다.** 번들·리소스·dex가 34MB를 차지한다.)
+**Gim 결정: 보류.** 지금은 4종 유지.
+
+## 6. 확인하지 못한 것
+
+1. **APK를 기기에 설치·실행해 보지 못했다.** 번들·라이브러리 포함까지만 확인했다.
+2. 게임 코드는 건드리지 않아 **테스트를 재실행하지 않았다**(변경분은 빌드 설정 2줄).
+3. 이 APK는 **테스트 모드 ON 상태**로 빌드됐다 — 재화·해금이 전부 풀려 있어 밸런스 판단용으로 못 쓴다.
+4. `versionCode`가 **2 그대로**다(7/19 빌드와 동일). 사이드로딩은 되지만 스토어 배포 땐 올려야 한다.

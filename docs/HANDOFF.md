@@ -112,6 +112,28 @@ cd "$SP/ghp" && git add index.html && git commit -qm "..." && git push origin gh
 > **`play.html` 안의 한글은 `\uXXXX`로 이스케이프된다.** 번들에 새 문자열이 들어갔는지 확인할 때
 > 원문으로 찾으면 전부 MISS가 나와 빌드 실패로 오인한다. 두 형태를 **모두** 검사할 것.
 
+### 안드로이드 APK (로컬 빌드)
+
+```
+$env:JAVA_HOME="D:\Android\jdk17"; $env:ANDROID_HOME="D:\Android\Sdk"
+cd android; .\gradlew.bat assembleRelease --no-daemon
+```
+→ `android/app/build/outputs/apk/release/app-release.apk` (약 6분 30초, 87.8MB).
+`G:\내 드라이브\APK\`로 복사하면 폰에서 받는다. 릴리스는 **debug 키스토어로 서명**돼 있어 사이드로딩 전용이다.
+
+> ### ⚠️ 한글 폴더명 때문에 반드시 두 줄이 필요하다
+> `android/gradle.properties`에 아래가 없으면 빌드가 **시작도 못 하고** 실패한다.
+> ```
+> org.gradle.jvmargs=… -Dfile.encoding=UTF-8
+> android.overridePathCheck=true
+> ```
+> - 없을 때 증상 ① `Included build '…@react-native\gradle-plugin' does not exist` — **폴더는 실제로 있다.**
+>   `settings.gradle:7`이 node 출력(UTF-8)을 JVM 기본 문자셋(MS949)으로 읽어 `엘드리아`가 깨진다.
+> - 없을 때 증상 ② `Your project path contains non-ASCII characters.` — AGP의 경로 차단.
+> - **셸(PowerShell/Git Bash) 문제가 아니다.** 둘 다 똑같이 실패한다. `chcp`가 65001이어도 JVM은 MS949다.
+> - **`android/`는 `.gitignore` 대상이라 이 두 줄이 커밋되지 않는다.** `expo prebuild`로 폴더가
+>   재생성되면 사라지고 같은 실패를 처음부터 다시 겪는다(2026-07-29에 실제로 재발).
+
 ## 4. 검증
 
 - 테스트 **309개** — `node --test system/test/*.test.mjs`. **완료 보고 전에 반드시 돌린다.**
