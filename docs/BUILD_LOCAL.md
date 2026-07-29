@@ -1,7 +1,8 @@
 # 로컬 빌드 가이드 — 지금 실제로 쓰는 절차
 
-> **작성 2026-07-29.** 이 문서에 적힌 명령·수치는 전부 **그날 실제로 실행해 확인한 것**입니다.
-> 작업 폴더 = `D:\.CODE\AXdata\axdata_01_엘드리아` (모든 경로는 여기 기준).
+> **작성 2026-07-29 · 갱신 2026-07-30**(빌드 시간·APK 크기 단위·게이트 스크립트·up-to-date 함정).
+> 이 문서에 적힌 명령·수치는 전부 **실제로 실행해 확인한 것**입니다.
+> 작업 폴더 = `D:\.CODE\AXdata\axdata_01_eldria` (모든 경로는 여기 기준).
 
 ## 이 문서와 옛 빌드 문서 4개의 관계
 
@@ -26,7 +27,7 @@
 |---|---|---|
 | **무엇** | `docs/play.html` 단일 파일 → GitHub Pages | 설치용 `.apk` → 구글 드라이브 |
 | **언제** | **코드를 고칠 때마다**(일상 확인 루프) | 앱 형태로 볼 때, 가끔 |
-| **걸리는 시간** | 약 1분 + 배포 반영 30~45초 | **약 6분 30초** |
+| **걸리는 시간** | 약 1분 + 배포 반영 30~45초 | **캐시 있으면 40초 · 캐시 지우면 5분 40초** |
 | **폰에서 보는 법** | 브라우저 링크 | 파일 받아 설치 |
 
 일상 작업은 **A만** 하면 됩니다. B는 요청이 있을 때만 합니다.
@@ -159,7 +160,15 @@ android.overridePathCheck=true
 > `expo prebuild`로 폴더가 재생성되면 조용히 사라지고 같은 실패를 처음부터 다시 겪습니다.
 > 2026-07-29에 실제로 재발했습니다(7/19에 이미 한 번 고쳤던 문제).
 
-## B-2. ⚠️ ASCII 가상 드라이브(`subst`)를 만들고 **거기서** 빌드합니다
+## B-2. ~~ASCII 가상 드라이브(`subst`)~~ → **2026-07-30 폴더 개명으로 불필요해졌습니다**
+
+폴더가 `axdata_01_eldria`(전부 ASCII)로 바뀌어 **`subst` 없이 실제 경로에서 그대로 빌드됩니다.**
+같은 날 캐시를 지우고 실측했습니다 — `BUILD SUCCESSFUL in 5m 39s`(726 tasks 중 **649개 실제 실행**, ninja 오류 0건, APK 87.8MB).
+(캐시가 살아 있을 때의 수치는 B-3 표를 봅니다.)
+
+> 아래는 **왜 그랬는지**에 대한 기록입니다. 폴더 이름에 한글을 다시 들이면 그대로 재발합니다.
+
+<details><summary>개명 전 상황 (한글 경로일 때)</summary>
 
 **한글 경로에서 직접 빌드하면 네이티브 C++ 단계에서 실패합니다.** B-1의 두 줄로는 못 막습니다.
 
@@ -171,7 +180,7 @@ ninja: error: FindFirstFileExA(d:/.code/axdata/axdata_01_…/node_modules/expo-a
 (2026-07-29 첫 빌드가 통과한 건 C++ 산출물이 7/19 것 그대로 남아 있어 그 단계를 건너뛰었기 때문입니다. 캐시가 무효화되자 바로 드러났습니다.)
 
 ```powershell
-subst X: "D:\.CODE\AXdata\axdata_01_엘드리아"
+subst X: "D:\.CODE\AXdata\axdata_01_eldria"
 ```
 
 > **정션(`mklink /J`)은 안 됩니다.** `ninja`는 통과하지만 **Metro가 실패**합니다 —
@@ -181,16 +190,53 @@ subst X: "D:\.CODE\AXdata\axdata_01_엘드리아"
 > `subst`는 **재부팅하면 사라집니다.** 빌드할 때마다 위 한 줄을 먼저 실행하면 됩니다.
 > 이미 있으면 `이미 SUBST된 드라이브입니다` 가 뜨는데 그냥 진행하면 됩니다. 해제는 `subst X: /D`.
 
-## B-3. 빌드 (PowerShell)
+</details>
+
+## B-3. 빌드
+
+### 권장 — 게이트 스크립트 한 줄
+
+B-1의 확인과 빌드를 한 번에 합니다. 점검 항목은 JDK · SDK · `local.properties` · `node_modules` · 한글 경로 2관문 · 경로 ASCII · ABI 4종 · 네이티브 캐시 8가지입니다.
+
+```powershell
+npm run build:apk:local
+```
+
+점검만 하고 빌드는 안 하려면 `npm run gate` 입니다.
+(실체는 `_TOOLS\build-gate\build-gate.ps1` — 3트랙 공용입니다. `-Fix` 를 주면 한글 경로 2관문을 자동으로 채워 넣습니다.)
+
+### 직접 돌릴 때 (PowerShell)
 
 ```powershell
 $env:JAVA_HOME="D:\Android\jdk17"; $env:ANDROID_HOME="D:\Android\Sdk"; $env:ANDROID_SDK_ROOT="D:\Android\Sdk"
-cd X:\android
+cd "D:\.CODE\AXdata\axdata_01_eldria\android"
 .\gradlew.bat assembleRelease --no-daemon
 ```
 
-- **약 6분 30초** (726 tasks). 끝에 `BUILD SUCCESSFUL` 이 보여야 합니다.
-- 결과: **`android/app/build/outputs/apk/release/app-release.apk`** (약 **87.8MB**)
+### 걸리는 시간 — 캐시 상태에 따라 8배 차이납니다
+
+둘 다 2026-07-30 실측입니다. 전체 task는 726개로 같고, **실제로 실행되는 개수**가 다릅니다.
+
+| 캐시 | 실행 task | 시간 |
+|---|---|---|
+| 지운 뒤(첫 빌드) | 726개 중 **649개** | **5분 39초** |
+| 살아 있을 때 | 726개 중 **37개** | **40초** |
+
+끝에 `BUILD SUCCESSFUL` 이 보여야 합니다.
+
+- 결과: **`android/app/build/outputs/apk/release/app-release.apk`**
+- 크기 **87.8MB** — 윈도우 탐색기에는 **83.8MB**로 보입니다. 87,844,197바이트를 십진(1000) MB로 쓰느냐 1024 기준 MiB로 쓰느냐 차이일 뿐 **같은 파일입니다.** 둘 중 뭘 봐도 놀라지 않습니다.
+
+> ### ⚠️ 코드가 안 바뀌었으면 Gradle은 APK를 **다시 만들지 않습니다**
+> `BUILD SUCCESSFUL` 이 떠도 `app-release.apk` 의 **수정 시각과 sha256이 그대로**입니다.
+> 신호는 이 줄입니다 — `726 actionable tasks: 37 executed, 689 up-to-date`.
+>
+> **실패가 아니라 정상 동작입니다.** 다만 "새 APK를 뽑았다"고 착각하기 쉽습니다.
+> 2026-07-30 01:40에 실제로 겪었습니다 — 재빌드했는데 01:15에 만들어진 파일이 그대로 나왔습니다.
+>
+> → **빌드 뒤 파일 수정 시각을 봅니다.** 방금 시각이 아니면 내용이 그대로라는 뜻입니다.
+> 앱이 정말 같은지는 파일 해시 말고 **APK 안의 `index.android.bundle` 해시**로 봅니다
+> (APK 전체 해시는 빌드 시각·서명 때문에 매번 달라져 비교에 쓸 수 없습니다).
 
 > **주의: `| tail` 같은 파이프를 붙이면 종료코드가 파이프 끝 명령 것이 됩니다.**
 > gradle이 실패해도 성공(0)으로 보고돼 실패를 놓칩니다. 출력 끝을 확인할 땐 종료코드를 따로 봅니다.
@@ -263,7 +309,8 @@ node --test system/test/*.test.mjs
 
 **APK (요청 시)**
 - [ ] `android/gradle.properties` 두 줄 확인
-- [ ] **`subst X: "D:\.CODE\AXdata\axdata_01_엘드리아"`** (한글 경로 회피 — 없으면 ninja에서 실패)
-- [ ] `cd X:\android` → `.\gradlew.bat assembleRelease --no-daemon` (약 6분 30초)
+- [ ] ~~`subst X:`~~ **불필요**(2026-07-30 폴더 개명으로 경로가 전부 ASCII)
+- [ ] `npm run build:apk:local` (게이트 점검 + 빌드) — 캐시 있으면 **40초**, 지운 뒤면 **5분 39초**
+- [ ] **APK 수정 시각이 방금인지 확인** — 그대로면 코드가 안 바뀌어 재생성이 생략된 것
 - [ ] APK 안에 `index.android.bundle` 있는지 확인
 - [ ] `G:\내 드라이브\APK\` 복사 → **sha256 대조**
