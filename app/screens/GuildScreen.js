@@ -18,12 +18,21 @@ const PAGES = {
   apply: { icon: '📨', title: '일괄 신청', plan: ['조건이 맞는 길드에 한 번에 신청', '신청 현황 확인'] },
 };
 
+// 좌우 이동 순서 — PAGES 선언 순서를 그대로 쓴다. 목록을 두 벌로 두면 항목이 늘 때 조용히 어긋난다.
+const PAGE_KEYS = Object.keys(PAGES);
+
 export default function GuildScreen() {
   const [page, setPage] = useState(null);
   const open = (k) => { fx('tap'); setPage(k); };
 
-  if (page) return <ComingSoon {...PAGES[page]} onBack={() => setPage(null)}
-    note="길드 모듈이 아직 붙어 있지 않습니다. 자리와 동선만 잡아 둔 상태예요." />;
+  if (page) {
+    // 좌우 이동 — 길드 첫 화면으로 나갔다 다시 들어오지 않고 옆 항목으로 넘긴다(순환).
+    const i = PAGE_KEYS.indexOf(page);
+    const step = (d) => setPage(PAGE_KEYS[(i + d + PAGE_KEYS.length) % PAGE_KEYS.length]);
+    return <ComingSoon {...PAGES[page]} onBack={() => setPage(null)}
+      onStep={step} stepInfo={`${i + 1}/${PAGE_KEYS.length}`}
+      note="길드 모듈이 아직 붙어 있지 않습니다. 자리와 동선만 잡아 둔 상태예요." />;
+  }
 
   return (
     <View style={g.wrap}>

@@ -45,8 +45,13 @@ export default function FortressScreen({ state, bump, concept, onGo, onOpenSetti
     return <SummonScreen state={state} bump={bump} concept={concept} onClose={() => setOpen(null)} />;
   }
   if (open) {
-    const b = BUILDINGS.find((x) => x.key === open);
+    const i = BUILDINGS.findIndex((x) => x.key === open);
+    const b = BUILDINGS[i];
+    // 좌우 이동 — 요새 맵으로 나갔다 다시 들어오지 않고 옆 건물로 넘긴다. 끝에서는 반대쪽 끝으로(순환).
+    //   영웅 제단(summon)도 목록에 포함된다 — 넘어가면 위 분기가 잡아 실제 모집 화면이 뜬다.
+    const step = (d) => setOpen(BUILDINGS[(i + d + BUILDINGS.length) % BUILDINGS.length].key);
     return <ComingSoon icon={b.emoji} title={b.name} plan={[b.note]} onBack={() => setOpen(null)}
+      onStep={step} stepInfo={`${i + 1}/${BUILDINGS.length}`}
       note="이 건물로 들어오는 콘텐츠가 아직 붙어 있지 않습니다. 자리와 동선만 잡아 둔 상태예요." />;
   }
 

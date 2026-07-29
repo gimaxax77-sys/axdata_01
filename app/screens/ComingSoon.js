@@ -11,7 +11,9 @@ import { fx } from '../feedback';
 // onBack 이 있으면 **하단 좌측**에 뒤로가기를 그린다(전체화면으로 쓸 때).
 //   Gim 지시(2026-07-29): "모든 컨텐츠 뒤로가기는 하단으로 전부 통일 배치."
 //   소환·영웅 상세·전투 화면이 이미 하단 좌측 붉은 ◀ 였고, 이 패널만 좌상단이었다.
-export default function ComingSoon({ icon = '🚧', title, note, plan = [], onBack }) {
+// onStep(±1) 이 있으면 좌우 이동 화살표를 그린다(Gim 지시 2026-07-29: "영웅탭처럼").
+//   stepInfo 는 `3/9` 같은 위치 표시. 영웅 상세(HeroDetail)와 같은 모양·같은 자리다.
+export default function ComingSoon({ icon = '🚧', title, note, plan = [], onBack, onStep, stepInfo }) {
   return (
     <View style={p.wrap}>
       <View style={p.body}>
@@ -25,6 +27,21 @@ export default function ComingSoon({ icon = '🚧', title, note, plan = [], onBa
           </View>
         )}
       </View>
+      {/* 좌우 이동 — 뒤로 나갔다 다시 들어오지 않고 같은 탭의 옆 콘텐츠로 넘긴다. 순환식. */}
+      {onStep && (<>
+        <TouchableOpacity style={[p.nav, p.navL]} activeOpacity={0.7}
+          onPress={() => { fx('tap'); onStep(-1); }}
+          accessibilityRole="button" accessibilityLabel="이전 콘텐츠">
+          <Text style={p.navTx}>‹</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={[p.nav, p.navR]} activeOpacity={0.7}
+          onPress={() => { fx('tap'); onStep(1); }}
+          accessibilityRole="button" accessibilityLabel="다음 콘텐츠">
+          <Text style={p.navTx}>›</Text>
+        </TouchableOpacity>
+        {stepInfo ? <Text style={p.navInfo}>{stepInfo}</Text> : null}
+      </>)}
+
       {onBack && (
         <View style={p.footer}>
           <TouchableOpacity style={p.back} activeOpacity={0.85} onPress={() => { fx('tap'); onBack(); }}
@@ -43,6 +60,12 @@ const p = StyleSheet.create({
   footer: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 10, paddingTop: 8, paddingBottom: 10 },
   back: { width: 38, height: 30, borderRadius: 8, backgroundColor: '#7a2f22', borderWidth: 2, borderColor: '#b8543c', alignItems: 'center', justifyContent: 'center' },
   backTx: { color: '#ffd9c8', fontSize: 13, fontWeight: '900' },
+  // 좌우 이동 화살표 — HeroDetail 과 같은 모양·같은 높이로 맞췄다.
+  nav: { position: 'absolute', top: '46%', width: 38, height: 46, alignItems: 'center', justifyContent: 'center', zIndex: 6 },
+  navL: { left: 4 },
+  navR: { right: 4 },
+  navTx: { color: T.accent, fontSize: 40, fontWeight: '900', lineHeight: 44, textShadowColor: 'rgba(0,0,0,0.75)', textShadowRadius: 4 },
+  navInfo: { position: 'absolute', top: '58%', alignSelf: 'center', color: '#e6d3ae', fontSize: 9, fontWeight: '900', backgroundColor: 'rgba(0,0,0,0.45)', borderRadius: 8, paddingHorizontal: 7, paddingVertical: 1, overflow: 'hidden', zIndex: 6 },
   body: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 26 },
   icon: { fontSize: 42, opacity: 0.6 },
   title: { color: T.text, fontSize: 15, fontWeight: '900', marginTop: 10 },

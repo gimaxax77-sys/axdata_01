@@ -30,8 +30,12 @@ export default function FieldScreen() {
   const [open, setOpen] = useState(null); // 진입한 노드 key
 
   if (open) {
-    const n = NODES.find((x) => x.key === open);
+    const i = NODES.findIndex((x) => x.key === open);
+    const n = NODES[i];
+    // 좌우 이동 — 지도로 나갔다 다시 들어오지 않고 옆 노드로 넘긴다. 끝에서는 반대쪽 끝으로(순환).
+    const step = (d) => setOpen(NODES[(i + d + NODES.length) % NODES.length].key);
     return <ComingSoon icon={n.emoji} title={n.name} plan={[n.note]} onBack={() => setOpen(null)}
+      onStep={step} stepInfo={`${i + 1}/${NODES.length}`}
       note="이 노드로 들어오는 콘텐츠가 아직 붙어 있지 않습니다. 자리와 동선만 잡아 둔 상태예요." />;
   }
 
