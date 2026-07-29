@@ -77,6 +77,11 @@ function AppInner() {
     'Galmuri11-Bold': require('./assets/fonts/Galmuri11-Bold.ttf'),
   });
   const [tab, setTab] = useState('idle');
+  // 하단 탭을 누르면 **어디에 들어가 있든 그 탭의 첫 화면**으로 간다(Gim 지시 2026-07-29).
+  //   하위 화면(요새→영웅 제단, 모험→전투, 준비 중 패널…)은 각 화면이 자기 useState 로 들고 있어서
+  //   같은 탭을 다시 눌러도 tab 값이 안 바뀌어 아무 일도 일어나지 않았다.
+  //   이 값을 key 에 섞어 **강제로 다시 마운트**시키면 그 상태가 초기화되며 첫 화면으로 돌아온다.
+  const [tabNonce, setTabNonce] = useState(0);
 
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [adminOpen, setAdminOpen] = useState(false);
@@ -204,7 +209,8 @@ function AppInner() {
       {/* 화면 — rev(액션 신호)로만 리렌더. lastGain은 방치 탭에만 전달해
           다른 탭이 초당 리렌더되지 않게 한다. */}
       <View style={s.body}>
-        <BaseScreen state={game.state} rev={game.rev} bump={game.bump} concept={game.concept}
+        <BaseScreen key={`${tab}:${tabNonce}`}
+          state={game.state} rev={game.rev} bump={game.bump} concept={game.concept}
           lastGain={tab === 'idle' ? game.lastGain : undefined}
           onLocked={setLockMsg}
           onGo={setTab}
@@ -226,7 +232,7 @@ function AppInner() {
           const dot = !!tabDots[t.key];
           return (
             <TouchableOpacity key={t.key} style={[s.tab, t.wide && s.tabWide, on && s.tabOn]} activeOpacity={0.8}
-              onPress={() => { fx('tap'); setLockMsg(null); setTab(t.key); }}
+              onPress={() => { fx('tap'); setLockMsg(null); setTab(t.key); setTabNonce((n) => n + 1); }}
               accessibilityRole="tab" accessibilityState={{ selected: on }}
               accessibilityLabel={dot ? `${t.label} (할 일 있음)` : t.label}>
               <View>

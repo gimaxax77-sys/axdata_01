@@ -8,16 +8,12 @@ import { T } from '../theme';
 import { fx } from '../feedback';
 
 // icon/title 은 필수, note 는 "여기에 무엇이 들어올지" 한 줄, plan 은 목록.
-// onBack 이 있으면 좌상단 뒤로가기를 그린다(전체화면으로 쓸 때).
+// onBack 이 있으면 **하단 좌측**에 뒤로가기를 그린다(전체화면으로 쓸 때).
+//   Gim 지시(2026-07-29): "모든 컨텐츠 뒤로가기는 하단으로 전부 통일 배치."
+//   소환·영웅 상세·전투 화면이 이미 하단 좌측 붉은 ◀ 였고, 이 패널만 좌상단이었다.
 export default function ComingSoon({ icon = '🚧', title, note, plan = [], onBack }) {
   return (
     <View style={p.wrap}>
-      {onBack && (
-        <TouchableOpacity style={p.back} activeOpacity={0.85} onPress={() => { fx('tap'); onBack(); }}
-          accessibilityRole="button" accessibilityLabel="뒤로">
-          <Text style={p.backTx}>◀</Text>
-        </TouchableOpacity>
-      )}
       <View style={p.body}>
         <Text style={p.icon}>{icon}</Text>
         <Text style={p.title}>🔒 {title}</Text>
@@ -29,14 +25,24 @@ export default function ComingSoon({ icon = '🚧', title, note, plan = [], onBa
           </View>
         )}
       </View>
+      {onBack && (
+        <View style={p.footer}>
+          <TouchableOpacity style={p.back} activeOpacity={0.85} onPress={() => { fx('tap'); onBack(); }}
+            accessibilityRole="button" accessibilityLabel="뒤로">
+            <Text style={p.backTx}>◀</Text>
+          </TouchableOpacity>
+        </View>
+      )}
     </View>
   );
 }
 
 const p = StyleSheet.create({
   wrap: { flex: 1 },
-  back: { position: 'absolute', left: 8, top: 8, width: 32, height: 32, borderRadius: 8, backgroundColor: T.surface2, borderWidth: 1, borderColor: T.line, alignItems: 'center', justifyContent: 'center', zIndex: 5 },
-  backTx: { color: T.text, fontSize: 14, fontWeight: '900' },
+  // 하단 좌측 붉은 ◀ — SummonScreen·BattleScreen 과 같은 모양으로 맞췄다(호드워 최하단 좌측).
+  footer: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 10, paddingTop: 8, paddingBottom: 10 },
+  back: { width: 38, height: 30, borderRadius: 8, backgroundColor: '#7a2f22', borderWidth: 2, borderColor: '#b8543c', alignItems: 'center', justifyContent: 'center' },
+  backTx: { color: '#ffd9c8', fontSize: 13, fontWeight: '900' },
   body: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 26 },
   icon: { fontSize: 42, opacity: 0.6 },
   title: { color: T.text, fontSize: 15, fontWeight: '900', marginTop: 10 },
