@@ -123,7 +123,7 @@ https://gimaxax77-sys.github.io/axdata_01/?v=<번호>
 ```
 
 `?v=` 뒤 번호는 **폰 브라우저 캐시를 피하려고 매번 올립니다.** 값 자체는 아무 의미가 없습니다.
-(2026-07-29 기준 마지막은 `?v=40`)
+(2026-07-29 기준 마지막은 `?v=41`)
 
 ---
 
@@ -159,11 +159,33 @@ android.overridePathCheck=true
 > `expo prebuild`로 폴더가 재생성되면 조용히 사라지고 같은 실패를 처음부터 다시 겪습니다.
 > 2026-07-29에 실제로 재발했습니다(7/19에 이미 한 번 고쳤던 문제).
 
-## B-2. 빌드 (PowerShell)
+## B-2. ⚠️ ASCII 가상 드라이브(`subst`)를 만들고 **거기서** 빌드합니다
+
+**한글 경로에서 직접 빌드하면 네이티브 C++ 단계에서 실패합니다.** B-1의 두 줄로는 못 막습니다.
+
+```
+ninja: error: FindFirstFileExA(d:/.code/axdata/axdata_01_…/node_modules/expo-av/…/cpp): 지정된 경로를 찾을 수 없습니다
+```
+
+`ninja`(NDK의 C++ 빌드 도구)는 옛 ANSI 파일 API를 써서 한글 경로를 열지 못하고, **이건 해제 옵션이 없습니다.**
+(2026-07-29 첫 빌드가 통과한 건 C++ 산출물이 7/19 것 그대로 남아 있어 그 단계를 건너뛰었기 때문입니다. 캐시가 무효화되자 바로 드러났습니다.)
+
+```powershell
+subst X: "D:\.CODE\AXdata\axdata_01_엘드리아"
+```
+
+> **정션(`mklink /J`)은 안 됩니다.** `ninja`는 통과하지만 **Metro가 실패**합니다 —
+> Node가 정션을 원래 한글 경로로 되돌려 해석해서 `Unable to resolve module ../../App` 이 납니다.
+> **`subst`는 장치 매핑이라 되돌려지지 않아** 전 구간이 `X:\…` 로만 보입니다. 실제로 이 차이로 갈렸습니다.
+>
+> `subst`는 **재부팅하면 사라집니다.** 빌드할 때마다 위 한 줄을 먼저 실행하면 됩니다.
+> 이미 있으면 `이미 SUBST된 드라이브입니다` 가 뜨는데 그냥 진행하면 됩니다. 해제는 `subst X: /D`.
+
+## B-3. 빌드 (PowerShell)
 
 ```powershell
 $env:JAVA_HOME="D:\Android\jdk17"; $env:ANDROID_HOME="D:\Android\Sdk"; $env:ANDROID_SDK_ROOT="D:\Android\Sdk"
-cd android
+cd X:\android
 .\gradlew.bat assembleRelease --no-daemon
 ```
 
@@ -173,7 +195,7 @@ cd android
 > **주의: `| tail` 같은 파이프를 붙이면 종료코드가 파이프 끝 명령 것이 됩니다.**
 > gradle이 실패해도 성공(0)으로 보고돼 실패를 놓칩니다. 출력 끝을 확인할 땐 종료코드를 따로 봅니다.
 
-## B-3. 알맹이가 들어갔는지 확인합니다
+## B-4. 알맹이가 들어갔는지 확인합니다
 
 ```bash
 unzip -l app-release.apk | grep -E "index.android.bundle|libhermes"
@@ -182,7 +204,7 @@ unzip -l app-release.apk | grep -E "index.android.bundle|libhermes"
 - `assets/index.android.bundle` (약 1.6MB, Hermes 바이트코드) — **JS 코드 본체입니다.** 없으면 빈 앱입니다.
 - `lib/{arm64-v8a,armeabi-v7a,x86,x86_64}/…` — 네이티브 라이브러리 4종.
 
-## B-4. 구글 드라이브로 올립니다
+## B-5. 구글 드라이브로 올립니다
 
 ```powershell
 Copy-Item "…\app-release.apk" "G:\내 드라이브\APK\엘드리아_<날짜>_<시각>_<메모>.apk"
@@ -195,7 +217,7 @@ Copy-Item "…\app-release.apk" "G:\내 드라이브\APK\엘드리아_<날짜>_<
 (Get-FileHash $원본 -Algorithm SHA256).Hash; (Get-FileHash $사본 -Algorithm SHA256).Hash
 ```
 
-## B-5. 알아둘 것
+## B-6. 알아둘 것
 
 - **release가 debug 키스토어로 서명됩니다**(`android/app/build.gradle`). 사이드로딩은 되지만 **플레이스토어 업로드는 불가**합니다.
 - `versionCode`는 `app.json`에 있고 현재 **2**입니다. 사이드로딩엔 상관없지만 스토어에 낼 땐 올려야 합니다.
@@ -241,6 +263,7 @@ node --test system/test/*.test.mjs
 
 **APK (요청 시)**
 - [ ] `android/gradle.properties` 두 줄 확인
-- [ ] `.\gradlew.bat assembleRelease --no-daemon` (약 6분 30초)
+- [ ] **`subst X: "D:\.CODE\AXdata\axdata_01_엘드리아"`** (한글 경로 회피 — 없으면 ninja에서 실패)
+- [ ] `cd X:\android` → `.\gradlew.bat assembleRelease --no-daemon` (약 6분 30초)
 - [ ] APK 안에 `index.android.bundle` 있는지 확인
 - [ ] `G:\내 드라이브\APK\` 복사 → **sha256 대조**
