@@ -388,7 +388,9 @@ const s = StyleSheet.create({
   slash: { position: 'absolute', top: '10%', fontSize: 24, zIndex: 6 },
   float: { position: 'absolute', fontSize: 12, fontWeight: '800', color: T.text },
   // 유닛 머리 위 데미지 숫자 — 유닛 칸 기준 절대배치.
-  uFloat: { position: 'absolute', top: -4, fontSize: 12, fontWeight: '900', color: '#fff0a8', textShadowColor: '#000', textShadowRadius: 3, zIndex: 7 },
+  // left/right 를 칸 밖으로 벌려 폭을 확보한다. 없으면 폭이 유닛 칸(≈30px)에 묶여
+  // 쉼표가 붙는 4자리(1,234)부터 줄바꿈된다(Gim 실기 제보 2026-07-29).
+  uFloat: { position: 'absolute', top: -4, left: -30, right: -30, textAlign: 'center', fontSize: 12, fontWeight: '900', color: '#fff0a8', textShadowColor: '#000', textShadowRadius: 3, zIndex: 7 },
   floatCrit: { fontSize: 15, color: T.accent },
   floatBig: { fontSize: 14, color: T.good },
 });
