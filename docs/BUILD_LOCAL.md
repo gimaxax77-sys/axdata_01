@@ -138,14 +138,36 @@ https://gimaxax77-sys.github.io/axdata_01/?v=<번호>
 | Android SDK | `D:\Android\Sdk` | `android/local.properties`의 `sdk.dir` |
 | 네이티브 폴더 | `android/` | **`.gitignore` 대상** — `npx expo prebuild`로 재생성 |
 
-## B-1. ⚠️ `android/gradle.properties` 두 줄을 먼저 확인합니다
+## B-1. ⚠️ `android/` 안의 **두 파일 세 곳**을 먼저 확인합니다
 
-**폴더 이름에 한글(`엘드리아`)이 있어서, 이 두 줄이 없으면 빌드가 시작도 못 하고 실패합니다.**
+`android/` 는 **`.gitignore` 대상**이라 이 설정들이 저장소에 남지 않습니다. **`expo prebuild` 가 폴더를 재생성하면 조용히 사라지고 기본값으로 돌아갑니다.**
+
+**① `android/gradle.properties` — 두 줄**
 
 ```properties
 org.gradle.jvmargs=-Xmx2048m -XX:MaxMetaspaceSize=512m -Dfile.encoding=UTF-8
 android.overridePathCheck=true
 ```
+
+| 줄 | 왜 필요한가 |
+|---|---|
+| `-Dfile.encoding=UTF-8` | 경로에 한글이 섞이면 `settings.gradle` 이 UTF-8 경로를 MS949 로 디코딩해 깨집니다. **폴더는 개명했지만 상위 경로가 다시 한글이 될 수 있어 유지**합니다 |
+| `android.overridePathCheck=true` | AGP 가 비ASCII 경로를 아예 막습니다. 위와 같은 이유로 유지 |
+
+**② `android/app/build.gradle` 의 `defaultConfig` — APK 크기를 절반으로 줄이는 곳**
+
+```gradle
+defaultConfig {
+    ...
+    ndk { abiFilters 'arm64-v8a' }
+}
+```
+
+> ### ⚠️ `gradle.properties` 의 `reactNativeArchitectures` 로는 안 됩니다 (2026-07-30 실패 확인)
+> 이 프로젝트의 `app/build.gradle` 은 **그 값을 읽지 않습니다**(`splits` 블록도 없음). 그래서 `reactNativeArchitectures=arm64-v8a` 로 바꾸고 빌드해도 **87.8MB → 84.9MB, -3% 에 그쳤고 APK 안에는 4개 ABI 가 그대로** 있었습니다. RN 자체 C++ 만 영향을 받고 서드파티 AAR 의 `.so` 는 전부 담깁니다.
+> **실제로 거르는 것은 `abiFilters` 입니다.** 적용 후 실측 — **87.8MB → 46.7MB (-41.2MB, -47%)**, 담긴 ABI 는 `arm64-v8a` 하나(15.1MB), JS 번들 정상 포함.
+>
+> 버리는 것 — `x86`·`x86_64` 는 **에뮬레이터·일부 크롬북**용(실기기 아님), `armeabi-v7a` 는 **2017년 이전 32비트 폰**용입니다. 에뮬레이터로 돌려야 하면 `abiFilters 'arm64-v8a', 'x86_64'` 로 늘리면 됩니다.
 
 | 없을 때 나오는 에러 | 진짜 원인 |
 |---|---|
@@ -156,9 +178,9 @@ android.overridePathCheck=true
 > 콘솔 코드페이지(`chcp` 65001)와 JVM 문자셋은 별개입니다. 확인하려면
 > `& "D:\Android\jdk17\bin\java.exe" -XshowSettings:properties -version` 의 `file.encoding` 을 봅니다.
 >
-> **`android/`가 `.gitignore` 대상이라 이 두 줄은 커밋되지 않습니다.**
-> `expo prebuild`로 폴더가 재생성되면 조용히 사라지고 같은 실패를 처음부터 다시 겪습니다.
-> 2026-07-29에 실제로 재발했습니다(7/19에 이미 한 번 고쳤던 문제).
+> **이 설정들은 커밋되지 않습니다.** `expo prebuild`로 폴더가 재생성되면 조용히 사라집니다.
+> ①의 두 줄은 2026-07-29에 실제로 재발했습니다(7/19에 이미 한 번 고쳤던 문제).
+> **②(`abiFilters`)가 사라지면 빌드가 실패하지 않습니다 — APK 가 87MB로 조용히 되돌아갈 뿐입니다.** 실패보다 알아채기 어려우니 빌드 후 **크기를 확인**하십시오(46~47MB 가 정상).
 
 ## B-2. ~~ASCII 가상 드라이브(`subst`)~~ → **2026-07-30 폴더 개명으로 불필요해졌습니다**
 
