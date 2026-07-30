@@ -2,7 +2,7 @@
 import os
 from PIL import Image
 
-SRC = r"D:/.CODE/AXdata/axdata_05/_qenemy"
+SRC = r"D:/.CODE/AXdata/axdata_05_render tools/_qenemy"
 DST = r"D:/.CODE/AXdata/axdata_01/axdata_01/assets/units/enemy"
 FRAME = 128
 NFR = 16

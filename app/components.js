@@ -340,11 +340,12 @@ const bs = StyleSheet.create({
 });
 
 const s = StyleSheet.create({
-  resbar: { flexDirection: 'row', borderRadius: 14, padding: 6, gap: 6, borderWidth: 1, borderColor: T.line },
-  rescell: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingVertical: 8 },
-  resEmoji: { fontSize: 16 },
-  resIcon: { width: 22, height: 22 },
-  resVal: { color: T.text, fontWeight: '800', fontSize: 15 },
+  // 세븐식 상단 재화바 — 얇은 한 줄. 두께가 곧 전투 필드에서 빼앗는 세로다.
+  resbar: { flexDirection: 'row', borderRadius: 10, padding: 3, gap: 4, borderWidth: 1, borderColor: T.line },
+  rescell: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 4, paddingVertical: 3 },
+  resEmoji: { fontSize: 13 },
+  resIcon: { width: 18, height: 18 },
+  resVal: { color: T.text, fontWeight: '800', fontSize: 12 },
   // 미니멀 정리: small 버튼이 라벨 대비 과하게 커 보이던 걸 축소
   // (paddingVertical 8→5, horizontal 12→10, 글로우도 함께 옅게).
   btn: { paddingVertical: 11, paddingHorizontal: 16, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },

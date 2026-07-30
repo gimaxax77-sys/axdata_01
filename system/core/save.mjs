@@ -3,6 +3,8 @@ import { ensureGearSeq, emptyGearSet } from './gear.mjs';
 import { ensureRuneSeq } from './runes.mjs';
 import { ensureMailSeq } from './mailbox.mjs';
 import { createWallet } from './economy.mjs';
+import { computePower } from './stats.mjs';
+import { ROLE_CAP, PARTY_CAP as MAX_PARTY } from './formation.mjs';
 
 // ─────────────────────────────────────────────────────────────
 // 세이브 직렬화 — gameState는 순수 데이터라 JSON으로 그대로 왕복 가능.
@@ -124,11 +126,26 @@ function normalize(state) {
   if (state.party.length === 0 && state.units && state.units.length) {
     state.party = [state.units[0].uid];
   }
+  // 편성 인원 축소 마이그레이션 (2026-07-26: 7인 전열2·중열3·후열2 → 5인 전열2·후열3).
+  //   옛 세이브는 파티가 최대 7명이라 그대로 두면 정원을 넘긴 채로 굴러간다.
+  //   전투력 높은 순으로 MAX_PARTY명만 남긴다(약한 유닛을 잘라내는 게 자연스럽다).
+  if (state.party.length > MAX_PARTY) {
+    const byId = new Map((state.units || []).map((u) => [u.uid, u]));
+    state.party = state.party
+      .slice()
+      .sort((a, b) => computePower(byId.get(b)) - computePower(byId.get(a)))
+      .slice(0, MAX_PARTY);
+  }
   // 진형: 편성된 유닛만 후열 지정 유지 (미편성 uid 정리).
   state.formation = state.formation || {};
   for (const uid of Object.keys(state.formation)) {
-    if (!state.party.includes(uid)) delete state.formation[uid];
+    if (!state.party.includes(uid)) { delete state.formation[uid]; continue; }
+    // 사라진 '중열'은 후열로 옮긴다 — 그냥 두면 roleOf가 전열로 떨어져 딜러가 탱커석에 앉는다.
+    if (state.formation[uid] === 'mid') state.formation[uid] = 'back';
   }
+  // 후열 정원(3) 초과분은 전열로 되돌린다(전열은 미기재가 기본값).
+  const backs = Object.keys(state.formation).filter((uid) => state.formation[uid] === 'back');
+  for (const uid of backs.slice(ROLE_CAP.back)) delete state.formation[uid];
   state.formationPresets = state.formationPresets || {};
   for (const u of state.units || []) {
     if (!u.skills) u.skills = [null, null, null];

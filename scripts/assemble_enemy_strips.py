@@ -2,8 +2,8 @@
 import os
 from PIL import Image
 
-SRC16 = r"D:/.CODE/AXdata/axdata_05/out_enemy16"    # idle_a, hit_a
-SRCATK = r"D:/.CODE/AXdata/axdata_05/out_enemy_atk"  # 적별 attack 클립
+SRC16 = r"D:/.CODE/AXdata/axdata_05_render tools/out_enemy16"    # idle_a, hit_a
+SRCATK = r"D:/.CODE/AXdata/axdata_05_render tools/out_enemy_atk"  # 적별 attack 클립
 DST = r"D:/.CODE/AXdata/axdata_01/axdata_01/assets/units/enemy"
 FRAME = 128
 NFR = 16

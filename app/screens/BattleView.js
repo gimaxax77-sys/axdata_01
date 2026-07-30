@@ -1,32 +1,114 @@
+// 자동 전투 시각화 — 호드워식 **좌우 대치 진형**. 순수 연출(게임 로직 불변).
+//   기준: docs/HORDWAR_SPEC.md "전투 구조" — 아군 좌 / 적 우로 마주 본다.
+//   아군은 진형 2단(후열·전열), 적은 3열. 2026-07-26 편성 5인 전환으로 중열이 없어졌다.
+//   resolve()의 win/margin으로 "얼마나 우세한가"만 받아 페이스를 정한다.
+//   유닛 표시 = 속성 아이콘 + 레벨 뱃지 + 발밑 **분홍 타원 그림자**(호드워 고유).
+//   (구 세븐식 세로 자유 산개 Wander 난전은 이 파일에서 걷어냈다 — 4번째 기준 변경.)
 import React, { useEffect, useRef, useState } from 'react';
 import { View, Text, Animated, StyleSheet } from 'react-native';
 import { T } from '../theme';
 import { reducedMotion } from '../motion';
 import { unitSprite, hasUnitSprite } from '../unitSprites';
 import SpriteAnim from '../SpriteAnim';
+import { emptySlots, nextSlot, writeSlot, expireSlots, FLOAT_MS } from '../../system/core/battleFloats.mjs';
 
-// reduce: 설정에서 전달(즉시 반영). 미전달 시 모듈 플래그 폴백.
+const EMPTY_FORMATION = { front: [], back: [] };
+// 유닛 하나당 연출 지연(ms) — 배속 ×1 기준. 키우면 파도가 느려지고 줄이면 뭉친다.
+const FX_STEP_MS = 90;
 
-// ─────────────────────────────────────────────────────────────
-// 자동 전투 시각화 — 순수 연출(게임 로직 불변).
-// resolve()의 win/margin으로 "얼마나 우세한가"만 받아 페이스를 정한다.
-// HP 바 감소 + 공격 러지 + 데미지 숫자로 "돌아가는 전투"를 보여준다.
-// 캐릭터: 스프라이트(SpriteAnim, idle 순환 → attack/hit/walk 1회) > 이모지 폴백.
-// setInterval + ref 로 가볍게 구동(웹 export에서도 안정).
-// ─────────────────────────────────────────────────────────────
+// ── 연출 페이스(Gim 지시 2026-07-27 "전체 속도가 빠른 것 같다" → 연출만 늦춤) ──
+//   ⚠️ 여기 값은 **보이는 속도만** 바꾼다. 층 진행·보상·오프라인 정산은
+//      useGame의 TICK_GAME_SEC / idle.mjs AUTO_ADVANCE_MARGIN 소관이라 그대로다.
+const TICK_MS = 220;          // 연출 틱(전 150). 아군 공격=4틱 · 적 반격=6틱
+//   웨이브 전멸까지 필요한 타수를 정하는 값. 낮출수록 한 웨이브가 오래 간다.
+//   기대 피해 = 값 × 1.252(치명 28%·산포 반영). 1.0 을 깎으면 전멸.
+//     0.18 → 약 4.4타 ≈ 3.9초 · 0.13 → 약 6.1타 ≈ 5.4초 (전에는 1.6~3.4초로 너무 빨랐다)
+const WAVE_DMG = { strong: 0.18, mid: 0.13, weak: 0.10, lose: 0.07 };
+// 좌우 대치 — 아군은 왼쪽 2열(후열이 왼쪽·전열이 오른쪽), 적은 오른쪽 3열.
+const ALLY_SIZE = 62;
+const FOE_SIZE = 58;
+const MONSTER_EMOJIS = ['👹', '👺', '👻', '💀', '🧟', '🦇', '🐺', '🕷️', '🦂', '🐉', '👿', '🧛'];
 
-const EMPTY_FORMATION = { front: [], mid: [], back: [] };
-const FRONT_SIZE = 180;
-const BACK_SIZE = 144;
+// 적 진형 — **항상 5마리 고정**(Gim 지시 2026-07-27). 전에는 열마다 1~3마리를 굴려
+// 3~7마리가 나왔다. 아군(전열2·후열3)과 마주보도록 적도 **전열2·후열3**으로 맞춘다.
+//
+// ⚠️ 순서 주의 — 적 컨테이너(s.sideFoe)는 `row-reverse`다.
+//    그래서 이 배열의 **[0]이 오른쪽 = 후열**, **[1]이 왼쪽 = 전열(아군과 맞닿는 쪽)**이다.
+//    처음에 [2,3]으로 넣었다가 전열3·후열2로 나와 Gim이 지적했다(2026-07-27).
+//    => [후열3, 전열2] 순서로 적는다.
+const FOE_COLS = [3, 2];
+const rollFoes = () =>
+  FOE_COLS.map((n) => Array.from({ length: n }, () => MONSTER_EMOJIS[Math.floor(Math.random() * MONSTER_EMOJIS.length)]));
 
-// 스프라이트 파이터 — idle 순환. 토큰 변경 시 해당 1회 모션(attack/hit/walk) 재생 후 idle.
-// 동시 발생 시 소스순(attack→hit→walk) 마지막이 우선(피격이 공격을 끊음 = 자연스러움).
-// 원본 스프라이트가 오른쪽(적 방향)을 향하므로 반전 없이 그대로 렌더한다.
-// 토큰 prop 변경을 useEffect로 받으면 "prop 변경 커밋 → effect → 재렌더"로
-//   모션 전환 1회당 재렌더가 2번 발생(파티 전체가 동시 전환되는 처치 순간 특히 체감).
-//   렌더 중 상태 파생(React 공식 지원 패턴)으로 1회로 줄인다.
-//   동시 발생 시 우선순위는 기존과 동일: 나중에 비교하는 쪽이 이긴다.
-const SpriteFighter = React.memo(function SpriteFighter({ cid, ckey, front, attackToken, hitToken, walkToken, staggerMs = 0 }) {
+// 발밑 분홍 타원 그림자(호드워) — 유닛이 바닥에 서 있다는 접지감을 준다.
+const Shadow = ({ w = 30 }) => <View style={[s.shadow, { width: w }]} />;
+
+// 유닛 연출 공통 — 토큰이 바뀌면 **자기 순번만큼 늦게** 재생한다(Gim 지시 2026-07-27).
+//   전원이 동시에 터지면 "일시일괄"로 보여 생동감이 없다. 순번(idx)으로 파도처럼 번지게 하고,
+//   매번 약간의 흔들림을 더해 기계적으로 반복되지 않게 한다.
+//
+//   step = 유닛 하나당 지연(ms). **부모가 배속에 맞춰 내려준다**(FX_STEP_MS / speed).
+//   고정값을 키우면 ×2 배속에서 다음 타격과 겹치므로 배속에 비례해야 한다.
+//     ×1 : step 90 → 5칸이 0·90·180·270·360ms 에 번짐(공격 간격 880ms 안)
+//     ×2 : step 45 → 최대 ~200ms (공격 간격 440ms 안)
+//   연출 틱을 220ms로 늦추면서 여유가 늘었다 — 더 벌려도 되면 FX_STEP_MS를 올린다.
+//
+//   값은 1(연출 끝 = 안 보임)로 시작하고, **지연이 끝난 뒤에** 0으로 떨어뜨린다.
+//   (지연 전에 0으로 두면 기다리는 동안 화면에 박혀 있다.)
+function useStaggeredPlay(token, idx, duration, step = 90) {
+  const a = useRef(new Animated.Value(1)).current;
+  useEffect(() => {
+    if (!token) return undefined;
+    const id = setTimeout(() => {
+      a.setValue(0);
+      Animated.timing(a, { toValue: 1, duration, useNativeDriver: true }).start();
+    }, idx * step + Math.random() * step * 0.5);
+    return () => clearTimeout(id);
+  }, [token]); // eslint-disable-line react-hooks/exhaustive-deps
+  return a;
+}
+
+// 유닛별 데미지 숫자 — 맞은 유닛 머리 위에서 떠오르며 사라진다(Gim 지시 2026-07-27).
+//   전에는 화면 전체에 5칸짜리 공용 슬롯 하나로 숫자를 돌려썼다(누가 맞았는지 알 수 없었다).
+//   dmg = { tok, val, crit } — tok 이 바뀔 때만 다시 재생한다.
+//   idx 로 값을 조금씩 흔들어 유닛마다 다른 숫자가 뜨게 한다(같은 숫자 5개는 부자연스럽다).
+//   위치를 top 이 아닌 translateY 로 옮겨 네이티브 드라이버를 쓴다.
+const DmgFloat = React.memo(function DmgFloat({ dmg, idx, step }) {
+  const a = useStaggeredPlay(dmg ? dmg.tok : 0, idx, FLOAT_MS, step);
+  if (!dmg || typeof dmg.val !== 'number') return null;
+  const val = Math.round(dmg.val * (0.85 + ((idx * 37) % 31) / 100));
+  return (
+    <Animated.Text pointerEvents="none" style={[s.uFloat, dmg.crit && s.floatCrit, {
+      opacity: a.interpolate({ inputRange: [0, 0.7, 1], outputRange: [1, 1, 0] }),
+      transform: [{ translateY: a.interpolate({ inputRange: [0, 1], outputRange: [0, -24] }) }],
+    }]}>{val.toLocaleString()}</Animated.Text>
+  );
+});
+
+// 피격 이펙트 💥 — 맞는 쪽 **모든 유닛** 위에 뜬다(Gim 지시 2026-07-27).
+//   전에는 적 한 마리(ci===0 && i===0)에만 붙어 있었고 아군에는 아예 없었다.
+//   숫자와 같은 시차 규약을 쓴다 — 공유 Animated.Value 하나로 몰면 전원이 동시에 터진다.
+//   token: 적 = 아군 공격 토큰(atk) · 아군 = 피격 토큰(hitTok).
+const HitFx = React.memo(function HitFx({ token, idx, step }) {
+  const a = useStaggeredPlay(token, idx, 180, step);
+  return (
+    <Animated.Text pointerEvents="none" style={[s.slash, {
+      opacity: a.interpolate({ inputRange: [0, 0.15, 1], outputRange: [0, 1, 0] }),
+      transform: [{ scale: a.interpolate({ inputRange: [0, 1], outputRange: [0.5, 1.7] }) }],
+    }]}>💥</Animated.Text>
+  );
+});
+
+// 유닛 발밑 HP바.
+const HpBar = ({ pct, foe }) => (
+  <View style={s.hpBg}>
+    <View style={[s.hpFill, { width: `${Math.max(0, Math.min(100, pct * 100))}%`, backgroundColor: foe ? '#e0574a' : '#5cd65c' }]} />
+  </View>
+);
+
+// 스프라이트 파이터 — idle 순환. 토큰 변경 시 해당 1회 모션 재생 후 idle.
+//   좌우 대치라 러지는 가로(적 방향)로 튄다. 렌더 중 상태 파생(재렌더 1회로 축소).
+const SpriteFighter = React.memo(function SpriteFighter({ cid, ckey, size, lungeDir, attackToken, hitToken, walkToken, staggerMs = 0 }) {
   const [anim, setAnim] = useState({ st: 'idle', tok: 0, a: attackToken, h: hitToken, w: walkToken });
   if (attackToken !== anim.a || hitToken !== anim.h || walkToken !== anim.w) {
     let st = anim.st;
@@ -35,98 +117,107 @@ const SpriteFighter = React.memo(function SpriteFighter({ cid, ckey, front, atta
     if (walkToken !== anim.w) st = 'walk';
     setAnim({ st, tok: anim.tok + 1, a: attackToken, h: hitToken, w: walkToken });
   }
-  // 전열 진격 러지 — 컬럼 전체가 아니라 이 유닛 혼자, 자기 staggerMs만큼 늦게 튀어나간다.
-  //   (예전엔 전열 전체를 한 Animated.Value로 묶어 한 덩어리로 움직였던 게 "군무"의 주범이었음.)
   const lunge = useRef(new Animated.Value(0)).current;
   useEffect(() => {
-    if (!front || anim.st !== 'attack') return;
+    if (!lungeDir || anim.st !== 'attack') return;
     Animated.sequence([
       Animated.delay(staggerMs),
-      Animated.timing(lunge, { toValue: 8, duration: 90, useNativeDriver: true }),
+      Animated.timing(lunge, { toValue: 10 * lungeDir, duration: 90, useNativeDriver: true }),
       Animated.timing(lunge, { toValue: 0, duration: 140, useNativeDriver: true }),
     ]).start();
   }, [anim.tok]); // eslint-disable-line react-hooks/exhaustive-deps
   const spr = unitSprite(cid, ckey, anim.st) || unitSprite(cid, ckey, 'idle');
-  const size = front ? FRONT_SIZE : BACK_SIZE;
-  const scale = size / spr.frameH;
   return (
-    <Animated.View style={front ? { transform: [{ translateX: lunge }] } : undefined}>
+    <Animated.View style={{ transform: [{ translateX: lunge }] }}>
       <SpriteAnim
         source={spr.source} frameW={spr.frameW} frameH={spr.frameH} frames={spr.frames}
-        state={anim.st} playToken={anim.tok} scale={scale} staggerMs={staggerMs}
+        state={anim.st} playToken={anim.tok} scale={size / spr.frameH} staggerMs={staggerMs}
         onEnd={() => setAnim((a) => ({ ...a, st: 'idle' }))}
       />
     </Animated.View>
   );
 });
 
-// 적 파이터 — 왼쪽(파티) 향하는 몬스터 스프라이트. idle 순환, 히어로 공격 시 hit 재생.
-// 원본이 이미 왼쪽 방향으로 렌더돼 반전 불필요.
-const ENEMY_SIZE = 198;
-const EnemyFighter = React.memo(function EnemyFighter({ ekey, hitToken, atkToken }) {
-  const [anim, setAnim] = useState({ st: 'idle', tok: 0, h: hitToken, a: atkToken });
-  if (hitToken !== anim.h || atkToken !== anim.a) {
-    let st = anim.st;
-    if (hitToken !== anim.h) st = 'hit';
-    if (atkToken !== anim.a) st = 'attack';
-    setAnim({ st, tok: anim.tok + 1, h: hitToken, a: atkToken });
-  }
-  const spr = unitSprite('enemy', ekey, anim.st) || unitSprite('enemy', ekey, 'idle');
-  const scale = ENEMY_SIZE / spr.frameH;
+// 아군 한 칸 — 호드워: 속성 아이콘 + 레벨 뱃지 + 분홍 타원 그림자 + HP바.
+const Ally = React.memo(function Ally({ slot, lungeDir, attackToken, hitToken, walkToken, staggerMs, hp, dmg, idx = 0, step }) {
+  const o = slot && typeof slot === 'object' ? slot : { emoji: slot };
+  const art = o.cid && o.key && hasUnitSprite(o.cid, o.key)
+    ? <SpriteFighter cid={o.cid} ckey={o.key} size={ALLY_SIZE} lungeDir={lungeDir}
+        attackToken={attackToken} hitToken={hitToken} walkToken={walkToken} staggerMs={staggerMs} />
+    : <Text style={s.allyEmoji}>{o.emoji}</Text>;
   return (
-    <SpriteAnim source={spr.source} frameW={spr.frameW} frameH={spr.frameH} frames={spr.frames}
-      state={anim.st} playToken={anim.tok} scale={scale} onEnd={() => setAnim((a) => ({ ...a, st: 'idle' }))} />
+    <View style={s.unit}>
+      <View style={s.badges}>
+        {o.elem ? <Text style={s.elemIc}>{o.elem}</Text> : null}
+        {o.level ? <Text style={s.lvBadge}>{o.level}</Text> : null}
+      </View>
+      {art}
+      <Shadow w={30} />
+      <HpBar pct={hp} />
+      <HitFx token={hitToken} idx={idx} step={step} />
+      <DmgFloat dmg={dmg} idx={idx} step={step} />
+    </View>
   );
 });
 
-// 편성 한 칸 — 스프라이트, 없으면 이모지. slot이 문자열이면 이모지(하위호환).
-const Fighter = React.memo(function Fighter({ slot, front, attackToken, hitToken, walkToken, staggerMs = 0 }) {
-  const o = slot && typeof slot === 'object' ? slot : { emoji: slot };
-  if (o.cid && o.key && hasUnitSprite(o.cid, o.key)) {
-    return <SpriteFighter cid={o.cid} ckey={o.key} front={front} attackToken={attackToken} hitToken={hitToken} walkToken={walkToken} staggerMs={staggerMs} />;
-  }
-  return <Text style={front ? s.miniEmojiFront : s.miniEmoji}>{o.emoji}</Text>;
-});
 
-// 데미지 숫자 한 개 — 마운트 시 스스로 떠오르며 사라진 뒤 onDone으로 제거.
-//   매 틱 부모 리렌더(force) 없이 자기 애니만 돌려 JS 스레드 부하↓.
-const FloatText = React.memo(function FloatText({ val, crit, big, dx, onDone }) {
+// 슬롯별 고정 오프셋 — 같은 자리에 포개지지 않도록 칸마다 가로·세로를 벌려 둔다.
+//   (좌우 대치로 바꾸면서 가로 분산을 빠뜨려 한 줄로 겹쳐 보였다 — 실기 제보로 수정.)
+const SLOT_OFFSET = [
+  { x: 6, y: 0 }, { x: 20, y: -7 }, { x: 12, y: 8 }, { x: 27, y: 4 }, { x: 2, y: -12 },
+];
+
+// 데미지 숫자 한 칸 — 슬롯이 덮어써질 때(tok 변경) 애니메이션을 처음부터 다시 재생한다.
+//   컴포넌트는 마운트된 채 내용만 바뀌므로 DOM 노드가 늘지 않는다.
+const FloatText = React.memo(function FloatText({ slot, tok, val, crit, big, side }) {
   const a = useRef(new Animated.Value(0)).current;
   useEffect(() => {
-    Animated.timing(a, { toValue: 1, duration: 1100, useNativeDriver: false }).start(() => onDone());
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+    a.setValue(0);
+    Animated.timing(a, { toValue: 1, duration: FLOAT_MS, useNativeDriver: false }).start();
+  }, [tok]); // eslint-disable-line react-hooks/exhaustive-deps
+  const isFoe = side === 'enemy';
+  const off = SLOT_OFFSET[slot % SLOT_OFFSET.length];
   return (
     <Animated.Text style={[
       s.float, crit && s.floatCrit, big && s.floatBig,
       {
-        left: `${45 + dx}%`,
         opacity: a.interpolate({ inputRange: [0, 0.7, 1], outputRange: [1, 1, 0] }),
-        bottom: a.interpolate({ inputRange: [0, 1], outputRange: [90, 146] }),
+        [isFoe ? 'right' : 'left']: `${8 + off.x}%`,
+        top: a.interpolate({ inputRange: [0, 1], outputRange: [`${42 + off.y}%`, `${30 + off.y}%`] }),
       },
     ]}>{typeof val === 'number' ? val.toLocaleString() : val}</Animated.Text>
   );
 });
 
-function BattleView({ party = EMPTY_FORMATION, enemyEmoji = '👹', enemyKey = null, win = true, margin = 1, reduce }) {
+// speed: 1 | 2 (호드워 배속 ×2) · paused: ⏸ 일시정지
+function BattleView({ party = EMPTY_FORMATION, win = true, margin = 1, reduce, speed = 1, paused = false }) {
   const noMotion = reduce !== undefined ? reduce : reducedMotion();
   const enemyHp = useRef(1);
   const heroHp = useRef(1);
-  const [atk, setAtk] = useState(0);           // 공격 재생 트리거(스프라이트)
-  const [hitTok, setHitTok] = useState(0);     // 파티 피격 재생 트리거
-  const [walkTok, setWalkTok] = useState(0);   // 웨이브 전진(걷기) 트리거
-  const [enemyAtk, setEnemyAtk] = useState(0); // 적 공격(반격) 재생 트리거
-  const [floats, setFloats] = useState([]);    // 데미지 숫자 — 생성/제거 시에만 렌더(이벤트 기반)
-  const fid = useRef(0);
+  const [atk, setAtk] = useState(0);
+  const [hitTok, setHitTok] = useState(0);
+  const [walkTok, setWalkTok] = useState(0);
+  // 공용 슬롯은 이제 **`처치!` 같은 전체 이벤트 전용**이다.
+  // 데미지 숫자는 유닛별(DmgFloat)로 내려갔다(Gim 지시 2026-07-27).
+  const [floats, setFloats] = useState(emptySlots); // 길이 고정 슬롯(늘어날 수 없음)
+  const [foeDmg, setFoeDmg] = useState(null);   // 적 전원에게 뜨는 피해 { tok, val, crit }
+  const [heroDmg, setHeroDmg] = useState(null); // 아군 전원에게 뜨는 피해
+  const dmgTok = useRef(0);
+  const slotRef = useRef(0);
+  const tokRef = useRef(0);
+  const [foes, setFoes] = useState(rollFoes);
+  // 유닛당 연출 지연 — 배속이 빠르면 간격도 같이 좁힌다(안 그러면 다음 타격과 겹친다).
+  const fxStep = Math.max(20, Math.round(FX_STEP_MS / speed));
 
-  // 타격 연출 — 전부 Animated 노드 직접 구동(리렌더 없음).
-  const shakeX = useRef(new Animated.Value(0)).current; // 크리티컬 무대 셰이크
-  const slashA = useRef(new Animated.Value(0)).current; // 타격 섬광(적 위 💥)
-  const flashA = useRef(new Animated.Value(1)).current; // 적 피격 플래시(투명도)
-  const popA = useRef(new Animated.Value(1)).current;   // 처치 팝(스케일)
+  const shakeX = useRef(new Animated.Value(0)).current;   // 크리티컬 무대 셰이크
+  const flashA = useRef(new Animated.Value(1)).current;   // 적 피격 플래시
+  const foeX = useRef(new Animated.Value(0)).current;     // 다음 웨이브 적 슬라이드인(우→좌)
+  const heroFlashA = useRef(new Animated.Value(1)).current;
+  const heroShakeX = useRef(new Animated.Value(0)).current;
+  const dangerA = useRef(new Animated.Value(0)).current;
+
+  // 💥는 유닛이 각자 토큰으로 재생한다(useStaggeredPlay). 여기선 진영 단위 연출만 담당.
   const fxAttack = (crit) => {
-    // 전열 러지는 이제 SpriteFighter가 유닛별로 각자 담당(여기선 적 쪽 연출만).
-    slashA.setValue(0);
-    Animated.timing(slashA, { toValue: 1, duration: 180, useNativeDriver: true }).start();
     flashA.setValue(0.35);
     Animated.timing(flashA, { toValue: 1, duration: 200, useNativeDriver: true }).start();
     if (crit) {
@@ -134,29 +225,19 @@ function BattleView({ party = EMPTY_FORMATION, enemyEmoji = '👹', enemyKey = n
       Animated.sequence([
         Animated.timing(shakeX, { toValue: 3, duration: 30, useNativeDriver: true }),
         Animated.timing(shakeX, { toValue: -2, duration: 30, useNativeDriver: true }),
-        Animated.timing(shakeX, { toValue: 1, duration: 30, useNativeDriver: true }),
         Animated.timing(shakeX, { toValue: 0, duration: 30, useNativeDriver: true }),
       ]).start();
     }
   };
-  const waveX = useRef(new Animated.Value(0)).current;      // 다음 웨이브 적 슬라이드인
-  const heroFlashA = useRef(new Animated.Value(1)).current; // 파티 피격 플래시
-  const heroShakeX = useRef(new Animated.Value(0)).current; // 파티 피격 흔들림
-  const dangerA = useRef(new Animated.Value(0)).current;    // 열세 위기 비네팅(붉은 펄스)
   const fxKill = () => {
-    popA.setValue(1);
+    // 좌우 대치 — 다음 웨이브는 오른쪽 밖에서 밀려 들어온다.
+    foeX.setValue(90);
     Animated.sequence([
-      Animated.timing(popA, { toValue: 1.28, duration: 90, useNativeDriver: true }),
-      Animated.spring(popA, { toValue: 1, friction: 4, useNativeDriver: true }),
-    ]).start();
-    // 처치 팝 직후 — 다음 웨이브 적이 오른쪽에서 등장.
-    waveX.setValue(70);
-    Animated.sequence([
-      Animated.delay(140),
-      Animated.spring(waveX, { toValue: 0, friction: 6, useNativeDriver: true }),
+      Animated.delay(120),
+      Animated.spring(foeX, { toValue: 0, friction: 6, useNativeDriver: true }),
     ]).start();
   };
-  const fxCounter = () => { // 적 반격 — 파티 쪽 플래시 + 흔들림
+  const fxCounter = () => {
     heroFlashA.setValue(0.5);
     Animated.timing(heroFlashA, { toValue: 1, duration: 220, useNativeDriver: true }).start();
     heroShakeX.setValue(0);
@@ -169,43 +250,48 @@ function BattleView({ party = EMPTY_FORMATION, enemyEmoji = '👹', enemyKey = n
 
   useEffect(() => {
     enemyHp.current = 1; heroHp.current = 1;
-    if (noMotion) {
+    if (noMotion || paused) {
+      // ⏸ 정지 중에는 숫자가 얼어붙은 채 남으므로 화면을 비워 둔다.
+      if (paused) { setFloats(emptySlots()); setFoeDmg(null); setHeroDmg(null); }
       enemyHp.current = win ? 0.45 : 0.85; heroHp.current = win ? 0.9 : 0.5;
       return;
     }
-    // 우세할수록 적 HP가 빨리 깎임. 열세(패배)면 파티 HP가 위태.
-    const enemyDmg = win ? (margin > 2.2 ? 0.30 : margin > 1.4 ? 0.20 : 0.14) : 0.10;
+    const enemyDmg = win
+      ? (margin > 2.2 ? WAVE_DMG.strong : margin > 1.4 ? WAVE_DMG.mid : WAVE_DMG.weak)
+      : WAVE_DMG.lose;
     const heroDmg = win ? 0.05 : 0.16;
     let t = 0;
     const iv = setInterval(() => {
       t += 1;
-      // 히어로 공격 (~0.48s)
-      if (t % 4 === 0) {
-        setAtk((a) => a + 1); // 스프라이트 attack 재생
+      if (t % 4 === 0) { // 히어로 공격 (~0.6s)
+        setAtk((a) => a + 1);
         const crit = Math.random() < 0.28;
-        fxAttack(crit); // 타격 섬광 + 피격 플래시 + 크리 셰이크
+        fxAttack(crit);
         const mul = crit ? 1.9 : 1;
         enemyHp.current -= enemyDmg * mul * (0.85 + Math.random() * 0.3);
-        pushFloat(Math.round(enemyDmg * mul * 4200 * (0.85 + Math.random() * 0.3)), 'enemy', crit);
+        dmgTok.current += 1;
+        setFoeDmg({ tok: dmgTok.current, val: Math.round(enemyDmg * mul * 4200), crit });
         if (enemyHp.current <= 0) {
           pushFloat('처치!', 'enemy', true, true);
-          fxKill(); // 처치 팝
-          enemyHp.current = 1; // 다음 웨이브
-          setWalkTok((w) => w + 1); // 처치 → 다음 웨이브로 전진(걷기 1회)
+          fxKill();
+          enemyHp.current = 1;
+          setFoes(rollFoes());
+          setWalkTok((w) => w + 1);
         }
       }
-      // 적 반격 (~0.72s) — 적 공격 모션 + 파티 피격 모션
-      if (t % 6 === 0) {
-        pushFloat(Math.round(heroDmg * 3000 * (0.85 + Math.random() * 0.3)), 'hero', false);
+      if (t % 6 === 0) { // 적 반격
+        dmgTok.current += 1;
+        setHeroDmg({ tok: dmgTok.current, val: Math.round(heroDmg * 3000), crit: false });
         heroHp.current = Math.max(win ? 0.35 : 0.12, heroHp.current - heroDmg);
         setHitTok((h) => h + 1);
-        setEnemyAtk((a) => a + 1);
-        fxCounter(); // 파티 피격 플래시 + 흔들림
+        fxCounter();
       }
-      // 히어로 자연 회복
       heroHp.current = Math.min(1, heroHp.current + 0.012);
-    }, 150); // 틱 간격 — 공격/반격 빈도(체감 속도)를 여기서 조절. 스프라이트 fps는 부드러움 전담.
-    // 열세(패배 예상) — 붉은 위기 비네팅 펄스.
+      // 만료 정리 — 푸시와 무관하게 매 틱 돌린다(rAF·커밋 타이밍에 의존하지 않게).
+      //   비어 있으면 같은 배열을 돌려줘 불필요한 리렌더를 만들지 않는다.
+      const now = Date.now();
+      setFloats((fs) => expireSlots(fs, now));
+    }, Math.round(TICK_MS / speed)); // 배속 ×2 = 틱 간격 절반
     let dangerLoop = null;
     if (!win) {
       dangerLoop = Animated.loop(Animated.sequence([
@@ -215,51 +301,64 @@ function BattleView({ party = EMPTY_FORMATION, enemyEmoji = '👹', enemyKey = n
       dangerLoop.start();
     } else dangerA.setValue(0);
     return () => { clearInterval(iv); if (dangerLoop) { dangerLoop.stop(); dangerA.setValue(0); } };
-  }, [win, margin, noMotion]);
+  }, [win, margin, noMotion, speed, paused]);
 
+  // 데미지 숫자 정리는 "나이"로 한다 — 애니 완료 콜백이 한 번이라도 안 오면(백그라운드·모션끔)
+  //   숫자가 영원히 쌓이기 때문(실제 발생했던 버그). 생성과 같은 시계로 만료분을 걷어낸다.
   function pushFloat(val, side, crit, big) {
-    fid.current += 1;
-    setFloats((fs) => [...fs.slice(-7), { id: fid.current, val, side, crit, big, dx: Math.random() * 26 - 13 }]);
+    const idx = slotRef.current;
+    slotRef.current = nextSlot(idx);
+    tokRef.current += 1;
+    const born = Date.now();
+    setFloats((fs) => writeSlot(fs, idx, { tok: tokRef.current, born, val, side, crit, big }));
   }
-  const dropFloat = (id) => setFloats((fs) => fs.filter((f) => f.id !== id));
 
-  const renderFloats = (side) => floats.filter((f) => f.side === side).map((f) => (
-    <FloatText key={f.id} val={f.val} crit={f.crit} big={f.big} dx={f.dx} onDone={() => dropFloat(f.id)} />
-  ));
+  // 아군 2열 — 후열이 뒤(왼쪽), 전열이 적과 맞닿는다(오른쪽). 2026-07-26 중열 폐지.
+  const allyCols = [
+    { key: 'back', list: party.back, lunge: 0 },
+    { key: 'front', list: party.front, lunge: 1 },
+  ];
 
   return (
     <Animated.View style={[s.arena, { transform: [{ translateX: shakeX }] }]}>
-      {/* 열세 위기 비네팅 — 패배 예상 시 붉은 펄스 */}
       <Animated.View pointerEvents="none" style={[s.dangerOverlay, { opacity: dangerA }]} />
-      {/* 파티 */}
-      <View style={s.heroSide}>
-        <View style={s.floatLayer}>{renderFloats('hero')}</View>
-        {/* 전투 화면은 1·2열(중열→전열)만 표시 — 후열은 숨겨 화면을 정리(전투 로직엔 영향 없음). */}
-        <View style={s.formRow}>
-          <View style={s.formCol}>
-            {party.mid.map((e, i) => <Fighter key={'m' + i} slot={e} front={false} attackToken={atk} hitToken={hitTok} walkToken={walkTok} staggerMs={(i * 47 + 65) % 130} />)}
+      {/* 데미지 숫자 — 슬롯 5칸 고정. key가 칸 번호라 마운트/언마운트가 없다. */}
+      <View style={s.floatLayer} pointerEvents="none">
+        {floats.map((f, i) => (f
+          ? <FloatText key={i} slot={i} tok={f.tok} val={f.val} crit={f.crit} big={f.big} side={f.side} />
+          : null))}
+      </View>
+
+      {/* 좌: 아군 3열 */}
+      <Animated.View style={[s.side, { opacity: heroFlashA, transform: [{ translateX: heroShakeX }] }]}>
+        {allyCols.map((c, ci) => (
+          <View key={c.key} style={s.col}>
+            {(c.list || []).map((slot, i) => (
+              <Ally key={c.key + i} slot={slot} lungeDir={c.lunge}
+                attackToken={atk} hitToken={hitTok} walkToken={walkTok}
+                staggerMs={(ci * 60 + i * 40) % 160} hp={heroHp.current}
+                dmg={heroDmg} idx={ci * 3 + i} step={fxStep} />
+            ))}
           </View>
-          {/* 반격 피격 연출(플래시·흔들림)은 전열만 받는다 — 탱커가 맞는다는 설계가 더 자연스럽고,
-              파티 전체가 한꺼번에 번쩍이던 것보다 유닛별 타이밍 차이가 잘 드러난다. */}
-          <Animated.View style={[s.formCol, { opacity: heroFlashA, transform: [{ translateX: heroShakeX }] }]}>
-            {party.front.map((e, i) => <Fighter key={'f' + i} slot={e} front={true} attackToken={atk} hitToken={hitTok} walkToken={walkTok} staggerMs={(i * 47) % 130} />)}
-          </Animated.View>
-        </View>
-      </View>
-      <Text style={s.clash}>⚔️</Text>
-      <View style={s.side}>
-        <View style={s.floatLayer}>{renderFloats('enemy')}</View>
-        {/* 적 — 피격 플래시(투명도)·처치 팝(스케일) + 타격 섬광 오버레이 */}
-        <Animated.View style={{ alignItems: 'center', opacity: flashA, transform: [{ scale: popA }, { translateX: waveX }] }}>
-          {enemyKey && hasUnitSprite('enemy', enemyKey)
-            ? <EnemyFighter ekey={enemyKey} hitToken={atk} atkToken={enemyAtk} />
-            : <Text style={s.emoji}>{enemyEmoji}</Text>}
-          <Animated.Text pointerEvents="none" style={[s.slash, {
-            opacity: slashA.interpolate({ inputRange: [0, 0.15, 1], outputRange: [0, 1, 0] }),
-            transform: [{ scale: slashA.interpolate({ inputRange: [0, 1], outputRange: [0.5, 1.7] }) }],
-          }]}>💥</Animated.Text>
-        </Animated.View>
-      </View>
+        ))}
+      </Animated.View>
+
+      {/* 우: 적 3열 */}
+      <Animated.View style={[s.side, s.sideFoe, { opacity: flashA, transform: [{ translateX: foeX }] }]}>
+        {foes.map((col, ci) => (
+          <View key={'fc' + ci} style={s.col}>
+            {col.map((em, i) => (
+              <View key={'f' + ci + i} style={s.unit}>
+                <Text style={s.foeEmoji}>{em}</Text>
+                <Shadow w={26} />
+                <HpBar pct={enemyHp.current} foe />
+                <HitFx token={atk} idx={ci * 3 + i} step={fxStep} />
+                <DmgFloat dmg={foeDmg} idx={ci * 3 + i} step={fxStep} />
+              </View>
+            ))}
+          </View>
+        ))}
+      </Animated.View>
     </Animated.View>
   );
 }
@@ -268,21 +367,30 @@ function BattleView({ party = EMPTY_FORMATION, enemyEmoji = '👹', enemyKey = n
 export default React.memo(BattleView);
 
 const s = StyleSheet.create({
-  // 무대를 꽉 채우고 파티·적을 바닥선(flex-end)에 세운다(배경 위에 서 있게).
-  arena: { flex: 1, flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-around', paddingHorizontal: 4, paddingBottom: 6 },
-  side: { alignItems: 'center', width: 170, justifyContent: 'flex-end' },
-  // 히어로 쪽 — 3열(후열·중열·전열) 편성. 큰 스프라이트에 맞춰 넓게.
-  heroSide: { alignItems: 'center', width: 300, justifyContent: 'flex-end' },
-  floatLayer: { position: 'absolute', left: 0, right: 0, bottom: 40, height: 180, zIndex: 5 },
-  formRow: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'center', gap: 1 },
-  formCol: { flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-end', gap: -8 },
+  // 좌우 대치 무대 — 왼쪽 절반 아군, 오른쪽 절반 적. 세로 가운데 정렬.
+  arena: { flex: 1, flexDirection: 'row', alignItems: 'center', overflow: 'hidden' },
+  side: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 2 },
+  sideFoe: { flexDirection: 'row-reverse' }, // 적은 오른쪽 끝이 후열 — 서로 마주 본다
+  col: { alignItems: 'center', justifyContent: 'center', gap: 6, paddingHorizontal: 1 },
+  unit: { alignItems: 'center' },
+  badges: { flexDirection: 'row', alignItems: 'center', gap: 2, marginBottom: 1 },
+  elemIc: { fontSize: 9 },
+  // 레벨 뱃지(호드워) — 유닛 머리 위 작은 숫자칩.
+  lvBadge: { fontSize: 7, fontWeight: '900', color: '#f2f7ff', backgroundColor: 'rgba(0,0,0,0.6)', borderRadius: 5, paddingHorizontal: 3, overflow: 'hidden' },
+  allyEmoji: { fontSize: 30 },
+  foeEmoji: { fontSize: 28 },
+  // 발밑 분홍 타원 그림자 — 호드워 고유의 접지 표현.
+  shadow: { height: 6, borderRadius: 3, backgroundColor: 'rgba(255,120,170,0.35)', marginTop: -2 },
+  hpBg: { width: 26, height: 3, backgroundColor: 'rgba(0,0,0,0.6)', borderRadius: 2, marginTop: 2, overflow: 'hidden' },
+  hpFill: { height: 3, borderRadius: 2 },
   dangerOverlay: { position: 'absolute', left: 0, right: 0, top: 0, bottom: 0, backgroundColor: T.danger, zIndex: 1 },
-  miniEmoji: { fontSize: 34, opacity: 0.85 },
-  miniEmojiFront: { fontSize: 46 },
-  emoji: { fontSize: 104 },
-  slash: { position: 'absolute', top: '28%', fontSize: 42, zIndex: 6 },
-  clash: { fontSize: 22, opacity: 0.5, marginBottom: 40 },
-  float: { position: 'absolute', fontSize: 14, fontWeight: '800', color: T.text },
-  floatCrit: { fontSize: 18, color: T.accent },
-  floatBig: { fontSize: 16, color: T.good },
+  floatLayer: { position: 'absolute', left: 0, right: 0, top: 0, bottom: 0, zIndex: 5 },
+  slash: { position: 'absolute', top: '10%', fontSize: 24, zIndex: 6 },
+  float: { position: 'absolute', fontSize: 12, fontWeight: '800', color: T.text },
+  // 유닛 머리 위 데미지 숫자 — 유닛 칸 기준 절대배치.
+  // left/right 를 칸 밖으로 벌려 폭을 확보한다. 없으면 폭이 유닛 칸(≈30px)에 묶여
+  // 쉼표가 붙는 4자리(1,234)부터 줄바꿈된다(Gim 실기 제보 2026-07-29).
+  uFloat: { position: 'absolute', top: -4, left: -30, right: -30, textAlign: 'center', fontSize: 12, fontWeight: '900', color: '#fff0a8', textShadowColor: '#000', textShadowRadius: 3, zIndex: 7 },
+  floatCrit: { fontSize: 15, color: T.accent },
+  floatBig: { fontSize: 14, color: T.good },
 });

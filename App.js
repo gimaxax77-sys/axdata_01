@@ -1,12 +1,11 @@
 import './app/backend/supabaseImpl'; // Supabase 클라우드 공급자 등록(계정·역할·세이브)
-import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView, Platform, StatusBar as RNStatusBar, Modal, Alert, useWindowDimensions, Animated } from 'react-native';
+import React, { useState, useEffect, useCallback } from 'react';
+import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView, Platform, StatusBar as RNStatusBar, Modal, Alert } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { LinearGradient } from 'expo-linear-gradient';
 import { T } from './app/theme';
-import { ResourceBar, Btn, fmt } from './app/components';
+import { Btn, fmt } from './app/components';
 import { useGame } from './app/useGame';
-import { isOn } from './system/core/features.mjs';
 import { setMuted, setHaptics, fx } from './app/feedback';
 import { setReduceMotion, setEco } from './app/motion';
 import { setUiCodes } from './app/uicode';
@@ -18,35 +17,39 @@ import { NoticePopup } from './app/screens/NoticePopup';
 import { MailboxModal } from './app/screens/MailboxModal';
 import { unreadMailCount } from './system/core/mailbox.mjs';
 import { useFonts } from 'expo-font';
-import IdleScreen from './app/screens/IdleScreen';
-import RunScreen from './app/screens/RunScreen';
-import RosterScreen from './app/screens/RosterScreen';
-import GachaScreen from './app/screens/GachaScreen';
-import ContentScreen from './app/screens/ContentScreen';
-import ShopScreen from './app/screens/ShopScreen';
+import FortressScreen from './app/screens/FortressScreen';
+import HeroScreen from './app/screens/HeroScreen';
+import AdventureScreen from './app/screens/AdventureScreen';
+import FieldScreen from './app/screens/FieldScreen';
+import GuildScreen from './app/screens/GuildScreen';
+import PerkScreen from './app/screens/PerkScreen';
 import { IntroModal } from './app/screens/Onboarding';
 import ErrorBoundary from './app/ErrorBoundary';
-import { canClaimAttendance, missionList } from './system/core/daily.mjs';
-import { weeklyEvent } from './system/core/events.mjs';
-import { summonMasteryInfo } from './system/core/summonMastery.mjs';
+import FixedStage from './app/FixedStage';
+import { MAX_PARTY } from './system/core/gameState.mjs';
+import { CAMPAIGN_CHAPTER_COUNT } from './system/core/campaign.mjs';
+import { playerLevel, playerTitle } from './system/core/player.mjs';
 import { can } from './system/core/roles.mjs';
 
 // 탭 화면을 React.memo로 감싼다 — 방치 틱(초당)에는 rev/props가 안 바뀌어
 // 비활성 화면이 리렌더되지 않는다(탭 전환·조작 렉 제거).
-// 세나키우기식 타이트한 5탭. 경쟁→콘텐츠, 기록→영웅 서브탭으로 흡수(소환은 과금 노출 위해 유지).
-// 탭 목록 — feat 가 붙은 탭은 해당 선택 모듈이 켜졌을 때만 노출(컨트롤 판넬로 on/off).
-const ALL_TABS = [
-  { key: 'idle', label: '전투', icon: '🏰', Screen: React.memo(IdleScreen) },
-  { key: 'expedition', label: '원정', icon: '⚔️', Screen: React.memo(RunScreen), feat: 'expedition' },
-  { key: 'roster', label: '영웅', icon: '🦸', Screen: React.memo(RosterScreen) },
-  { key: 'gacha', label: '소환', icon: '🔮', Screen: React.memo(GachaScreen), feat: 'gacha' },
-  { key: 'content', label: '콘텐츠', icon: '📅', Screen: React.memo(ContentScreen) },
-  { key: 'shop', label: '상점', icon: '🛒', Screen: React.memo(ShopScreen), feat: 'shop' },
+//
+// 하단 메뉴바 = 호드워 6탭(요새·필드·길드·영웅·혜택·모험). 기준 docs/HORDWAR_SPEC.md.
+//   '모험'만 혼자 넓고 다른 모양 = 주 진행 버튼. 선택 탭은 칸 배경 전체가 금색.
+//
+// ⚠️ 구축 단계에는 **6탭 전부 열어둔다**(Gim 지시). 호드워는 잠긴 탭을 자물쇠째 노출하지만,
+//    그건 출시 시점의 표현이지 지금 상태가 아니다. 자물쇠는 **출시 직전 최종 단계**에 채운다.
+//    필드·길드·혜택은 Gim이 2026-07-26 실기 캡처 3장을 추가로 제공해 골격을 확보했다
+//    (docs/HORDWAR_SPEC.md "필드 · 길드 · 혜택 탭"). 화면은 만들되 안의 노드·목록은
+//    해당 모듈이 파킹 상태라 잠금 표시로 둔다.
+const TABS = [
+  { key: 'idle', label: '요새', icon: '🏰', Screen: React.memo(FortressScreen) },
+  { key: 'field', label: '필드', icon: '🌄', Screen: React.memo(FieldScreen) },
+  { key: 'guild', label: '길드', icon: '🏛️', Screen: React.memo(GuildScreen) },
+  { key: 'hero', label: '영웅', icon: '🦸', Screen: React.memo(HeroScreen) },
+  { key: 'perk', label: '혜택', icon: '🎁', Screen: React.memo(PerkScreen) },
+  { key: 'adventure', label: '모험', icon: '⚔️', Screen: React.memo(AdventureScreen), wide: true },
 ];
-const TABS = ALL_TABS.filter((tab) => !tab.feat || isOn(tab.feat));
-
-// 시트에 얹는 영웅 화면 — 메모된 인스턴스 재사용(초당 방치틱 리렌더 차단).
-const RosterMemo = TABS.find((t) => t.key === 'roster').Screen;
 
 function fmtDuration(sec) {
   sec = Math.round(sec);
@@ -57,68 +60,6 @@ function fmtDuration(sec) {
   return `${sec}초`;
 }
 
-// 영웅 바텀시트 — 상단 자동전투는 그대로 두고(방치 화면 베이스) 하단에서 시트가 올라온다.
-// 강화하는 동안 위 전투가 실시간으로 강해지는 걸 눈으로 확인(레이어 구조).
-const IS_WEB = Platform.OS === 'web';
-function RosterSheet({ children, onClose, reduce }) {
-  // 웹: CSS transition 으로 슬라이드를 컴포지터(GPU) 스레드에 넘긴다.
-  //   → JS 스레드가 아무리 바빠도(내용 마운트·틱 리렌더) 슬라이드는 매끄럽다.
-  //   내용을 즉시 마운트해도 CSS 전환이 별도 스레드에서 돌아 버벅이지 않는다.
-  // 네이티브: useNativeDriver Animated + 슬라이드 후 지연 마운트(완료 콜백).
-  const a = useRef(new Animated.Value(reduce ? 1 : 0)).current;
-  const [open, setOpen] = useState(!!reduce);      // 웹 CSS 전환 트리거
-  const [ready, setReady] = useState(IS_WEB || !!reduce); // 웹은 즉시 마운트
-  useEffect(() => {
-    if (reduce) { a.setValue(1); setOpen(true); setReady(true); return; }
-    if (IS_WEB) {
-      const r = requestAnimationFrame(() => setOpen(true)); // off→on 프레임 분리로 전환 발동
-      return () => cancelAnimationFrame(r);
-    }
-    a.setValue(0);
-    let alive = true;
-    Animated.timing(a, { toValue: 1, duration: 300, useNativeDriver: true })
-      .start(() => { if (alive) setReady(true); });
-    return () => { alive = false; };
-  }, []);
-
-  const webStyle = {
-    opacity: open ? 1 : 0,
-    transform: [{ translateY: open ? 0 : 520 }],
-    transitionProperty: 'transform, opacity',
-    transitionDuration: '320ms',
-    transitionTimingFunction: 'cubic-bezier(0.16, 1, 0.3, 1)',
-  };
-  const translateY = a.interpolate({ inputRange: [0, 1], outputRange: [500, 0] });
-  const nativeStyle = { opacity: a, transform: [{ translateY }] };
-  const Sheet = IS_WEB ? View : Animated.View;
-  return (
-    <View style={StyleSheet.absoluteFill} pointerEvents="box-none">
-      {/* 위 전투가 비치도록 옅은 스크림 — 탭하면 닫힘(방치로 복귀). */}
-      <TouchableOpacity style={sh.scrim} activeOpacity={1} onPress={onClose}
-        accessibilityRole="button" accessibilityLabel="강화 시트 닫기" />
-      <Sheet style={[sh.sheet, IS_WEB ? webStyle : nativeStyle]}>
-        <View style={sh.grip} />
-        <TouchableOpacity style={sh.x} onPress={onClose} activeOpacity={0.7}
-          accessibilityRole="button" accessibilityLabel="닫기">
-          <Text style={sh.xTxt}>✕</Text>
-        </TouchableOpacity>
-        <View style={sh.body}>{ready ? children : <View style={sh.loading}><Text style={sh.loadingTxt}>불러오는 중…</Text></View>}</View>
-      </Sheet>
-    </View>
-  );
-}
-const sh = StyleSheet.create({
-  scrim: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(12,8,26,0.28)' },
-  sheet: { position: 'absolute', left: 0, right: 0, bottom: 0, height: '62%',
-    backgroundColor: T.surface, borderTopLeftRadius: 20, borderTopRightRadius: 20,
-    borderWidth: 1, borderBottomWidth: 0, borderColor: T.line, overflow: 'hidden' },
-  grip: { width: 40, height: 4, borderRadius: 3, backgroundColor: T.line, alignSelf: 'center', marginTop: 8, marginBottom: 2 },
-  x: { position: 'absolute', top: 8, right: 12, width: 28, height: 28, borderRadius: 8, borderWidth: 1, borderColor: T.line, alignItems: 'center', justifyContent: 'center', zIndex: 2 },
-  xTxt: { color: T.muted, fontSize: 14, fontWeight: '900' },
-  body: { flex: 1 },
-  loading: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  loadingTxt: { color: T.muted, fontSize: 13, fontWeight: '700' },
-});
 
 export default function App() {
   return (
@@ -136,11 +77,18 @@ function AppInner() {
     'Galmuri11-Bold': require('./assets/fonts/Galmuri11-Bold.ttf'),
   });
   const [tab, setTab] = useState('idle');
+  // 하단 탭을 누르면 **어디에 들어가 있든 그 탭의 첫 화면**으로 간다(Gim 지시 2026-07-29).
+  //   하위 화면(요새→영웅 제단, 모험→전투, 준비 중 패널…)은 각 화면이 자기 useState 로 들고 있어서
+  //   같은 탭을 다시 눌러도 tab 값이 안 바뀌어 아무 일도 일어나지 않았다.
+  //   이 값을 key 에 섞어 **강제로 다시 마운트**시키면 그 상태가 초기화되며 첫 화면으로 돌아온다.
+  const [tabNonce, setTabNonce] = useState(0);
 
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [adminOpen, setAdminOpen] = useState(false);
   const [consoleOpen, setConsoleOpen] = useState(false);
   const [mailboxOpen, setMailboxOpen] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false); // ☰ 메뉴(설정 진입)
+  const [lockMsg, setLockMsg] = useState(null); // 잠긴 탭·＋ 버튼 안내(호드워식 자물쇠 노출)
   const [noticeHidden, setNoticeHidden] = useState(false);
   const mailUnread = unreadMailCount(game.state);
   const [noticePopupClosed, setNoticePopupClosed] = useState(false);
@@ -162,24 +110,22 @@ function AppInner() {
   const consoleUnlocked = game.cloud.available && can(game.cloud.role, 'sendNotice');
   // 상점으로 옮긴 환경 버튼(픽셀 화면·설정) 핸들러 — memo 유지 위해 안정 참조(useCallback).
   const openSettings = useCallback(() => { fx('tap'); setSettingsOpen(true); }, []);
-  // 영웅 탭은 방치 전투를 켠 채 바텀시트로 표시 — 베이스 화면은 방치(idle).
-  const isRoster = tab === 'roster';
-  const baseKey = isRoster ? 'idle' : tab;
-  const BaseScreen = (TABS.find((t) => t.key === baseKey) || TABS[0]).Screen;
+  // 알 수 없는 키면 메인('요새')으로.
+  const route = TABS.find((r) => r.key === tab) || TABS[0];
+  const BaseScreen = route.Screen;
   // 설정을 세이브에서 엔진들에 반영
   const st = game.state.settings;
   setLang(st.lang); // 렌더 중 동기 반영 — 언어 전환이 같은 렌더에 즉시 적용(지연 없음)
   useEffect(() => { setMuted(st.muted); setHaptics(st.haptics); setReduceMotion(st.reduceMotion); setEco(st.ecoMode); setUiCodes(st.uiCodes); }, [st.muted, st.haptics, st.reduceMotion, st.ecoMode, st.uiCodes]);
-  // 가로 wide(PC/태블릿) — 넓은 화면에서 콘텐츠를 폰 폭으로 가운데 정렬(늘어짐 방지).
-  const { width: winW } = useWindowDimensions();
-  const wide = winW >= 720;
-  // 탭별 "받을 보상 있음" 뱃지 — rev(액션)마다 재계산(가벼운 조회).
+  // 탭 ❗뱃지(호드워: 영웅·모험에 붙어 있다) — "지금 할 일이 있다"는 신호만 준다.
   const gs = game.state;
-  const wev = weeklyEvent(gs);
   const tabDots = {
-    content: canClaimAttendance(gs) || missionList(gs).some((mm) => mm.done && !mm.claimed) || (wev.done && !wev.claimed),
-    gacha: ['hero', 'pet', 'gear', 'rune', 'cosmetic', 'guardian'].some((k) => summonMasteryInfo(gs, k).claimable),
+    hero: gs.party.length < MAX_PARTY, // 편성 자리가 비었다
+    adventure: ((gs.campaign && gs.campaign.cleared) || 0) < CAMPAIGN_CHAPTER_COUNT, // 남은 챕터가 있다
   };
+  // 상단 아바타 — 레벨은 진행도 파생(저장 필드 없음). 경험치바는 레벨 사이 소수부.
+  const plvl = playerLevel(gs);
+  const expPct = Math.round(((Math.sqrt(Math.max(1, gs.peakStage || 1)) * 2) % 1) * 100);
   const changeSetting = (key, val) => {
     game.state.settings[key] = val;
     // 엔진 반영은 위 useEffect가 담당(settings 값 변화 감지). 여기선 상태만 갱신.
@@ -202,14 +148,35 @@ function AppInner() {
   return (
     <SafeAreaView style={s.safe}>
       <StatusBar style="light" />
+      {/* 기준 해상도 고정 — 기기와 무관하게 같은 화면을 통째로 확대/축소(세븐식). 남는 여백은 레터박스. */}
+      <FixedStage>
+      <View style={s.frame}>
       <LinearGradient colors={T.bgGrad} style={StyleSheet.absoluteFill} pointerEvents="none" />
-      {/* 가로 wide: 넓은 화면에선 폰 폭으로 가운데 정렬한 프레임 안에 배치 */}
-      <View style={[s.frame, wide && s.frameWide]}>
       {/* 게임명/장르 헤더 제거 — 자원바가 최상단. 픽셀 화면·설정은 상점 탭으로 이동. */}
+      {/* 호드워식 상단바 — 좌: 초상(녹색 테두리)+닉+★Lv+경험치바 / 우: 재화 세로 2줄 + [＋] */}
       <View style={s.resWrap}>
           <View style={s.topRow}>
-            <View style={{ flex: 1 }}>
-              <ResourceBar concept={game.concept} wallet={game.state.wallet} />
+            <View style={s.avaFrame}><Text style={s.avaFace}>🧝</Text></View>
+            <View style={s.avaCol}>
+              <View style={s.avaNmRow}>
+                {/* 닉네임 데이터가 없어 칭호를 닉네임 자리에 쓴다. */}
+                <Text style={s.avaNm} numberOfLines={1}>{playerTitle(plvl)}</Text>
+                <View style={s.avaLvBox}><Text style={s.avaLv}>★{plvl}</Text></View>
+              </View>
+              <View style={s.expBar}><View style={[s.expFill, { width: `${expPct}%` }]} /></View>
+            </View>
+            <View style={s.curCol}>
+              {['gem', 'currency'].map((k) => (
+                <View key={k} style={s.curRow}>
+                  <Text style={s.curIc}>{game.concept.resources[k].emoji}</Text>
+                  <Text style={s.curVal} numberOfLines={1}>{fmt(game.state.wallet[k] || 0)}</Text>
+                  <TouchableOpacity style={s.curPlus} activeOpacity={0.8}
+                    onPress={() => { fx('error'); setLockMsg('🔒 상점은 준비 중입니다'); }}
+                    accessibilityRole="button" accessibilityLabel={`${game.concept.resources[k].name} 충전`}>
+                    <Text style={s.curPlusTx}>＋</Text>
+                  </TouchableOpacity>
+                </View>
+              ))}
             </View>
             <TouchableOpacity style={s.mailBtn} activeOpacity={0.8}
               onPress={() => { fx('tap'); setMailboxOpen(true); }}
@@ -220,6 +187,11 @@ function AppInner() {
                   <Text style={s.mailBadgeTxt}>{mailUnread > 99 ? '99+' : mailUnread}</Text>
                 </View>
               )}
+            </TouchableOpacity>
+            <TouchableOpacity style={s.menuBtn} activeOpacity={0.8}
+              onPress={() => { fx('tap'); setMenuOpen(true); }}
+              accessibilityRole="button" accessibilityLabel="메뉴">
+              <Text style={s.menuIcon}>☰</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -237,27 +209,32 @@ function AppInner() {
       {/* 화면 — rev(액션 신호)로만 리렌더. lastGain은 방치 탭에만 전달해
           다른 탭이 초당 리렌더되지 않게 한다. */}
       <View style={s.body}>
-        <BaseScreen state={game.state} rev={game.rev} bump={game.bump} concept={game.concept}
-          lastGain={baseKey === 'idle' ? game.lastGain : undefined}
-          background={isRoster}
+        <BaseScreen key={`${tab}:${tabNonce}`}
+          state={game.state} rev={game.rev} bump={game.bump} concept={game.concept}
+          lastGain={tab === 'idle' ? game.lastGain : undefined}
+          onLocked={setLockMsg}
+          onGo={setTab}
           onOpenSettings={openSettings} />
-        {/* 영웅 강화 바텀시트 — 위 전투(방치 베이스) 유지, 아래에서 시트 등장. */}
-        {isRoster && (
-          <RosterSheet onClose={() => setTab('idle')} reduce={st.reduceMotion}>
-            <RosterMemo state={game.state} rev={game.rev} bump={game.bump} concept={game.concept} />
-          </RosterSheet>
-        )}
       </View>
 
-      {/* 하단 탭 — 받을 것 있는 탭엔 빨간 점(●) 뱃지. */}
+      {/* 잠금 안내 토스트 — 잠긴 탭·재화 ＋ 를 눌렀을 때. 탭하면 닫힘. */}
+      {lockMsg && (
+        <TouchableOpacity style={s.lockToast} activeOpacity={0.9} onPress={() => setLockMsg(null)}
+          accessibilityRole="button" accessibilityLabel={`${lockMsg} — 닫기`}>
+          <Text style={s.lockToastTx}>{lockMsg}</Text>
+        </TouchableOpacity>
+      )}
+
+      {/* 하단 메뉴바 — 호드워 6탭. 선택 시 칸 배경 전체가 금색, 잠긴 탭은 자물쇠째 노출. */}
       <View style={s.tabbar}>
         {TABS.map((t) => {
           const on = t.key === tab;
           const dot = !!tabDots[t.key];
           return (
-            <TouchableOpacity key={t.key} style={s.tab} onPress={() => setTab(t.key)} activeOpacity={0.8}
-              accessibilityRole="tab" accessibilityLabel={dot ? `${t.label} (받을 보상 있음)` : t.label} accessibilityState={{ selected: on }}>
-              <View style={[s.tabInd, on && s.tabIndOn]} />
+            <TouchableOpacity key={t.key} style={[s.tab, t.wide && s.tabWide, on && s.tabOn]} activeOpacity={0.8}
+              onPress={() => { fx('tap'); setLockMsg(null); setTab(t.key); setTabNonce((n) => n + 1); }}
+              accessibilityRole="tab" accessibilityState={{ selected: on }}
+              accessibilityLabel={dot ? `${t.label} (할 일 있음)` : t.label}>
               <View>
                 <Text style={[s.tabIcon, on && s.tabIconOn]}>{t.icon}</Text>
                 {dot && <View style={s.tabDot} />}
@@ -268,6 +245,24 @@ function AppInner() {
         })}
       </View>
       </View>{/* /frame */}
+      </FixedStage>
+
+      {/* ☰ 메뉴 — 설정 진입. 메뉴바에서 뺀 화면들은 파킹됐다(docs/PARKED.md). */}
+      <Modal transparent animationType="fade" visible={menuOpen} onRequestClose={() => setMenuOpen(false)}>
+        <TouchableOpacity style={s.backdrop} activeOpacity={1} onPress={() => setMenuOpen(false)}
+          accessibilityRole="button" accessibilityLabel="메뉴 닫기">
+          <View style={s.menuCard}>
+            <Text style={s.menuTitle}>메뉴</Text>
+            <TouchableOpacity style={s.menuRow} activeOpacity={0.8}
+              onPress={() => { setMenuOpen(false); openSettings(); }}
+              accessibilityRole="button" accessibilityLabel="설정">
+              <Text style={s.menuRowIc}>⚙️</Text>
+              <Text style={s.menuRowTx}>설정</Text>
+              <Text style={s.menuRowGo}>›</Text>
+            </TouchableOpacity>
+          </View>
+        </TouchableOpacity>
+      </Modal>
 
       {/* 오프라인 보상 팝업 */}
       <Modal transparent animationType="fade" visible={!!game.offline} onRequestClose={game.dismissOffline}>
@@ -361,29 +356,57 @@ function AppInner() {
 
 const s = StyleSheet.create({
   safe: { flex: 1, backgroundColor: T.bg, paddingTop: Platform.OS === 'android' ? RNStatusBar.currentHeight : 0 },
-  frame: { flex: 1 },
-  // 넓은 화면(PC/태블릿 가로): 폰 폭으로 가운데 정렬 + 좌우 경계선으로 프레임감.
-  frameWide: { width: '100%', maxWidth: 720, alignSelf: 'center', borderLeftWidth: 1, borderRightWidth: 1, borderColor: T.line },
+  frame: { flex: 1, overflow: 'hidden' },
   notice: { flexDirection: 'row', alignItems: 'center', gap: 10, marginHorizontal: 14, marginTop: 6, paddingHorizontal: 12, paddingVertical: 8, borderRadius: 10, backgroundColor: T.surface2, borderWidth: 1, borderColor: T.accent },
   noticeText: { color: T.text, fontSize: 12, fontWeight: '700', flex: 1 },
   noticeX: { color: T.muted, fontSize: 14, fontWeight: '900' },
-  resWrap: { paddingHorizontal: 14, paddingVertical: 8 },
-  topRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  mailBtn: { width: 46, height: 46, borderRadius: 12, backgroundColor: T.surface2, borderWidth: 1, borderColor: T.line, alignItems: 'center', justifyContent: 'center' },
+  // 호드워식 상단바 — 좌 초상+닉+★Lv+경험치바 / 우 재화 세로2줄+[＋].
+  resWrap: { paddingHorizontal: 8, paddingVertical: 4 },
+  topRow: { flexDirection: 'row', alignItems: 'center', gap: 5 },
+  // 초상화 프레임 — 호드워는 녹색 테두리.
+  avaFrame: { width: 34, height: 34, borderRadius: 9, borderWidth: 2, borderColor: T.good, backgroundColor: 'rgba(0,0,0,0.4)', alignItems: 'center', justifyContent: 'center' },
+  avaFace: { fontSize: 18 },
+  avaCol: { flex: 1, justifyContent: 'center' },
+  avaNmRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  avaNm: { color: T.text, fontSize: 10, fontWeight: '800', flexShrink: 1 },
+  avaLvBox: { borderRadius: 8, backgroundColor: T.accent, paddingHorizontal: 5, paddingVertical: 1 },
+  avaLv: { color: '#241a00', fontSize: 8, fontWeight: '900' },
+  expBar: { height: 5, borderRadius: 3, backgroundColor: 'rgba(0,0,0,0.55)', overflow: 'hidden', marginTop: 3 },
+  expFill: { height: 5, borderRadius: 3, backgroundColor: T.primary },
+  // 재화 세로 2줄 — 줄마다 [아이콘 + 값 + ＋]. ＋가 곧 과금 동선(호드워 고유).
+  curCol: { gap: 3 },
+  curRow: { flexDirection: 'row', alignItems: 'center', gap: 3, backgroundColor: 'rgba(0,0,0,0.4)', borderRadius: 10, paddingLeft: 5, paddingRight: 2, paddingVertical: 1 },
+  curIc: { fontSize: 11 },
+  curVal: { color: T.text, fontSize: 10, fontWeight: '800', minWidth: 40, textAlign: 'right' },
+  curPlus: { width: 15, height: 15, borderRadius: 8, backgroundColor: T.good, alignItems: 'center', justifyContent: 'center' },
+  curPlusTx: { color: '#08210f', fontSize: 10, fontWeight: '900' },
+  mailBtn: { width: 28, height: 30, alignItems: 'center', justifyContent: 'center' },
+  menuBtn: { width: 24, height: 30, alignItems: 'center', justifyContent: 'center' },
+  menuIcon: { color: T.text, fontSize: 16, fontWeight: '900' },
+  // 잠금 안내 토스트 — 메뉴바 바로 위.
+  lockToast: { position: 'absolute', left: 20, right: 20, bottom: 62, backgroundColor: 'rgba(10,14,24,0.94)', borderWidth: 1, borderColor: T.accent, borderRadius: 12, paddingVertical: 9, paddingHorizontal: 12, zIndex: 20 },
+  lockToastTx: { color: T.text, fontSize: 11, fontWeight: '800', textAlign: 'center' },
+  menuCard: { backgroundColor: T.surface, borderRadius: 18, paddingVertical: 8, borderWidth: 1, borderColor: T.line, width: '100%', maxWidth: 300 },
+  menuTitle: { color: T.accent, fontSize: 13, fontWeight: '900', paddingHorizontal: 16, paddingVertical: 8 },
+  menuRow: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 16, paddingVertical: 12, borderTopWidth: 1, borderTopColor: T.line },
+  menuRowIc: { fontSize: 18 },
+  menuRowTx: { color: T.text, fontSize: 14, fontWeight: '800', flex: 1 },
+  menuRowGo: { color: T.muted, fontSize: 18, fontWeight: '900' },
   mailIcon: { fontSize: 20 },
   mailBadge: { position: 'absolute', top: -4, right: -4, minWidth: 18, height: 18, borderRadius: 9, backgroundColor: T.danger, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 4, borderWidth: 1.5, borderColor: T.surface },
   mailBadgeTxt: { color: '#fff', fontSize: 10, fontWeight: '900' },
   body: { flex: 1 },
-  tabbar: { flexDirection: 'row', backgroundColor: T.surface, borderTopWidth: 1, borderTopColor: T.line, paddingBottom: 6 },
-  tab: { flex: 1, alignItems: 'center', paddingVertical: 8 },
-  // 활성 탭 상단 인디케이터 — 어느 탭인지 즉시 인지(세나키우기식 강조).
-  tabInd: { alignSelf: 'stretch', height: 3, borderRadius: 2, backgroundColor: 'transparent', marginBottom: 5, marginHorizontal: 14 },
-  tabIndOn: { backgroundColor: T.accent },
-  tabIcon: { fontSize: 22, opacity: 0.5 },
-  tabDot: { position: 'absolute', top: -2, right: -7, width: 9, height: 9, borderRadius: 5, backgroundColor: T.danger, borderWidth: 1.5, borderColor: T.surface },
+  // 호드워식 하단 메뉴바 — 6탭. 선택 시 **칸 배경 전체가 금색**(세븐의 얇은 인디케이터와 대조).
+  //   '모험'은 혼자 넓다(주 진행 버튼). 구축 단계라 전부 열려 있다(자물쇠는 출시 직전에).
+  tabbar: { flexDirection: 'row', alignItems: 'stretch', gap: 2, backgroundColor: '#0a1018', borderTopWidth: 1, borderTopColor: T.line, paddingHorizontal: 3, paddingTop: 3, paddingBottom: 4 },
+  tab: { flex: 1, alignItems: 'center', paddingVertical: 4, borderRadius: 9 },
+  tabWide: { flex: 1.7, backgroundColor: 'rgba(255,201,60,0.14)', borderWidth: 1, borderColor: 'rgba(255,201,60,0.5)' },
+  tabOn: { backgroundColor: T.accent, borderColor: T.accent },
+  tabIcon: { fontSize: 18, opacity: 0.55 },
   tabIconOn: { opacity: 1 },
-  tabLabel: { color: T.muted, fontSize: 11, marginTop: 2, fontWeight: '700' },
-  tabLabelOn: { color: T.accent },
+  tabDot: { position: 'absolute', top: -1, right: -6, width: 7, height: 7, borderRadius: 4, backgroundColor: T.danger, borderWidth: 1.5, borderColor: '#0a1018' },
+  tabLabel: { color: T.muted, fontSize: 8, marginTop: 1, fontWeight: '700' },
+  tabLabelOn: { color: '#241a00', fontWeight: '900' },
   backdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.65)', alignItems: 'center', justifyContent: 'center', padding: 30 },
   offCard: { backgroundColor: T.surface, borderRadius: 22, padding: 24, alignItems: 'center', borderWidth: 1, borderColor: T.accent, width: '100%', maxWidth: 340 },
   offEmoji: { fontSize: 52 },

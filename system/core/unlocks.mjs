@@ -4,6 +4,7 @@
 // 더 긴 수명을 가정. 본 빌드 곡선(7일 ≈ 57층)에 맞춰 실제 경험되도록 조정했다.
 // 값은 데이터라 언제든 프로덕션 수치로 바꿀 수 있다.
 // ─────────────────────────────────────────────────────────────
+import { TEST_MODE } from './testmode.mjs';
 
 export const UNLOCKS = {
   gacha: 8,           // 소환 — R2 스타터가 레벨업만으로 도달(~10층) 가능해
@@ -22,5 +23,6 @@ export function unlockStage(feature) {
   return UNLOCKS[feature] ?? 0;
 }
 export function isUnlocked(state, feature) {
+  if (TEST_MODE) return true; // 테스트 모드 — 콘텐츠 해금 조건 전부 무시
   return (state.peakStage || 1) >= unlockStage(feature);
 }

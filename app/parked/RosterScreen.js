@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Modal, TextInput, useWindowDimensions, Animated, FlatList, Image } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Modal, TextInput, Animated, FlatList, Image } from 'react-native';
 import { T, rarityMeta } from '../theme';
+import { DESIGN_W } from '../FixedStage';
 import { reducedMotion } from '../motion';
 import GrowthPanel from './GrowthPanel';
 import MetaScreen from './MetaScreen';
@@ -110,8 +111,9 @@ export default function RosterScreen({ state, bump, concept }) {
   const [deckMsg, setDeckMsg] = useState(null); // 덱 복사/붙여넣기 결과
   const [starMsg, setStarMsg] = useState(null); // 성급 강화 결과(육성 탭 성급 카드 내 표시)
   const [deckCode, setDeckCode] = useState(''); // 붙여넣기 입력 코드
+  const [elemFilter, setElemFilter] = useState(null); // 영웅 그리드 속성 필터 (null = ALL)
   // 영웅 그리드 5열 고정 — 화면폭에서 좌우 패딩(14×2)·열간격(10×4)을 뺀 뒤 5등분.
-  const { width: winW } = useWindowDimensions();
+  const winW = DESIGN_W; // 기준 해상도 고정 출력(FixedStage) — 실제 창 폭이 아니라 무대 폭 기준.
   const GRID_COLS = 5, GRID_GAP = 8;
   const chipW = Math.floor((winW - 28 - GRID_GAP * (GRID_COLS - 1)) / GRID_COLS);
   // 무거운 하단 카드(씨앗·전용무기·룬·스킬·장비·성장)는 첫 페인트 뒤에 렌더
@@ -176,6 +178,10 @@ export default function RosterScreen({ state, bump, concept }) {
     if (ar !== br) return br - ar; // 등급 높은 순
     return powOf(b.rep) - powOf(a.rep); // 전투력 순
   });
+  // 속성 필터 적용본 — 그리드에만 쓴다(선택 중인 캐릭터 상세는 필터와 무관하게 유지).
+  const shownHeroes = elemFilter
+    ? grouped.filter(({ rep }) => identity(concept, rep).element === elemFilter)
+    : grouped;
   const inParty = state.party.includes(unit.uid);
   refreshCostumeUnlocks(state); // 조건 충족 코스튬 자동 지급(퀘스트/VIP/전투력)
 
@@ -390,10 +396,31 @@ export default function RosterScreen({ state, bump, concept }) {
 
       {rtab === 'heroes' && (<>
       {/* 보유 유닛 — 6열 아이콘 그리드(줄바꿈, 가로 스크롤 없음). 종 단위로 묶여 밀도 유지. */}
-      <Text style={g.sec}>보유 {concept.terms.unit} <Text style={g.dim}>({grouped.length}종{list.length > grouped.length ? ` · ${list.length}` : ''})</Text></Text>
+      <Text style={g.sec}>보유 {concept.terms.unit} <Text style={g.dim}>({shownHeroes.length}종{list.length > grouped.length ? ` · ${list.length}` : ''})</Text></Text>
+      {/* 속성 필터 바(호드워식) — ALL + 속성 원형 칩. 속성 모듈이 켜져 있을 때만. */}
+      {isOn('elements') && (
+        <View style={g.elemBar}>
+          <TouchableOpacity activeOpacity={0.8} onPress={() => setElemFilter(null)}
+            style={[g.elemAll, !elemFilter && g.elemAllOn]}>
+            <Text style={[g.elemAllTx, !elemFilter && g.elemAllTxOn]}>ALL</Text>
+          </TouchableOpacity>
+          {Object.keys(concept.elements || {}).map((eid) => {
+            const em = concept.elements[eid];
+            const on = elemFilter === eid;
+            return (
+              <TouchableOpacity key={eid} activeOpacity={0.8}
+                onPress={() => setElemFilter(on ? null : eid)}
+                style={[g.elemChip, on && g.elemChipOn]}>
+                <Text style={g.elemChipIc}>{em.emoji}</Text>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+      )}
       <View style={g.rosterGrid}>
         <CodeTag id="b1" corner="tl" />
-        {grouped.map(({ rep: u, count }) => {
+        {shownHeroes.length === 0 && <Text style={g.dim}>이 속성의 {concept.terms.unit}이 없습니다</Text>}
+        {shownHeroes.map(({ rep: u, count }) => {
           const m = identity(concept, u);
           const on = u.uid === unit.uid;
           const party = state.party.includes(u.uid);
@@ -897,6 +924,16 @@ const g = StyleSheet.create({
   // 보유 유닛 — 세로 목록(행 단위, 가로 스크롤 없음).
   // 보유 유닛 — 6열 아이콘 그리드(줄바꿈, 세로로 자람. 가로 스크롤 없음).
   // 6열 그리드 — 각 셀을 화면폭 1/6로 고정해 6개가 가로폭에 꽉 차게 배치.
+  // 속성 필터 바(호드워식) — ALL 알약 + 속성 원형 칩. 선택 시 금테.
+  elemBar: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 6 },
+  elemAll: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 13, backgroundColor: T.surface, borderWidth: 1, borderColor: T.line },
+  elemAllOn: { backgroundColor: T.accent, borderColor: T.accent },
+  elemAllTx: { fontSize: 11, fontWeight: '900', color: T.muted },
+  elemAllTxOn: { color: '#1a1400' },
+  elemChip: { width: 30, height: 30, borderRadius: 15, alignItems: 'center', justifyContent: 'center', backgroundColor: T.surface, borderWidth: 1, borderColor: T.line },
+  elemChipOn: { borderColor: T.accent, borderWidth: 2, backgroundColor: T.surface2 },
+  elemChipIc: { fontSize: 15 },
+
   rosterGrid: { flexDirection: 'row', flexWrap: 'wrap', marginBottom: 4 },
   rosterCell: { width: '16.666%', padding: 2 },
   rosterTile: { alignItems: 'center', paddingVertical: 5, borderRadius: 10, backgroundColor: T.surface, borderWidth: 1, borderColor: T.line },

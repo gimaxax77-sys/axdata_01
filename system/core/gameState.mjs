@@ -1,6 +1,7 @@
 import { createWallet } from './economy.mjs';
 import { computePower } from './stats.mjs';
 import { teamSynergy } from './synergy.mjs';
+import { PARTY_CAP } from './formation.mjs';
 
 // ─────────────────────────────────────────────────────────────
 // 게임 상태(세이브) — IP의 지속 자산.
@@ -9,14 +10,14 @@ import { teamSynergy } from './synergy.mjs';
 // ─────────────────────────────────────────────────────────────
 
 // 파티 최대 편성 인원(장르 무관 기본 정책). 전투는 파티 전원 합산.
-// 진형 정원(전열2·중열3·후열2)과 일치 — formation.ROLE_CAP 참고.
-export const MAX_PARTY = 7;
+// 진형 정원(전열2·후열3 = 5)에서 **파생**시킨다 — 두 값이 어긋나 정원 초과가 나던 일을 막는다.
+export const MAX_PARTY = PARTY_CAP;
 
 export function createGameState({ units = [], party = [] } = {}) {
   return {
     units, // 보유 유닛 인스턴스 배열
     party, // 편성된 유닛 uid 배열 (최대 정책은 장르가 정함)
-    formation: {}, // 진형: uid → 'mid'|'back' (미기재=전열). 후열/중열 1명↑일 때만 발동
+    formation: {}, // 진형: uid → 'back' (미기재=전열). 후열 1명↑일 때만 발동
     formationPresets: {}, // 편성 프리셋(1~5): slot → { party, formation, savedAt }
 
     inventory: [], // 미장착 장비 인스턴스 배열

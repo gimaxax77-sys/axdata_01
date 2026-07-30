@@ -8,30 +8,36 @@ import { rarityBaseMult } from '../core/seed.mjs';
 import { createUnit } from '../core/units.mjs';
 import { computePower } from '../core/stats.mjs';
 
-test('기본 프리셋 값(등급·속성 모두 off)', () => {
-  assert.equal(isOn('elements'), false); // 게임 기본: 속성 미적용
-  assert.equal(isOn('rarity'), false); // 게임 기본: 등급 미적용
+// 2026-07-25 호드워 전환 — 선택 모듈 18종 파킹, 호드워 UI가 쓰는 2종만 켜둔다.
+// 2026-07-26 gacha 되살림(Gim 지시) — 호드워 「영웅 제단」(모집). 파킹 목록에서 뺀다.
+test('기본 프리셋 값(속성·등급·소환 on, 나머지 17종 파킹)', () => {
+  assert.equal(isOn('elements'), true); // 호드워 속성 필터·속성 아이콘
+  assert.equal(isOn('rarity'), true);   // 호드워 등급 원형 뱃지
+  assert.equal(isOn('gacha'), true);    // 호드워 영웅 제단(모집)
+  for (const k of ['gear', 'runes', 'pets', 'arena', 'guild', 'tower', 'expedition', 'shop']) {
+    assert.equal(isOn(k), false, `${k} 는 파킹 상태여야 함(docs/PARKED.md)`);
+  }
   assert.equal(simplePreset().elements, false);
 });
 
 test('속성 on: 상성이 적용된다(FIRE>WOOD 유리)', () => {
-  FEATURES.elements = true;
-  try {
-    assert.ok(affinity('FIRE', 'WOOD') > 1);
-    assert.ok(affinity('WOOD', 'FIRE') < 1);
-  } finally {
-    FEATURES.elements = false; // 기본값(off) 복구
-  }
+  FEATURES.elements = true; // 기본값과 동일
+  assert.ok(affinity('FIRE', 'WOOD') > 1);
+  assert.ok(affinity('WOOD', 'FIRE') < 1);
 });
 
 test('속성 off: 상성 무관(항상 1, 스탯 전용)', () => {
-  FEATURES.elements = false; // 기본값과 동일
-  assert.equal(affinity('FIRE', 'WOOD'), 1);
-  assert.equal(affinity('LIGHT', 'DARK'), 1);
-  // 동일 속성 3인 파티 — off면 속성 결속이 안 붙는다
-  const units = [{ archetype: 'STRIKER', element: 'FIRE' }, { archetype: 'MAGE', element: 'FIRE' }, { archetype: 'SUPPORT', element: 'FIRE' }];
-  const syn = teamSynergy(units);
-  assert.ok(!syn.list.some((s) => s.id === 'elem_bond'), '속성 off면 속성 결속 없음');
+  FEATURES.elements = false;
+  try {
+    assert.equal(affinity('FIRE', 'WOOD'), 1);
+    assert.equal(affinity('LIGHT', 'DARK'), 1);
+    // 동일 속성 3인 파티 — off면 속성 결속이 안 붙는다
+    const units = [{ archetype: 'STRIKER', element: 'FIRE' }, { archetype: 'MAGE', element: 'FIRE' }, { archetype: 'SUPPORT', element: 'FIRE' }];
+    const syn = teamSynergy(units);
+    assert.ok(!syn.list.some((s) => s.id === 'elem_bond'), '속성 off면 속성 결속 없음');
+  } finally {
+    FEATURES.elements = true; // 기본값(on) 복구
+  }
 });
 
 test('등급 on: 전투력 등급 배수 적용', () => {

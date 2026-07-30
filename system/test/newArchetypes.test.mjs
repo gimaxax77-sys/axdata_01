@@ -49,19 +49,17 @@ test('시너지: 도적/궁수/법사 3+ 집중 시 각각 고유 진형 발동'
   assert.ok(teamSynergy(mages).list.some((s) => s.id === 'mage_focus'));
 });
 
-test('자동배치: 근접 딜러(STRIKER/ROGUE)는 중열, 원거리·지원(MAGE/ARCHER/SUPPORT)은 후열 우선', () => {
+test('자동배치: 방어형(VANGUARD)은 전열, 원거리(MAGE)는 후열 우선', () => {
   const s = createGameState({ units: [], party: [] });
-  // 정원(전열2·중열3·후열2)에 정확히 맞춰 원형별 인원을 구성 —
+  // 정원(전열2·후열3)에 정확히 맞춰 원형별 인원을 구성 —
   // 각 역할이 자기 우선 원형만으로 채워지는지(폴백 개입 없이) 명확히 검증.
   const vanguards = Array.from({ length: 2 }, () => createUnit('VANGUARD', { level: 30, rank: 3 }));
-  const rogues = Array.from({ length: 3 }, () => createUnit('ROGUE', { level: 30, rank: 3 }));
-  const mages = Array.from({ length: 2 }, () => createUnit('MAGE', { level: 30, rank: 3 }));
-  s.units.push(...vanguards, ...rogues, ...mages);
+  const mages = Array.from({ length: 3 }, () => createUnit('MAGE', { level: 30, rank: 3 }));
+  s.units.push(...vanguards, ...mages);
   s.party = s.units.map((u) => u.uid);
   autoFormation(s);
   const sum = formationSummary(s);
   assert.deepEqual(new Set(sum.front), new Set(vanguards.map((u) => u.uid)), '전열 = VANGUARD');
-  assert.deepEqual(new Set(sum.mid), new Set(rogues.map((u) => u.uid)), '중열 = ROGUE(근접 딜러)');
   assert.deepEqual(new Set(sum.back), new Set(mages.map((u) => u.uid)), '후열 = MAGE(원거리)');
 });
 

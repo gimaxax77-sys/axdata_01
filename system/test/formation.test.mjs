@@ -54,11 +54,9 @@ test('진형: 전원 후열은 노출 페널티 (공격 보너스 소멸)', () =
   assert.ok(exposedPow < protectedPow, '전열 없으면 후열 공격 보너스 상실');
 });
 
-test('진형: 순환(전열→중열→후열→전열) · 편성 해제 시 정리', () => {
+test('진형: 순환(전열→후열→전열) · 편성 해제 시 정리', () => {
   const { s, a } = makeParty();
   assert.equal(unitRole(s, a.uid), 'front');
-  toggleFormation(s, a.uid);
-  assert.equal(unitRole(s, a.uid), 'mid');
   toggleFormation(s, a.uid);
   assert.equal(unitRole(s, a.uid), 'back');
   toggleFormation(s, a.uid);
@@ -72,18 +70,16 @@ test('진형: 순환(전열→중열→후열→전열) · 편성 해제 시 정
 
 test('진형: 정원 초과 시 배치 거부, 순환은 정원 찬 자리를 건너뜀', () => {
   const s = createGameState({ units: [], party: [] });
-  const units = Array.from({ length: 3 }, () => createUnit('STRIKER', { level: 10 }));
+  const units = Array.from({ length: 5 }, () => createUnit('STRIKER', { level: 10 }));
   s.units.push(...units);
   s.party = units.map((u) => u.uid);
-  // 후열 정원 2 — 세 번째는 거부.
-  assert.equal(setFormation(s, units[0].uid, 'back').ok, true);
-  assert.equal(setFormation(s, units[1].uid, 'back').ok, true);
-  const r = setFormation(s, units[2].uid, 'back');
-  assert.equal(r.ok, false, '후열 정원 초과 거부');
-  // 순환: units[2]는 전열→중열로(후열은 꽉 참).
-  const cyc = toggleFormation(s, units[2].uid);
+  // 후열 정원 3 — 네 번째는 거부.
+  for (let i = 0; i < 3; i++) assert.equal(setFormation(s, units[i].uid, 'back').ok, true);
+  assert.equal(setFormation(s, units[3].uid, 'back').ok, false, '후열 정원 초과 거부');
+  // 순환: 후열이 꽉 찼으므로 units[3]은 전열에 머문다.
+  const cyc = toggleFormation(s, units[3].uid);
   assert.equal(cyc.ok, true);
-  assert.equal(cyc.role, 'mid');
+  assert.equal(cyc.role, 'front');
 });
 
 test('진형: 미편성 유닛은 지정 거부', () => {
@@ -94,29 +90,25 @@ test('진형: 미편성 유닛은 지정 거부', () => {
   assert.equal(r.ok, false, '편성되지 않은 유닛 거부');
 });
 
-test('진형: 전열2·중열3·후열2 = 7명 편성이 정상 판정된다', () => {
+test('진형: 전열2·후열3 = 5명 편성이 정상 판정된다', () => {
   const s = createGameState({ units: [], party: [] });
-  const units = Array.from({ length: 7 }, () => createUnit('STRIKER', { level: 20, rank: 2 }));
+  const units = Array.from({ length: 5 }, () => createUnit('STRIKER', { level: 20, rank: 2 }));
   s.units.push(...units);
   s.party = units.map((u) => u.uid);
   assert.equal(setFormation(s, units[0].uid, 'front').ok, true);
   assert.equal(setFormation(s, units[1].uid, 'front').ok, true);
-  assert.equal(setFormation(s, units[2].uid, 'mid').ok, true);
-  assert.equal(setFormation(s, units[3].uid, 'mid').ok, true);
-  assert.equal(setFormation(s, units[4].uid, 'mid').ok, true);
-  assert.equal(setFormation(s, units[5].uid, 'back').ok, true);
-  assert.equal(setFormation(s, units[6].uid, 'back').ok, true);
+  for (let i = 2; i < 5; i++) assert.equal(setFormation(s, units[i].uid, 'back').ok, true);
   const sum = formationSummary(s);
   assert.equal(sum.front.length, 2);
-  assert.equal(sum.mid.length, 3);
-  assert.equal(sum.back.length, 2);
+  assert.equal(sum.back.length, 3);
+  assert.equal(sum.mid, undefined, '중열은 더 이상 존재하지 않는다');
   const ch = getStage(30).challenge;
   const r = resolve(getPartyUnits(s), ch, {}, s.formation);
   assert.ok(Number.isFinite(r.duration) || r.duration === Infinity);
-  assert.ok(r.partyPower > 0, '7인 전 역할 편성도 정상 판정');
+  assert.ok(r.partyPower > 0, '5인 전 역할 편성도 정상 판정');
 });
 
-test('진형: 중열은 전열·후열 사이의 균형(딜/생존) 효과를 낸다', () => {
+test('진형: 후열이 전열보다 공격력이 높다 (2단 체제)', () => {
   const s = createGameState({ units: [], party: [] });
   const a = createUnit('STRIKER', { level: 20, rank: 2 }); // 측정 대상 — 역할을 바꿔가며 비교
   const b = createUnit('VANGUARD', { level: 20, rank: 2 }); // 전열 고정(보호 제공)
@@ -126,13 +118,11 @@ test('진형: 중열은 전열·후열 사이의 균형(딜/생존) 효과를 �
   const ch = getStage(30).challenge;
   setFormation(s, b.uid, 'front');
   setFormation(s, c.uid, 'back');
-  setFormation(s, a.uid, 'mid');
-  const midPow = resolve(getPartyUnits(s), ch, {}, s.formation).partyPower;
   setFormation(s, a.uid, 'back');
   const backPow = resolve(getPartyUnits(s), ch, {}, s.formation).partyPower;
   setFormation(s, a.uid, 'front');
   const frontPow = resolve(getPartyUnits(s), ch, {}, s.formation).partyPower;
-  assert.ok(frontPow < midPow && midPow < backPow, `전열<중열<후열 공격력 순서 (${frontPow} < ${midPow} < ${backPow})`);
+  assert.ok(frontPow < backPow, `전열<후열 공격력 (${frontPow} < ${backPow})`);
 });
 
 test('진형: 세이브 왕복 보존 + 미편성 정리', () => {

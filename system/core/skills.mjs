@@ -8,6 +8,7 @@
 //   teamBuff : 팀 전체 버프 (예: 공격력 %)
 //   level    : 스킬 레벨(강화 가능) → 효과가 레벨에 비례
 // ─────────────────────────────────────────────────────────────
+import { TEST_MODE } from './testmode.mjs';
 
 export const SKILL_CATALOG = {
   BERSERK: {
@@ -129,6 +130,7 @@ export function equippableSkills() {
 
 // 스킬 슬롯 수 = 랭크에 비례 (랭크가 곧 빌드 자유도). 최대 3.
 export function skillSlots(unit) {
+  if (TEST_MODE) return 3; // 테스트 모드 — 랭크 무관 3칸 전부 개방
   return Math.min(3, unit.rank + 1);
 }
 

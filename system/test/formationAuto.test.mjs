@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { createUnit } from '../core/units.mjs';
-import { createGameState, autoParty, MAX_PARTY } from '../core/gameState.mjs';
+import { createGameState, autoParty, togglePartyMember, MAX_PARTY } from '../core/gameState.mjs';
 import { computePower } from '../core/stats.mjs';
 import { autoFormation, unitRole, ROLE_CAP, formationSummary } from '../core/formation.mjs';
 import { savePreset, loadPreset, presetInfo, listPresetInfo, clearPreset, PRESET_SLOTS } from '../core/partyPresets.mjs';
@@ -15,13 +15,12 @@ function makeState(n, arch = 'STRIKER') {
   return { s, units };
 }
 
-test('자동배치: 정원(2·3·2)을 지키고 전원 배치한다', () => {
-  const { s } = makeState(7);
+test('자동배치: 정원(2·3)을 지키고 전원 배치한다', () => {
+  const { s } = makeState(5);
   const r = autoFormation(s);
   assert.equal(r.ok, true);
   const sum = formationSummary(s);
   assert.equal(sum.front.length, ROLE_CAP.front);
-  assert.equal(sum.mid.length, ROLE_CAP.mid);
   assert.equal(sum.back.length, ROLE_CAP.back);
 });
 
@@ -36,50 +35,45 @@ test('자동배치: 탱커(VANGUARD)는 전열, 딜러(STRIKER)는 후열 우선
   assert.equal(unitRole(s, dps.uid), 'back', '딜러가 후열로');
 });
 
-test('자동배치: 3원형이 정원만큼 있으면 전열=VANGUARD·중열=STRIKER·후열=SUPPORT로 정확히 갈린다', () => {
+test('자동배치: 원형이 정원만큼 있으면 전열=VANGUARD · 후열=원거리/지원으로 갈린다', () => {
   const s = createGameState({ units: [], party: [] });
   const vanguards = Array.from({ length: 2 }, () => createUnit('VANGUARD', { level: 30, rank: 3 }));
-  const strikers = Array.from({ length: 3 }, () => createUnit('STRIKER', { level: 30, rank: 3 }));
-  const supports = Array.from({ length: 2 }, () => createUnit('SUPPORT', { level: 30, rank: 3 }));
-  s.units.push(...vanguards, ...strikers, ...supports);
+  const supports = Array.from({ length: 3 }, () => createUnit('SUPPORT', { level: 30, rank: 3 }));
+  s.units.push(...vanguards, ...supports);
   s.party = s.units.map((u) => u.uid);
   autoFormation(s);
   const sum = formationSummary(s);
   assert.deepEqual(new Set(sum.front), new Set(vanguards.map((u) => u.uid)), '전열 = VANGUARD 전원');
-  assert.deepEqual(new Set(sum.mid), new Set(strikers.map((u) => u.uid)), '중열 = STRIKER 전원');
   assert.deepEqual(new Set(sum.back), new Set(supports.map((u) => u.uid)), '후열 = SUPPORT 전원');
 });
 
 test('자동배치: 우선 원형이 정원보다 많으면 그 원형 안에서 스탯 상위만 배치', () => {
   const s = createGameState({ units: [], party: [] });
-  // STRIKER 5명(중열 정원 3) — 화력 높은 순으로 3명만 중열에 들어가야 한다.
-  const strikers = Array.from({ length: 5 }, (_, i) => createUnit('STRIKER', { level: 10 + i * 10, rank: 2 }));
-  const vanguard = createUnit('VANGUARD', { level: 30, rank: 3 });
+  // VANGUARD 4명(전열 정원 2) — 방어 지표 상위 2명만 전열에 들어가야 한다.
+  const vanguards = Array.from({ length: 4 }, (_, i) => createUnit('VANGUARD', { level: 10 + i * 10, rank: 2 }));
   const support = createUnit('SUPPORT', { level: 30, rank: 3 });
-  s.units.push(...strikers, vanguard, support);
+  s.units.push(...vanguards, support);
   s.party = s.units.map((u) => u.uid);
   autoFormation(s);
   const sum = formationSummary(s);
-  const topStrikers = strikers.slice().sort((a, b) => b.level - a.level).slice(0, 3).map((u) => u.uid);
-  assert.deepEqual(new Set(sum.mid), new Set(topStrikers), '중열 정원(3) 안에서 화력 상위만 배치');
+  const topTanks = vanguards.slice().sort((a, b) => b.level - a.level).slice(0, 2).map((u) => u.uid);
+  assert.deepEqual(new Set(sum.front), new Set(topTanks), '전열 정원(2) 안에서 방어 상위만 배치');
+  assert.equal(sum.back.length, 3, '나머지는 후열로 밀린다');
 });
 
-test('자동배치: 우선 원형이 부족하면 앞열에 못 들어간 유닛이 뒤로 채워진다', () => {
+test('자동배치: 우선 원형이 부족하면 전열에 못 들어간 유닛이 뒤로 채워진다', () => {
   const s = createGameState({ units: [], party: [] });
-  // SUPPORT가 하나도 없음 — 후열은 전열·중열에서 밀려난 나머지(원형 무관)로 채워져야 한다.
+  // 원거리·지원이 하나도 없음 — 후열은 전열에서 밀려난 나머지(원형 무관)로 채워져야 한다.
   const vanguards = Array.from({ length: 3 }, () => createUnit('VANGUARD', { level: 30, rank: 3 })); // 전열 정원(2) 초과
-  const strikers = Array.from({ length: 3 }, () => createUnit('STRIKER', { level: 30, rank: 3 }));
+  const strikers = Array.from({ length: 2 }, () => createUnit('STRIKER', { level: 30, rank: 3 }));
   s.units.push(...vanguards, ...strikers);
   s.party = s.units.map((u) => u.uid);
   const r = autoFormation(s);
   assert.equal(r.ok, true);
   const sum = formationSummary(s);
-  const total = 6; // frontN=2, backN=2, midN=2 (비율 축소)
   assert.equal(sum.front.length, 2);
-  assert.equal(sum.mid.length, 2);
-  assert.equal(sum.back.length, 2, 'SUPPORT 없어도 후열이 채워짐(앞열에서 밀려난 유닛으로)');
-  assert.equal(sum.front.length + sum.mid.length + sum.back.length, total, '전원 배치됨');
-  // 후열엔 SUPPORT가 없으므로 밀려난 VANGUARD/STRIKER 중에서 채워졌는지 확인.
+  assert.equal(sum.back.length, 3, '지원형이 없어도 후열이 채워짐(전열에서 밀려난 유닛으로)');
+  assert.equal(sum.front.length + sum.back.length, 5, '전원 배치됨');
   const backArchs = sum.back.map((uid) => s.units.find((u) => u.uid === uid).archetype);
   assert.ok(backArchs.every((a) => a === 'VANGUARD' || a === 'STRIKER'));
 });
@@ -88,7 +82,7 @@ test('자동배치: 인원이 적어도(정원 미달) 실패하지 않는다', 
   const { s } = makeState(2);
   const r = autoFormation(s);
   assert.equal(r.ok, true);
-  assert.equal(r.front.length + r.mid.length + r.back.length, 2);
+  assert.equal(r.front.length + r.back.length, 2);
 });
 
 test('자동배치: 편성 없으면 실패', () => {
@@ -149,7 +143,7 @@ test('자동배치 버튼 흐름: 1명만 편성된 상태에서도 autoParty+au
   const r = autoFormation(s);
   assert.equal(r.ok, true);
   const sum = formationSummary(s);
-  assert.equal(sum.front.length + sum.mid.length + sum.back.length, 7, '보유한 7명 전원이 배치됨');
+  assert.equal(sum.front.length + sum.back.length, MAX_PARTY, '정원(5)만큼 배치됨');
 });
 
 test('프리셋: 저장 → 파티 변경 → 불러오기로 복원', () => {
@@ -214,4 +208,59 @@ test('프리셋: 세이브 왕복 보존', () => {
   savePreset(s, 4);
   const loaded = deserialize(serialize(s));
   assert.equal(presetInfo(loaded, 4).exists, true);
+});
+
+// ── 2026-07-27 Gim 지적: "일괄 진형배치를 눌러도 1개 캐릭만 배치됨" ──
+// 원인은 autoFormation의 버그가 아니라 **역할 분담**이었다. 이 경계를 고정해 둔다.
+test('자동배치는 파티를 채우지 않는다 — 편성된 인원만 배치한다', () => {
+  const s = createGameState({ units: [], party: [] });
+  const units = Array.from({ length: 6 }, () => createUnit('STRIKER', { level: 20, rank: 2 }));
+  s.units.push(...units);
+  s.party = [units[0].uid]; // 1명만 편성
+
+  const r = autoFormation(s);
+  assert.equal(r.ok, true);
+  const sum = formationSummary(s);
+  assert.equal(sum.front.length + sum.back.length, 1,
+    'autoFormation은 보유 유닛을 파티에 넣지 않는다 — 배치만 한다');
+});
+
+test('빈 자리를 먼저 채우면 정원 전원이 배치된다 (PartyStrip 일괄 진형 배치의 계약)', () => {
+  const s = createGameState({ units: [], party: [] });
+  const units = Array.from({ length: 8 }, () => createUnit('STRIKER', { level: 20, rank: 2 }));
+  s.units.push(...units);
+  s.party = [units[0].uid];
+
+  // 화면이 하는 일: 빈 자리를 강한 순으로 채운 뒤 배치.
+  const inParty = new Set(s.party);
+  for (const u of s.units) {
+    if (s.party.length >= MAX_PARTY) break;
+    if (inParty.has(u.uid)) continue;
+    togglePartyMember(s, u.uid);
+  }
+  assert.equal(s.party.length, MAX_PARTY, '정원까지 채워져야 함');
+
+  const r = autoFormation(s);
+  assert.equal(r.ok, true);
+  const sum = formationSummary(s);
+  assert.equal(sum.front.length, ROLE_CAP.front);
+  assert.equal(sum.back.length, ROLE_CAP.back);
+  assert.equal(sum.front.length + sum.back.length, MAX_PARTY);
+});
+
+test('빈 자리 채우기는 기존 선택을 지우지 않는다', () => {
+  const s = createGameState({ units: [], party: [] });
+  const units = Array.from({ length: 8 }, () => createUnit('STRIKER', { level: 20, rank: 2 }));
+  s.units.push(...units);
+  const picked = [units[5].uid, units[7].uid]; // 일부러 약한(뒤쪽) 유닛을 고른 상황
+  s.party = [...picked];
+
+  for (const u of s.units) {
+    if (s.party.length >= MAX_PARTY) break;
+    if (s.party.includes(u.uid)) continue;
+    togglePartyMember(s, u.uid);
+  }
+  for (const uid of picked) {
+    assert.ok(s.party.includes(uid), '직접 고른 영웅이 빠지면 안 된다');
+  }
 });

@@ -32,27 +32,33 @@ export const MODULE_META = {
 };
 
 // 플래그 값 — 컨트롤 판넬이 이 블록의 true/false 만 토글한다(한 줄=한 모듈).
+//
+// ⚠️ 2026-07-25 호드워 인터페이스 전환(Gim 지시) — 선택 모듈 18종을 **전부 파킹**했다.
+//    코어(캐릭터·전투·파티·캠페인·성장) 위에 호드워 UI를 백지에서 올리고,
+//    필요한 모듈만 하나씩 다시 물린다. 되살리는 법은 `docs/PARKED.md`.
+//    elements·rarity 2종만 켜둔다 — 호드워 UI **자체의 구성요소**이기 때문이다
+//    (편성 화면의 속성 아이콘·속성 필터 바 / 등급 원형 뱃지 S+·S·A).
 export const FEATURES = {
-  elements: false,
-  rarity: false,
-  gacha: true,
-  summon: true,
-  sigweapon: true,
-  gear: true,
-  runes: true,
-  relics: true,
-  emblems: true,
-  pets: true,
-  guardians: true,
-  costumes: true,
-  arena: true,
-  guild: true,
-  tower: true,
-  expedition: true,
-  season: true,
-  events: true,
-  intimacy: true,
-  shop: true,
+  elements: true,  // 유지 — 호드워 속성 필터·속성 아이콘
+  rarity: true,    // 유지 — 호드워 등급 원형 뱃지
+  gacha: true,     // 되살림 2026-07-26 — 호드워 「영웅 제단」(모집). app/screens/SummonScreen.js
+  summon: false,
+  sigweapon: false,
+  gear: false,
+  runes: false,
+  relics: false,
+  emblems: false,
+  pets: false,
+  guardians: false,
+  costumes: false,
+  arena: false,
+  guild: false,
+  tower: false,
+  expedition: false,
+  season: false,
+  events: false,
+  intimacy: false,
+  shop: false,
 };
 
 // 선택 모듈이 켜져 있는지. 코어(플래그 없는 키)는 항상 true.

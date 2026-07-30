@@ -26,7 +26,7 @@ function mitigation(def) {
 // challenge 형태: { hp, atk, def }  (스칼라 적)
 // accountMods.powerMult: 계정 단위 영구 파워 배수(환생 보너스 등). 기본 1.
 export function resolve(party, challenge, accountMods = {}, formation = null) {
-  if (!party.length) return { win: false, duration: Infinity, log: '파티 없음' };
+  if (!party.length) return { win: false, duration: Infinity, score: 0, enemyScore: 0, log: '파티 없음' };
   const powerMult = accountMods.powerMult || 1;
 
   const profiles = party.map(toCombatProfile);
@@ -102,6 +102,12 @@ export function resolve(party, challenge, accountMods = {}, formation = null) {
     margin: timeToKillParty / timeToKillEnemy,
     partyPower: Math.round(rawDPS),
     partyHP: Math.round(partyHPeff),
+    // 양팀 전투력 비교 표시용(호드워식 ⚔아군 vs ⚔적). 승리조건과 "동치"인 지표라
+    // 숫자가 큰 쪽이 반드시 이긴다:
+    //   win ⟺ hp/partyEffDPS ≤ partyHPeff/enemyEffDPS ⟺ hp·enemyEffDPS ≤ partyHPeff·partyEffDPS
+    // 곱은 자릿수가 너무 커서 제곱근으로 줄인다(단조 변환이라 대소 관계는 그대로).
+    score: Math.round(Math.sqrt(partyHPeff * partyEffDPS)),
+    enemyScore: Math.round(Math.sqrt(challenge.hp * enemyEffDPS)),
     log: win
       ? `승리 (${timeToKillEnemy.toFixed(1)}초 소요)`
       : `패배 (${timeToKillParty.toFixed(1)}초 버팀)`,

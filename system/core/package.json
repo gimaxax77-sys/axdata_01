@@ -1,0 +1,8 @@
+{
+  "name": "@eldria/core",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "엘드리아 게임 코어 로직 (순수 JS, 프레임워크 독립)",
+  "main": "index.mjs"
+}

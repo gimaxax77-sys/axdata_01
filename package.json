@@ -12,6 +12,8 @@
     "build:play": "EXPO_OFFLINE=1 expo export --platform web && node scripts/build-play.mjs",
     "gen:portraits": "node scripts/gen-portraits.mjs",
     "gen:screens": "node scripts/gen-screenshots.mjs",
+    "gate": "if not exist ../_TOOLS/build-gate/build-gate.ps1 (echo [gate] MISSING _TOOLS - run: git clone https://github.com/gimaxax77-sys/axdata_tools.git ../_TOOLS & exit /b 1) else powershell -ExecutionPolicy Bypass -File ../_TOOLS/build-gate/build-gate.ps1 -ProjectDir .",
+    "build:apk:local": "if not exist ../_TOOLS/build-gate/build-gate.ps1 (echo [gate] MISSING _TOOLS - run: git clone https://github.com/gimaxax77-sys/axdata_tools.git ../_TOOLS & exit /b 1) else powershell -ExecutionPolicy Bypass -File ../_TOOLS/build-gate/build-gate.ps1 -ProjectDir . -Build",
     "build:apk": "eas build -p android --profile preview",
     "build:aab": "eas build -p android --profile production",
     "build:apk:scifi": "APP_VARIANT=scifi eas build -p android --profile preview",
