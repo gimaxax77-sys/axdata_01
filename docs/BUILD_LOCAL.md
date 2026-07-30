@@ -225,7 +225,7 @@ npm run build:apk:local
 ```
 
 점검만 하고 빌드는 안 하려면 `npm run gate` 입니다.
-(실체는 `_TOOLS\build-gate\build-gate.ps1` — 3트랙 공용입니다. `-Fix` 를 주면 한글 경로 2관문을 자동으로 채워 넣습니다.)
+(실체는 `_TOOLS\build-check-gate\build-check-gate.ps1` — 3트랙 공용입니다. `-Fix` 를 주면 한글 경로 2관문을 자동으로 채워 넣습니다.)
 
 ### 직접 돌릴 때 (PowerShell)
 
