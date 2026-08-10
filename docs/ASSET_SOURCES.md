@@ -65,7 +65,7 @@
 
 ## 4. 도입 우선순위
 
-1. **Quaternius 몬스터 팩** → `axdata_05_render tools/scripts/render_sprites.py` 에 경로 추가 → 몬스터 배치 렌더(영웅 검증 후).
+1. **Quaternius 몬스터 팩** → `axdata_05_render studio/scripts/render_sprites.py` 에 경로 추가 → 몬스터 배치 렌더(영웅 검증 후).
 2. **Kenney** All-in-1 또는 UI Pack + UI Audio → UI·버튼 효과음 즉시 확보(CC0).
 3. **game-icons.net** → 아이템/스킬 아이콘(출처표기 시작).
 4. **Incompetech/Kenney music** BGM 1~2곡 · **Freesound/Kenney Audio** 전투 효과음.

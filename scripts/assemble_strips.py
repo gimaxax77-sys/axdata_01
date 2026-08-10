@@ -2,7 +2,7 @@
 import os, sys
 from PIL import Image
 
-SRC = r"D:/.CODE/AXdata/axdata_05_render tools/out_battle16"
+SRC = r"D:/.CODE/AXdata/axdata_05_render studio/out_battle16"
 DST = r"D:/.CODE/AXdata/axdata_01/axdata_01/assets/units/fantasy"
 FRAME = 128          # 출력 프레임 크기(정사각)
 NFR = 16             # 프레임 수(00~15) — 부드러운 애니

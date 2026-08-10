@@ -28,7 +28,7 @@ elements(속성 상성·시너지) · rarity(등급 N~UR) · gacha · gear(+carr
 6. **검증**: 단순 모드 end-to-end 구동 + 풀 모드 회귀 테스트.
 
 ## 자산 (준비됨)
-- 21종 KayKit 캐릭터: 초상(out_portrait21) + 16동작 스프라이트(axdata_05_render tools/out_roster_full, 2688장).
+- 21종 KayKit 캐릭터: 초상(out_portrait21) + 16동작 스프라이트(axdata_05_render studio/out_roster_full, 2688장).
 - 렌더 자동화: axdata_05 render_sprites.py (SPRITE_CHARDIR/ANIM_PATH/FRAMES/DIR/OUT env).
 
 ## 원칙
