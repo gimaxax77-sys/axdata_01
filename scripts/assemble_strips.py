@@ -3,7 +3,8 @@ import os, sys
 from PIL import Image
 
 SRC = r"D:/.CODE/AXdata/axdata_05_render studio/out_battle16"
-DST = r"D:/.CODE/AXdata/axdata_01/axdata_01/assets/units/fantasy"
+REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+DST = os.path.join(REPO, "assets", "units", "fantasy")
 FRAME = 128          # 출력 프레임 크기(정사각)
 NFR = 16             # 프레임 수(00~15) — 부드러운 애니
 

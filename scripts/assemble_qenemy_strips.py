@@ -3,7 +3,8 @@ import os
 from PIL import Image
 
 SRC = r"D:/.CODE/AXdata/axdata_05_render studio/_qenemy"
-DST = r"D:/.CODE/AXdata/axdata_01/axdata_01/assets/units/enemy"
+REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+DST = os.path.join(REPO, "assets", "units", "enemy")
 FRAME = 128
 NFR = 16
 KEYS = ["demon", "greendemon", "cthulhu", "cyclops", "yeti", "alien"]
