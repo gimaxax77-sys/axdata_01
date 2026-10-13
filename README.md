@@ -13,9 +13,7 @@
 system/          # 게임 시스템 (IP)
 ├── core/        # 고정 — 장르/컨셉 무관한 순수 규칙
 ├── genres/      # Driver — 스왑 (rpg / idle)
-├── concepts/    # Skin — 스왑 (fantasy / scifi)
-├── sim/         # 밸런스 시뮬레이터
-└── demo*.mjs    # 증명 데모
+└── concepts/    # Skin — 스왑 (fantasy / scifi)
 
 app/             # 모바일 UI (Expo) — 검증된 시스템 위에 얹은 화면
 ├── screens/     # 방치 · 캐릭터 · 소환 탭
@@ -49,24 +47,13 @@ npm run build:play  # 단일 자립형 HTML(docs/play.html) 생성 → 정적 �
 
 → **같은 엔진 하나가 두 장르를 모두 굴립니다.**
 
-## 실행
-
-시스템 데모(장르·컨셉 스왑 증명)를 실행합니다. 별도 설치 없이 Node로 바로 실행됩니다.
+## 시험
 
 ```bash
-node system/demo.mjs        # 장르·컨셉 스왑 증명
-node system/demo-build.mjs  # 캐릭터 성장 분화 증명
-node system/demo-gacha.mjs  # 소환(가차) + 장비 증명
-node system/sim/balance.mjs # 7일 밸런스 시뮬레이션 (곡선·병목·튜닝)
-node system/sim/report.mjs  # 곡선 시각화 HTML 리포트 생성
+node --test system/test/*.test.mjs
 ```
 
-`demo.mjs` — 같은 IP 데이터 하나로:
-1. 컨셉만 스왑 → 판타지/SF (스탯 숫자는 완전 동일, 이름만 다름)
-2. 장르만 스왑 → RPG 능동 전투 / 방치형 오프라인 자동 누적
-
-`demo-build.mjs` — 같은 원형·레벨의 두 유닛을 레벨업·돌파·스킬장착·강화(각인)로
-다르게 키워, 한쪽은 순간화력형·한쪽은 생존형으로 분화됨을 보여줍니다.
+시연(demo*.mjs)과 밸런스 모의(system/sim/)는 2026-10-13 지웠습니다. 깃 이력 b1e2e43 에 남아 있습니다.
 
 ## 캐릭터 성장 시스템
 
