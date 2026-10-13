@@ -42,3 +42,5 @@ __pycache__/
 
 # 임시 웹 빌드(우회 export)
 dist2/
+
+graphify-out/

@@ -119,7 +119,7 @@ $env:JAVA_HOME="D:\Android\jdk17"; $env:ANDROID_HOME="D:\Android\Sdk"
 cd android; .\gradlew.bat assembleRelease --no-daemon
 ```
 → `android/app/build/outputs/apk/release/app-release.apk` (약 6분 30초, 87.8MB).
-`G:\내 드라이브\APK\`로 복사하면 폰에서 받는다. 릴리스는 **debug 키스토어로 서명**돼 있어 사이드로딩 전용이다.
+`G:\내 드라이브\AX_Desk\APK\`로 복사하면 폰에서 받는다. 릴리스는 **debug 키스토어로 서명**돼 있어 사이드로딩 전용이다.
 
 > ### ⚠️ 한글 폴더명 때문에 반드시 두 줄이 필요하다
 > `android/gradle.properties`에 아래가 없으면 빌드가 **시작도 못 하고** 실패한다.

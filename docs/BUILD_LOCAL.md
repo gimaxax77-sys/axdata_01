@@ -275,7 +275,7 @@ unzip -l app-release.apk | grep -E "index.android.bundle|libhermes"
 ## B-5. 구글 드라이브로 올립니다
 
 ```powershell
-Copy-Item "…\app-release.apk" "G:\내 드라이브\APK\엘드리아_<날짜>_<시각>_<메모>.apk"
+Copy-Item "…\app-release.apk" "G:\내 드라이브\AX_Desk\APK\엘드리아_<날짜>_<시각>_<메모>.apk"
 ```
 
 데스크톱 자동동기화로 폰에서 받습니다. **MCP Drive 도구는 대용량이 안 되므로 `G:` 드라이브에 복사합니다.**
@@ -335,4 +335,4 @@ node --test system/test/*.test.mjs
 - [ ] `npm run build:apk:local` (게이트 점검 + 빌드) — 캐시 있으면 **40초**, 지운 뒤면 **5분 39초**
 - [ ] **APK 수정 시각이 방금인지 확인** — 그대로면 코드가 안 바뀌어 재생성이 생략된 것
 - [ ] APK 안에 `index.android.bundle` 있는지 확인
-- [ ] `G:\내 드라이브\APK\` 복사 → **sha256 대조**
+- [ ] `G:\내 드라이브\AX_Desk\APK\` 복사 → **sha256 대조**
