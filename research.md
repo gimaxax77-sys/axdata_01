@@ -4,9 +4,9 @@
 > 10-25 이전 원문은 `research_archive_~20261025.md`(1,776줄, 지우지 않음). 옛 절은 그 파일에서 날짜로 찾습니다.
 > 할 일은 루트 `checklist.md`(3트랙 게임 셋 — 무기한 보류). 함정 · 교훈은 이 폴더 기억(MEMORY.md).
 
-## 지금 상태 (2026-10-25)
+## 지금 상태 (2026-10-25 22:50)
 
-- 무기한 보류. 진행 중인 작업 없음.
+- 무기한 보류. 진행 중인 작업 · 01 몫 열린 요청 없음 — 루트 checklist P11 닫힘 · P4 01 «정리됨»(루트 반영 확인). 저장소 미커밋 0 · 원격과 같음.
 - 시험 309/309 통과 · `verify-genres` · `verify-character` 통과.
 - 웹판 `docs/play.html` 08-30 빌드(25.2MB) = 공개 GitHub Pages 판(gimaxax77-sys.github.io/axdata_01)과 SHA-1 같음.
 - APK 08-31 09:37 · 46,677,611 B(`android/app/build/outputs/apk/release/`). 드라이브 AX_Desk\APK 에는 올리지 않음(Gim 10-25 «보류 중이니 그대로»).
@@ -44,6 +44,12 @@
 - 빌드 전 로컬 정적 서버를 내린다 — dist 잠금이면 `build-play.mjs` 가 옛 dist 로 조용히 성공(이 폴더 CLAUDE.md 3).
 
 ## 기록
+
+### 2026-10-25 22:50 — 하루 마무리(상태 점검 · P11 · P4)
+
+- 상태 점검 페이지 https://claude.ai/artifact/SsGhsa4Dy7PDwPcZyx2i1X — 시험 · 저장소 · 웹판 정상, APK 는 드라이브에 없음(Gim «그대로»).
+- 루트 현황판 세션 요청은 P11 한 건 → 완료 회신. P4 는 Gim 지시로 01 몫 진행 → 완료 회신. 루트 checklist 에 둘 다 반영된 것을 22:46 확인.
+- 사고: research.md 를 Edit 로 고친 커밋(d689b70)에서 파일 전체가 LF → CRLF 로 바뀌어 1,775줄 전부 변경으로 푸시됨. 다음 커밋(355e263)에서 LF 로 되돌림(내용 변화 0). 원인은 못 쟀다 — 편집 전 작업 파일 끝은 CRLF, 깃 안은 LF, core.autocrlf=false.
 
 ### 2026-10-25 20:55 — P4 기록 가지치기
 
