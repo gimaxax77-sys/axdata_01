@@ -1771,5 +1771,6 @@ Bash 도구에 PowerShell 여기-문자열(`@'…'@`)을 써서 커밋 제목 �
   - ① `.env` 는 07-11(524a27f)부터 추적 중이었고 `.gitignore` 에는 `.env*.local` 만 있었다. `git rm --cached .env` + `.gitignore` 에 `.env` 추가. 로컬 파일은 그대로(앱 빌드가 씀). 이력에 남은 옛 `.env` 는 지우지 않았다(공개 저장소 이력 재작성은 범위 밖).
   - ② `.env` 의 Supabase 주소 `btmwstrcnxqqbdluqdrt.supabase.co` 는 **이름 자체가 없다**(Non-existent domain) — 통신사 DNS · 구글 DNS(8.8.8.8) 둘 다. 대조군 슬라임 왕국G 주소는 같은 PC 에서 응답(401) · 해석 정상. 연결된 Supabase 계정에도 이 프로젝트는 없다(slime-kingdom-g · honseok 둘뿐). → 서버가 없으니 지금 그 키로 열리는 데이터는 없다.
   - 설계 문서상 RLS: `backend/supabase/*.sql` 의 표 5개(profiles · saves · purchases · mail · remote_config) 모두 `enable row level security` + 정책 있음. 앱 코드(`app/backend/supabaseImpl.js`)가 쓰는 표도 이 5개뿐.
-- 확인 못 한 것: 프로젝트가 삭제된 것인지, 다른 계정에 옮겨진 것인지는 못 쟀다(주소가 없다는 것까지만). 실제 서버의 RLS 상태는 서버가 없어 잴 수 없다 — SQL 설계만 읽었다.
+- 프로젝트는 **삭제됨** — Gim 확인(10-25 20:48). 실제 서버의 RLS 상태는 서버가 없어 잴 수 없다 — SQL 설계만 읽었다.
+- 같은 날 다른 01 걸린 항목: 현황판 세션이 01 에 보낸 요청은 P11 한 건뿐(이 폴더 · 루트 대화 기록 검색). checklist P4(기록 가지치기 — 이 파일 1,775줄)는 «트랙을 다시 열 때 접는다»라 보류 유지. R1(assemble DST 결함)의 01 몫 3파일은 08-31 b6b11a0 에 고쳐졌고 지금 `axdata_01/axdata_01` 남은 파일 0.
 - 결정·근거: 키 교체 · 이력 청소는 하지 않음 — 가리키는 서버가 없어 실익이 없다. 프로젝트를 다시 살리면 그때 새 프로젝트 · 새 키로 시작하고 RLS 를 실서버에서 잰다.
