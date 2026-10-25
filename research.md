@@ -1761,3 +1761,15 @@ Bash 도구에 PowerShell 여기-문자열(`@'…'@`)을 써서 커밋 제목 �
 
 - **폰 실기 확인은 여전히 못 했다.** 전달한 APK 가 07-29 21:00 것과 앱이 동일하므로, 좌우 화살표·뒤로가기 하단 이동의 실기 동작은 이 회차에서도 검증되지 않았다.
 - 당시 `_TOOLS/build-gate` 는 어느 저장소에도 없어 `package.json` 이 버전관리 밖 스크립트를 참조했다(→ 같은 날 `axdata_tools` 저장소로 해결, [[axdata-tools-repo]]).
+
+---
+
+## 2026-10-25 18:50 — 공개 저장소 .env 정리 + Supabase 보호규칙(RLS) 점검
+
+- 요청: 루트 세션(현황판) 이 P11 조치로 넘김 — ① `.env` 깃 추적 해제 ② Supabase 표별 RLS 점검. 다른 세션 요청이라 착수 전 Gim 에게 선택박스로 물어 «진행» 승인받음(10-25).
+- 진행·결과:
+  - ① `.env` 는 07-11(524a27f)부터 추적 중이었고 `.gitignore` 에는 `.env*.local` 만 있었다. `git rm --cached .env` + `.gitignore` 에 `.env` 추가. 로컬 파일은 그대로(앱 빌드가 씀). 이력에 남은 옛 `.env` 는 지우지 않았다(공개 저장소 이력 재작성은 범위 밖).
+  - ② `.env` 의 Supabase 주소 `btmwstrcnxqqbdluqdrt.supabase.co` 는 **이름 자체가 없다**(Non-existent domain) — 통신사 DNS · 구글 DNS(8.8.8.8) 둘 다. 대조군 슬라임 왕국G 주소는 같은 PC 에서 응답(401) · 해석 정상. 연결된 Supabase 계정에도 이 프로젝트는 없다(slime-kingdom-g · honseok 둘뿐). → 서버가 없으니 지금 그 키로 열리는 데이터는 없다.
+  - 설계 문서상 RLS: `backend/supabase/*.sql` 의 표 5개(profiles · saves · purchases · mail · remote_config) 모두 `enable row level security` + 정책 있음. 앱 코드(`app/backend/supabaseImpl.js`)가 쓰는 표도 이 5개뿐.
+- 확인 못 한 것: 프로젝트가 삭제된 것인지, 다른 계정에 옮겨진 것인지는 못 쟀다(주소가 없다는 것까지만). 실제 서버의 RLS 상태는 서버가 없어 잴 수 없다 — SQL 설계만 읽었다.
+- 결정·근거: 키 교체 · 이력 청소는 하지 않음 — 가리키는 서버가 없어 실익이 없다. 프로젝트를 다시 살리면 그때 새 프로젝트 · 새 키로 시작하고 RLS 를 실서버에서 잰다.
