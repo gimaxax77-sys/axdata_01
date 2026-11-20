@@ -40,10 +40,14 @@
 - 진단용 ErrorBoundary(원인 표시)는 릴리스 전에 원복.
 - 3D(expo-gl) Gradle 실패 원인은 미규명 — Model3D.js · yellowdragon.gltf 는 보존.
 - 방어구 · 장신구 아이콘 아트 없음(이모지 폴백).
-- 원격 옛 가지 2개(claude/3d-poc · claude/git-connection-status-rkjuko) 미정리.
 - 빌드 전 로컬 정적 서버를 내린다 — dist 잠금이면 `build-play.mjs` 가 옛 dist 로 조용히 성공(이 폴더 CLAUDE.md 3).
 
 ## 기록
+
+### 2026-11-20 19:40 — 상태 점검 · 원격 옛 가지 삭제
+
+- 점검(보기만): 시험 309/309 · 장르 17 · 캐릭터 37 통과, 저장소 = 원격, 공개 웹판 = 로컬 play.html(SHA-1 같음). 10-31 과 같음. 페이지는 같은 주소에 다시 게시.
+- Gim 선택박스 «지우기» → 원격 claude/3d-poc(9c8ae3b) · claude/git-connection-status-rkjuko(6f4fd97) 삭제. 둘 다 가지에만 있는 커밋 0. 되돌리려면 그 커밋 번호로 가지를 다시 만든다.
 
 ### 2026-10-26 21:55 — 작업-09 보드 자기정보 확인 회신(01발-001)
 
