@@ -4,9 +4,11 @@
 > 10-25 이전 원문은 `research_archive_~20261025.md`(1,776줄, 지우지 않음). 옛 절은 그 파일에서 날짜로 찾습니다.
 > 할 일은 루트 `checklist.md`(3트랙 게임 셋 — 무기한 보류). 함정 · 교훈은 이 폴더 기억(MEMORY.md).
 
-## 지금 상태 (2026-10-25 22:50)
+## 지금 상태 (2026-11-25 점검)
 
-- 무기한 보류. 진행 중인 작업 · 01 몫 열린 요청 없음 — 루트 checklist P11 닫힘 · P4 01 «정리됨»(루트 반영 확인). 저장소 미커밋 0 · 원격과 같음.
+- 무기한 보류. 진행 중인 작업 · 01 몫 열린 요청 없음 — 루트 checklist P11 닫힘 · P4 01 «정리됨»(루트 반영 확인). 원격 가지는 main · gh-pages 둘뿐.
+- 앱 구조: 호드워식 6탭 · 편성 5인 · 기능 모듈 20개 중 켜짐 3(elements · rarity · gacha) · 테스트 모드 ON(`testmode.mjs`). 아트 = KayKit · Quaternius 3D 렌더(초상 35 · 영웅 모션 21×4 · 적 11×3 · 배경 10 · 무기 아이콘 7).
+- APK 는 arm64-v8a 한 종(`android/app/build.gradle` abiFilters — android/ 는 깃 밖). 07-29 «4종 유지» 결정 뒤 바뀐 경위는 기록에 없음.
 - 시험 309/309 통과 · `verify-genres` · `verify-character` 통과.
 - 웹판 `docs/play.html` 08-30 빌드(25.2MB) = 공개 GitHub Pages 판(gimaxax77-sys.github.io/axdata_01)과 SHA-1 같음.
 - APK 08-31 09:37 · 46,677,611 B(`android/app/build/outputs/apk/release/`). 드라이브 AX_Desk\APK 에는 올리지 않음(Gim 10-25 «보류 중이니 그대로»).
@@ -43,6 +45,14 @@
 - 빌드 전 로컬 정적 서버를 내린다 — dist 잠금이면 `build-play.mjs` 가 옛 dist 로 조용히 성공(이 폴더 CLAUDE.md 3).
 
 ## 기록
+
+### 2026-11-25 — 작업폴더 전수 점검 · 낡은 문서 정리
+
+- Gim «문서 · 코드 · 깃 전수 점검, 누락 · 낡은 기록 고쳐». 문서 34개는 서브 3개(Sonnet, 읽기만)가 실물과 대조하고, 핵심 수치(탭 · 편성 · 확률 · ABI · 아트 개수)는 직접 다시 셈.
+- 고침: 지금 쓰는 문서(README · HANDOFF · PARKED · BUILD_LOCAL · IP-SYSTEM-DESIGN · HORDWAR_SPEC · README_SUPABASE · assets README 2)는 틀린 줄을 고침. 옛 계획 · 참고 문서(AUTOMATION · PC_TODO · DISCONNECTED · BACKEND · backend/README · PRIVACY · STORE_LISTING · PHASE2 · ROGUELITE · SEVEN_REVAMP · redesign-plan · 아트 8개)는 맨 위 «상태(11-25 점검)» 줄로 지금 사실을 붙임. 옛 가지 이름이 든 명령 4곳은 main 으로.
+- 코드 · 깃: 시험 309 통과, 지운 것(sim · .github)을 가리키는 코드 없음, 태그 1(archive/art-asset-bridge) · stash 0. 코드는 고치지 않음(charImages.js 주석의 kael 예시는 그대로 — 코드 수정이면 웹판 재빌드 대상).
+- 줄바꿈 함정 원인: 작업 파일 258개가 CRLF 로 꺼내져 있고 깃 안은 LF(core.autocrlf 전역 false). Edit 로 한 줄만 고쳐도 파일 전체가 바뀐 것으로 잡힘 — 10-25 사고와 같은 원인. 이번 수정분은 LF 로 되돌림.
+- 깃 밖 남은 것: dist2(34M · 08-30 임시 웹빌드) · graphify-out(8.2M · 09-23) — 둘 다 .gitignore 대상.
 
 ### 2026-11-20 19:40 — 상태 점검 · 원격 옛 가지 삭제
 

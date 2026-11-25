@@ -21,11 +21,10 @@ EAS 클라우드로 **안드로이드 APK를 처음 뽑아 폰에 설치**하기
 ## 1. 코드 받기
 
 ```bash
-git clone <이 리포 URL>
-cd axdata_01
-git checkout claude/git-connection-status-rkjuko
+git clone https://github.com/gimaxax77-sys/axdata_01.git axdata_01_eldria
+cd axdata_01_eldria
 ```
-> 작업 브랜치에 최신 설정(EAS·OTA·아트)이 들어 있습니다.
+> 가지는 `main` 하나입니다(옛 작업 가지는 2026-11-20 삭제). EAS · OTA · 아트 설정이 모두 main 에 있습니다.
 > main에 병합했다면 main에서 진행해도 됩니다.
 
 ## 2. 의존성 설치

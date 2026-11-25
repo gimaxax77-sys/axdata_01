@@ -3,6 +3,7 @@
 > 상태: **설계 문서**. 실 서버 연동 전까지 앱은 현재처럼 **로컬 시뮬로 정상 동작**한다.
 > Phase 1과 동일 원칙: 서버가 붙으면 켜지고, 없으면 로컬 폴백.
 > 배경/전제: `docs/BACKEND.md`. 재사용 코어: `system/core/arena.mjs`, `resolution.mjs`, `save.mjs`.
+> **상태(2026-11-25 점검)**: 서버는 없습니다 — Firebase 함수(`backend/functions/pvp.js`)는 배포한 적이 없고 Supabase 프로젝트는 10-25 지웠습니다. arena · guild · tower 기능은 꺼짐(파킹, `ArenaGuildScreen` 은 `app/parked/`), 파티는 4인이 아니라 5인입니다. `arena.OPP_CAP_MULT` 는 내보내지 않는 내부 상수입니다.
 
 ---
 

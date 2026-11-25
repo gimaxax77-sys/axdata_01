@@ -1,5 +1,7 @@
 # Supabase 백엔드 셋업 가이드 (계정 + 역할)
 
+> **상태(2026-11-25 점검)**: 한 번 셋업했던 Supabase 프로젝트(btmwstrcnxqqbdluqdrt)는 2026-10-25 지웠습니다. 다시 열 때는 **새 프로젝트 · 새 키**로 이 문서를 따르고, RLS(행 단위 보안)를 실서버에서 잽니다. 앱 쪽은 이미 끝나 있습니다 — `@supabase/supabase-js` 설치, `app/backend/supabaseImpl.js`, `App.js` 1행 등록, metro 빈 모듈. 키는 `.env`(깃 제외)의 `EXPO_PUBLIC_SUPABASE_URL` · `EXPO_PUBLIC_SUPABASE_ANON_KEY` 에 넣습니다(지금 든 값은 지운 프로젝트 것). 표 정의는 `backend/supabase/` 의 schema · console · iap · mail 4개 .sql 입니다(우편 mail.sql 은 이미 있음).
+
 이 문서는 **계정·로그인·역할(운영자/매니저/일반)** 을 켜는 첫 단계 안내입니다.
 결론부터: 코드는 다 준비돼 있고, Gim은 **Supabase 계정을 만들고 키 2개만 꽂으면** 됩니다.
 

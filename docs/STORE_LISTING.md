@@ -1,5 +1,7 @@
 # Play 스토어 등록 정보 (초안)
 
+> **상태(2026-11-25 점검)**: 스토어 미등록 · 무기한 보류(2026-10-25). 피처 그래픽은 `docs/store/feature-graphic.png`(`scripts/gen-feature-graphic.mjs`)로 이미 있습니다. «데이터 수집 안 함» 항목은 클라우드 세이브 코드가 있어 `PRIVACY.md` 를 다시 쓴 뒤 맞춥니다.
+
 실제 등록 시 Play Console의 각 칸에 붙여넣으면 됩니다. 문구는 자유롭게 수정하세요.
 
 ---

@@ -1,6 +1,7 @@
 # 로컬 빌드 가이드 — 지금 실제로 쓰는 절차
 
-> **작성 2026-07-29 · 갱신 2026-07-30**(빌드 시간·APK 크기 단위·게이트 스크립트·up-to-date 함정).
+> **작성 2026-07-29 · 갱신 2026-07-30**(빌드 시간·APK 크기 단위·게이트 스크립트·up-to-date 함정) · **2026-11-25 점검**(APK 크기 · ABI 한 종 · 드라이브 경로를 지금 값으로).
+> 지금은 무기한 보류(2026-10-25)라 마지막 웹 빌드는 08-30, APK 는 08-31 입니다. **APK 빌드는 건마다 직전에 Gim 승인 + `_build/precheck.md` 먼저.**
 > 이 문서에 적힌 명령·수치는 전부 **실제로 실행해 확인한 것**입니다.
 > 작업 폴더 = `D:\.CODE\AXdata\axdata_01_eldria` (모든 경로는 여기 기준).
 
@@ -59,7 +60,7 @@ EXPO_OFFLINE=1 npx expo export --platform web && node scripts/build-play.mjs
 
 - **Git Bash에서 실행합니다.** Windows PowerShell은 `EXPO_OFFLINE=1 명령` 형태의 앞자리 환경변수를 못 읽습니다.
 - `package.json`에 `npm run build:play` 스크립트가 같은 내용으로 들어 있습니다(Git Bash에서만 동작).
-- 결과: **`docs/play.html`** (약 24.6MB 단일 파일). 이미지 185개가 base64로 안에 박혀 그렇게 큽니다.
+- 결과: **`docs/play.html`** (약 25.2MB 단일 파일, 08-30 빌드 25,221,450바이트). 이미지 185개가 base64로 안에 박혀 그렇게 큽니다.
 - `docs/play.html`은 **`.gitignore` 대상**이라 커밋되지 않습니다. 배포는 아래 A-4의 별도 클론으로 합니다.
 
 ## A-3. 번들 해시가 바뀌었는지 확인합니다 ⚠️
@@ -218,7 +219,7 @@ subst X: "D:\.CODE\AXdata\axdata_01_eldria"
 
 ### 권장 — 게이트 스크립트 한 줄
 
-B-1의 확인과 빌드를 한 번에 합니다. 점검 항목은 JDK · SDK · `local.properties` · `node_modules` · 한글 경로 2관문 · 경로 ASCII · ABI 4종 · 네이티브 캐시 8가지입니다.
+B-1의 확인과 빌드를 한 번에 합니다. 점검 항목은 JDK · SDK · `local.properties` · `node_modules` · 한글 경로 2관문 · 경로 ASCII · 요구 ABI(`gradle.properties` 값을 읽음 — 지금 arm64-v8a) · 네이티브 캐시 8가지입니다.
 
 ```powershell
 npm run build:apk:local
@@ -247,7 +248,7 @@ cd "D:\.CODE\AXdata\axdata_01_eldria\android"
 끝에 `BUILD SUCCESSFUL` 이 보여야 합니다.
 
 - 결과: **`android/app/build/outputs/apk/release/app-release.apk`**
-- 크기 **87.8MB** — 윈도우 탐색기에는 **83.8MB**로 보입니다. 87,844,197바이트를 십진(1000) MB로 쓰느냐 1024 기준 MiB로 쓰느냐 차이일 뿐 **같은 파일입니다.** 둘 중 뭘 봐도 놀라지 않습니다.
+- 크기 — 지금(08-31 빌드, arm64-v8a 한 종) **46.7MB**(46,677,611바이트, 탐색기엔 약 44.5MB). 4종을 다 담던 07-29 빌드는 87.8MB(탐색기 83.8MB)였습니다. 탐색기 숫자가 작은 것은 십진 MB와 1024 기준 MiB 차이일 뿐 **같은 파일입니다.**
 
 > ### ⚠️ 코드가 안 바뀌었으면 Gradle은 APK를 **다시 만들지 않습니다**
 > `BUILD SUCCESSFUL` 이 떠도 `app-release.apk` 의 **수정 시각과 sha256이 그대로**입니다.
@@ -270,13 +271,15 @@ unzip -l app-release.apk | grep -E "index.android.bundle|libhermes"
 ```
 
 - `assets/index.android.bundle` (약 1.6MB, Hermes 바이트코드) — **JS 코드 본체입니다.** 없으면 빈 앱입니다.
-- `lib/{arm64-v8a,armeabi-v7a,x86,x86_64}/…` — 네이티브 라이브러리 4종.
+- `lib/arm64-v8a/…` — 네이티브 라이브러리. 지금은 이 한 종만 들어 있습니다(B-6).
 
 ## B-5. 구글 드라이브로 올립니다
 
 ```powershell
-Copy-Item "…\app-release.apk" "G:\내 드라이브\AX_Desk\APK\엘드리아_<날짜>_<시각>_<메모>.apk"
+Copy-Item "…\app-release.apk" "G:\내 드라이브\AX_Desk\APK\엘드리아\엘드리아_<날짜>_<시각>_<메모>.apk"
 ```
+
+올리는 곳은 게임별 폴더 `AX_Desk\APK\<게임명>\` 입니다(전역 규칙). 08-31 APK 는 Gim «보류 중이니 그대로»로 올리지 않아 드라이브에 엘드리아 폴더가 없습니다.
 
 데스크톱 자동동기화로 폰에서 받습니다. **MCP Drive 도구는 대용량이 안 되므로 `G:` 드라이브에 복사합니다.**
 복사 후 **원본과 사본의 sha256을 대조**해 온전히 갔는지 확인합니다.
@@ -289,9 +292,9 @@ Copy-Item "…\app-release.apk" "G:\내 드라이브\AX_Desk\APK\엘드리아_<�
 
 - **release가 debug 키스토어로 서명됩니다**(`android/app/build.gradle`). 사이드로딩은 되지만 **플레이스토어 업로드는 불가**합니다.
 - `versionCode`는 `app.json`에 있고 현재 **2**입니다. 사이드로딩엔 상관없지만 스토어에 낼 땐 올려야 합니다.
-- 아키텍처는 **4종 전부** 담고 있습니다(`gradle.properties`의 `reactNativeArchitectures`).
-  arm64만 남기면 **약 39MB 줄어 49MB**가 되고 빌드도 짧아지지만, PC 에뮬레이터에서 못 돌립니다.
-  **Gim 결정(2026-07-29): 보류, 4종 유지.**
+- 아키텍처는 지금 **arm64-v8a 한 종**만 담습니다. 실제로 거르는 곳은 `android/app/build.gradle` 의 `abiFilters 'arm64-v8a'`(주석 «2026-07-30 실측 -40MB»)이고, `gradle.properties` 의 `reactNativeArchitectures=arm64-v8a` 는 게이트 점검용입니다.
+  실기기(Gim 폰 포함)는 되지만 PC 에뮬레이터(x86)에서는 못 돌립니다. 4종이 필요하면 두 줄을 되돌립니다.
+  07-29 Gim 결정은 «보류, 4종 유지»였는데, 그 뒤 한 종으로 바뀐 경위는 기록에서 찾지 못했습니다(2026-11-25 점검). `android/` 는 깃에 없어서 다시 만들면 4종으로 돌아갑니다.
 
 ---
 

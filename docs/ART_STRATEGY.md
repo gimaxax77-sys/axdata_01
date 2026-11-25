@@ -1,6 +1,8 @@
 <!-- 캐릭터 아트 전략(저비용·고퀄) + 에셋 조사·유효성 검증 -->
 # 캐릭터 아트 전략 — 저비용·고퀄 (2026-07 조사)
 
+> **상태(2026-11-25 점검)**: 실제로 쓴 것은 레인 A(3D 프리렌더)뿐입니다 — 영웅 모션 21캐릭터 × 4상태(walk 포함), 렌더는 `axdata_05_render studio` + 이 저장소 `scripts/assemble_*.py`. 아래 «28영웅 · MVP 4포즈(death)»는 계획 값이고, Sprite Sheet Maker 와 레인 B(ComfyUI) · C(유료 AI)는 이 저장소 아트에 쓴 흔적이 없습니다.
+
 > **요약**: AI 전면 생성은 비용·일관성 문제로 비추천. 이미 확정한 **CC0 3D 프리렌더**를
 > 유지하고, AI는 **무료 로컬 "스타일 보정"** 으로만 얹어 비용 ≈0에 퀄을 올린다.
 > 관련 문서: [`ART_PIPELINE_3D.md`](./ART_PIPELINE_3D.md), [`PIXEL_ASSETS.md`](./PIXEL_ASSETS.md)

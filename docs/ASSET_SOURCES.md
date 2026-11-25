@@ -1,6 +1,8 @@
 <!-- 무료(CC0 우선) 게임 에셋 소스 카탈로그 + 라이선스 정책 -->
 # 게임 에셋 소스 카탈로그 (CC0 우선, 2026-07 조사)
 
+> **상태(2026-11-25 점검)**: 아래 체크리스트 중 실제로 들여온 것 — KayKit Adventurers · Skeletons(영웅 21 · 적 해골 4) · Quaternius 몬스터 6종(`assets/units/enemy/` demon · greendemon · cthulhu · cyclops · yeti · alien). 이 둘은 아래에서 `[ ]` 로 남아 있지만 들여왔습니다. Kenney · game-icons · BGM · SFX 는 쓰지 않았습니다(효과음 0개, 크레딧 파일 없음 — 출시 전 필요). 렌더 폴더 `axdata_05` 의 지금 이름은 `axdata_05_render studio`.
+
 > **요약**: 우리 노선(3D→2D 프리렌더)에 맞는 **무료·CC0** 소스를 우선 정리한다.
 > 몬스터·환경도 **오늘 만든 렌더 파이프라인에 그대로** 얹을 수 있다.
 > 관련: [`ART_STRATEGY.md`](./ART_STRATEGY.md) · [`ART_PIPELINE_3D.md`](./ART_PIPELINE_3D.md) · [`SPRITE_WORKFLOW.md`](./SPRITE_WORKFLOW.md) · [`PIXEL_ASSETS.md`](./PIXEL_ASSETS.md)

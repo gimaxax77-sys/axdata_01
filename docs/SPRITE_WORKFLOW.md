@@ -1,6 +1,8 @@
 <!-- 영웅 스프라이트 제작 실전 순서(KayKit 3D → Blender → 2D PNG) -->
 # 영웅 스프라이트 공장 — 실전 순서 (KayKit → Blender → 2D)
 
+> **상태(2026-11-25 점검)**: 아래 수동 순서(Sprite Sheet Maker)는 검증 전 계획입니다. 실제로는 21명 모션을 `axdata_05_render studio` 렌더 + 이 저장소 `scripts/assemble_*.py` 조립으로 만들었습니다 — 128px 16프레임 스트립, 4상태(idle · attack · hit · walk), 위치 `assets/units/<concept>/<hero>/`. 아래 «영웅 28종 · 기사 1명 SOP 검증» 체크는 그 뒤 진행으로 대체됐습니다.
+
 > **한 줄 요약**: KayKit 3D 몸 + 애니메이션을 Blender에서 2D PNG로 구워 우리 2D 엔진에 얹는다.
 > 첫 한 명만 익히면, 나머지는 **몸·동작·색만 바꿔 반복**하면 된다.
 > 관련: [`ART_STRATEGY.md`](./ART_STRATEGY.md) · [`ART_PIPELINE_3D.md`](./ART_PIPELINE_3D.md) · [`PIXEL_ASSETS.md`](./PIXEL_ASSETS.md)

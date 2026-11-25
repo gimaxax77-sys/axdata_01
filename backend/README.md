@@ -1,5 +1,7 @@
 # backend/ — Phase 1 클라우드 백엔드 (활성화 가이드)
 
+> **상태(2026-11-25 점검)**: 이 문서는 Firebase 활성화 안내입니다. 지금 앱이 등록한 공급자는 Supabase(`App.js` 1행 `./app/backend/supabaseImpl`)이고, 그 안내는 `README_SUPABASE.md` 입니다(표 정의 `backend/supabase/*.sql` 4개, 함수 `../supabase/functions/iap-verify`). Firebase 쪽 파일(firebaseImpl.template.js · firestore.rules · functions/)은 쓰지 않는 예비로 남겨 두었습니다.
+
 앱은 **클라우드 미설정 시 완전 로컬 전용**으로 동작합니다(오프라인 보장).
 아래 단계를 마치면 클라우드 세이브·로그인·결제검증이 "켜집니다".
 

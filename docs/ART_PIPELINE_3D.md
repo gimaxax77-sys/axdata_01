@@ -1,5 +1,7 @@
 # 3D→2D 프리렌더 아트 파이프라인 (경로 Y1 · CC0 무료)
 
+> **상태(2026-11-25 점검)**: 지금 아트는 이 노선(KayKit 3D → 2D)으로 만들었습니다. 실제 결과 — 영웅 **21캐릭터 × 4상태(idle · attack · hit · walk, death 없음)**, 상태마다 128px 16프레임 가로 스트립(2048×128), 적 11종 × 3상태(`assets/units/enemy/`, KayKit 해골 · 늑대 5종 + Quaternius 몬스터 6종). 렌더는 `axdata_05_render studio`, 조립은 이 저장소 `scripts/assemble_*.py` 3개. 아래 «바디 6종 · death 상태 · `PixelIdleScreen` · play.html 7.3MB»는 작성 당시 값이고, 지금 전투 화면은 `app/BattleView.js`, play.html 은 약 25MB 입니다.
+
 > **목표**: 3D 모듈러 캐릭터를 애니메이션과 결합해 **2D 스프라이트 시트로 구워** 우리 기존 2D 엔진에 얹는다.
 > "28영웅 애니"를 소수 바디 + 공유 애니 + 색/무기 변형으로 해결(런타임 3D 부담 0).
 > 배경·근거: `docs/PIXEL_ASSETS.md §10`.

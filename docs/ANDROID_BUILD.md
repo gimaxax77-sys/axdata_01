@@ -137,4 +137,4 @@ eas submit -p android --profile production
 - ✅ 캐릭터 초상 28종 번들 (실아트 교체는 같은 파일명 덮어쓰기)
 - ✅ OTA(expo-updates) 사전 배선: app.json updates + eas.json 채널 + 의존성/스크립트
 - ✅ SDK 51 버전 정렬(@expo/metro-runtime ~3.2.3), 패키지명 정정
-- ▶ PC에서 남은 것: `npm install` → `eas login` → `eas init` → `eas update:configure` → `npm run build:apk`
+- ▶ PC에서 남은 것: `npm install` → `eas login` → `eas init` → `eas update:configure` → `npm run build:apk` (2026-11-25 점검: `eas init` 은 끝나 `app.json` 에 projectId 가 있음. 지금 APK 는 로컬 빌드 — `docs/BUILD_LOCAL.md`)

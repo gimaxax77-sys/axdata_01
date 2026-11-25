@@ -1,9 +1,10 @@
 # 인수인계 — 엘드리아 호드워 UI 전환
 
-> **최종 갱신 2026-07-27.** 이전 세븐나이츠 기준 인수인계는 폐기하고 현재 상태로 다시 씀.
+> **본문 2026-07-27 작성 · 2026-11-25 점검으로 사실 갱신.** 이전 세븐나이츠 기준 인수인계는 폐기하고 현재 상태로 다시 씀.
+> **지금은 무기한 보류(Gim 2026-10-25).** 다시 열 때 할 일 — 호드워 6탭 마무리 · 폰 확인 5곳 · 진단용 ErrorBoundary 원복 · 방어구/장신구 아이콘 · 새 백엔드(Supabase 프로젝트는 10-25 삭제). 상세는 `research.md` «남은 것».
 > **작업 폴더: `D:\.CODE\AXdata\axdata_01_eldria`** (이 문서의 모든 경로는 여기 기준)
-> 폰 확인 링크 **https://gimaxax77-sys.github.io/axdata_01/?v=38**
-> 브랜치 `claude/3d-poc` · 테스트 **309개** 통과
+> 폰 확인 링크 **https://gimaxax77-sys.github.io/axdata_01/** (08-30 빌드)
+> 브랜치 `main` 하나(옛 가지는 11-20 삭제) · 테스트 **309개** 통과
 
 ## 0. 먼저 읽을 순서
 
@@ -12,7 +13,7 @@
 3. **`research.md`** — 지금 상태 · 요약 히스토리(100줄 상한). 10-25 이전 상세 원문은 `research_archive_~20261025.md`.
 4. 이 문서 — 지금 상태와 다음 할 일.
 
-세븐 자료(`docs/SEVEN_REVAMP.md`·`docs/seven_real.html`)는 **폐기가 아니라 참고자료로 강등**. 코드에 남은 세븐 흔적은 없다.
+세븐 자료(`docs/SEVEN_REVAMP.md`·`docs/seven_real.html`)는 **폐기가 아니라 참고자료로 강등**. 코드에는 주석 몇 곳(components.js · FixedStage.js · theme.js · App.js · player.mjs · app/parked/)에 «세븐» 언급만 남아 있고, 동작과는 무관하다.
 
 ## 1. 지금 어떤 상태인가
 
@@ -49,7 +50,7 @@
   상세 표는 `docs/PARKED.md` "테스트 모드".
   > ⚠️ **밸런스를 이 상태에서 판단하지 말 것.** 재화가 무한이라 체감 난이도·소환 아쉬움이 전부 사라져 있다.
   > 자동화 테스트에서는 강제로 꺼지므로 테스트 결과는 여전히 유효하다.
-- **옵션 모듈 18종이 꺼져 있다.** `elements`·`rarity` 2종만 켜져 있다(호드워 UI 자체의 부품 — 속성 필터·등급 메달). 되살리는 절차는 `docs/PARKED.md`.
+- **옵션 모듈 17종이 꺼져 있다.** `elements`·`rarity`·`gacha` 3종만 켜져 있다(호드워 UI 자체의 부품 — 속성 필터·등급 메달, 그리고 아래 소환). 되살리는 절차는 `docs/PARKED.md`.
 - **캡처의 플레이어 카드는 옮기지 않는다.** 호드워는 탭마다 상단바가 없어 각 화면이 직접 그리지만, 엘드리아는 글로벌 상단바가 항상 떠 있다. 그대로 옮기면 **한 화면에 두 번** 나온다(길드에서 실제로 발생, Gim 지적).
 
 ### 소환(모집) — 2026-07-26 되살림 ✅
@@ -90,7 +91,7 @@ VICTORY 팝업 · 이벤트 팝업 · 장비/유물 인벤토리 · 속성 보�
 ```
 EXPO_OFFLINE=1 npx expo export --platform web && node scripts/build-play.mjs
 ```
-→ `docs/play.html` (약 24.5MB 단일 파일). Windows npm run은 env prefix가 안 먹어 **Git Bash에서 직접** 실행.
+→ `docs/play.html` (약 25.2MB 단일 파일, 08-30 빌드). Windows npm run은 env prefix가 안 먹어 **Git Bash에서 직접** 실행.
 
 배포는 gh-pages 임시 클론에 일반 push(force·`gh api POST`는 차단됨):
 ```
@@ -118,10 +119,12 @@ cd "$SP/ghp" && git add index.html && git commit -qm "..." && git push origin gh
 $env:JAVA_HOME="D:\Android\jdk17"; $env:ANDROID_HOME="D:\Android\Sdk"
 cd android; .\gradlew.bat assembleRelease --no-daemon
 ```
-→ `android/app/build/outputs/apk/release/app-release.apk` (약 6분 30초, 87.8MB).
-`G:\내 드라이브\AX_Desk\APK\`로 복사하면 폰에서 받는다. 릴리스는 **debug 키스토어로 서명**돼 있어 사이드로딩 전용이다.
+→ `android/app/build/outputs/apk/release/app-release.apk` (08-31 빌드 46.7MB, arm64-v8a 한 종).
+지금은 위 명령 대신 게이트 점검이 붙은 `npm run build:apk:local` 을 쓴다(절차 `docs/BUILD_LOCAL.md` B절). **빌드는 건마다 직전에 Gim 승인 + `_build/precheck.md` 먼저.**
+`G:\내 드라이브\AX_Desk\APK\<게임명>\`로 복사하면 폰에서 받는다(08-31 APK 는 Gim «보류 중이니 그대로»로 안 올림). 릴리스는 **debug 키스토어로 서명**돼 있어 사이드로딩 전용이다.
 
-> ### ⚠️ 한글 폴더명 때문에 반드시 두 줄이 필요하다
+> ### ⚠️ 경로에 한글이 섞이면 반드시 두 줄이 필요하다
+> 지금 폴더 이름은 전부 영문이라 없어도 빌드되지만, 상위 경로에 한글이 다시 섞일 수 있어 유지한다.
 > `android/gradle.properties`에 아래가 없으면 빌드가 **시작도 못 하고** 실패한다.
 > ```
 > org.gradle.jvmargs=… -Dfile.encoding=UTF-8
@@ -145,6 +148,6 @@ cd android; .\gradlew.bat assembleRelease --no-daemon
 
 - 규칙은 **`D:\.CODE\AXdata\CLAUDE.md`(공통) + 이 폴더 `CLAUDE.md`(프로젝트 전용)**. 호출 명령(`서브`·`롣`·`멤`)은 전역 문서. 같은 규칙을 여러 문서에 복사하지 말 것.
 - **결론 먼저, 초보자 눈높이, 한글은 마침표 종결.** 결정 지점은 **선택박스**로.
-- **큰 수정은 착수 전 승인**(파일 3개↑·이동/삭제·동작 변경·배포). **요청이 불명확하면 이해한 바를 먼저 확인.**
+- **큰 수정은 착수 전 선택박스로 승인**(삭제·이동·개명·공개·배포·Gim 이 정한 화면/수치가 바뀌는 일 — 파일 수는 기준이 아니다). **요청이 불명확하면 이해한 바를 먼저 확인.**
 - 코드 변경 후 **항상 play.html 재빌드·재배포**해 폰 링크로 확인시킨다.
-- 점검·검토·조사·설계는 **`research.md`에 상세 보고서**로 남긴다(확인 못 한 것도 반드시 적는다).
+- 결정과 근거는 **`research.md`**(100줄 상한 — 쌓지 않고 지금 상태로), 점검·조사 결과는 **보고 페이지**로 드린다(확인 못 한 것도 반드시 적는다).

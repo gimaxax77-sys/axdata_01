@@ -1,6 +1,8 @@
 <!-- Meshy로 원본 캐릭터 몸 생성 → 2D 스프라이트 굽기 파이프라인 -->
 # 원본 캐릭터 생성 파이프라인 (Meshy)
 
+> **상태(2026-11-25 점검)**: Meshy 로 만든 아트는 이 저장소에 없습니다(지금 아트는 KayKit · Quaternius 3D 렌더). `render-folder.bat` · `input\` · `render_roster.py` 는 `axdata_05_render studio` 에 있으나, `render_folder.py` 의 `CAMERA_DIR` 이름은 없어지고 `make_camera(…, cam_dir)` 매개변수 · `CAMERA_TILT_DEG` 상수로 바뀌었습니다.
+
 > 목표. 뼈대는 공용으로 두고, **몸(원형) 아트는 직접 생성**해 여러 게임·장르에 재사용.
 > 방식. 문장 → Meshy 3D 생성 → `.glb` 저장 → `render-folder.bat` → 2D 스프라이트.
 

@@ -25,12 +25,11 @@ eas --version               # 정상 출력 확인 (>= 5.9.0)
 ## 1. 최신 코드 받기
 
 ```bash
-# 이미 클론돼 있으면 최신 브랜치만 pull
-git pull origin claude/git-connection-status-rkjuko
+# 이미 클론돼 있으면 최신만 pull (가지는 main 하나 — 옛 작업 가지는 2026-11-20 삭제)
+git pull origin main
 
 # 처음이라면 클론부터
-# git clone <repo-url> && cd axdata_01
-# git checkout claude/git-connection-status-rkjuko
+# git clone https://github.com/gimaxax77-sys/axdata_01.git axdata_01_eldria && cd axdata_01_eldria
 
 npm install                 # 의존성 설치
 ```
@@ -40,7 +39,7 @@ npm install                 # 의존성 설치
 ## 2. 빌드 전 검증 (권장)
 
 ```bash
-npm test                    # 유닛 188 / 장르 17 / 캐릭터 37 통과 확인
+npm test                    # 유닛 309 / 장르 17 / 캐릭터 37 통과 확인 (2026-11-24 기준)
 npm run build:play          # 웹 빌드 → docs/play.html (브라우저로 기능 미리 확인 가능)
 ```
 
@@ -76,6 +75,7 @@ npm run build:apk:scifi
   (또는 QR 스캔). "출처를 알 수 없는 앱 설치 허용"이 필요할 수 있습니다.
 
 ### 설치 후 육안 확인 체크리스트
+> 07-08 탭 구조 기준입니다. 지금 탭은 요새 · 필드 · 길드 · 영웅 · 혜택 · 모험이고, 아래 콘텐츠 상당수는 꺼져 있습니다(`docs/PARKED.md`). 지금 폰 확인 목록은 `research.md` «남은 것».
 - [ ] 소환 탭: **연출 스킵** 토글 → 대량 소환 즉시 결과
 - [ ] 캐릭터 탭: **DPS 미터**(딜 비중 바) · **♻️ 분해**(100% 환급) · **덱 복사/적용**
 - [ ] 콘텐츠 탭: **주간 테마 이벤트** · **시즌 던전** · **스토리 정주행 도감** · **SSR 보호 합성**
@@ -122,5 +122,5 @@ npm run build:aab           # = eas build -p android --profile production (app-b
 ## 요약 (한 줄 실행)
 
 ```bash
-git pull origin claude/git-connection-status-rkjuko && npm install && npm test && eas login && npm run build:apk
+git pull origin main && npm install && npm test && eas login && npm run build:apk
 ```

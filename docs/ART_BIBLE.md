@@ -1,5 +1,7 @@
 # 아트 바이블 — 캐릭터 일러스트 제작 가이드
 
+> **상태(2026-11-25 점검)**: 판타지 쪽은 이 문서의 14종(카엘 ~ 닉스) 대신 **KayKit 21종 로스터**로 바뀌었습니다(`system/concepts/fantasy.mjs`, 초상 `assets/char/fantasy/` 21장 — knight · paladin … skeleton_mage). 아래 판타지 경로 `fantasy/kael.png` 등 14개는 없습니다. SF 14종 초상은 그대로 있고, `app/charImages.js` 등록은 35장(판타지 21 · SF 14)입니다. 지금 아트는 AI 일러스트가 아니라 KayKit 3D 렌더입니다. `npm run gen:portraits` 는 옛 리눅스 경로(`/opt/node22`)를 써서 이 PC 에서 그대로는 안 돕니다.
+
 이 문서는 28종 캐릭터(판타지·SF 각 14종)의 **실제 일러스트 제작용 스펙과 생성 프롬프트**입니다.
 AI 생성(Midjourney·SDXL·Nano Banana 등)·외주 어느 쪽이든 그대로 전달하면 됩니다.
 완성물을 규격대로 저장하면(`assets/char/<concept>/<id>.png`) 앱 전역에 자동 반영됩니다.

@@ -1,5 +1,7 @@
 # 빌드·배포 자동화 (터미널 없이)
 
+> **상태(2026-11-25 점검)**: 이 문서의 GitHub Actions 워크플로(build.yml · ota.yml)는 2026-10-13 지웠습니다(커밋 3838484, `.github` 폴더 없음). 아래 «Actions 탭» 절차는 지금 쓸 수 없고, 같은 일은 package.json 스크립트(`build:apk` · `ota` · `build:apk:local`)로 합니다. 지금 빌드 절차는 `docs/BUILD_LOCAL.md`.
+
 최초 셋업(로그인·init·키스토어)은 끝났습니다. 이제 반복되는 **빌드**와 **OTA 배포**를
 GitHub에서 버튼 한 번으로 실행합니다. **PC 터미널 불필요**(폰의 GitHub 앱에서도 가능).
 

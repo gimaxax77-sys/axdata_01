@@ -3,6 +3,7 @@
 > 3D 캐릭터(KayKit)를 게임용 2D 스프라이트 시트로 굽는 실행 가이드. **PC 작업**(Blender 필요).
 > 두 경로: **A) 자동 스크립트**(권장·빠름) · **B) 수동**(GUI로 감 잡기). MVP는 Knight 1캐릭 4상태.
 > 산출물 규격·엔진 배선은 `docs/ART_PIPELINE_3D.md` 참조.
+> **상태(2026-11-25 점검)**: 지금 아트는 이 스크립트가 아니라 `axdata_05_render studio` 렌더 + 이 저장소 `scripts/assemble_*.py` 조립으로 만들었습니다(상태 idle · attack · hit · walk, death 없음). `blender_render_sprites.py` 는 남아 있지만 부르는 곳이 없습니다. `PixelIdleScreen` 은 없어졌습니다(지금 `app/BattleView.js`).
 
 ---
 
@@ -12,7 +13,7 @@
 - 압축 푼 CC0 팩 2개(이미 보유):
   - `KayKit_Adventurers_2.0_FREE/` (캐릭터 + 무기)
   - `KayKit_Character_Animations_1.1/` (애니 161)
-- 저장소 클론(APK 빌드와 같은 폴더): `D:\.CODE\.Claude\방치형 RPG\axdata_01`
+- 저장소 클론(APK 빌드와 같은 폴더): `D:\.CODE\AXdata\axdata_01_eldria`
 
 ---
 
@@ -24,7 +25,7 @@
 ### A-1. 실행 (터미널/CMD)
 
 ```cmd
-cd "D:\.CODE\.Claude\방치형 RPG\axdata_01"
+cd "D:\.CODE\AXdata\axdata_01_eldria"
 
 blender --background --python scripts/blender_render_sprites.py -- ^
   --char  "C:\경로\KayKit_Adventurers_2.0_FREE\Characters\gltf\Knight.glb" ^
