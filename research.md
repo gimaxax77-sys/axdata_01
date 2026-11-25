@@ -51,8 +51,8 @@
 - Gim «문서 · 코드 · 깃 전수 점검, 누락 · 낡은 기록 고쳐». 문서 34개는 서브 3개(Sonnet, 읽기만)가 실물과 대조하고, 핵심 수치(탭 · 편성 · 확률 · ABI · 아트 개수)는 직접 다시 셈.
 - 고침: 지금 쓰는 문서(README · HANDOFF · PARKED · BUILD_LOCAL · IP-SYSTEM-DESIGN · HORDWAR_SPEC · README_SUPABASE · assets README 2)는 틀린 줄을 고침. 옛 계획 · 참고 문서(AUTOMATION · PC_TODO · DISCONNECTED · BACKEND · backend/README · PRIVACY · STORE_LISTING · PHASE2 · ROGUELITE · SEVEN_REVAMP · redesign-plan · 아트 8개)는 맨 위 «상태(11-25 점검)» 줄로 지금 사실을 붙임. 옛 가지 이름이 든 명령 4곳은 main 으로.
 - 코드 · 깃: 시험 309 통과, 지운 것(sim · .github)을 가리키는 코드 없음, 태그 1(archive/art-asset-bridge) · stash 0. 코드는 고치지 않음(charImages.js 주석의 kael 예시는 그대로 — 코드 수정이면 웹판 재빌드 대상).
-- 줄바꿈 함정 원인: 작업 파일 258개가 CRLF 로 꺼내져 있고 깃 안은 LF(core.autocrlf 전역 false). Edit 로 한 줄만 고쳐도 파일 전체가 바뀐 것으로 잡힘 — 10-25 사고와 같은 원인. 이번 수정분은 LF 로 되돌림.
-- 깃 밖 남은 것: dist2(34M · 08-30 임시 웹빌드) · graphify-out(8.2M · 09-23) — 둘 다 .gitignore 대상.
+- 줄바꿈 함정 원인: 작업 파일 258개가 CRLF 로 꺼내져 있고 깃 안은 LF(core.autocrlf 전역 false). Edit 로 한 줄만 고쳐도 파일 전체가 바뀐 것으로 잡힘 — 10-25 사고와 같은 원인. Gim 선택박스 «맞추기» → 작업 파일 줄바꿈을 LF 로 맞춤(커밋 변경 0, 남은 CRLF 0, 시험 309 · 17 · 37 통과). 상태 캐시 착시는 `git add -u`(스테이징 0)로 풂.
+- Gim 선택박스 «지우기» → 깃 밖 찌꺼기 dist2(34M · 08-30 임시 웹빌드) · graphify-out(8.2M · 09-23)을 휴지통으로.
 
 ### 2026-11-20 19:40 — 상태 점검 · 원격 옛 가지 삭제
 
