@@ -294,7 +294,7 @@ Copy-Item "…\app-release.apk" "G:\내 드라이브\AX_Desk\APK\엘드리아\�
 - `versionCode`는 `app.json`에 있고 현재 **2**입니다. 사이드로딩엔 상관없지만 스토어에 낼 땐 올려야 합니다.
 - 아키텍처는 지금 **arm64-v8a 한 종**만 담습니다. 실제로 거르는 곳은 `android/app/build.gradle` 의 `abiFilters 'arm64-v8a'`(주석 «2026-07-30 실측 -40MB»)이고, `gradle.properties` 의 `reactNativeArchitectures=arm64-v8a` 는 게이트 점검용입니다.
   실기기(Gim 폰 포함)는 되지만 PC 에뮬레이터(x86)에서는 못 돌립니다. 4종이 필요하면 두 줄을 되돌립니다.
-  07-29 Gim 결정은 «보류, 4종 유지»였는데, 그 뒤 한 종으로 바뀐 경위는 기록에서 찾지 못했습니다(2026-11-25 점검). `android/` 는 깃에 없어서 다시 만들면 4종으로 돌아갑니다.
+  07-29 엔 «보류, 4종 유지»였고, 07-30 루트 세션이 `abiFilters` 로 한 종으로 줄였습니다(87.8MB → 46.7MB, 루트 기억 `apk-abi-slimming`). `android/` 는 깃에 없어서 다시 만들면 **빌드는 성공한 채 조용히 4종(약 2배)으로 돌아갑니다** — 빌드 뒤 APK 크기를 봅니다.
 
 ---
 
